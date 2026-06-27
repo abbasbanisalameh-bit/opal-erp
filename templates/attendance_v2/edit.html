@@ -1,0 +1,30 @@
+{% extends "base/base.html" %}
+
+{% block title %}تعديل الحضور{% endblock %}
+{% block page_title %}تعديل الحضور{% endblock %}
+
+{% block content %}
+
+<div class="opal-card">
+
+<h4>{{ record.student.full_name }}</h4>
+
+<form method="post">
+{% csrf_token %}
+
+<select class="form-control mb-3" name="status">
+<option value="present" {% if record.status == "present" %}selected{% endif %}>حاضر</option>
+<option value="absent" {% if record.status == "absent" %}selected{% endif %}>غائب</option>
+<option value="late" {% if record.status == "late" %}selected{% endif %}>متأخر</option>
+<option value="excused" {% if record.status == "excused" %}selected{% endif %}>بعذر</option>
+</select>
+
+<textarea class="form-control mb-3" name="notes">{{ record.notes }}</textarea>
+
+<button class="btn btn-success">حفظ</button>
+
+</form>
+
+</div>
+
+{% endblock %}
