@@ -76,3 +76,19 @@ class StudentDocumentAdmin(admin.ModelAdmin):
     list_display = ("student", "document_type", "title", "uploaded_at")
     search_fields = ("student__full_name", "title")
     list_filter = ("document_type", "uploaded_at")
+
+
+from .models import AcademicYear, Subject
+
+@admin.register(AcademicYear)
+class AcademicYearAdmin(admin.ModelAdmin):
+    list_display = ("name", "start_date", "end_date", "is_active")
+    list_filter = ("is_active",)
+    search_fields = ("name",)
+
+
+@admin.register(Subject)
+class SubjectAdmin(admin.ModelAdmin):
+    list_display = ("name", "code", "grade", "is_active")
+    list_filter = ("grade", "is_active")
+    search_fields = ("name", "code")

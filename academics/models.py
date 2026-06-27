@@ -160,3 +160,39 @@ class StudentDocument(models.Model):
 
     def __str__(self):
         return f"{self.student.full_name} - {self.title}"
+
+
+class AcademicYear(models.Model):
+    name = models.CharField(max_length=50, unique=True)
+    start_date = models.DateField()
+    end_date = models.DateField()
+    is_active = models.BooleanField(default=False)
+
+    class Meta:
+        verbose_name = "عام دراسي"
+        verbose_name_plural = "الأعوام الدراسية"
+
+    def __str__(self):
+        return self.name
+
+
+class Subject(models.Model):
+    name = models.CharField(max_length=100)
+    code = models.CharField(max_length=30, blank=True)
+    grade = models.ForeignKey(
+        Grade,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="subjects"
+    )
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = "مادة دراسية"
+        verbose_name_plural = "المواد الدراسية"
+
+    def __str__(self):
+        if self.grade:
+            return f"{self.name} - {self.grade}"
+        return self.name
