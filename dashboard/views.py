@@ -48,7 +48,7 @@ def home(request):
 
     return render(
         request,
-        "dashboard/index.html",
+        "dashboard/home.html",
         {
             "students": students,
             "exams": exams,
