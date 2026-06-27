@@ -1,0 +1,106 @@
+{% extends "base/base.html" %}
+
+{% block title %}بوابة ولي الأمر{% endblock %}
+{% block page_title %}بوابة ولي الأمر{% endblock %}
+
+{% block content %}
+
+<div class="opal-card">
+
+<h3>{{ student.full_name }}</h3>
+
+<h4>الفواتير</h4>
+
+<table class="table table-bordered">
+
+<tr>
+
+<th>الرسوم</th>
+
+<th>المبلغ</th>
+
+<th>الحالة</th>
+
+</tr>
+
+{% for i in invoices %}
+
+<tr>
+
+<td>{{ i.fee_category }}</td>
+
+<td>{{ i.amount }}</td>
+
+<td>
+
+{% if i.paid %}
+
+<span class="badge bg-success">مدفوعة</span>
+
+{% else %}
+
+<span class="badge bg-danger">غير مدفوعة</span>
+
+{% endif %}
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+<h4>آخر الحضور</h4>
+
+<table class="table table-striped">
+
+<tr>
+
+<th>التاريخ</th>
+
+<th>الحالة</th>
+
+</tr>
+
+{% for a in attendance %}
+
+<tr>
+
+<td>{{ a.date }}</td>
+
+<td>{{ a.get_status_display }}</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+<h4>آخر الإعلانات</h4>
+
+<ul>
+
+{% for a in announcements %}
+
+<li>{{ a.title }}</li>
+
+{% endfor %}
+
+</ul>
+
+<h4>الاختبارات</h4>
+
+<ul>
+
+{% for e in exams %}
+
+<li>{{ e }}</li>
+
+{% endfor %}
+
+</ul>
+
+</div>
+
+{% endblock %}

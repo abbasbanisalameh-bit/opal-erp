@@ -7,6 +7,7 @@ from django.contrib.auth.views import LoginView
 
 
 urlpatterns = [
+    path("parent/",include("parent_portal.urls")),
     path(
         'accounts/login/',
         LoginView.as_view(

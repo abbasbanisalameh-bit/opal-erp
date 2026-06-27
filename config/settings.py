@@ -29,6 +29,7 @@ ALLOWED_HOSTS = [
 # -------------------------
 INSTALLED_APPS = [
     'attendance_v2',
+    'parent_portal',
     'accounting',
     'exams',
     'documents',
