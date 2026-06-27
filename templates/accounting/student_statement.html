@@ -1,0 +1,41 @@
+{% extends "base/base.html" %}
+
+{% block title %}كشف حساب الطالب{% endblock %}
+{% block page_title %}كشف حساب الطالب{% endblock %}
+
+{% block content %}
+
+<div class="opal-card">
+
+<h3>{{ student.full_name }}</h3>
+
+<hr>
+
+<p><strong>إجمالي الفواتير:</strong> {{ total_invoice }}</p>
+<p><strong>إجمالي المدفوع:</strong> {{ total_payment }}</p>
+<p><strong>المتبقي:</strong> {{ remaining }}</p>
+
+<h4>الفواتير</h4>
+
+<table class="table table-striped">
+<tr>
+<th>الرسوم</th>
+<th>القيمة</th>
+<th>الاستحقاق</th>
+</tr>
+
+{% for i in invoices %}
+<tr>
+<td>{{ i.fee_category }}</td>
+<td>{{ i.amount }}</td>
+<td>{{ i.due_date }}</td>
+</tr>
+{% empty %}
+<tr><td colspan="3">لا توجد فواتير.</td></tr>
+{% endfor %}
+
+</table>
+
+</div>
+
+{% endblock %}

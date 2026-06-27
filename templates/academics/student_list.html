@@ -65,7 +65,7 @@
                     <th>الهاتف</th>
                     <th>الحالة</th>
                     <th>إجراءات</th>
-                </tr>
+                <th>المالية</th><td><a class="btn btn-sm btn-success" href="/accounting/student/{{ student.id }}/statement/">كشف الحساب</a></td></tr>
             </thead>
 
             <tbody>
@@ -94,13 +94,13 @@
                         <a class="btn btn-sm btn-outline-warning" href="{% url 'academics:student_update' student.id %}">تعديل</a>
                         <a class="btn btn-sm btn-outline-light" href="#">طباعة</a>
                     </td>
-                </tr>
+                <td><a class="btn btn-sm btn-success" href="/accounting/student/{{ student.id }}/statement/">كشف الحساب</a></td></tr>
                 {% empty %}
                 <tr>
                     <td colspan="7" class="text-center text-secondary">
                         لا يوجد طلاب حتى الآن
                     </td>
-                </tr>
+                <td><a class="btn btn-sm btn-success" href="/accounting/student/{{ student.id }}/statement/">كشف الحساب</a></td></tr>
                 {% endfor %}
             </tbody>
         </table>

@@ -28,6 +28,7 @@ ALLOWED_HOSTS = [
 # التطبيقات
 # -------------------------
 INSTALLED_APPS = [
+    'accounting',
     'exams',
     'documents',
     'announcements',

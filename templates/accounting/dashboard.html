@@ -1,0 +1,53 @@
+{% extends "base/base.html" %}
+{% block title %}النظام المالي{% endblock %}
+{% block page_title %}لوحة النظام المالي{% endblock %}
+
+{% block content %}
+
+<div class="row">
+
+<div class="col-md-3">
+<div class="alert alert-primary">
+<h4>{{ total_invoices }}</h4>
+إجمالي الفواتير
+</div>
+</div>
+
+<div class="col-md-3">
+<div class="alert alert-success">
+<h4>{{ total_payments }}</h4>
+إجمالي المقبوض
+</div>
+</div>
+
+<div class="col-md-3">
+<div class="alert alert-danger">
+<h4>{{ remaining }}</h4>
+المتبقي
+</div>
+</div>
+
+<div class="col-md-3">
+<div class="alert alert-info">
+<h4>{{ invoices_count }}</h4>
+عدد الفواتير
+</div>
+</div>
+
+</div>
+
+<div class="mt-4">
+<a class="btn btn-success" href="{% url 'accounting:invoice_create' %}">
+فاتورة جديدة
+</a>
+
+<a class="btn btn-primary" href="{% url 'accounting:invoice_list' %}">
+عرض الفواتير
+</a>
+
+<a class="btn btn-warning" href="{% url 'accounting:payment_create' %}">
+تسجيل دفعة
+</a>
+</div>
+
+{% endblock %}

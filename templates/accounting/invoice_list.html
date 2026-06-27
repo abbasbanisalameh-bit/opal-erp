@@ -1,0 +1,63 @@
+{% extends "base/base.html" %}
+
+{% block title %}الفواتير{% endblock %}
+{% block page_title %}الفواتير{% endblock %}
+
+{% block content %}
+
+<a class="btn btn-success mb-3" href="{% url 'accounting:invoice_create' %}">
+فاتورة جديدة
+</a>
+
+<table class="table table-striped">
+
+<thead>
+<tr>
+<th>الطالب</th>
+<th>نوع الرسوم</th>
+<th>القيمة</th>
+<th>الاستحقاق</th>
+<th>الحالة</th>
+</tr>
+</thead>
+
+<tbody>
+
+{% for invoice in invoices %}
+
+<tr>
+
+<td>{{ invoice.student.full_name }}</td>
+<td>{{ invoice.fee_category.name }}</td>
+<td>{{ invoice.amount }}</td>
+<td>{{ invoice.due_date }}</td>
+
+<td>
+
+{% if invoice.paid %}
+<span class="badge bg-success">مدفوعة</span>
+{% else %}
+<span class="badge bg-danger">غير مدفوعة</span>
+{% endif %}
+
+</td>
+
+</tr>
+
+{% empty %}
+
+<tr>
+
+<td colspan="5">
+لا توجد فواتير
+</td>
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+
+</table>
+
+{% endblock %}
