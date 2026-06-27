@@ -1,0 +1,110 @@
+{% extends "base/base.html" %}
+
+{% block title %}إدارة الطلاب | OPAL ERP{% endblock %}
+{% block nav_students %}active{% endblock %}
+{% block page_title %}إدارة الطلاب{% endblock %}
+{% block page_subtitle %}قائمة الطلاب والملفات الأكاديمية{% endblock %}
+
+{% block content %}
+
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="opal-card">
+            <div class="opal-stat-icon"><i class="bi bi-people-fill"></i></div>
+            <p class="text-secondary mb-1">إجمالي الطلاب</p>
+            <h2 class="fw-bold">{{ students.count }}</h2>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="opal-card">
+            <div class="opal-stat-icon"><i class="bi bi-person-check-fill"></i></div>
+            <p class="text-secondary mb-1">الطلاب النشطون</p>
+            <h2 class="fw-bold">{{ students.count }}</h2>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="opal-card">
+            <div class="opal-stat-icon"><i class="bi bi-mortarboard-fill"></i></div>
+            <p class="text-secondary mb-1">الصفوف</p>
+            <h2 class="fw-bold">14</h2>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="opal-card">
+            <div class="opal-stat-icon"><i class="bi bi-file-earmark-text-fill"></i></div>
+            <p class="text-secondary mb-1">الوثائق</p>
+            <h2 class="fw-bold">0</h2>
+        </div>
+    </div>
+</div>
+
+<div class="opal-card">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="fw-bold mb-0">قائمة الطلاب</h4>
+        <a href="#" class="btn btn-info fw-bold">
+            <i class="bi bi-plus-circle"></i>
+            إضافة طالب
+        </a>
+    </div>
+
+    <div class="mb-3">
+        <input type="text" class="form-control" placeholder="ابحث باسم الطالب أو رقم الطالب...">
+    </div>
+
+    <div class="table-responsive">
+        <table class="table opal-table align-middle">
+            <thead>
+                <tr>
+                    <th>الصورة</th>
+                    <th>رقم الطالب</th>
+                    <th>اسم الطالب</th>
+                    <th>اسم الأب</th>
+                    <th>الهاتف</th>
+                    <th>الحالة</th>
+                    <th>إجراءات</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for student in students %}
+                <tr>
+                    <td>
+                        {% if student.photo %}
+                            <img src="{{ student.photo.url }}" width="45" height="45" style="border-radius:50%; object-fit:cover;">
+                        {% else %}
+                            <div class="opal-user-avatar">S</div>
+                        {% endif %}
+                    </td>
+                    <td>{{ student.student_number }}</td>
+                    <td>{{ student.full_name }}</td>
+                    <td>{{ student.father_name }}</td>
+                    <td>{{ student.phone }}</td>
+                    <td>
+                        {% if student.is_active %}
+                            <span class="badge bg-success">نشط</span>
+                        {% else %}
+                            <span class="badge bg-secondary">غير نشط</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a class="btn btn-sm btn-outline-info" href="{% url 'academics:student_detail' student.id %}">عرض</a>
+                        <a class="btn btn-sm btn-outline-warning" href="{% url 'academics:student_update' student.id %}">تعديل</a>
+                        <a class="btn btn-sm btn-outline-light" href="#">طباعة</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center text-secondary">
+                        لا يوجد طلاب حتى الآن
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

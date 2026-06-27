@@ -1,0 +1,60 @@
+{% extends "base/base.html" %}
+
+{% block title %}تسجيل طالب جديد{% endblock %}
+{% block page_title %}تسجيل طالب جديد{% endblock %}
+{% block page_subtitle %}معالج تسجيل الطالب وولي الأمر والبيانات الأكاديمية{% endblock %}
+
+{% block content %}
+
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    {% if form.errors %}
+    <div class="alert alert-danger">
+        {{ form.errors }}
+    </div>
+    {% endif %}
+
+    <div class="opal-card mb-4">
+        <h4 class="mb-3">1. بيانات الطالب</h4>
+
+        <div class="row g-3">
+            <div class="col-md-6">{{ form.full_name.label_tag }} {{ form.full_name }}</div>
+            <div class="col-md-3">{{ form.father_name.label_tag }} {{ form.father_name }}</div>
+            <div class="col-md-3">{{ form.mother_name.label_tag }} {{ form.mother_name }}</div>
+            <div class="col-md-3">{{ form.gender.label_tag }} {{ form.gender }}</div>
+            <div class="col-md-3">{{ form.phone.label_tag }} {{ form.phone }}</div>
+            <div class="col-md-6">{{ form.photo.label_tag }} {{ form.photo }}</div>
+            <div class="col-12">{{ form.address.label_tag }} {{ form.address }}</div>
+        </div>
+    </div>
+
+    <div class="opal-card mb-4">
+        <h4 class="mb-3">2. بيانات ولي الأمر</h4>
+
+        <div class="row g-3">
+            <div class="col-md-6">{{ form.guardian_name.label_tag }} {{ form.guardian_name }}</div>
+            <div class="col-md-3">{{ form.guardian_relation.label_tag }} {{ form.guardian_relation }}</div>
+            <div class="col-md-3">{{ form.guardian_phone.label_tag }} {{ form.guardian_phone }}</div>
+            <div class="col-md-4">{{ form.guardian_email.label_tag }} {{ form.guardian_email }}</div>
+            <div class="col-md-4">{{ form.guardian_job.label_tag }} {{ form.guardian_job }}</div>
+        </div>
+    </div>
+
+    <div class="opal-card mb-4">
+        <h4 class="mb-3">3. البيانات الأكاديمية</h4>
+
+        <div class="row g-3">
+            <div class="col-md-6">{{ form.grade.label_tag }} {{ form.grade }}</div>
+            <div class="col-md-6">{{ form.section.label_tag }} {{ form.section }}</div>
+        </div>
+    </div>
+
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-info fw-bold">حفظ التسجيل</button>
+        <a href="{% url 'academics:student_list' %}" class="btn btn-secondary">رجوع</a>
+    </div>
+
+</form>
+
+{% endblock %}

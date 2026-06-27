@@ -1,0 +1,35 @@
+<div class="card shadow-lg border-0 mb-4">
+    <div class="card-body">
+
+        <div class="row align-items-center">
+
+            <div class="col-md-3 text-center">
+                {% if student.photo %}
+                    <img src="{{ student.photo.url }}" width="140" class="rounded">
+                {% endif %}
+            </div>
+
+            <div class="col-md-9">
+
+                <h3>{{ student.full_name }}</h3>
+
+                <hr>
+
+                <p><b>رقم الطالب:</b> {{ student.student_number }}</p>
+
+                <p><b>الرقم الوطني:</b> {{ student.national_id }}</p>
+
+                <p><b>ولي الأمر:</b> {{ student.father_name }}</p>
+
+                <p><b>فصيلة الدم:</b> {{ student.blood_type }}</p>
+
+                <a class="btn btn-primary">
+                    🖨 طباعة البطاقة
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+</div>

@@ -1,0 +1,145 @@
+{% extends "base/base.html" %}
+
+{% block title %}ملف الطالب | OPAL ERP{% endblock %}
+{% block page_title %}ملف الطالب{% endblock %}
+{% block page_subtitle %}Student 360° - الملف الشامل للطالب{% endblock %}
+
+{% block content %}
+
+<div class="opal-card mb-4">
+    <div class="d-flex align-items-center gap-4 flex-wrap">
+
+        {% if student.photo %}
+            <img src="{{ student.photo.url }}" width="120" height="120" style="border-radius:24px; object-fit:cover;">
+        {% else %}
+            <div class="opal-user-avatar" style="width:120px;height:120px;font-size:42px;">
+                {{ student.full_name|slice:":1" }}
+            </div>
+        {% endif %}
+
+        <div>
+            <h2 class="fw-bold mb-2">{{ student.full_name }}</h2>
+            <p class="text-secondary mb-1">رقم الطالب: {{ student.student_number }}</p>
+            <p class="text-secondary mb-1">الرقم الوطني: {{ student.national_id|default:"غير مدخل" }}</p>
+
+            {% if student.is_active %}
+                <span class="badge bg-success">طالب نشط</span>
+            {% else %}
+                <span class="badge bg-secondary">غير نشط</span>
+            {% endif %}
+        </div>
+
+        <div class="ms-auto d-flex gap-2 flex-wrap">
+            <a href="{% url 'documents:issue_student_certificate' student.id %}" class="btn btn-info">
+                إصدار إثبات طالب
+            </a>
+            <a href="{% url 'academics:student_update' student.id %}" class="btn btn-warning">
+                تعديل
+            </a>
+            <a href="{% url 'academics:student_list' %}" class="btn btn-secondary">
+                رجوع
+            </a>
+        </div>
+
+    </div>
+</div>
+
+<div class="opal-card">
+
+    <ul class="nav nav-tabs mb-4" role="tablist">
+        <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#profile">البيانات الشخصية</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#guardian">ولي الأمر</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#academic">التسجيل الأكاديمي</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#documents">الوثائق</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#health">الصحة</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#issued">الوثائق الصادرة</button></li>
+<li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#timeline">السجل الزمني</button></li>
+    </ul>
+
+    <div class="tab-content">
+
+        <div class="tab-pane fade show active" id="profile">
+            <p><strong>الاسم:</strong> {{ student.full_name }}</p>
+            <p><strong>اسم ولي الأمر / الأب:</strong> {{ student.father_name|default:"غير مدخل" }}</p>
+            <p><strong>الجنس:</strong> {{ student.get_gender_display|default:"غير محدد" }}</p>
+            <p><strong>فصيلة الدم:</strong> {{ student.blood_type|default:"غير مدخل" }}</p>
+            <p><strong>العنوان:</strong> {{ student.address|default:"غير مدخل" }}</p>
+        </div>
+
+        <div class="tab-pane fade" id="guardian">
+            {% for item in student.guardians.all %}
+                <div class="p-3 mb-3 rounded" style="background:rgba(255,255,255,.05);">
+                    <p><strong>الاسم:</strong> {{ item.guardian.full_name }}</p>
+                    <p><strong>الصلة:</strong> {{ item.guardian.get_relation_display }}</p>
+                    <p><strong>الهاتف:</strong> {{ item.guardian.phone }}</p>
+                    <p><strong>المهنة:</strong> {{ item.guardian.job_title|default:"غير مدخل" }}</p>
+                </div>
+            {% empty %}
+                <p class="text-secondary">لا يوجد ولي أمر مرتبط.</p>
+            {% endfor %}
+        </div>
+
+        <div class="tab-pane fade" id="academic">
+            {% for enrollment in student.enrollments.all %}
+                <div class="p-3 mb-3 rounded" style="background:rgba(255,255,255,.05);">
+                    <p><strong>السنة:</strong> {{ enrollment.academic_year }}</p>
+                    <p><strong>الصف:</strong> {{ enrollment.grade }}</p>
+                    <p><strong>الشعبة:</strong> {{ enrollment.section|default:"غير محددة" }}</p>
+                    <p><strong>الحالة:</strong> {{ enrollment.get_status_display }}</p>
+                </div>
+            {% empty %}
+                <p class="text-secondary">لا يوجد تسجيل أكاديمي.</p>
+            {% endfor %}
+        </div>
+
+        <div class="tab-pane fade" id="documents">
+            {% for document in student.documents.all %}
+                <div class="p-3 mb-3 rounded" style="background:rgba(255,255,255,.05);">
+                    <p><strong>النوع:</strong> {{ document.get_document_type_display }}</p>
+                    <p><strong>العنوان:</strong> {{ document.title }}</p>
+                    <a href="{{ document.file.url }}" target="_blank" class="btn btn-sm btn-outline-info">فتح الوثيقة</a>
+                </div>
+            {% empty %}
+                <p class="text-secondary">لا توجد وثائق مرفقة.</p>
+            {% endfor %}
+        </div>
+
+        <div class="tab-pane fade" id="health">
+            <p><strong>الملاحظات الصحية:</strong></p>
+            <p>{{ student.medical_notes|default:"لا توجد ملاحظات صحية." }}</p>
+        </div>
+
+        
+<div class="tab-pane fade" id="issued">
+
+{% for d in student.issued_documents.all %}
+<div class="border rounded p-3 mb-3">
+
+<h6>{{ d.issued_document.title }}</h6>
+
+<p>{{ d.issued_document.document_number }}</p>
+
+<p>{{ d.created_at|date:"Y-m-d H:i" }}</p>
+
+</div>
+
+{% empty %}
+
+<p>لا توجد وثائق صادرة.</p>
+
+{% endfor %}
+
+</div>
+
+<div class="tab-pane fade" id="timeline">
+
+            <div class="p-3 rounded" style="background:rgba(255,255,255,.05);">
+                <p class="mb-1">🟢 تم إنشاء ملف الطالب</p>
+                <small class="text-secondary">{{ student.created_at|date:"Y-m-d H:i" }}</small>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}
