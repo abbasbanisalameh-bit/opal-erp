@@ -1,0 +1,45 @@
+{% extends "base/base.html" %}
+
+{% block title %}العلامات{% endblock %}
+{% block page_title %}العلامات{% endblock %}
+
+{% block content %}
+<div class="opal-card">
+
+<div class="mb-3">
+<a href="{% url 'exams:mark_create' %}" class="btn btn-primary">
+إضافة علامة
+</a>
+</div>
+
+<table class="table table-striped">
+<thead>
+<tr>
+<th>الطالب</th>
+<th>الامتحان</th>
+<th>العلامة</th>
+<th>النسبة</th>
+</tr>
+</thead>
+
+<tbody>
+
+{% for m in marks %}
+<tr>
+<td>{{ m.student.full_name }}</td>
+<td>{{ m.exam.name }}</td>
+<td>{{ m.mark }}</td>
+<td>{{ m.percentage }}%</td>
+</tr>
+{% empty %}
+<tr>
+<td colspan="4">لا توجد علامات.</td>
+</tr>
+{% endfor %}
+
+</tbody>
+
+</table>
+
+</div>
+{% endblock %}

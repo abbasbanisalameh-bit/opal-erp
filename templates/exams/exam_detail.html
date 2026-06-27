@@ -1,0 +1,55 @@
+{% extends "base/base.html" %}
+
+{% block title %}تفاصيل الامتحان{% endblock %}
+{% block page_title %}تفاصيل الامتحان{% endblock %}
+
+{% block content %}
+
+<div class="opal-card mb-4">
+<h4>{{ exam.name }} - {{ exam.grade }} - {{ exam.subject }}</h4>
+
+<div class="row text-center mt-4">
+<div class="col-md-2"><div class="alert alert-info">عدد العلامات<br>{{ stats.count }}</div></div>
+<div class="col-md-2"><div class="alert alert-success">أعلى علامة<br>{{ stats.highest }}</div></div>
+<div class="col-md-2"><div class="alert alert-warning">أقل علامة<br>{{ stats.lowest }}</div></div>
+<div class="col-md-2"><div class="alert alert-primary">المتوسط<br>{{ stats.average }}</div></div>
+<div class="col-md-2"><div class="alert alert-success">ناجح<br>{{ stats.passed }}</div></div>
+<div class="col-md-2"><div class="alert alert-danger">راسب<br>{{ stats.failed }}</div></div>
+</div>
+
+<a href="{% url 'exams:exam_marks_bulk' exam.id %}" class="btn btn-success">
+إدخال علامات الصف
+</a>
+<a href="{% url 'exams:exam_update' exam.id %}" class="btn btn-warning">تعديل</a>
+<a href="{% url 'exams:exam_delete' exam.id %}" class="btn btn-danger">حذف</a>
+<a href="{% url 'exams:exam_list' %}" class="btn btn-secondary">رجوع</a>
+</div>
+
+<div class="opal-card">
+<table class="table table-striped">
+<thead>
+<tr>
+<th>الترتيب</th>
+<th>الطالب</th>
+<th>العلامة</th>
+<th>النسبة</th>
+<th>التقدير</th>
+</tr>
+</thead>
+<tbody>
+{% for m in marks %}
+<tr>
+<td>{{ forloop.counter }}</td>
+<td>{{ m.student.full_name }}</td>
+<td>{{ m.mark }}</td>
+<td>{{ m.percentage }}%</td>
+<td>{{ m.grade_letter }}</td>
+</tr>
+{% empty %}
+<tr><td colspan="5">لا توجد علامات لهذا الامتحان.</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+
+{% endblock %}

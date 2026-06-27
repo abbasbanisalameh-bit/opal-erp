@@ -23,6 +23,7 @@ urlpatterns = [
     path('academics/', include('academics.urls')),
     path('admissions/', include('admissions.urls')),
     path('documents/', include('documents.urls')),
+    path('exams/', include('exams.urls')),
 
     path('students/', lambda request: redirect('academics:student_list')),
     path('students/add/', lambda request: redirect('academics:student_admission')),
