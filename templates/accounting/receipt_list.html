@@ -1,0 +1,48 @@
+{% extends "base/base.html" %}
+
+{% block title %}سندات القبض{% endblock %}
+{% block page_title %}سندات القبض{% endblock %}
+
+{% block content %}
+
+<div class="opal-card">
+
+<a href="{% url 'accounting:payment_create' %}" class="btn btn-success mb-3">
+تسجيل دفعة جديدة
+</a>
+
+<table class="table table-striped">
+<thead>
+<tr>
+<th>رقم السند</th>
+<th>الطالب</th>
+<th>المبلغ</th>
+<th>التاريخ</th>
+<th>طباعة</th>
+</tr>
+</thead>
+
+<tbody>
+{% for r in receipts %}
+<tr>
+<td>{{ r.receipt_number }}</td>
+<td>{{ r.payment.invoice.student.full_name }}</td>
+<td>{{ r.payment.amount }}</td>
+<td>{{ r.created_at|date:"Y-m-d H:i" }}</td>
+<td>
+<a class="btn btn-sm btn-primary" href="{% url 'accounting:receipt_print' r.id %}" target="_blank">
+PDF
+</a>
+</td>
+</tr>
+{% empty %}
+<tr>
+<td colspan="5">لا توجد سندات قبض.</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+
+</div>
+
+{% endblock %}

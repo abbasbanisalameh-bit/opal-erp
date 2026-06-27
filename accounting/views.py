@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from .models import FeeCategory, StudentInvoice, StudentPayment
+from .models import FeeCategory, StudentInvoice, StudentPayment, Receipt
 from .forms import FeeCategoryForm, StudentInvoiceForm, StudentPaymentForm
 from academics.models import StudentRecord
 
@@ -42,8 +42,12 @@ def invoice_create(request):
 def payment_create(request):
     form = StudentPaymentForm(request.POST or None)
     if form.is_valid():
-        form.save()
-        return redirect("accounting:invoice_list")
+        payment = form.save()
+        Receipt.objects.get_or_create(
+            payment=payment,
+            defaults={"receipt_number": generate_receipt_number()}
+        )
+        return redirect("accounting:receipt_list")
     return render(request, "accounting/form.html", {"form": form, "title": "تسجيل دفعة"})
 
 
@@ -83,3 +87,18 @@ def receipt_print(request, receipt_id):
         filename=f"{receipt.receipt_number}.pdf",
     )
 
+
+from accounting.services.receipt import generate_receipt_number
+
+
+@login_required
+def receipt_list(request):
+    receipts = Receipt.objects.select_related(
+        "payment",
+        "payment__invoice",
+        "payment__invoice__student"
+    ).all().order_by("-created_at")
+
+    return render(request, "accounting/receipt_list.html", {
+        "receipts": receipts
+    })
