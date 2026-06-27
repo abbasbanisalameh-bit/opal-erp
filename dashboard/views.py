@@ -7,7 +7,7 @@ from accounting.models import StudentInvoice
 from attendance_v2.models import Attendance
 from announcements.models import Announcement
 
-from django.db.models import Sum
+from django.db.models import Sum, Count
 from django.utils import timezone
 
 
@@ -56,5 +56,8 @@ def home(request):
             "absent_today": absent_today,
             "latest_announcements": latest_announcements,
             "latest_exams": latest_exams,
+            "paid_invoices": StudentInvoice.objects.filter(paid=True).count(),
+            "unpaid_invoices": StudentInvoice.objects.filter(paid=False).count(),
+            "attendance_stats": Attendance.objects.values("status").annotate(total=Count("id")),
         },
     )
