@@ -77,7 +77,7 @@ def attendance_report(request):
 
     if grade:
         records = records.filter(
-            student__enrollment__grade_id=grade
+            student__enrollments__grade_id=grade
         )
 
     return render(

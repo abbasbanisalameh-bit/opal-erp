@@ -1,0 +1,54 @@
+<aside class="opal-sidebar">
+    <div class="opal-brand">
+        <div class="opal-logo">
+            <i class="bi bi-mortarboard-fill"></i>
+        </div>
+        <div>
+            <h3>OPAL</h3>
+            <span>School ERP</span>
+        </div>
+    </div>
+
+    <nav class="opal-menu">
+        <a href="/" class="{% if request.path == '/' %}active{% endif %}">
+            <i class="bi bi-grid-1x2-fill"></i>
+            <span>لوحة التحكم</span>
+        </a>
+        <a href="/students/" class="{% if '/students/' in request.path or '/academics/students/' in request.path %}active{% endif %}">
+            <i class="bi bi-people-fill"></i>
+            <span>الطلاب</span>
+        </a>
+        <a href="/attendance/" class="{% if '/attendance/' in request.path %}active{% endif %}">
+            <i class="bi bi-calendar-check-fill"></i>
+            <span>الحضور</span>
+        </a>
+        <a href="/accounting/" class="{% if '/accounting/' in request.path %}active{% endif %}">
+            <i class="bi bi-cash-stack"></i>
+            <span>النظام المالي</span>
+        </a>
+        <a href="/exams/" class="{% if '/exams/' in request.path %}active{% endif %}">
+            <i class="bi bi-journal-check"></i>
+            <span>الامتحانات والنتائج</span>
+        </a>
+        <a href="/documents/" class="{% if '/documents/' in request.path %}active{% endif %}">
+            <i class="bi bi-file-earmark-text-fill"></i>
+            <span>الوثائق</span>
+        </a>
+        <a href="/parent/" class="{% if '/parent/' in request.path %}active{% endif %}">
+            <i class="bi bi-person-heart"></i>
+            <span>بوابة أولياء الأمور</span>
+        </a>
+        <a href="/admin/">
+            <i class="bi bi-gear-fill"></i>
+            <span>الإدارة</span>
+        </a>
+    </nav>
+
+    <form method="post" action="/accounts/logout/" class="opal-logout-form">
+        {% csrf_token %}
+        <button class="btn btn-outline-light w-100">
+            <i class="bi bi-box-arrow-right"></i>
+            تسجيل الخروج
+        </button>
+    </form>
+</aside>

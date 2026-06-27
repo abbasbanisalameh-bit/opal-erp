@@ -10,159 +10,46 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <link href="{% static 'css/opal_erp.css' %}" rel="stylesheet">
 
-    <style>
-        .opal-announcement{
-            width:100%;
-            height:38px;
-            overflow:hidden;
-            background:linear-gradient(90deg,#0ea5e9,#06b6d4);
-            color:#fff;
-            border-radius:10px;
-            margin-bottom:18px;
-            position:relative;
-            box-shadow:0 5px 15px rgba(0,0,0,.15);
-        }
-
-        .opal-announcement-track{
-            position:absolute;
-            white-space:nowrap;
-            padding-top:8px;
-            font-weight:bold;
-            font-size:14px;
-            animation:newsTicker 20s linear infinite;
-        }
-
-        @keyframes newsTicker{
-            from{
-                transform:translateX(100%);
-            }
-            to{
-                transform:translateX(-100%);
-            }
-        }
-
-        .opal-announcement:hover .opal-announcement-track{
-            animation-play-state:paused;
-        }
-    </style>
-
     {% block extra_css %}{% endblock %}
 </head>
-
 <body>
-
 <div class="opal-layout">
 
-    <aside class="opal-sidebar">
-
-        <div class="opal-brand">
-            <div class="opal-logo">
-                <i class="bi bi-mortarboard-fill"></i>
-            </div>
-            <div>
-                <h3>OPAL</h3>
-                <span>School ERP</span>
-            </div>
-        </div>
-
-        <nav class="opal-menu">
-
-            <a href="/">
-                <i class="bi bi-grid-1x2-fill"></i>
-                <span>لوحة التحكم</span>
-            </a>
-
-            <a href="/students/">
-                <i class="bi bi-people-fill"></i>
-                <span>الطلاب</span>
-            </a>
-
-            <a href="#">
-                <i class="bi bi-person-workspace"></i>
-                <span>المعلمون</span>
-            </a>
-
-            <a href="#">
-                <i class="bi bi-calendar-check-fill"></i>
-                <span>الحضور</span>
-            </a>
-
-            <a href="#">
-                <i class="bi bi-cash-stack"></i>
-                <span>الرسوم المالية</span>
-            </a>
-
-            <a href="#">
-                <i class="bi bi-bar-chart-fill"></i>
-                <span>التقارير</span>
-            </a>
-
-            <a href="/exams/">
-                <i class="bi bi-journal-check"></i>
-                <span>الامتحانات والنتائج</span>
-            </a>
-
-            <a href="/accounting/">
-                <i class="bi bi-cash-stack"></i>
-                <span>النظام المالي</span>
-            </a>
-
-
-            <a href="/documents/">
-                <i class="bi bi-file-earmark-text-fill"></i>
-                <span>الوثائق</span>
-            </a>
-
-
-            <a href="#">
-                <i class="bi bi-gear-fill"></i>
-                <span>الإعدادات</span>
-            </a>
-
-        </nav>
-
-        <form method="post" action="/accounts/logout/" style="margin-top:25px;">
-            {% csrf_token %}
-            <button class="btn btn-outline-light w-100">
-                <i class="bi bi-box-arrow-right"></i>
-                تسجيل الخروج
-            </button>
-        </form>
-
-    </aside>
+    {% include "includes/sidebar.html" %}
 
     <main class="opal-main">
+        {% if active_announcement %}
+        <div class="opal-announcement opal-announcement-{{ active_announcement.announcement_type }}">
+            <div class="opal-announcement-track" style="animation-duration: {{ active_announcement.speed_seconds }}s;">
+                📢 <strong>{{ active_announcement.title }}</strong>
+                &nbsp;&nbsp;—&nbsp;&nbsp;
+                {{ active_announcement.message }}
+            </div>
+        </div>
+        {% endif %}
 
-        
-{% if active_announcement %}
-<div class="opal-announcement opal-announcement-{{ active_announcement.announcement_type }}">
-    <div class="opal-announcement-track"
-         style="animation-duration: {{ active_announcement.speed_seconds }}s;">
-        📢 <strong>{{ active_announcement.title }}</strong>
-        &nbsp;&nbsp;—&nbsp;&nbsp;
-        {{ active_announcement.message }}
-    </div>
-</div>
-{% endif %}
-
-{% include "includes/topbar.html" %}
+        {% include "includes/topbar.html" %}
 
         <div class="page-heading">
             <h1>{% block page_title %}لوحة التحكم{% endblock %}</h1>
             <p>{% block page_subtitle %}نظام إدارة مدرسة أوبال الدولية{% endblock %}</p>
         </div>
 
+        {% if messages %}
+        <div class="opal-messages">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
         {% block content %}{% endblock %}
-
     </main>
-
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="{% static 'js/opal_erp.js' %}"></script>
-
 {% block extra_js %}{% endblock %}
-
 </body>
 </html>

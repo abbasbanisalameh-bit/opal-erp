@@ -19,6 +19,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = [
     "Opalschool2016.pythonanywhere.com",
+    "opalschool2016.pythonanywhere.com",
     "localhost",
     "127.0.0.1",
 ]

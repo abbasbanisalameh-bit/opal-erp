@@ -1,80 +1,10 @@
-
-{% extends "base/dashboard_base.html" %}
-
+{% extends "base/base.html" %}
 {% block title %}إدارة الطلاب{% endblock %}
+{% block nav_students %}active{% endblock %}
 {% block page_title %}إدارة الطلاب{% endblock %}
-
 {% block content %}
-
-<section class="stats-grid">
-    <div class="stat-card">
-        <span>إجمالي الطلاب</span>
-        <h2>{{ students.count }}</h2>
-    </div>
-
-    <div class="stat-card">
-        <span>النظام</span>
-        <h2>نشط</h2>
-    </div>
-
-    <div class="stat-card">
-        <span>الرسوم</span>
-        <h2>متابعة</h2>
-    </div>
-</section>
-
-<section class="panel">
-    <div class="panel-header">
-        <h2>قائمة الطلاب</h2>
-        <a class="primary-btn" href="{% url 'student_create' %}">+ إضافة طالب</a>
-    </div>
-
-    <div class="table-wrap">
-        <table class="opal-table">
-            <thead>
-                <tr>
-                    <th>الصورة</th>
-                    <th>رقم الطالب</th>
-                    <th>الاسم</th>
-                    <th>اسم الأب</th>
-                    <th>الصف</th>
-                    <th>الشعبة</th>
-                    <th>الهاتف</th>
-                    <th>المتبقي</th>
-                    <th>إجراءات</th>
-                </tr>
-            </thead>
-
-            <tbody>
-                {% for student in students %}
-                <tr>
-                    <td>
-                        {% if student.photo %}
-                            <img class="student-img" src="{{ student.photo.url }}">
-                        {% else %}
-                            <div class="student-img no-img">👤</div>
-                        {% endif %}
-                    </td>
-                    <td>{{ student.student_number }}</td>
-                    <td>{{ student.full_name }}</td>
-                    <td>{{ student.father_name }}</td>
-                    <td>{{ student.grade }}</td>
-                    <td>{{ student.section }}</td>
-                    <td>{{ student.phone }}</td>
-                    <td>{{ student.remaining_fees }}</td>
-                    <td>
-                        <a class="edit-link" href="{% url 'student_update' student.id %}">تعديل</a>
-                        <a class="delete-link" href="{% url 'student_delete' student.id %}">حذف</a>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="9">لا يوجد طلاب حتى الآن</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</section>
-
+<div class="opal-card">
+    <p class="mb-0">يتم استخدام صفحة الطلاب الرئيسية من النظام الأكاديمي.</p>
+    <a class="btn btn-info mt-3" href="{% url 'academics:student_list' %}">فتح قائمة الطلاب</a>
+</div>
 {% endblock %}

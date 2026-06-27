@@ -1,152 +1,194 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-<meta charset="UTF-8">
-<title>لوحة تحكم أوبال</title>
+{% extends "base/base.html" %}
 
-<style>
-*{box-sizing:border-box;font-family:Tahoma,Arial,sans-serif}
-body{margin:0;background:#061120;color:#fff}
-.app{display:flex;min-height:100vh;background:radial-gradient(circle at 70% 10%,#0f766e55,transparent 25%),#061120}
-.sidebar{width:280px;background:#071426;border-left:1px solid #1f3552;padding:24px}
-.logo{display:flex;gap:14px;align-items:center;margin-bottom:35px}
-.logo-icon{width:58px;height:58px;border-radius:16px;background:#14b8a6;display:flex;align-items:center;justify-content:center;font-size:30px}
-.logo h1{margin:0;color:#19e6c1;font-size:34px}
-.logo p{margin:4px 0;color:#dbeafe}
-.menu a{display:flex;justify-content:space-between;align-items:center;color:#dbeafe;text-decoration:none;padding:17px 18px;border-radius:14px;margin-bottom:10px;background:#0d1c31;border:1px solid #1e334f}
-.menu a.active{background:linear-gradient(90deg,#0f766e,#14b8a6);box-shadow:0 0 20px #14b8a655}
-.logout{margin-top:40px;color:#fb7185;background:#0d1c31;border:1px solid #1e334f;padding:17px;border-radius:14px}
-.main{flex:1;padding:28px 34px}
-.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:35px}
-.search{background:#0d1c31;border:1px solid #1e334f;border-radius:14px;padding:14px 22px;color:#94a3b8;width:260px}
-.user{display:flex;gap:12px;align-items:center}
-.user-img{width:48px;height:48px;border-radius:50%;background:#14b8a6;display:flex;align-items:center;justify-content:center;font-weight:bold;color:#061120}
-.title h2{font-size:42px;margin:0}
-.title p{color:#cbd5e1;font-size:20px}
-.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin:28px 0}
-.card{background:linear-gradient(145deg,#0d1c31,#0a1728);border:1px solid #1e334f;border-radius:18px;padding:24px;box-shadow:0 18px 40px #0006}
-.icon{width:58px;height:58px;border-radius:16px;background:#0f766e;display:flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:15px}
-.card h3{margin:0;color:#cbd5e1;font-size:17px}
-.card strong{display:block;font-size:34px;margin:10px 0}
-.card small{color:#22c55e}
-.panel{background:linear-gradient(145deg,#0d1c31,#091729);border:1px solid #1e334f;border-radius:20px;padding:24px;margin-bottom:20px;box-shadow:0 18px 40px #0005}
-.panel h3{margin-top:0;font-size:24px}
-.chart{height:270px;display:flex;align-items:end;gap:28px;border-bottom:1px solid #334155;border-right:1px solid #334155;padding:20px}
-.bar{flex:1;background:linear-gradient(#22d3ee,#14b8a6);border-radius:10px 10px 0 0;box-shadow:0 0 20px #14b8a655}
-.grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px}
-.activity div{padding:15px;border-bottom:1px solid #1e334f;color:#cbd5e1}
-.ring{width:190px;height:190px;border-radius:50%;margin:auto;background:conic-gradient(#14b8a6 0 65%,#3b82f6 65% 85%,#a855f7 85% 100%);display:flex;align-items:center;justify-content:center}
-.ring span{width:125px;height:125px;background:#0b1728;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:30px}
-table{width:100%;border-collapse:collapse}
-th,td{padding:15px;border-bottom:1px solid #1e334f;text-align:center}
-th{background:#101f35;color:#a7f3d0}
-@media(max-width:900px){.app{flex-direction:column}.sidebar{width:100%}.cards,.grid{grid-template-columns:1fr}.main{padding:18px}.title h2{font-size:30px}}
-</style>
-</head>
+{% block title %}لوحة التحكم | OPAL ERP{% endblock %}
+{% block nav_dashboard %}active{% endblock %}
+{% block page_title %}لوحة التحكم الرئيسية{% endblock %}
+{% block page_subtitle %}نظرة شاملة على المدرسة والطلاب والحضور والرسوم{% endblock %}
 
-<body>
-<div class="app">
+{% block content %}
+<section class="dashboard-grid">
+    <div class="dashboard-card">
+        <span>إجمالي الطلاب</span>
+        <h2>{{ students|default:0 }}</h2>
+    </div>
 
-<aside class="sidebar">
-  <div class="logo">
-    <div class="logo-icon">🎓</div>
+    <div class="dashboard-card">
+        <span>إجمالي المعلمين</span>
+        <h2>{{ teachers|default:0 }}</h2>
+    </div>
+
+    <div class="dashboard-card">
+        <span>الشعب الدراسية</span>
+        <h2>{{ sections|default:0 }}</h2>
+    </div>
+
+    <div class="dashboard-card">
+        <span>نسبة الحضور</span>
+        <h2>{{ attendance_percent|default:0 }}%</h2>
+    </div>
+
+    <div class="dashboard-card">
+        <span>الرسوم المحصلة</span>
+        <h2>{{ paid_amount|default:0 }}</h2>
+    </div>
+
+    <div class="dashboard-card">
+        <span>المستحقات</span>
+        <h2>{{ outstanding|default:0 }}</h2>
+    </div>
+</section>
+
+<section class="dashboard-layout">
     <div>
-      <h1>OPAL</h1>
-      <p>School System</p>
-      <p>مدرسة أوبال الدولية</p>
+        <div class="dashboard-panel">
+            <h3>الإيرادات الشهرية</h3>
+            <div class="chart-box">
+                <canvas id="incomeChart"></canvas>
+            </div>
+        </div>
+
+        <div class="dashboard-panel">
+            <h3>آخر الطلاب المضافين</h3>
+            <div class="table-wrap">
+                <table class="opal-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>الطالب</th>
+                            <th>رقم الطالب</th>
+                            <th>الهاتف</th>
+                            <th>الحالة</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for s in latest_students %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ s.full_name }}</td>
+                            <td>{{ s.student_number }}</td>
+                            <td>{{ s.phone|default:"-" }}</td>
+                            <td>
+                                {% if s.is_active %}
+                                <span class="badge bg-success">نشط</span>
+                                {% else %}
+                                <span class="badge bg-secondary">غير نشط</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center text-secondary">لا يوجد طلاب بعد.</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <nav class="menu">
-    <a class="active" href="/">الرئيسية <span>›</span></a>
-    <a href="/students/">الطلاب <span>›</span></a>
-    <a href="#">المعلمون <span>›</span></a>
-    <a href="#">الحضور <span>›</span></a>
-    <a href="#">الرسوم <span>›</span></a>
-    <a href="#">التقارير <span>›</span></a>
-    <a href="#">الإعدادات <span>›</span></a>
-  </nav>
+    <div>
+        <div class="dashboard-panel">
+            <h3>الحضور اليوم</h3>
+            <div class="chart-box">
+                <canvas id="attendanceChart"></canvas>
+            </div>
+            <div class="d-flex justify-content-between mt-3 text-secondary">
+                <span>حاضر: {{ present_today|default:0 }}</span>
+                <span>غائب: {{ absent_today|default:0 }}</span>
+            </div>
+        </div>
 
-  <div class="logout">تسجيل الخروج</div>
-</aside>
+        <div class="dashboard-panel quick-list">
+            <h3>آخر الأنشطة</h3>
+            {% for item in latest_activities %}
+                <div>{{ item }}</div>
+            {% empty %}
+                <div>تم تجهيز لوحة التحكم الموحدة.</div>
+                <div>يمكنك الآن إدارة النظام من واجهة واحدة.</div>
+            {% endfor %}
+        </div>
 
-<main class="main">
-
-  <div class="top">
-    <input class="search" placeholder="بحث...">
-    <div class="user">
-      <span>مرحبًا بك<br>مدير النظام</span>
-      <div class="user-img">O</div>
+        <div class="dashboard-panel quick-list">
+            <h3>روابط سريعة</h3>
+            <div><a class="text-info text-decoration-none" href="/students/">إدارة الطلاب</a></div>
+            <div><a class="text-info text-decoration-none" href="/attendance/">تسجيل الحضور</a></div>
+            <div><a class="text-info text-decoration-none" href="/accounting/">النظام المالي</a></div>
+            <div><a class="text-info text-decoration-none" href="/exams/">الامتحانات والنتائج</a></div>
+        </div>
     </div>
-  </div>
+</section>
 
-  <div class="title">
-    <h2>لوحة التحكم الرئيسية</h2>
-    <p>نظام إدارة مدرسة أوبال الدولية</p>
-  </div>
-
-  <section class="cards">
-    <div class="card"><div class="icon">👥</div><h3>إجمالي الطلاب</h3><strong>0</strong><small>↑ 12% عن الشهر الماضي</small></div>
-    <div class="card"><div class="icon">👨‍🏫</div><h3>إجمالي المعلمين</h3><strong>0</strong><small>↑ 5% عن الشهر الماضي</small></div>
-    <div class="card"><div class="icon">✅</div><h3>نسبة الحضور</h3><strong>96%</strong><small>↑ 8% عن الشهر الماضي</small></div>
-    <div class="card"><div class="icon">💳</div><h3>إجمالي الرسوم</h3><strong>0</strong><small>دينار</small></div>
-  </section>
-
-  <section class="panel">
-    <h3>نظرة عامة على الحضور</h3>
-    <div class="chart">
-      <div class="bar" style="height:50%"></div>
-      <div class="bar" style="height:65%"></div>
-      <div class="bar" style="height:75%"></div>
-      <div class="bar" style="height:48%"></div>
-      <div class="bar" style="height:90%"></div>
-      <div class="bar" style="height:70%"></div>
-      <div class="bar" style="height:55%"></div>
+<section class="dashboard-layout mt-2">
+    <div class="dashboard-panel">
+        <h3>آخر الإعلانات</h3>
+        <div class="quick-list">
+            {% for a in latest_announcements %}
+                <div>{{ a }}</div>
+            {% empty %}
+                <div>لا توجد إعلانات.</div>
+            {% endfor %}
+        </div>
     </div>
-  </section>
 
-  <div class="grid">
-    <section class="panel activity">
-      <h3>نشاطات سريعة</h3>
-      <div>تم إضافة طالب جديد</div>
-      <div>تم إضافة معلم جديد</div>
-      <div>تم تسجيل حضور جديد</div>
-      <div>تم دفع رسوم طالب</div>
-    </section>
+    <div class="dashboard-panel">
+        <h3>آخر الامتحانات</h3>
+        <div class="quick-list">
+            {% for e in latest_exams %}
+                <div>{{ e }}</div>
+            {% empty %}
+                <div>لا توجد امتحانات.</div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
 
-    <section class="panel">
-      <h3>إحصائيات سريعة</h3>
-      <div class="ring"><span>0</span></div>
-    </section>
+{{ monthly_income_labels|json_script:"income-labels" }}
+{{ monthly_income_values|json_script:"income-values" }}
+{% endblock %}
 
-    <section class="panel activity">
-      <h3>التقارير</h3>
-      <div>تقرير الحضور الشهري</div>
-      <div>تقرير الرسوم</div>
-      <div>تقرير الطلاب</div>
-      <div>تقرير المعلمين</div>
-    </section>
-  </div>
+{% block extra_js %}
+<script>
+const labels = JSON.parse(document.getElementById("income-labels")?.textContent || "[]");
+const values = JSON.parse(document.getElementById("income-values")?.textContent || "[]");
 
-  <section class="panel">
-    <h3>آخر الطلاب المضافين</h3>
-    <table>
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>اسم الطالب</th>
-          <th>الصف</th>
-          <th>الشعبة</th>
-          <th>تاريخ الإضافة</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr><td colspan="5">لا يوجد طلاب بعد</td></tr>
-      </tbody>
-    </table>
-  </section>
+new Chart(document.getElementById("incomeChart"), {
+    type: "bar",
+    data: {
+        labels: labels.length ? labels : ["يناير","فبراير","مارس","أبريل","مايو","يونيو"],
+        datasets: [{
+            label: "الإيرادات",
+            data: values.length ? values : [0,0,0,0,0,0],
+            backgroundColor: "rgba(20,184,166,.85)",
+            borderRadius: 10
+        }]
+    },
+    options: {
+        responsive:true,
+        maintainAspectRatio:false,
+        plugins:{legend:{labels:{color:"#dbeafe"}}},
+        scales:{
+            x:{ticks:{color:"#dbeafe"},grid:{color:"#1e334f"}},
+            y:{ticks:{color:"#dbeafe"},grid:{color:"#1e334f"}}
+        }
+    }
+});
 
-</main>
-</div>
-</body>
-</html>
+new Chart(document.getElementById("attendanceChart"), {
+    type: "doughnut",
+    data: {
+        labels: ["حاضر","غائب"],
+        datasets: [{
+            data: [{{ present_today|default:0 }}, {{ absent_today|default:0 }}],
+            backgroundColor: ["#14b8a6","#fb7185"],
+            borderWidth: 0
+        }]
+    },
+    options: {
+        responsive:true,
+        maintainAspectRatio:false,
+        cutout:"68%",
+        plugins:{legend:{position:"bottom",labels:{color:"#dbeafe"}}}
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,195 @@
+{% extends "base/base.html" %}
+
+{% block title %}لوحة التحكم | OPAL ERP{% endblock %}
+{% block page_title %}لوحة التحكم{% endblock %}
+{% block page_subtitle %}نظام إدارة مدرسة أوبال الدولية{% endblock %}
+
+{% block content %}
+<div class="opal-page-dashboard final-dashboard-v2">
+
+    <section class="opal-pro-kpi-row">
+        <article class="opal-pro-kpi kpi-blue">
+            <div class="kpi-icon"><i class="bi bi-people-fill"></i></div>
+            <div class="kpi-content">
+                <h3>عدد الطلاب</h3>
+                <strong>{{ students|default:0 }}</strong>
+                <span>إجمالي الطلاب</span>
+            </div>
+        </article>
+
+        <article class="opal-pro-kpi kpi-green">
+            <div class="kpi-icon"><i class="bi bi-clipboard-check-fill"></i></div>
+            <div class="kpi-content">
+                <h3>عدد الامتحانات</h3>
+                <strong>{{ exams|default:0 }}</strong>
+                <span>إجمالي الامتحانات</span>
+            </div>
+        </article>
+
+        <article class="opal-pro-kpi kpi-red">
+            <div class="kpi-icon"><i class="bi bi-person-x-fill"></i></div>
+            <div class="kpi-content">
+                <h3>غياب اليوم</h3>
+                <strong>{{ absent_today|default:0 }}</strong>
+                <span>عدد الغيابات</span>
+            </div>
+        </article>
+
+        <article class="opal-pro-kpi kpi-yellow">
+            <div class="kpi-icon"><i class="bi bi-wallet2"></i></div>
+            <div class="kpi-content">
+                <h3>المستحقات المالية</h3>
+                <strong>{{ outstanding|default:0 }}</strong>
+                <span>إجمالي المستحقات</span>
+            </div>
+        </article>
+    </section>
+
+    <section class="opal-pro-main-grid">
+        <div class="opal-pro-panel attendance-panel">
+            <div class="panel-title">
+                <i class="bi bi-pie-chart-fill"></i>
+                <h3>توزيع حالات الحضور</h3>
+            </div>
+            <div class="opal-pro-chart opal-pro-donut-chart">
+                <canvas id="attendanceChart"></canvas>
+            </div>
+            <div class="attendance-legend">
+                <div><span class="dot present"></span><span>حاضر</span><b>{{ present_today|default:0 }}</b></div>
+                <div><span class="dot absent"></span><span>غائب</span><b>{{ absent_today|default:0 }}</b></div>
+                <div><span class="dot late"></span><span>متأخر</span><b>0</b></div>
+                <div><span class="dot excused"></span><span>مستأذن</span><b>0</b></div>
+            </div>
+        </div>
+
+        <div class="opal-pro-panel income-panel">
+            <div class="panel-title">
+                <i class="bi bi-graph-up-arrow"></i>
+                <h3>الإيرادات الشهرية</h3>
+            </div>
+            <div class="opal-pro-chart">
+                <canvas id="incomeChart"></canvas>
+            </div>
+        </div>
+
+        <div class="opal-pro-panel finance-panel">
+            <div class="panel-title">
+                <i class="bi bi-cash-coin"></i>
+                <h3>ملخص مالي</h3>
+            </div>
+            <div class="finance-summary paid">
+                <span>الفواتير المدفوعة</span>
+                <strong>{{ paid_invoices|default:0 }}</strong>
+                <small>إجمالي المبالغ المدفوعة</small>
+            </div>
+            <div class="finance-summary unpaid">
+                <span>الفواتير غير المدفوعة</span>
+                <strong>{{ unpaid_invoices|default:0 }}</strong>
+                <small>إجمالي الفواتير غير المدفوعة</small>
+            </div>
+        </div>
+    </section>
+
+    <section class="opal-pro-bottom-grid">
+        <div class="opal-pro-panel list-panel">
+            <div class="panel-title">
+                <i class="bi bi-megaphone-fill"></i>
+                <h3>آخر الإعلانات</h3>
+            </div>
+            <div class="opal-pro-list">
+                {% for a in latest_announcements %}
+                    <div class="opal-pro-list-item">
+                        <span>{{ a.title|default:a }}</span>
+                        <small>جديد</small>
+                    </div>
+                {% empty %}
+                    <div class="opal-pro-empty">لا توجد إعلانات بعد.</div>
+                {% endfor %}
+            </div>
+            <a href="#" class="opal-pro-more">عرض جميع الإعلانات <i class="bi bi-arrow-left"></i></a>
+        </div>
+
+        <div class="opal-pro-panel list-panel">
+            <div class="panel-title">
+                <i class="bi bi-journal-check"></i>
+                <h3>آخر الامتحانات</h3>
+            </div>
+            <div class="opal-pro-list">
+                {% for exam in latest_exams %}
+                    <div class="opal-pro-list-item">
+                        <span>{{ exam }}</span>
+                        <small>{{ exam.date|default:"-" }}</small>
+                    </div>
+                {% empty %}
+                    <div class="opal-pro-empty">لا توجد امتحانات بعد.</div>
+                {% endfor %}
+            </div>
+            <a href="/exams/" class="opal-pro-more">عرض جميع الامتحانات <i class="bi bi-arrow-left"></i></a>
+        </div>
+    </section>
+
+    <footer class="opal-pro-footer">© 2025 OPAL School ERP - جميع الحقوق محفوظة.</footer>
+</div>
+
+{{ monthly_income_labels|json_script:"income-labels" }}
+{{ monthly_income_values|json_script:"income-values" }}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+    const labelsEl = document.getElementById("income-labels");
+    const valuesEl = document.getElementById("income-values");
+    const labels = JSON.parse(labelsEl?.textContent || "[]");
+    const values = JSON.parse(valuesEl?.textContent || "[]");
+
+    const incomeCanvas = document.getElementById("incomeChart");
+    if (incomeCanvas) {
+        new Chart(incomeCanvas, {
+            type: "bar",
+            data: {
+                labels: labels.length ? labels : ["يناير","فبراير","مارس","أبريل","مايو","يونيو"],
+                datasets: [{
+                    label: "الإيرادات (د.أ)",
+                    data: values.length ? values : [0,0,0,0,0,0],
+                    backgroundColor: "rgba(20,184,166,.9)",
+                    borderRadius: 12
+                }]
+            },
+            options: {
+                responsive:true,
+                maintainAspectRatio:false,
+                plugins:{legend:{labels:{color:"#dbeafe"}}},
+                scales:{
+                    x:{ticks:{color:"#dbeafe"},grid:{color:"rgba(30,51,79,.65)"}},
+                    y:{ticks:{color:"#dbeafe"},grid:{color:"rgba(30,51,79,.65)"}}
+                }
+            }
+        });
+    }
+
+    const attendanceCanvas = document.getElementById("attendanceChart");
+    if (attendanceCanvas) {
+        const present = Number("{{ present_today|default:0 }}") || 0;
+        const absent = Number("{{ absent_today|default:0 }}") || 0;
+        new Chart(attendanceCanvas, {
+            type: "doughnut",
+            data: {
+                labels: ["حاضر","غائب","متأخر","مستأذن"],
+                datasets: [{
+                    data: [present, absent, 0, 0],
+                    backgroundColor: ["#22c55e", "#ef4444", "#f59e0b", "#64748b"],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive:true,
+                maintainAspectRatio:false,
+                cutout:"64%",
+                plugins:{legend:{display:false}}
+            }
+        });
+    }
+})();
+</script>
+{% endblock %}

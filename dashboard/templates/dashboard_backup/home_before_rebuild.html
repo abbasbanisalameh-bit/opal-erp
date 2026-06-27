@@ -1,0 +1,140 @@
+{% extends "base/base.html" %}
+
+{% block title %}لوحة التحكم | OPAL ERP{% endblock %}
+{% block page_title %}لوحة التحكم{% endblock %}
+{% block page_subtitle %}نظام إدارة مدرسة أوبال الدولية{% endblock %}
+
+{% block content %}
+<section class="opal-final-kpis">
+    <div class="opal-final-card card-blue">
+        <div class="icon">👥</div>
+        <small>عدد الطلاب</small>
+        <strong>{{ students|default:0 }}</strong>
+        <small>إجمالي الطلاب</small>
+    </div>
+    <div class="opal-final-card card-green">
+        <div class="icon">📋</div>
+        <small>عدد الامتحانات</small>
+        <strong>{{ exams|default:0 }}</strong>
+        <small>إجمالي الامتحانات</small>
+    </div>
+    <div class="opal-final-card card-red">
+        <div class="icon">🚫</div>
+        <small>غياب اليوم</small>
+        <strong>{{ absent_today|default:0 }}</strong>
+        <small>عدد الغيابات</small>
+    </div>
+    <div class="opal-final-card card-yellow">
+        <div class="icon">💳</div>
+        <small>المستحقات المالية</small>
+        <strong>{{ outstanding|default:0 }}</strong>
+        <small>إجمالي المستحقات</small>
+    </div>
+</section>
+
+<section class="opal-final-grid">
+    <div class="opal-final-panel">
+        <h3>توزيع حالات الحضور</h3>
+        <div class="opal-chart">
+            <canvas id="attendanceChart"></canvas>
+        </div>
+    </div>
+
+    <div class="opal-final-panel">
+        <h3>الإيرادات الشهرية</h3>
+        <div class="opal-chart">
+            <canvas id="incomeChart"></canvas>
+        </div>
+    </div>
+
+    <div class="opal-final-panel">
+        <h3>ملخص مالي</h3>
+        <div class="finance-box finance-paid">
+            <b>الفواتير المدفوعة</b>
+            <h2>{{ paid_invoices|default:0 }}</h2>
+            <small>إجمالي المبالغ المدفوعة</small>
+        </div>
+        <div class="finance-box finance-unpaid">
+            <b>الفواتير غير المدفوعة</b>
+            <h2>{{ unpaid_invoices|default:0 }}</h2>
+            <small>إجمالي الفواتير غير المدفوعة</small>
+        </div>
+    </div>
+</section>
+
+<section class="opal-bottom-grid">
+    <div class="opal-final-panel">
+        <h3>آخر الإعلانات</h3>
+        {% for a in latest_announcements %}
+            <div class="opal-list-row">
+                <span>{{ a.title|default:a }}</span>
+                <span>جديد</span>
+            </div>
+        {% empty %}
+            <div class="opal-list-row"><span>لا توجد إعلانات بعد.</span></div>
+        {% endfor %}
+    </div>
+
+    <div class="opal-final-panel">
+        <h3>آخر الامتحانات</h3>
+        {% for exam in latest_exams %}
+            <div class="opal-list-row">
+                <span>{{ exam }}</span>
+                <span>{{ exam.date|default:"-" }}</span>
+            </div>
+        {% empty %}
+            <div class="opal-list-row"><span>لا توجد امتحانات بعد.</span></div>
+        {% endfor %}
+    </div>
+</section>
+
+{{ monthly_income_labels|json_script:"income-labels" }}
+{{ monthly_income_values|json_script:"income-values" }}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const labels = JSON.parse(document.getElementById("income-labels")?.textContent || "[]");
+const values = JSON.parse(document.getElementById("income-values")?.textContent || "[]");
+
+new Chart(document.getElementById("incomeChart"), {
+    type: "bar",
+    data: {
+        labels: labels,
+        datasets: [{
+            label: "الإيرادات",
+            data: values,
+            backgroundColor: "rgba(20,184,166,.9)",
+            borderRadius: 12
+        }]
+    },
+    options: {
+        responsive:true,
+        maintainAspectRatio:false,
+        plugins:{legend:{labels:{color:"#dbeafe"}}},
+        scales:{
+            x:{ticks:{color:"#dbeafe"},grid:{color:"#1e334f"}},
+            y:{ticks:{color:"#dbeafe"},grid:{color:"#1e334f"}}
+        }
+    }
+});
+
+new Chart(document.getElementById("attendanceChart"), {
+    type: "doughnut",
+    data: {
+        labels: ["حاضر","غائب"],
+        datasets: [{
+            data: [{{ present_today|default:0 }}, {{ absent_today|default:0 }}],
+            backgroundColor: ["#22c55e","#ef4444"],
+            borderWidth: 0
+        }]
+    },
+    options: {
+        responsive:true,
+        maintainAspectRatio:false,
+        cutout:"65%",
+        plugins:{legend:{position:"right",labels:{color:"#dbeafe"}}}
+    }
+});
+</script>
+{% endblock %}
