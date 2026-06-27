@@ -1,0 +1,58 @@
+{% extends "base/base.html" %}
+
+{% block title %}تقرير الحضور{% endblock %}
+{% block page_title %}تقرير الحضور{% endblock %}
+
+{% block content %}
+
+<div class="opal-card">
+
+<h3>تقرير الحضور</h3>
+
+<table class="table table-striped">
+
+<thead>
+<tr>
+<th>التاريخ</th>
+<th>الطالب</th>
+<th>الحالة</th>
+<th>الملاحظات</th>
+<th>الإجراء</th>
+</tr>
+</thead>
+
+<tbody>
+
+{% for r in records %}
+
+<tr>
+
+<td>{{ r.date }}</td>
+<td>{{ r.student.full_name }}</td>
+<td>{{ r.get_status_display }}</td>
+<td>{{ r.notes }}</td>
+
+<td>
+<a class="btn btn-warning btn-sm"
+href="{% url 'attendance_v2:attendance_edit' r.id %}">
+تعديل
+</a>
+</td>
+
+</tr>
+
+{% empty %}
+
+<tr>
+<td colspan="5">لا توجد سجلات حضور.</td>
+</tr>
+
+{% endfor %}
+
+</tbody>
+
+</table>
+
+</div>
+
+{% endblock %}
