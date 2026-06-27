@@ -127,7 +127,36 @@
 
 
 
+
+
+<h4>الإشعارات</h4>
+
+<ul class="list-group mb-4">
+
+{% for n in notifications %}
+
+<li class="list-group-item">
+
+<strong>{{ n.title }}</strong><br>
+
+{{ n.body }}
+
+</li>
+
+{% empty %}
+
+<li class="list-group-item">
+
+لا توجد إشعارات.
+
+</li>
+
+{% endfor %}
+
+</ul>
+
 <h4>الرسائل</h4>
+
 
 <table class="table table-striped">
 

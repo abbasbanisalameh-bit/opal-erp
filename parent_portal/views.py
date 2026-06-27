@@ -7,6 +7,7 @@ from attendance_v2.models import Attendance
 from announcements.models import Announcement
 from exams.models import Exam, StudentMark
 from .messages_models import ParentMessage
+from .notifications import Notification
 
 
 @login_required
@@ -38,6 +39,7 @@ def dashboard(request):
             "announcements": announcements,
             "exams": exams,
             "messages":ParentMessage.objects.filter(student=student)[:10],
+            "notifications":Notification.objects.filter(student=student)[:10],
             "marks": StudentMark.objects.filter(
                 student=student
             ).select_related("exam"),
