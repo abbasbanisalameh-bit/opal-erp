@@ -5,7 +5,7 @@ from .models import ParentProfile
 from accounting.models import StudentInvoice
 from attendance_v2.models import Attendance
 from announcements.models import Announcement
-from exams.models import Exam
+from exams.models import Exam, StudentMark
 
 
 @login_required
@@ -36,5 +36,8 @@ def dashboard(request):
             "attendance": attendance,
             "announcements": announcements,
             "exams": exams,
+            "marks": StudentMark.objects.filter(
+                student=student
+            ).select_related("exam"),
         },
     )

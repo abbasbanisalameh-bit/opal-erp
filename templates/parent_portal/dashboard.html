@@ -89,7 +89,31 @@
 
 </ul>
 
+
+<h4>نتائج الامتحانات</h4>
+
+<table class="table table-bordered">
+
+<tr>
+<th>الامتحان</th>
+<th>العلامة</th>
+</tr>
+
+{% for m in marks %}
+<tr>
+<td>{{ m.exam }}</td>
+<td>{{ m.mark }}</td>
+</tr>
+{% empty %}
+<tr>
+<td colspan="2">لا توجد علامات.</td>
+</tr>
+{% endfor %}
+
+</table>
+
 <h4>الاختبارات</h4>
+
 
 <ul>
 
