@@ -1,9 +1,133 @@
 {% extends "base/base.html" %}
 
-{% block title %}لوحة التحكم | OPAL ERP{% endblock %}
-{% block nav_dashboard %}active{% endblock %}
-{% block page_title %}لوحة التحكم الرئيسية{% endblock %}
-{% block page_subtitle %}نظرة شاملة على نظام مدرسة أوبال الدولية{% endblock %}
+{% block title %}لوحة التحكم | OPAL ERP
+
+<hr>
+
+<h3>الإيرادات الشهرية</h3>
+
+<table class="table table-bordered">
+
+<tr>
+<th>الشهر</th>
+<th>الإيراد</th>
+</tr>
+
+{% for m in monthly_income %}
+
+<tr>
+<td>{{ m.month|date:"Y-m" }}</td>
+<td>{{ m.total }}</td>
+</tr>
+
+{% empty %}
+
+<tr>
+<td colspan="2">لا توجد بيانات.</td>
+</tr>
+
+{% endfor %}
+
+</table>
+
+{% endblock %}
+
+{% block nav_dashboard %}active
+
+<hr>
+
+<h3>الإيرادات الشهرية</h3>
+
+<table class="table table-bordered">
+
+<tr>
+<th>الشهر</th>
+<th>الإيراد</th>
+</tr>
+
+{% for m in monthly_income %}
+
+<tr>
+<td>{{ m.month|date:"Y-m" }}</td>
+<td>{{ m.total }}</td>
+</tr>
+
+{% empty %}
+
+<tr>
+<td colspan="2">لا توجد بيانات.</td>
+</tr>
+
+{% endfor %}
+
+</table>
+
+{% endblock %}
+
+{% block page_title %}لوحة التحكم الرئيسية
+
+<hr>
+
+<h3>الإيرادات الشهرية</h3>
+
+<table class="table table-bordered">
+
+<tr>
+<th>الشهر</th>
+<th>الإيراد</th>
+</tr>
+
+{% for m in monthly_income %}
+
+<tr>
+<td>{{ m.month|date:"Y-m" }}</td>
+<td>{{ m.total }}</td>
+</tr>
+
+{% empty %}
+
+<tr>
+<td colspan="2">لا توجد بيانات.</td>
+</tr>
+
+{% endfor %}
+
+</table>
+
+{% endblock %}
+
+{% block page_subtitle %}نظرة شاملة على نظام مدرسة أوبال الدولية
+
+<hr>
+
+<h3>الإيرادات الشهرية</h3>
+
+<table class="table table-bordered">
+
+<tr>
+<th>الشهر</th>
+<th>الإيراد</th>
+</tr>
+
+{% for m in monthly_income %}
+
+<tr>
+<td>{{ m.month|date:"Y-m" }}</td>
+<td>{{ m.total }}</td>
+</tr>
+
+{% empty %}
+
+<tr>
+<td colspan="2">لا توجد بيانات.</td>
+</tr>
+
+{% endfor %}
+
+</table>
+
+{% endblock %}
+
 
 {% block content %}
 
@@ -141,7 +265,38 @@
 
 </div>
 
+
+
+<hr>
+
+<h3>الإيرادات الشهرية</h3>
+
+<table class="table table-bordered">
+
+<tr>
+<th>الشهر</th>
+<th>الإيراد</th>
+</tr>
+
+{% for m in monthly_income %}
+
+<tr>
+<td>{{ m.month|date:"Y-m" }}</td>
+<td>{{ m.total }}</td>
+</tr>
+
+{% empty %}
+
+<tr>
+<td colspan="2">لا توجد بيانات.</td>
+</tr>
+
+{% endfor %}
+
+</table>
+
 {% endblock %}
+
 
 {% block extra_js %}
 <script>
@@ -184,4 +339,35 @@ if (studentsCtx) {
     });
 }
 </script>
+
+
+<hr>
+
+<h3>الإيرادات الشهرية</h3>
+
+<table class="table table-bordered">
+
+<tr>
+<th>الشهر</th>
+<th>الإيراد</th>
+</tr>
+
+{% for m in monthly_income %}
+
+<tr>
+<td>{{ m.month|date:"Y-m" }}</td>
+<td>{{ m.total }}</td>
+</tr>
+
+{% empty %}
+
+<tr>
+<td colspan="2">لا توجد بيانات.</td>
+</tr>
+
+{% endfor %}
+
+</table>
+
 {% endblock %}
+

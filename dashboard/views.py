@@ -8,6 +8,7 @@ from attendance_v2.models import Attendance
 from announcements.models import Announcement
 
 from django.db.models import Sum, Count
+from django.db.models.functions import TruncMonth
 from django.utils import timezone
 
 
@@ -41,7 +42,18 @@ def home(request):
         .order_by("-id")[:5]
     )
 
-    latest_exams = (
+    
+monthly_income=(
+    StudentInvoice.objects
+    .filter(paid=True)
+    .annotate(month=TruncMonth("due_date"))
+    .values("month")
+    .annotate(total=Sum("amount"))
+    .order_by("month")
+)
+
+latest_exams = (
+
         Exam.objects
         .order_by("-id")[:5]
     )
@@ -59,5 +71,6 @@ def home(request):
             "paid_invoices": StudentInvoice.objects.filter(paid=True).count(),
             "unpaid_invoices": StudentInvoice.objects.filter(paid=False).count(),
             "attendance_stats": Attendance.objects.values("status").annotate(total=Count("id")),
+            "monthly_income": monthly_income,
         },
     )
