@@ -69,3 +69,17 @@ def student_statement(request, student_id):
             "remaining": total_invoice - total_payment,
         },
     )
+
+from django.http import FileResponse
+from accounting.services.pdf import receipt_pdf
+
+
+@login_required
+def receipt_print(request, receipt_id):
+    receipt = get_object_or_404(Receipt, pk=receipt_id)
+    return FileResponse(
+        receipt_pdf(receipt),
+        as_attachment=False,
+        filename=f"{receipt.receipt_number}.pdf",
+    )
+
