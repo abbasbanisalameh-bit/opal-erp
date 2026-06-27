@@ -55,6 +55,10 @@ def home(request):
             "paid_invoices": StudentInvoice.objects.filter(paid=True).count(),
             "unpaid_invoices": StudentInvoice.objects.filter(paid=False).count(),
             "attendance_stats": Attendance.objects.values("status").annotate(total=Count("id")),
+            
             "monthly_income": monthly_income,
+            "total_income": StudentInvoice.objects.filter(paid=True).aggregate(total=Sum("amount"))["total"] or 0,
+            "total_unpaid": StudentInvoice.objects.filter(paid=False).aggregate(total=Sum("amount"))["total"] or 0,
+        
         },
     )
