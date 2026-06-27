@@ -1,152 +1,104 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-<meta charset="UTF-8">
-<title>لوحة تحكم أوبال</title>
+{% extends "base/base.html" %}
 
-<style>
-*{box-sizing:border-box;font-family:Tahoma,Arial,sans-serif}
-body{margin:0;background:#061120;color:#fff}
-.app{display:flex;min-height:100vh;background:radial-gradient(circle at 70% 10%,#0f766e55,transparent 25%),#061120}
-.sidebar{width:280px;background:#071426;border-left:1px solid #1f3552;padding:24px}
-.logo{display:flex;gap:14px;align-items:center;margin-bottom:35px}
-.logo-icon{width:58px;height:58px;border-radius:16px;background:#14b8a6;display:flex;align-items:center;justify-content:center;font-size:30px}
-.logo h1{margin:0;color:#19e6c1;font-size:34px}
-.logo p{margin:4px 0;color:#dbeafe}
-.menu a{display:flex;justify-content:space-between;align-items:center;color:#dbeafe;text-decoration:none;padding:17px 18px;border-radius:14px;margin-bottom:10px;background:#0d1c31;border:1px solid #1e334f}
-.menu a.active{background:linear-gradient(90deg,#0f766e,#14b8a6);box-shadow:0 0 20px #14b8a655}
-.logout{margin-top:40px;color:#fb7185;background:#0d1c31;border:1px solid #1e334f;padding:17px;border-radius:14px}
-.main{flex:1;padding:28px 34px}
-.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:35px}
-.search{background:#0d1c31;border:1px solid #1e334f;border-radius:14px;padding:14px 22px;color:#94a3b8;width:260px}
-.user{display:flex;gap:12px;align-items:center}
-.user-img{width:48px;height:48px;border-radius:50%;background:#14b8a6;display:flex;align-items:center;justify-content:center;font-weight:bold;color:#061120}
-.title h2{font-size:42px;margin:0}
-.title p{color:#cbd5e1;font-size:20px}
-.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin:28px 0}
-.card{background:linear-gradient(145deg,#0d1c31,#0a1728);border:1px solid #1e334f;border-radius:18px;padding:24px;box-shadow:0 18px 40px #0006}
-.icon{width:58px;height:58px;border-radius:16px;background:#0f766e;display:flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:15px}
-.card h3{margin:0;color:#cbd5e1;font-size:17px}
-.card strong{display:block;font-size:34px;margin:10px 0}
-.card small{color:#22c55e}
-.panel{background:linear-gradient(145deg,#0d1c31,#091729);border:1px solid #1e334f;border-radius:20px;padding:24px;margin-bottom:20px;box-shadow:0 18px 40px #0005}
-.panel h3{margin-top:0;font-size:24px}
-.chart{height:270px;display:flex;align-items:end;gap:28px;border-bottom:1px solid #334155;border-right:1px solid #334155;padding:20px}
-.bar{flex:1;background:linear-gradient(#22d3ee,#14b8a6);border-radius:10px 10px 0 0;box-shadow:0 0 20px #14b8a655}
-.grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px}
-.activity div{padding:15px;border-bottom:1px solid #1e334f;color:#cbd5e1}
-.ring{width:190px;height:190px;border-radius:50%;margin:auto;background:conic-gradient(#14b8a6 0 65%,#3b82f6 65% 85%,#a855f7 85% 100%);display:flex;align-items:center;justify-content:center}
-.ring span{width:125px;height:125px;background:#0b1728;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:30px}
-table{width:100%;border-collapse:collapse}
-th,td{padding:15px;border-bottom:1px solid #1e334f;text-align:center}
-th{background:#101f35;color:#a7f3d0}
-@media(max-width:900px){.app{flex-direction:column}.sidebar{width:100%}.cards,.grid{grid-template-columns:1fr}.main{padding:18px}.title h2{font-size:30px}}
-</style>
-</head>
+{% block title %}لوحة التحكم{% endblock %}
+{% block page_title %}لوحة التحكم{% endblock %}
 
-<body>
-<div class="app">
+{% block content %}
 
-<aside class="sidebar">
-  <div class="logo">
-    <div class="logo-icon">🎓</div>
-    <div>
-      <h1>OPAL</h1>
-      <p>School System</p>
-      <p>مدرسة أوبال الدولية</p>
-    </div>
-  </div>
+<div class="row">
 
-  <nav class="menu">
-    <a class="active" href="/">الرئيسية <span>›</span></a>
-    <a href="/students/">الطلاب <span>›</span></a>
-    <a href="#">المعلمون <span>›</span></a>
-    <a href="#">الحضور <span>›</span></a>
-    <a href="#">الرسوم <span>›</span></a>
-    <a href="#">التقارير <span>›</span></a>
-    <a href="#">الإعدادات <span>›</span></a>
-  </nav>
-
-  <div class="logout">تسجيل الخروج</div>
-</aside>
-
-<main class="main">
-
-  <div class="top">
-    <input class="search" placeholder="بحث...">
-    <div class="user">
-      <span>مرحبًا بك<br>مدير النظام</span>
-      <div class="user-img">O</div>
-    </div>
-  </div>
-
-  <div class="title">
-    <h2>لوحة التحكم الرئيسية</h2>
-    <p>نظام إدارة مدرسة أوبال الدولية</p>
-  </div>
-
-  <section class="cards">
-    <div class="card"><div class="icon">👥</div><h3>إجمالي الطلاب</h3><strong>0</strong><small>↑ 12% عن الشهر الماضي</small></div>
-    <div class="card"><div class="icon">👨‍🏫</div><h3>إجمالي المعلمين</h3><strong>0</strong><small>↑ 5% عن الشهر الماضي</small></div>
-    <div class="card"><div class="icon">✅</div><h3>نسبة الحضور</h3><strong>96%</strong><small>↑ 8% عن الشهر الماضي</small></div>
-    <div class="card"><div class="icon">💳</div><h3>إجمالي الرسوم</h3><strong>0</strong><small>دينار</small></div>
-  </section>
-
-  <section class="panel">
-    <h3>نظرة عامة على الحضور</h3>
-    <div class="chart">
-      <div class="bar" style="height:50%"></div>
-      <div class="bar" style="height:65%"></div>
-      <div class="bar" style="height:75%"></div>
-      <div class="bar" style="height:48%"></div>
-      <div class="bar" style="height:90%"></div>
-      <div class="bar" style="height:70%"></div>
-      <div class="bar" style="height:55%"></div>
-    </div>
-  </section>
-
-  <div class="grid">
-    <section class="panel activity">
-      <h3>نشاطات سريعة</h3>
-      <div>تم إضافة طالب جديد</div>
-      <div>تم إضافة معلم جديد</div>
-      <div>تم تسجيل حضور جديد</div>
-      <div>تم دفع رسوم طالب</div>
-    </section>
-
-    <section class="panel">
-      <h3>إحصائيات سريعة</h3>
-      <div class="ring"><span>0</span></div>
-    </section>
-
-    <section class="panel activity">
-      <h3>التقارير</h3>
-      <div>تقرير الحضور الشهري</div>
-      <div>تقرير الرسوم</div>
-      <div>تقرير الطلاب</div>
-      <div>تقرير المعلمين</div>
-    </section>
-  </div>
-
-  <section class="panel">
-    <h3>آخر الطلاب المضافين</h3>
-    <table>
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>اسم الطالب</th>
-          <th>الصف</th>
-          <th>الشعبة</th>
-          <th>تاريخ الإضافة</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr><td colspan="5">لا يوجد طلاب بعد</td></tr>
-      </tbody>
-    </table>
-  </section>
-
-</main>
+<div class="col-md-3">
+<div class="card text-bg-primary mb-3">
+<div class="card-body">
+<h6>عدد الطلاب</h6>
+<h2>{{ students }}</h2>
 </div>
-</body>
-</html>
+</div>
+</div>
+
+<div class="col-md-3">
+<div class="card text-bg-success mb-3">
+<div class="card-body">
+<h6>عدد الامتحانات</h6>
+<h2>{{ exams }}</h2>
+</div>
+</div>
+</div>
+
+<div class="col-md-3">
+<div class="card text-bg-danger mb-3">
+<div class="card-body">
+<h6>غياب اليوم</h6>
+<h2>{{ absent_today }}</h2>
+</div>
+</div>
+</div>
+
+<div class="col-md-3">
+<div class="card text-bg-warning mb-3">
+<div class="card-body">
+<h6>المستحقات</h6>
+<h2>{{ outstanding }}</h2>
+</div>
+</div>
+</div>
+
+</div>
+
+<div class="row mt-4">
+
+<div class="col-md-6">
+
+<div class="card">
+
+<div class="card-header">
+آخر الإعلانات
+</div>
+
+<div class="card-body">
+
+<ul>
+
+{% for a in latest_announcements %}
+<li>{{ a }}</li>
+{% empty %}
+<li>لا توجد إعلانات.</li>
+{% endfor %}
+
+</ul>
+
+</div>
+
+</div>
+
+</div>
+
+<div class="col-md-6">
+
+<div class="card">
+
+<div class="card-header">
+آخر الامتحانات
+</div>
+
+<div class="card-body">
+
+<ul>
+
+{% for e in latest_exams %}
+<li>{{ e }}</li>
+{% empty %}
+<li>لا توجد امتحانات.</li>
+{% endfor %}
+
+</ul>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+{% endblock %}
