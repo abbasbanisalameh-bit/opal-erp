@@ -32,3 +32,38 @@ class Teacher(models.Model):
 
     def __str__(self):
         return self.full_name
+
+from academics.models import AcademicYear, Section, Subject
+
+
+class TeacherAssignment(models.Model):
+    teacher = models.ForeignKey(
+        Teacher,
+        on_delete=models.CASCADE,
+        related_name="assignments"
+    )
+    academic_year = models.ForeignKey(
+        AcademicYear,
+        on_delete=models.CASCADE
+    )
+    section = models.ForeignKey(
+        Section,
+        on_delete=models.CASCADE
+    )
+    subject = models.ForeignKey(
+        Subject,
+        on_delete=models.CASCADE
+    )
+    is_primary = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        unique_together = (
+            "teacher",
+            "academic_year",
+            "section",
+            "subject",
+        )
+
+    def __str__(self):
+        return f"{self.teacher} - {self.subject} - {self.section}"
