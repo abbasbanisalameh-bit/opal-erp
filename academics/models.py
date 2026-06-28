@@ -17,6 +17,7 @@ class Grade(models.Model):
 
 
 class Section(models.Model):
+    academic_year = models.ForeignKey(AcademicYear, on_delete=models.SET_NULL, null=True, blank=True, related_name="sections")
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name="sections")
     grade = models.ForeignKey(Grade, on_delete=models.CASCADE, related_name="sections")
     name = models.CharField(max_length=50)

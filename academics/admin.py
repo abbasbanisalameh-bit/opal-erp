@@ -23,9 +23,9 @@ class StudentDocumentInline(admin.TabularInline):
 
 @admin.register(Grade)
 class GradeAdmin(admin.ModelAdmin):
-    list_display = ("name", "school", "order", "is_active")
-    search_fields = ("name", "school__name")
-    list_filter = ("school", "is_active")
+    list_display = ("name", "order", "is_active")
+    search_fields = ("name",)
+    list_filter = ("is_active",)
 
 
 @admin.register(Section)
