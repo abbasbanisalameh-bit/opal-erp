@@ -1,0 +1,40 @@
+{% extends "base/base.html" %}
+{% block title %}الأعوام الدراسية{% endblock %}
+{% block page_title %}الأعوام الدراسية{% endblock %}
+{% block content %}
+
+<section class="panel">
+    <div class="panel-header">
+        <h2>الأعوام الدراسية</h2>
+        <a class="primary-btn" href="{% url 'academics:academic_year_create' %}">+ إضافة عام دراسي</a>
+    </div>
+
+    <div class="table-wrap">
+        <table class="opal-table">
+            <thead>
+                <tr>
+                    <th>العام</th>
+                    <th>البداية</th>
+                    <th>النهاية</th>
+                    <th>الحالة</th>
+                    <th>إجراء</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for y in years %}
+                <tr>
+                    <td>{{ y.name }}</td>
+                    <td>{{ y.start_date }}</td>
+                    <td>{{ y.end_date }}</td>
+                    <td>{% if y.is_active %}نشط{% else %}غير نشط{% endif %}</td>
+                    <td><a class="primary-btn" href="{% url 'academics:academic_year_update' y.id %}">تعديل</a></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5">لا توجد أعوام دراسية.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+{% endblock %}

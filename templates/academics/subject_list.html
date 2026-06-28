@@ -1,0 +1,40 @@
+{% extends "base/base.html" %}
+{% block title %}المواد الدراسية{% endblock %}
+{% block page_title %}المواد الدراسية{% endblock %}
+{% block content %}
+
+<section class="panel">
+    <div class="panel-header">
+        <h2>المواد الدراسية</h2>
+        <a class="primary-btn" href="{% url 'academics:subject_create' %}">+ إضافة مادة</a>
+    </div>
+
+    <div class="table-wrap">
+        <table class="opal-table">
+            <thead>
+                <tr>
+                    <th>المادة</th>
+                    <th>الرمز</th>
+                    <th>الصف</th>
+                    <th>الحالة</th>
+                    <th>إجراء</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in subjects %}
+                <tr>
+                    <td>{{ s.name }}</td>
+                    <td>{{ s.code }}</td>
+                    <td>{{ s.grade|default:"-" }}</td>
+                    <td>{% if s.is_active %}نشطة{% else %}غير نشطة{% endif %}</td>
+                    <td><a class="primary-btn" href="{% url 'academics:subject_update' s.id %}">تعديل</a></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5">لا توجد مواد دراسية.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+{% endblock %}

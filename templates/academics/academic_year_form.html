@@ -1,0 +1,15 @@
+{% extends "base/base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block content %}
+
+<section class="panel">
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button class="primary-btn" type="submit">حفظ</button>
+        <a class="secondary-btn" href="{% url 'academics:academic_year_list' %}">رجوع</a>
+    </form>
+</section>
+
+{% endblock %}
