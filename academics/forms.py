@@ -47,3 +47,17 @@ class StudentAdmissionForm(forms.Form):
 
     grade = forms.ModelChoiceField(label="الصف", queryset=Grade.objects.all(), widget=forms.Select(attrs={"class": "form-control"}))
     section = forms.ModelChoiceField(label="الشعبة", queryset=Section.objects.all(), required=False, widget=forms.Select(attrs={"class": "form-control"}))
+
+from .models import Grade
+
+class GradeForm(forms.ModelForm):
+    class Meta:
+        model = Grade
+        fields = ["name", "order", "is_active"]
+
+from .models import Section
+
+class SectionForm(forms.ModelForm):
+    class Meta:
+        model = Section
+        fields = ["academic_year", "branch", "grade", "name", "capacity", "is_active"]

@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from . import academic_core_views
 
 app_name = "academics"
 
@@ -9,12 +10,18 @@ urlpatterns = [
     path("students/admission/", views.student_admission, name="student_admission"),
     path("students/<int:student_id>/", views.student_detail, name="student_detail"),
     path("students/<int:student_id>/edit/", views.student_update, name="student_update"),
-]
+
+    path("grades/", academic_core_views.grade_list, name="grade_list"),
+    path("grades/add/", academic_core_views.grade_create, name="grade_create"),
+    path("grades/<int:pk>/edit/", academic_core_views.grade_update, name="grade_update"),
+    path("grades/<int:pk>/delete/", academic_core_views.grade_delete, name="grade_delete"),
+
+    path("sections/", academic_core_views.section_list, name="section_list"),
+    path("sections/add/", academic_core_views.section_create, name="section_create"),
+    path("sections/<int:pk>/edit/", academic_core_views.section_update, name="section_update"),
+    path("sections/<int:pk>/delete/", academic_core_views.section_delete, name="section_delete"),
 
 
-from . import academic_core_views
-
-urlpatterns += [
     path("academic-years/", academic_core_views.academic_year_list, name="academic_year_list"),
     path("academic-years/add/", academic_core_views.academic_year_create, name="academic_year_create"),
     path("academic-years/<int:pk>/edit/", academic_core_views.academic_year_update, name="academic_year_update"),

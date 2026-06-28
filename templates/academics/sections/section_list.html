@@ -1,0 +1,40 @@
+{% extends "base/base.html" %}
+{% block content %}
+<div class="page-header">
+  <h1>الشعب الدراسية</h1>
+  <a href="{% url 'academics:section_create' %}" class="btn btn-primary">إضافة شعبة</a>
+</div>
+
+<table class="table">
+  <thead>
+    <tr>
+      <th>العام الدراسي</th>
+      <th>الفرع</th>
+      <th>الصف</th>
+      <th>الشعبة</th>
+      <th>السعة</th>
+      <th>فعال</th>
+      <th>إجراءات</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for section in sections %}
+    <tr>
+      <td>{{ section.academic_year }}</td>
+      <td>{{ section.branch }}</td>
+      <td>{{ section.grade }}</td>
+      <td>{{ section.name }}</td>
+      <td>{{ section.capacity }}</td>
+      <td>{{ section.is_active|yesno:"نعم,لا" }}</td>
+      <td>
+        <a href="{% url 'academics:section_update' section.id %}">تعديل</a>
+        |
+        <a href="{% url 'academics:section_delete' section.id %}" onclick="return confirm('هل أنت متأكد؟')">حذف</a>
+      </td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="7">لا توجد شعب بعد</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

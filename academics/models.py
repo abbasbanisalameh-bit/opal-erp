@@ -26,7 +26,7 @@ class Section(models.Model):
 
     class Meta:
         ordering = ["grade__order", "name"]
-        unique_together = ("branch", "grade", "name")
+        unique_together = ("academic_year", "branch", "grade", "name")
 
     def __str__(self):
         return f"{self.grade.name} - {self.name}"

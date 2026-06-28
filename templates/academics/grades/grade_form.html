@@ -1,0 +1,13 @@
+{% extends "base/base.html" %}
+{% block content %}
+<div class="page-header">
+  <h1>{{ title }}</h1>
+</div>
+
+<form method="post">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit" class="btn btn-primary">حفظ</button>
+  <a href="{% url 'academics:grade_list' %}" class="btn btn-secondary">رجوع</a>
+</form>
+{% endblock %}

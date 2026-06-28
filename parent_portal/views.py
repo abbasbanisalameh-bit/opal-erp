@@ -12,10 +12,10 @@ from .notifications import Notification
 
 @login_required
 def dashboard(request):
-    profile = get_object_or_404(
-        ParentProfile,
-        user=request.user
-    )
+    try:
+        profile = ParentProfile.objects.get(user=request.user)
+    except ParentProfile.DoesNotExist:
+        return render(request, "parent_portal/no_profile.html")
 
     student = profile.student
 
