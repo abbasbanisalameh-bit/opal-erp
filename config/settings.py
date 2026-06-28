@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     'accounting',
     'exams',
     'documents',
+    'development_center',
     'announcements',
     'admissions',
     'academics',

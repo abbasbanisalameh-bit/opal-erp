@@ -1,0 +1,72 @@
+{% extends "base/base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'development_center/css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<h1>🚀 مركز تطوير OPAL ERP</h1>
+
+<div class="row">
+
+<div class="card">
+<h3>نسبة الإنجاز</h3>
+<h1>{{ progress }}%</h1>
+</div>
+
+<div class="card">
+<h3>الوحدات</h3>
+<h1>{{ total }}</h1>
+</div>
+
+<div class="card">
+<h3>المكتملة</h3>
+<h1>{{ completed }}</h1>
+</div>
+
+<div class="card">
+<h3>قيد التطوير</h3>
+<h1>{{ development }}</h1>
+</div>
+
+<div class="card">
+<h3>المخطط لها</h3>
+<h1>{{ planned }}</h1>
+</div>
+
+</div>
+
+<h2>خارطة الطريق</h2>
+
+<table class="table table-striped">
+<thead>
+<tr>
+<th>الوحدة</th>
+<th>الحالة</th>
+<th>الإنجاز</th>
+<th>الإصدار</th>
+</tr>
+</thead>
+
+<tbody>
+
+{% for module in modules %}
+<tr>
+<td>{{ module.name }}</td>
+<td>{{ module.get_status_display }}</td>
+<td>{{ module.progress }}%</td>
+<td>{{ module.version }}</td>
+</tr>
+{% endfor %}
+
+</tbody>
+
+</table>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'development_center/js/dashboard.js' %}"></script>
+{% endblock %}

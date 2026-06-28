@@ -1,0 +1,47 @@
+{% extends "base/base.html" %}
+
+{% block content %}
+
+<h1>📋 لوحة المهام - OPAL ERP</h1>
+
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:20px">
+
+<div class="card">
+<h3>📝 To Do</h3>
+{% for t in todo %}
+<p>{{ t.title }}</p>
+{% empty %}
+<p>لا توجد مهام</p>
+{% endfor %}
+</div>
+
+<div class="card">
+<h3>⚙️ Doing</h3>
+{% for t in doing %}
+<p>{{ t.title }}</p>
+{% empty %}
+<p>لا توجد مهام</p>
+{% endfor %}
+</div>
+
+<div class="card">
+<h3>👀 Review</h3>
+{% for t in review %}
+<p>{{ t.title }}</p>
+{% empty %}
+<p>لا توجد مهام</p>
+{% endfor %}
+</div>
+
+<div class="card">
+<h3>✅ Done</h3>
+{% for t in done %}
+<p>{{ t.title }}</p>
+{% empty %}
+<p>لا توجد مهام</p>
+{% endfor %}
+</div>
+
+</div>
+
+{% endblock %}
