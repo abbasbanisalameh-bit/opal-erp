@@ -13,7 +13,7 @@ class Exam(models.Model):
     exam_type = models.CharField(max_length=30, choices=EXAM_TYPES)
     academic_year = models.ForeignKey("core.AcademicYear", on_delete=models.CASCADE)
     grade = models.ForeignKey("academics.Grade", on_delete=models.CASCADE)
-    subject = models.ForeignKey("academics.Subject", on_delete=models.CASCADE)
+    subject = models.ForeignKey("academics.Subject", on_delete=models.PROTECT)
     max_mark = models.DecimalField(max_digits=6, decimal_places=2, default=100)
     exam_date = models.DateField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
