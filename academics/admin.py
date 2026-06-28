@@ -85,10 +85,3 @@ class AcademicYearAdmin(admin.ModelAdmin):
     list_display = ("name", "start_date", "end_date", "is_active")
     list_filter = ("is_active",)
     search_fields = ("name",)
-
-
-@admin.register(Subject)
-class SubjectAdmin(admin.ModelAdmin):
-    list_display = ("name", "code", "grade", "is_active")
-    list_filter = ("grade", "is_active")
-    search_fields = ("name", "code")
