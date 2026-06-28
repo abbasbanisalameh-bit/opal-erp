@@ -1,0 +1,11 @@
+{% extends "base/base.html" %}
+{% block content %}
+<h1>🏗️ سجل القرارات</h1>
+<div class="card" style="padding:20px;">
+{% for item in items %}
+<p><strong>{{ item.title }}</strong> - {{ item.get_status_display }}</p>
+{% empty %}
+<p>لا توجد قرارات بعد.</p>
+{% endfor %}
+</div>
+{% endblock %}

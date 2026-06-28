@@ -1,0 +1,17 @@
+{% extends "base/base.html" %}
+{% block content %}
+<h1>🐞 سجل الأخطاء</h1>
+
+<div class="card" style="padding:20px;">
+{% for item in items %}
+<p>
+<strong>{{ item.title }}</strong><br>
+{{ item.description|default:"لا يوجد وصف" }}
+</p>
+<hr>
+{% empty %}
+<p>لا توجد أخطاء مسجلة.</p>
+{% endfor %}
+</div>
+
+{% endblock %}

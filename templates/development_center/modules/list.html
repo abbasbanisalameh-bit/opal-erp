@@ -1,0 +1,52 @@
+{% extends "base/base.html" %}
+{% block extra_css %}
+<link rel="stylesheet" href="/static/development_center/css/design_system.css">
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1>وحدات تطوير OPAL ERP</h1>
+    <p>إدارة خارطة الطريق والوحدات الأساسية والمستقبلية للنظام</p>
+  </div>
+  <a href="{% url 'development_center:module_create' %}" class="btn btn-primary">+ إضافة وحدة</a>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:20px;">
+  <div class="card" style="padding:16px;text-align:center;"><strong>{{ modules|length }}</strong><br>إجمالي الوحدات</div>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;">
+{% for module in modules %}
+  <div class="card" class="dc-card">
+    <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
+      <h3 style="margin:0;">{{ module.name }}</h3>
+      <span style="font-size:13px;">{{ module.get_status_display }}</span>
+    </div>
+
+    <p style="opacity:.8;margin:10px 0;">{{ module.category|default:"بدون تصنيف" }}</p>
+
+    <div style="margin:14px 0;">
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;">
+        <span>نسبة الإنجاز</span>
+        <strong>{{ module.progress }}%</strong>
+      </div>
+      <div style="background:#e5e7eb;border-radius:999px;overflow:hidden;height:12px;">
+        <div style="width:{{ module.progress }}%;background:#0f766e;height:12px;"></div>
+      </div>
+    </div>
+
+    <p style="font-size:13px;">الإصدار المستهدف: <strong>{{ module.version|default:"غير محدد" }}</strong></p>
+
+    <div style="display:flex;gap:10px;margin-top:14px;">
+      <a href="{% url 'development_center:module_update' module.id %}" class="btn btn-primary" style="flex:1;text-align:center;">تعديل</a>
+      <a href="{% url 'development_center:module_delete' module.id %}" class="btn btn-secondary" style="flex:1;text-align:center;" onclick="return confirm('هل أنت متأكد؟')">حذف</a>
+    </div>
+  </div>
+{% empty %}
+  <div class="card" style="padding:20px;">لا توجد وحدات.</div>
+{% endfor %}
+</div>
+
+{% endblock %}

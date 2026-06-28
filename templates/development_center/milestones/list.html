@@ -1,0 +1,17 @@
+{% extends "base/base.html" %}
+{% block content %}
+<h1>🎯 المراحل الرئيسية</h1>
+
+<div class="card" style="padding:20px;">
+{% for item in items %}
+<p>
+<strong>{{ item.title }}</strong><br>
+{{ item.description|default:"لا يوجد وصف" }}
+</p>
+<hr>
+{% empty %}
+<p>لا توجد مراحل رئيسية بعد.</p>
+{% endfor %}
+</div>
+
+{% endblock %}

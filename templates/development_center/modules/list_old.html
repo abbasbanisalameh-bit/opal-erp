@@ -1,0 +1,48 @@
+{% extends "base/base.html" %}
+{% block content %}
+
+<div class="page-header">
+  <h1>وحدات تطوير OPAL ERP</h1>
+  <a href="{% url 'development_center:module_create' %}" class="btn btn-primary">إضافة وحدة</a>
+</div>
+
+<div class="card" style="padding:20px;">
+<table class="table">
+<thead>
+<tr>
+<th>الوحدة</th>
+<th>التصنيف</th>
+<th>الحالة</th>
+<th>الإنجاز</th>
+<th>الإصدار</th>
+<th>إجراءات</th>
+</tr>
+</thead>
+<tbody>
+{% for module in modules %}
+<tr>
+<td><strong>{{ module.name }}</strong></td>
+<td>{{ module.category }}</td>
+<td>{{ module.get_status_display }}</td>
+<td>
+  <div style="background:#e5e7eb;border-radius:10px;overflow:hidden;">
+    <div style="width:{{ module.progress }}%;background:#0f766e;color:white;padding:3px 0;text-align:center;">
+      {{ module.progress }}%
+    </div>
+  </div>
+</td>
+<td>{{ module.version }}</td>
+<td>
+<a href="{% url 'development_center:module_update' module.id %}">تعديل</a>
+|
+<a href="{% url 'development_center:module_delete' module.id %}" onclick="return confirm('هل أنت متأكد؟')">حذف</a>
+</td>
+</tr>
+{% empty %}
+<tr><td colspan="6">لا توجد وحدات.</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+
+{% endblock %}
