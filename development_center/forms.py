@@ -1,6 +1,7 @@
 from django import forms
 from .models import (
     Module,
+    Task,
     Release,
     Milestone,
     Idea,
@@ -42,4 +43,10 @@ class DecisionForm(forms.ModelForm):
 class BugForm(forms.ModelForm):
     class Meta:
         model = Bug
+        fields = "__all__"
+
+
+class TaskForm(forms.ModelForm):
+    class Meta:
+        model = Task
         fields = "__all__"

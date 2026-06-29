@@ -1,0 +1,50 @@
+{% extends "base/base.html" %}
+
+{% block page_title %}تفاصيل المهمة{% endblock %}
+{% block page_subtitle %}{{ task.title }}{% endblock %}
+
+{% block content %}
+
+<div class="opal-card" style="padding:24px;margin-bottom:20px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+        <h3>{{ task.title }}</h3>
+        <div style="display:flex;gap:10px;">
+            <a class="btn btn-secondary" href="{% url 'development_center:task_list' %}">رجوع للمهام</a>
+            <a class="btn btn-warning" href="{% url 'development_center:task_update' task.id %}">تعديل</a>
+            <a class="btn btn-danger" href="{% url 'development_center:task_delete' task.id %}" onclick="return confirm('هل تريد حذف المهمة؟');">حذف</a>
+        </div>
+    </div>
+
+    <hr>
+
+    <p><strong>الوحدة:</strong> {{ task.module }}</p>
+    <p><strong>الإصدار:</strong> {{ task.release|default:"-" }}</p>
+    <p><strong>الحالة:</strong> {{ task.get_status_display }}</p>
+    <p><strong>نسبة الإنجاز:</strong> {{ task.progress }}%</p>
+    <p><strong>تاريخ الإنشاء:</strong> {{ task.created_at|date:'Y-m-d H:i' }}</p>
+    <p><strong>الوصف:</strong></p>
+    <div style="white-space:pre-wrap;color:#cbd5e1;">{{ task.description|default:"لا يوجد وصف." }}</div>
+</div>
+
+<div class="opal-card" style="padding:24px;">
+<h4>آخر نشاطات المهمة</h4>
+<table class="table table-dark table-hover">
+<thead>
+<tr><th>العملية</th><th>العنوان</th><th>المستخدم</th><th>التاريخ</th></tr>
+</thead>
+<tbody>
+{% for log in logs %}
+<tr>
+<td>{{ log.get_action_display }}</td>
+<td>{{ log.title }}</td>
+<td>{{ log.user|default:'-' }}</td>
+<td>{{ log.created_at|date:'Y-m-d H:i' }}</td>
+</tr>
+{% empty %}
+<tr><td colspan="4">لا يوجد نشاط مسجل لهذه المهمة.</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+
+{% endblock %}

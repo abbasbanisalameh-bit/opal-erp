@@ -5,7 +5,9 @@ app_name = "development_center"
 
 urlpatterns = [
     path("", views.dashboard, name="dashboard"),
-    path("tasks/", views.tasks_board, name="tasks_board"),
+    path("tasks/", views.task_list, name="task_list"),
+    path("tasks/board/", views.tasks_board, name="tasks_board"),
+    path("activity/", views.activity_list, name="activity_list"),
     path("tasks/<int:pk>/status/", views.task_update_status, name="task_update_status"),
 
     path("modules/", views.module_list, name="module_list"),
@@ -37,4 +39,11 @@ urlpatterns = [
     path("bugs/add/", views.bug_create, name="bug_create"),
     path("bugs/<int:pk>/edit/", views.bug_update, name="bug_update"),
     path("bugs/<int:pk>/delete/", views.bug_delete, name="bug_delete"),
+]
+
+urlpatterns += [
+    path("tasks/add/", views.task_create, name="task_create"),
+    path("tasks/<int:pk>/", views.task_detail, name="task_detail"),
+    path("tasks/<int:pk>/edit/", views.task_update, name="task_update"),
+    path("tasks/<int:pk>/delete/", views.task_delete, name="task_delete"),
 ]

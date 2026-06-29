@@ -1,7 +1,7 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Module, Task, Release, Milestone, Idea, Decision, Bug
-from .forms import ModuleForm, ReleaseForm, MilestoneForm, IdeaForm, DecisionForm, BugForm
+from .models import Module, Task, Release, Milestone, Idea, Decision, Bug, ActivityLog
+from .forms import ModuleForm, TaskForm, ReleaseForm, MilestoneForm, IdeaForm, DecisionForm, BugForm
 
 
 @login_required
@@ -38,7 +38,13 @@ def crud_views(model, form_class, template_dir, url_name):
     def create_view(request):
         form = form_class(request.POST or None)
         if form.is_valid():
-            form.save()
+            obj = form.save()
+            ActivityLog.objects.create(
+                action="create",
+                title=f"إنشاء: {obj}",
+                description=f"Model: {model.__name__}",
+                user=request.user
+            )
             return redirect(f"development_center:{url_name}_list")
         return render(request, "development_center/shared/form.html", {"form": form, "title": "إضافة"})
 
@@ -47,13 +53,25 @@ def crud_views(model, form_class, template_dir, url_name):
         obj = get_object_or_404(model, pk=pk)
         form = form_class(request.POST or None, instance=obj)
         if form.is_valid():
-            form.save()
+            obj = form.save()
+            ActivityLog.objects.create(
+                action="update",
+                title=f"تعديل: {obj}",
+                description=f"Model: {model.__name__}",
+                user=request.user
+            )
             return redirect(f"development_center:{url_name}_list")
         return render(request, "development_center/shared/form.html", {"form": form, "title": "تعديل"})
 
     @login_required
     def delete_view(request, pk):
         obj = get_object_or_404(model, pk=pk)
+        ActivityLog.objects.create(
+            action="delete",
+            title=f"حذف: {obj}",
+            description=f"Model: {model.__name__}",
+            user=request.user
+        )
         obj.delete()
         return redirect(f"development_center:{url_name}_list")
 
@@ -69,12 +87,25 @@ bug_list, bug_create, bug_update, bug_delete = crud_views(Bug, BugForm, "bugs", 
 
 
 @login_required
+def task_list(request):
+    tasks = Task.objects.select_related("module", "release").all()
+    return render(request, "development_center/tasks/list.html", {"tasks": tasks})
+
+
+@login_required
+def task_detail(request, pk):
+    task = get_object_or_404(Task.objects.select_related("module", "release"), pk=pk)
+    logs = task.activity_logs.select_related("user", "module").all()[:20]
+    return render(request, "development_center/tasks/detail.html", {"task": task, "logs": logs})
+
+
+@login_required
 def tasks_board(request):
     return render(request, "development_center/tasks_board.html", {
-        "todo": Task.objects.filter(status="todo"),
-        "doing": Task.objects.filter(status="doing"),
-        "review": Task.objects.filter(status="review"),
-        "done": Task.objects.filter(status="done"),
+        "todo": Task.objects.select_related("module").filter(status="todo"),
+        "doing": Task.objects.select_related("module").filter(status="doing"),
+        "review": Task.objects.select_related("module").filter(status="review"),
+        "done": Task.objects.select_related("module").filter(status="done"),
     })
 
 from django.http import JsonResponse
@@ -88,8 +119,71 @@ def task_update_status(request, pk):
     new_status = request.POST.get("status")
 
     if new_status in ["todo", "doing", "review", "done"]:
+        old_status = task.status
         task.status = new_status
-        task.save(update_fields=["status"])
+        task.progress = 100 if new_status == "done" else task.progress
+        task.save(update_fields=["status", "progress"])
+        ActivityLog.objects.create(
+            action="status",
+            title=f"تغيير حالة مهمة: {task}",
+            description=f"من {old_status} إلى {new_status}",
+            module=task.module,
+            task=task,
+            user=request.user,
+        )
         return JsonResponse({"ok": True})
 
     return JsonResponse({"ok": False}, status=400)
+
+
+@login_required
+def activity_list(request):
+    logs = ActivityLog.objects.select_related("module", "task").all()[:100]
+    return render(request, "development_center/activity/list.html", {"logs": logs})
+
+
+@login_required
+def task_create(request):
+    form = TaskForm(request.POST or None)
+    if form.is_valid():
+        obj = form.save()
+        ActivityLog.objects.create(
+            action="create",
+            title=f"إنشاء مهمة: {obj}",
+            module=obj.module,
+            task=obj,
+            user=request.user,
+        )
+        return redirect("development_center:task_list")
+    return render(request, "development_center/shared/form.html", {"form": form, "title": "إضافة مهمة"})
+
+
+@login_required
+def task_update(request, pk):
+    obj = get_object_or_404(Task, pk=pk)
+    form = TaskForm(request.POST or None, instance=obj)
+    if form.is_valid():
+        obj = form.save()
+        ActivityLog.objects.create(
+            action="update",
+            title=f"تعديل مهمة: {obj}",
+            module=obj.module,
+            task=obj,
+            user=request.user,
+        )
+        return redirect("development_center:task_list")
+    return render(request, "development_center/shared/form.html", {"form": form, "title": "تعديل مهمة"})
+
+
+@login_required
+def task_delete(request, pk):
+    obj = get_object_or_404(Task, pk=pk)
+    ActivityLog.objects.create(
+        action="delete",
+        title=f"حذف مهمة: {obj}",
+        module=obj.module,
+        task=obj,
+        user=request.user,
+    )
+    obj.delete()
+    return redirect("development_center:task_list")

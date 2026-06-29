@@ -1,0 +1,57 @@
+{% extends "base/base.html" %}
+
+{% block page_title %}المهام{% endblock %}
+{% block page_subtitle %}إدارة مهام تطوير OPAL ERP{% endblock %}
+
+{% block content %}
+
+<div class="stats-grid">
+    <div class="stat-card"><span>إجمالي المهام</span><h2>{{ tasks|length }}</h2></div>
+</div>
+
+<div class="opal-card" style="padding:24px;">
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;gap:12px;flex-wrap:wrap;">
+    <h3>المهام</h3>
+    <div style="display:flex;gap:10px;">
+        <a href="{% url 'development_center:tasks_board' %}" class="btn btn-secondary">لوحة Kanban</a>
+        <a href="{% url 'development_center:task_create' %}" class="btn btn-primary">إضافة مهمة</a>
+    </div>
+</div>
+
+<table class="table table-dark table-hover">
+<thead>
+<tr>
+<th>#</th>
+<th>المهمة</th>
+<th>الوحدة</th>
+<th>الإصدار</th>
+<th>الحالة</th>
+<th>الإنجاز</th>
+<th>الإجراءات</th>
+</tr>
+</thead>
+<tbody>
+{% for task in tasks %}
+<tr>
+<td>{{ forloop.counter }}</td>
+<td><a href="{% url 'development_center:task_detail' task.id %}">{{ task.title }}</a></td>
+<td>{{ task.module }}</td>
+<td>{{ task.release|default:"-" }}</td>
+<td>{{ task.get_status_display }}</td>
+<td>{{ task.progress }}%</td>
+<td>
+<a class="btn btn-sm btn-info" href="{% url 'development_center:task_detail' task.id %}">عرض</a>
+<a class="btn btn-sm btn-warning" href="{% url 'development_center:task_update' task.id %}">تعديل</a>
+<a class="btn btn-sm btn-danger" href="{% url 'development_center:task_delete' task.id %}" onclick="return confirm('هل تريد حذف المهمة؟');">حذف</a>
+</td>
+</tr>
+{% empty %}
+<tr><td colspan="7">لا توجد مهام.</td></tr>
+{% endfor %}
+</tbody>
+</table>
+
+</div>
+
+{% endblock %}

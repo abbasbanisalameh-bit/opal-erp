@@ -1,12 +1,76 @@
 {% extends "base/base.html" %}
+
+{% block page_title %}{{ title }}{% endblock %}
+{% block page_subtitle %}مركز تطوير OPAL ERP{% endblock %}
+
 {% block content %}
-<h1>{{ title }}</h1>
-<div style="background:white;border-radius:16px;padding:20px;box-shadow:0 8px 20px rgba(0,0,0,.08);">
+
+<div class="opal-card" style="padding:28px;max-width:900px;margin:auto;">
+
 <form method="post">
-  {% csrf_token %}
-  {{ form.as_p }}
-  <button class="btn btn-primary" type="submit">حفظ</button>
-  <a class="btn btn-secondary" href="javascript:history.back()">رجوع</a>
+    {% csrf_token %}
+
+    <div class="row g-3">
+        {% for field in form %}
+        <div class="col-md-6">
+            <label class="form-label" style="color:#cbd5e1;font-weight:700;">
+                {{ field.label }}
+            </label>
+
+            {{ field }}
+
+            {% if field.help_text %}
+            <div style="color:#94a3b8;font-size:13px;margin-top:4px;">
+                {{ field.help_text }}
+            </div>
+            {% endif %}
+
+            {% for error in field.errors %}
+            <div style="color:#f87171;font-size:13px;margin-top:4px;">
+                {{ error }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endfor %}
+    </div>
+
+    <div style="display:flex;gap:12px;margin-top:24px;">
+        <button class="btn btn-primary" type="submit">
+            حفظ
+        </button>
+
+        <a class="btn btn-secondary" href="javascript:history.back()">
+            رجوع
+        </a>
+    </div>
+
 </form>
+
 </div>
+
+<style>
+.opal-card input,
+.opal-card select,
+.opal-card textarea {
+    width: 100%;
+    background: #0f172a !important;
+    color: #ffffff !important;
+    border: 1px solid #334155 !important;
+    border-radius: 12px !important;
+    padding: 10px 12px !important;
+}
+
+.opal-card textarea {
+    min-height: 110px;
+}
+
+.opal-card input:focus,
+.opal-card select:focus,
+.opal-card textarea:focus {
+    outline: none !important;
+    border-color: #22d3ee !important;
+    box-shadow: 0 0 0 2px rgba(34,211,238,.25);
+}
+</style>
+
 {% endblock %}
