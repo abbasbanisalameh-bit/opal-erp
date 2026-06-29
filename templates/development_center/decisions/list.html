@@ -1,11 +1,24 @@
 {% extends "base/base.html" %}
 {% block content %}
-<h1>🏗️ سجل القرارات</h1>
-<div class="card" style="padding:20px;">
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+  <div>
+    <h1>🏗️ سجل القرارات</h1>
+    <p style="color:#64748b;">جزء من مركز تطوير OPAL ERP</p>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;">
 {% for item in items %}
-<p><strong>{{ item.title }}</strong> - {{ item.get_status_display }}</p>
+  <div style="background:#13253f;color:white;border-radius:16px;padding:16px;box-shadow:0 8px 20px rgba(0,0,0,.18);">
+    <h3 style="margin-top:0;">{{ item.title|default:item.version }}</h3>
+    <p style="color:#cbd5e1;">{{ item.description|default:"لا يوجد وصف" }}</p>
+  </div>
 {% empty %}
-<p>لا توجد قرارات بعد.</p>
+  <div style="background:#13253f;color:white;border-radius:16px;padding:16px;">
+    لا توجد بيانات بعد.
+  </div>
 {% endfor %}
 </div>
+
 {% endblock %}

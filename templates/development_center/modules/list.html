@@ -1,51 +1,52 @@
 {% extends "base/base.html" %}
-{% block extra_css %}
-<link rel="stylesheet" href="/static/development_center/css/design_system.css">
-{% endblock %}
-
 {% block content %}
 
-<div class="page-header">
+
+<style>
+.dev-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.dev-header h1{margin:0;font-size:28px}
+.dev-header p{color:#64748b;margin-top:6px}
+.dev-btn{background:#0f766e;color:white;padding:10px 16px;border-radius:12px;text-decoration:none;font-weight:bold}
+.dev-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+.dev-card{background:white;border-radius:18px;padding:16px;box-shadow:0 8px 20px rgba(0,0,0,.08);border:1px solid #e5e7eb}
+.dev-card h3{margin:0 0 8px;font-size:18px}
+.dev-meta{color:#64748b;font-size:13px;margin-bottom:12px}
+.dev-status{font-size:13px;font-weight:bold;margin-bottom:10px}
+.dev-progress{height:10px;background:#e5e7eb;border-radius:999px;overflow:hidden;margin:8px 0}
+.dev-progress span{display:block;height:100%;background:#0f766e}
+.dev-actions{display:flex;gap:8px;margin-top:14px}
+.dev-actions a{flex:1;text-align:center;padding:8px;border-radius:10px;text-decoration:none;font-size:13px}
+.edit{background:#2563eb;color:white}
+.delete{background:#ef4444;color:white}
+</style>
+
+<div class="dev-header">
   <div>
     <h1>وحدات تطوير OPAL ERP</h1>
-    <p>إدارة خارطة الطريق والوحدات الأساسية والمستقبلية للنظام</p>
+    <p>خارطة الطريق والوحدات الأساسية والمستقبلية للنظام</p>
   </div>
-  <a href="{% url 'development_center:module_create' %}" class="btn btn-primary">+ إضافة وحدة</a>
+  <a href="{% url 'development_center:module_create' %}" class="dev-btn">+ إضافة وحدة</a>
 </div>
 
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:20px;">
-  <div class="card" style="padding:16px;text-align:center;"><strong>{{ modules|length }}</strong><br>إجمالي الوحدات</div>
-</div>
-
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;">
+<div class="dev-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;">
 {% for module in modules %}
-  <div class="card" class="dc-card">
-    <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
-      <h3 style="margin:0;">{{ module.name }}</h3>
-      <span style="font-size:13px;">{{ module.get_status_display }}</span>
+  <div class="dev-card" style="background:#13253f;color:white;border-radius:16px;padding:16px;box-shadow:0 8px 20px rgba(0,0,0,.18);">
+    <h3>{{ module.name }}</h3>
+    <div class="dev-meta" style="color:#cbd5e1;font-size:13px;margin:8px 0;">{{ module.category|default:"بدون تصنيف" }} · {{ module.version|default:"بدون إصدار" }}</div>
+    <div class="dev-status">{{ module.get_status_display }}</div>
+
+    <div>الإنجاز: <strong>{{ module.progress }}%</strong></div>
+    <div class="dev-progress" style="height:10px;background:#334155;border-radius:999px;overflow:hidden;margin:8px 0;">
+      <span style="display:block;height:100%;width:{{ module.progress }}%;background:#22d3ee;"></span>
     </div>
 
-    <p style="opacity:.8;margin:10px 0;">{{ module.category|default:"بدون تصنيف" }}</p>
-
-    <div style="margin:14px 0;">
-      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;">
-        <span>نسبة الإنجاز</span>
-        <strong>{{ module.progress }}%</strong>
-      </div>
-      <div style="background:#e5e7eb;border-radius:999px;overflow:hidden;height:12px;">
-        <div style="width:{{ module.progress }}%;background:#0f766e;height:12px;"></div>
-      </div>
-    </div>
-
-    <p style="font-size:13px;">الإصدار المستهدف: <strong>{{ module.version|default:"غير محدد" }}</strong></p>
-
-    <div style="display:flex;gap:10px;margin-top:14px;">
-      <a href="{% url 'development_center:module_update' module.id %}" class="btn btn-primary" style="flex:1;text-align:center;">تعديل</a>
-      <a href="{% url 'development_center:module_delete' module.id %}" class="btn btn-secondary" style="flex:1;text-align:center;" onclick="return confirm('هل أنت متأكد؟')">حذف</a>
+    <div class="dev-actions">
+      <a class="edit" href="{% url 'development_center:module_update' module.id %}">تعديل</a>
+      <a class="delete" href="{% url 'development_center:module_delete' module.id %}" onclick="return confirm('هل أنت متأكد؟')">حذف</a>
     </div>
   </div>
 {% empty %}
-  <div class="card" style="padding:20px;">لا توجد وحدات.</div>
+  <div class="dev-card" style="background:#13253f;color:white;border-radius:16px;padding:16px;box-shadow:0 8px 20px rgba(0,0,0,.18);">لا توجد وحدات.</div>
 {% endfor %}
 </div>
 

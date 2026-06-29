@@ -25,7 +25,7 @@ def dashboard(request):
 @login_required
 def module_list(request):
     modules = Module.objects.all()
-    return render(request, "development_center/modules/list.html", {"modules": modules})
+    return render(request, "development_center/modules/list.html", {"modules": modules, "test_marker": "OPAL_TEST_123"})
 
 
 @login_required
