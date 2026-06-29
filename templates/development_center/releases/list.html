@@ -1,24 +1,58 @@
 {% extends "base/base.html" %}
+
+{% block page_title %}الإصدارات{% endblock %}
+{% block page_subtitle %}إدارة إصدارات OPAL ERP{% endblock %}
+
 {% block content %}
 
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-  <div>
-    <h1>📦 الإصدارات</h1>
-    <p style="color:#64748b;">جزء من مركز تطوير OPAL ERP</p>
-  </div>
+<div class="stats-grid">
+    <div class="stat-card">
+        <span>إجمالي الإصدارات</span>
+        <h2>{{ items|length }}</h2>
+    </div>
 </div>
 
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;">
+<div class="opal-card" style="padding:24px;">
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+    <h3>الإصدارات</h3>
+
+    <a href="{% url 'development_center:release_create' %}" class="btn btn-primary">
+        إضافة إصدار
+    </a>
+</div>
+
+<table class="table table-dark table-hover">
+<thead>
+<tr>
+<th>#</th>
+<th>الإصدار</th>
+<th>العنوان</th>
+<th>الحالة</th>
+<th>الإجراءات</th>
+</tr>
+</thead>
+
+<tbody>
 {% for item in items %}
-  <div style="background:#13253f;color:white;border-radius:16px;padding:16px;box-shadow:0 8px 20px rgba(0,0,0,.18);">
-    <h3 style="margin-top:0;">{{ item.title|default:item.version }}</h3>
-    <p style="color:#cbd5e1;">{{ item.description|default:"لا يوجد وصف" }}</p>
-  </div>
+<tr>
+<td>{{ forloop.counter }}</td>
+<td>{{ item.version }}</td>
+<td>{{ item.title }}</td>
+<td>{% if item.released %}تم الإطلاق{% else %}مخطط{% endif %}</td>
+<td>
+<a class="btn btn-sm btn-warning" href="{% url 'development_center:release_update' item.id %}">تعديل</a>
+<a class="btn btn-sm btn-danger" href="{% url 'development_center:release_delete' item.id %}" onclick="return confirm('هل تريد الحذف؟');">حذف</a>
+</td>
+</tr>
 {% empty %}
-  <div style="background:#13253f;color:white;border-radius:16px;padding:16px;">
-    لا توجد بيانات بعد.
-  </div>
+<tr>
+<td colspan="5">لا توجد إصدارات.</td>
+</tr>
 {% endfor %}
+</tbody>
+</table>
+
 </div>
 
 {% endblock %}

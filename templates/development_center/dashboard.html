@@ -1,74 +1,98 @@
 {% extends "base/base.html" %}
-{% load static %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'development_center/css/dashboard.css' %}">
-{% endblock %}
+{% block page_title %}مركز التطوير{% endblock %}
+{% block page_subtitle %}إدارة تطوير نظام OPAL ERP{% endblock %}
 
 {% block content %}
-<link rel="stylesheet" href="/static/development_center/css/design_system.css">
 
+<div class="stats-grid">
 
-<h1>🚀 مركز تطوير OPAL ERP</h1>
-
-<div class="row">
-
-<div class="card">
-<h3>نسبة الإنجاز</h3>
-<h1>{{ progress }}%</h1>
+<div class="stat-card">
+<span>الوحدات</span>
+<h2>{{ total }}</h2>
 </div>
 
-<div class="card">
-<h3>الوحدات</h3>
-<h1>{{ total }}</h1>
+<div class="stat-card">
+<span>المهام</span>
+<h2>{{ tasks_count }}</h2>
 </div>
 
-<div class="card">
-<h3>المكتملة</h3>
-<h1>{{ completed }}</h1>
+<div class="stat-card">
+<span>الأخطاء</span>
+<h2>{{ bugs_count }}</h2>
 </div>
 
-<div class="card">
-<h3>قيد التطوير</h3>
-<h1>{{ development }}</h1>
+<div class="stat-card">
+<span>الإصدارات</span>
+<h2>{{ releases_count }}</h2>
 </div>
 
-<div class="card">
-<h3>المخطط لها</h3>
-<h1>{{ planned }}</h1>
+<div class="stat-card">
+<span>الأفكار</span>
+<h2>{{ ideas_count }}</h2>
+</div>
+
+<div class="stat-card">
+<span>نسبة الإنجاز</span>
+<h2>{{ progress }}%</h2>
 </div>
 
 </div>
 
-<h2>خارطة الطريق</h2>
+<div class="opal-card" style="padding:25px;margin-bottom:20px;">
+<h3>آخر المهام</h3>
 
-<table class="table table-striped">
+<table class="table table-dark table-hover">
 <thead>
 <tr>
+<th>المهمة</th>
 <th>الوحدة</th>
-<th>الحالة</th>
-<th>الإنجاز</th>
-<th>الإصدار</th>
 </tr>
 </thead>
 
 <tbody>
-
-{% for module in modules %}
+{% for t in latest_tasks %}
 <tr>
-<td>{{ module.name }}</td>
-<td>{{ module.get_status_display }}</td>
-<td>{{ module.progress }}%</td>
-<td>{{ module.version }}</td>
+<td>{{ t.title }}</td>
+<td>{{ t.module }}</td>
+</tr>
+{% empty %}
+<tr>
+<td colspan="2">لا توجد مهام.</td>
 </tr>
 {% endfor %}
+</tbody>
+</table>
 
+</div>
+
+<div class="opal-card" style="padding:25px;">
+
+<h3>آخر الأخطاء</h3>
+
+<table class="table table-dark table-hover">
+<thead>
+<tr>
+<th>الخطأ</th>
+<th>الوحدة</th>
+</tr>
+</thead>
+
+<tbody>
+{% for b in latest_bugs %}
+<tr>
+<td>{{ b.title }}</td>
+<td>{{ b.module }}</td>
+</tr>
+{% empty %}
+<tr>
+<td colspan="2">لا توجد أخطاء.</td>
+</tr>
+{% endfor %}
 </tbody>
 
 </table>
 
-{% endblock %}
+</div>
 
-{% block extra_js %}
-<script src="{% static 'development_center/js/dashboard.js' %}"></script>
 {% endblock %}

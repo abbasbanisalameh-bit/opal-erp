@@ -1,24 +1,80 @@
 {% extends "base/base.html" %}
+
+{% block page_title %}💡 الأفكار{% endblock %}
+{% block page_subtitle %}إدارة 💡 الأفكار{% endblock %}
+
 {% block content %}
 
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-  <div>
-    <h1>💡 بنك الأفكار</h1>
-    <p style="color:#64748b;">جزء من مركز تطوير OPAL ERP</p>
-  </div>
+<div class="stats-grid">
+    <div class="stat-card">
+        <span>إجمالي السجلات</span>
+        <h2>{{ items|length }}</h2>
+    </div>
 </div>
 
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;">
+<div class="opal-card" style="padding:24px;">
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+    <h3>💡 الأفكار</h3>
+
+    <a href="{% url 'development_center:idea_create' %}" class="btn btn-primary">
+        إضافة جديد
+    </a>
+</div>
+
+<table class="table table-hover">
+
+<thead>
+<tr>
+<th>#</th>
+<th>الاسم</th>
+<th>الإجراءات</th>
+</tr>
+</thead>
+
+<tbody>
+
 {% for item in items %}
-  <div style="background:#13253f;color:white;border-radius:16px;padding:16px;box-shadow:0 8px 20px rgba(0,0,0,.18);">
-    <h3 style="margin-top:0;">{{ item.title|default:item.version }}</h3>
-    <p style="color:#cbd5e1;">{{ item.description|default:"لا يوجد وصف" }}</p>
-  </div>
+
+<tr>
+
+<td>{{ forloop.counter }}</td>
+
+<td>
+{{ item.title|default:item.name|default:item.version }}
+</td>
+
+<td>
+
+<a class="btn btn-sm btn-warning"
+href="{% url 'development_center:idea_update' item.id %}">
+تعديل
+</a>
+
+<a class="btn btn-sm btn-danger"
+href="{% url 'development_center:idea_delete' item.id %}"
+onclick="return confirm('هل تريد الحذف؟');">
+حذف
+</a>
+
+</td>
+
+</tr>
+
 {% empty %}
-  <div style="background:#13253f;color:white;border-radius:16px;padding:16px;">
-    لا توجد بيانات بعد.
-  </div>
+
+<tr>
+<td colspan="3">
+لا توجد بيانات.
+</td>
+</tr>
+
 {% endfor %}
+
+</tbody>
+
+</table>
+
 </div>
 
 {% endblock %}

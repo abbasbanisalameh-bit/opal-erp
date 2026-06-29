@@ -36,6 +36,7 @@ class Task(models.Model):
     ]
 
     module = models.ForeignKey(Module, on_delete=models.CASCADE, related_name="tasks")
+    release = models.ForeignKey("Release", on_delete=models.SET_NULL, null=True, blank=True, related_name="tasks")
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     status = models.CharField(max_length=20, choices=STATUS, default="todo")
@@ -139,10 +140,33 @@ class Bug(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     module = models.ForeignKey(Module, on_delete=models.CASCADE, related_name="bugs")
+    release = models.ForeignKey("Release", on_delete=models.SET_NULL, null=True, blank=True, related_name="release_bugs")
     severity = models.CharField(max_length=20, choices=SEVERITY, default="medium")
     status = models.CharField(max_length=20, choices=STATUS, default="open")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return self.title
+
+
+class ActivityLog(models.Model):
+    ACTIONS = [
+        ("create", "إنشاء"),
+        ("update", "تعديل"),
+        ("delete", "حذف"),
+        ("status", "تغيير حالة"),
+    ]
+
+    module = models.ForeignKey(Module, on_delete=models.SET_NULL, null=True, blank=True, related_name="activity_logs")
+    task = models.ForeignKey(Task, on_delete=models.SET_NULL, null=True, blank=True, related_name="activity_logs")
+    action = models.CharField(max_length=20, choices=ACTIONS)
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ["-created_at"]
