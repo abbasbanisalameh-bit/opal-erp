@@ -1,5 +1,12 @@
 <div class="opal-card p-3 mb-2 kanban-task" data-id="{{ t.id }}">
-  <strong>{{ t.title }}</strong><br>
+  <strong>
+  {% if t.is_blocked %}
+    🔒
+  {% elif t.has_dependencies %}
+    🔗
+  {% endif %}
+  {{ t.title }}
+</strong><br>
   <small>الوحدة: {{ t.module|default:"-" }}</small><br>
   <small>الإصدار: {{ t.release|default:"-" }}</small><br>
   <small>الإنجاز: {{ t.progress }}%</small>

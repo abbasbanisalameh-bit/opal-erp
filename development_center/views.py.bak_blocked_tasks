@@ -125,14 +125,6 @@ def task_update_status(request, pk):
     new_status = request.POST.get("status")
 
     if new_status in ["todo", "doing", "review", "done"]:
-        incomplete_dependencies = task.depends_on.exclude(status="done")
-
-        if new_status in ["doing", "review", "done"] and incomplete_dependencies.exists():
-            return JsonResponse({
-                "ok": False,
-                "message": "لا يمكن بدء هذه المهمة حتى تكتمل جميع المهام التي تعتمد عليها."
-            }, status=400)
-
         old_status = task.status
         task.status = new_status
         task.progress = 100 if new_status == "done" else task.progress

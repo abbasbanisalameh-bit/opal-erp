@@ -78,30 +78,6 @@
 {% endfor %}
 </tbody>
 </table>
-
-<hr class="my-4">
-
-<div class="opal-card p-3">
-    <h5>🔗 الاعتماديات</h5>
-
-    {% if object.depends_on.exists %}
-        <ul class="mb-0">
-        {% for dep in object.depends_on.all %}
-            <li>
-                {{ dep.title }}
-                {% if dep.status == "done" %}
-                    <span class="badge bg-success">مكتملة</span>
-                {% else %}
-                    <span class="badge bg-warning text-dark">غير مكتملة</span>
-                {% endif %}
-            </li>
-        {% endfor %}
-        </ul>
-    {% else %}
-        <p class="text-muted mb-0">لا توجد اعتماديات لهذه المهمة.</p>
-    {% endif %}
-</div>
-
 </div>
 
 {% endblock %}

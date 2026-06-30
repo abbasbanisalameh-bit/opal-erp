@@ -54,6 +54,14 @@ class Task(models.Model):
     class Meta:
         ordering = ["status","title"]
 
+    @property
+    def is_blocked(self):
+        return self.depends_on.exclude(status="done").exists()
+
+    @property
+    def has_dependencies(self):
+        return self.depends_on.exists()
+
     def __str__(self):
         return self.title
 

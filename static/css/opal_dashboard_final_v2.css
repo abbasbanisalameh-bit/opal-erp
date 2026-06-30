@@ -200,3 +200,29 @@
 @media(max-width:430px){
     .final-dashboard-v2 .opal-pro-kpi-row{grid-template-columns:1fr !important;}
 }
+
+/* Fix Development Center task dependency text contrast */
+.dependency-card,
+.dependency-card *,
+.opal-card,
+.opal-card li,
+.opal-card small,
+.opal-card p {
+    color: #f8fafc !important;
+}
+
+.opal-card a {
+    color: #93c5fd !important;
+    font-weight: 600;
+}
+
+.opal-card .text-muted {
+    color: #cbd5e1 !important;
+}
+
+.opal-card ul li {
+    background: rgba(255,255,255,0.04);
+    border-radius: 8px;
+    padding: 8px 10px;
+    margin-bottom: 6px;
+}

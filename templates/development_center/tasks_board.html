@@ -69,11 +69,15 @@ function updateTaskStatus(taskId, status){
       'Content-Type': 'application/x-www-form-urlencoded'
     },
     body: `status=${status}`
-  }).then(r => {
+  }).then(async r => {
     if (r.ok) {
       location.reload();
     } else {
-      alert('لم يتم تحديث المهمة');
+      let data = {};
+      try {
+        data = await r.json();
+      } catch (e) {}
+      alert(data.message || 'لم يتم تحديث المهمة');
     }
   }).catch(() => alert('حدث خطأ أثناء تحديث المهمة'));
 }
