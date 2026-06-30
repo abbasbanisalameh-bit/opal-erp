@@ -115,6 +115,7 @@ def tasks_board(request):
     })
 
 from django.http import JsonResponse
+from development_center.services.gantt_service import get_gantt_tasks, update_task_dates
 from django.views.decorators.http import require_POST
 
 
@@ -272,21 +273,24 @@ def roadmap(request):
 from django.http import JsonResponse
 
 def gantt_data(request):
-    tasks = Task.objects.select_related("module", "release").prefetch_related("depends_on").all()
+    return JsonResponse({"tasks": get_gantt_tasks()})
 
-    data = []
-    for task in tasks:
-        data.append({
-            "id": task.id,
-            "title": task.title,
-            "module": str(task.module) if task.module else "",
-            "release": str(task.release) if task.release else "",
-            "status": task.status,
-            "progress": task.progress,
-            "start_date": task.start_date.isoformat() if task.start_date else "",
-            "due_date": task.due_date.isoformat() if task.due_date else "",
-            "blocked": task.is_blocked,
-            "dependencies": list(task.depends_on.values_list("id", flat=True)),
-        })
 
-    return JsonResponse({"tasks": data})
+from django.views.decorators.http import require_POST
+from django.utils.dateparse import parse_date
+
+@require_POST
+def gantt_update_task_dates(request, pk):
+    task = get_object_or_404(Task, pk=pk)
+
+    ok, message = update_task_dates(
+        task=task,
+        start_date_value=request.POST.get("start_date", ""),
+        due_date_value=request.POST.get("due_date", ""),
+        user=request.user,
+    )
+
+    if not ok:
+        return JsonResponse({"ok": False, "message": message}, status=400)
+
+    return JsonResponse({"ok": True, "message": message})
