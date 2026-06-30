@@ -50,3 +50,6 @@ class TaskForm(forms.ModelForm):
     class Meta:
         model = Task
         fields = "__all__"
+        widgets = {
+            "depends_on": forms.CheckboxSelectMultiple,
+        }
