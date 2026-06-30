@@ -294,3 +294,40 @@ def gantt_update_task_dates(request, pk):
         return JsonResponse({"ok": False, "message": message}, status=400)
 
     return JsonResponse({"ok": True, "message": message})
+
+from .models import Sprint
+from .forms import SprintForm
+
+@login_required
+def sprint_list(request):
+    sprints = Sprint.objects.prefetch_related("tasks").all()
+    return render(request, "development_center/sprints/list.html", {"sprints": sprints})
+
+@login_required
+def sprint_create(request):
+    form = SprintForm(request.POST or None)
+    if form.is_valid():
+        sprint = form.save()
+        ActivityLog.objects.create(
+            action="create",
+            title=f"إنشاء Sprint: {sprint}",
+            description="تم إنشاء Sprint جديد",
+            user=request.user,
+        )
+        return redirect("development_center:sprint_list")
+    return render(request, "development_center/shared/form.html", {"form": form, "title": "إضافة Sprint"})
+
+@login_required
+def sprint_update(request, pk):
+    sprint = get_object_or_404(Sprint, pk=pk)
+    form = SprintForm(request.POST or None, instance=sprint)
+    if form.is_valid():
+        sprint = form.save()
+        ActivityLog.objects.create(
+            action="update",
+            title=f"تعديل Sprint: {sprint}",
+            description="تم تعديل Sprint",
+            user=request.user,
+        )
+        return redirect("development_center:sprint_list")
+    return render(request, "development_center/shared/form.html", {"form": form, "title": "تعديل Sprint"})

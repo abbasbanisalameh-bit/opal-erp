@@ -63,3 +63,9 @@ urlpatterns += [
 urlpatterns += [
     path("gantt/<int:pk>/dates/", views.gantt_update_task_dates, name="gantt_update_task_dates"),
 ]
+# Sprint Management
+urlpatterns += [
+    path("sprints/", views.sprint_list, name="sprint_list"),
+    path("sprints/add/", views.sprint_create, name="sprint_create"),
+    path("sprints/<int:pk>/edit/", views.sprint_update, name="sprint_update"),
+]

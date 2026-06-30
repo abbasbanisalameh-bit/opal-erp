@@ -1,13 +1,5 @@
 from django import forms
-from .models import (
-    Module,
-    Task,
-    Release,
-    Milestone,
-    Idea,
-    Decision,
-    Bug,
-)
+from .models import Module, Task, Release, Milestone, Idea, Decision, Bug, Sprint
 
 
 class ModuleForm(forms.ModelForm):
@@ -53,3 +45,9 @@ class TaskForm(forms.ModelForm):
         widgets = {
             "depends_on": forms.CheckboxSelectMultiple,
         }
+
+
+class SprintForm(forms.ModelForm):
+    class Meta:
+        model = Sprint
+        fields = "__all__"

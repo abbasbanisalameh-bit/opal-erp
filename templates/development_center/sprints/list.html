@@ -1,0 +1,50 @@
+{% extends "base/base.html" %}
+
+{% block page_title %}Sprint Management{% endblock %}
+{% block page_subtitle %}إدارة السبرنتات ومهام التطوير{% endblock %}
+
+{% block content %}
+
+<div class="opal-card p-4 mb-4 d-flex justify-content-between align-items-center">
+  <div>
+    <h3>🏃 Sprint Management</h3>
+    <p class="text-muted mb-0">تنظيم المهام داخل دورات تطوير محددة.</p>
+  </div>
+  <a href="{% url 'development_center:sprint_create' %}" class="btn btn-primary">إضافة Sprint</a>
+</div>
+
+{% for sprint in sprints %}
+<div class="opal-card p-4 mb-3">
+  <div class="d-flex justify-content-between">
+    <div>
+      <h4>{{ sprint.title }}</h4>
+      <p class="text-muted">{{ sprint.goal|default:"لا يوجد هدف محدد." }}</p>
+      <small>من {{ sprint.start_date|default:"-" }} إلى {{ sprint.end_date|default:"-" }}</small>
+    </div>
+    <div>
+      <span class="badge bg-info">{{ sprint.get_status_display }}</span>
+      <a href="{% url 'development_center:sprint_update' sprint.id %}" class="btn btn-sm btn-warning">تعديل</a>
+    </div>
+  </div>
+
+  <hr>
+
+  <strong>المهام داخل السبرنت: {{ sprint.tasks.count }}</strong>
+  <ul class="mt-2">
+    {% for task in sprint.tasks.all %}
+      <li>
+        <a href="{% url 'development_center:task_detail' task.id %}">{{ task.title }}</a>
+        - {{ task.get_status_display }} - {{ task.progress }}%
+      </li>
+    {% empty %}
+      <li class="text-muted">لا توجد مهام مرتبطة بهذا السبرنت.</li>
+    {% endfor %}
+  </ul>
+</div>
+{% empty %}
+<div class="opal-card p-4">
+  <p class="text-muted">لا توجد سبرنتات بعد.</p>
+</div>
+{% endfor %}
+
+{% endblock %}

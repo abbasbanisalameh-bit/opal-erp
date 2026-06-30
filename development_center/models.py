@@ -28,6 +28,28 @@ class Module(models.Model):
         return self.name
 
 
+
+class Sprint(models.Model):
+    STATUS = [
+        ("planned", "مخطط"),
+        ("active", "نشط"),
+        ("completed", "مكتمل"),
+    ]
+
+    title = models.CharField(max_length=200, verbose_name="اسم السبرنت")
+    goal = models.TextField(blank=True, verbose_name="هدف السبرنت")
+    start_date = models.DateField(null=True, blank=True, verbose_name="تاريخ البداية")
+    end_date = models.DateField(null=True, blank=True, verbose_name="تاريخ النهاية")
+    status = models.CharField(max_length=20, choices=STATUS, default="planned", verbose_name="الحالة")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-start_date", "-id"]
+
+    def __str__(self):
+        return self.title
+
+
 class Task(models.Model):
     STATUS = [
         ("todo","To Do"),
@@ -38,6 +60,7 @@ class Task(models.Model):
 
     module = models.ForeignKey(Module, on_delete=models.CASCADE, related_name="tasks")
     release = models.ForeignKey("Release", on_delete=models.SET_NULL, null=True, blank=True, related_name="tasks")
+    sprint = models.ForeignKey("Sprint", on_delete=models.SET_NULL, null=True, blank=True, related_name="tasks", verbose_name="السبرنت")
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     status = models.CharField(max_length=20, choices=STATUS, default="todo")
