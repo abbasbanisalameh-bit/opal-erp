@@ -241,3 +241,30 @@ def gantt_chart(request):
         "max_date": max_date,
         "total_days": total_days,
     })
+
+def roadmap(request):
+    releases = Release.objects.all().order_by("planned_date", "id")
+
+    roadmap = []
+
+    for release in releases:
+        milestones = release.milestone_set.all().order_by("target_date")
+
+        total = milestones.count()
+        completed = milestones.filter(completed=True).count()
+
+        progress = 0
+        if total:
+            progress = round(completed / total * 100)
+
+        roadmap.append({
+            "release": release,
+            "milestones": milestones,
+            "total": total,
+            "completed": completed,
+            "progress": progress,
+        })
+
+    return render(request, "development_center/roadmap.html", {
+        "roadmap": roadmap,
+    })
