@@ -268,3 +268,25 @@ def roadmap(request):
     return render(request, "development_center/roadmap.html", {
         "roadmap": roadmap,
     })
+
+from django.http import JsonResponse
+
+def gantt_data(request):
+    tasks = Task.objects.select_related("module", "release").prefetch_related("depends_on").all()
+
+    data = []
+    for task in tasks:
+        data.append({
+            "id": task.id,
+            "title": task.title,
+            "module": str(task.module) if task.module else "",
+            "release": str(task.release) if task.release else "",
+            "status": task.status,
+            "progress": task.progress,
+            "start_date": task.start_date.isoformat() if task.start_date else "",
+            "due_date": task.due_date.isoformat() if task.due_date else "",
+            "blocked": task.is_blocked,
+            "dependencies": list(task.depends_on.values_list("id", flat=True)),
+        })
+
+    return JsonResponse({"tasks": data})

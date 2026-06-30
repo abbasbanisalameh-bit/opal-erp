@@ -51,3 +51,11 @@ urlpatterns += [
 urlpatterns += [
     path("gantt/", views.gantt_chart, name="gantt_chart"),
 ]
+# Roadmap
+urlpatterns += [
+    path("roadmap/", views.roadmap, name="roadmap"),
+]
+# Gantt Pro data API
+urlpatterns += [
+    path("gantt/data/", views.gantt_data, name="gantt_data"),
+]
