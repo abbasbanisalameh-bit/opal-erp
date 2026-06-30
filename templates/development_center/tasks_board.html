@@ -1,11 +1,11 @@
 {% extends "base/base.html" %}
 
-{% block page_title %}لوحة المهام{% endblock %}
-{% block page_subtitle %}Kanban Board لإدارة تطوير OPAL ERP{% endblock %}
+{% block page_title %}لوحة Kanban{% endblock %}
+{% block page_subtitle %}إدارة مهام مركز التطوير OPAL ERP{% endblock %}
 
 {% block content %}
 
-<div class="stats-grid">
+<div class="stats-grid mb-4">
   <div class="stat-card"><span>To Do</span><h2>{{ todo|length }}</h2></div>
   <div class="stat-card"><span>Doing</span><h2>{{ doing|length }}</h2></div>
   <div class="stat-card"><span>Review</span><h2>{{ review|length }}</h2></div>
@@ -14,50 +14,42 @@
 
 <div class="row g-3">
 
-{% for status,title,tasks in columns %}
+{% for title,status,tasks in columns %}
 {% endfor %}
 
 <div class="col-lg-3">
 <div class="opal-card p-3 kanban-column" data-status="todo">
-<h4>To Do</h4>
+<h4>To Do ({{ todo|length }})</h4>
 {% for t in todo %}
-<div class="opal-card p-3 mb-2 kanban-task" draggable="true" data-id="{{ t.id }}">
-<strong>{{ t.title }}</strong><br><small>{{ t.module }}</small>
-</div>
-{% empty %}<p>لا توجد مهام.</p>{% endfor %}
+{% include "development_center/tasks/kanban_card.html" %}
+{% empty %}<p class="text-muted">لا توجد مهام.</p>{% endfor %}
 </div>
 </div>
 
 <div class="col-lg-3">
 <div class="opal-card p-3 kanban-column" data-status="doing">
-<h4>Doing</h4>
+<h4>Doing ({{ doing|length }})</h4>
 {% for t in doing %}
-<div class="opal-card p-3 mb-2 kanban-task" draggable="true" data-id="{{ t.id }}">
-<strong>{{ t.title }}</strong><br><small>{{ t.module }}</small>
-</div>
-{% empty %}<p>لا توجد مهام.</p>{% endfor %}
+{% include "development_center/tasks/kanban_card.html" %}
+{% empty %}<p class="text-muted">لا توجد مهام.</p>{% endfor %}
 </div>
 </div>
 
 <div class="col-lg-3">
 <div class="opal-card p-3 kanban-column" data-status="review">
-<h4>Review</h4>
+<h4>Review ({{ review|length }})</h4>
 {% for t in review %}
-<div class="opal-card p-3 mb-2 kanban-task" draggable="true" data-id="{{ t.id }}">
-<strong>{{ t.title }}</strong><br><small>{{ t.module }}</small>
-</div>
-{% empty %}<p>لا توجد مهام.</p>{% endfor %}
+{% include "development_center/tasks/kanban_card.html" %}
+{% empty %}<p class="text-muted">لا توجد مهام.</p>{% endfor %}
 </div>
 </div>
 
 <div class="col-lg-3">
 <div class="opal-card p-3 kanban-column" data-status="done">
-<h4>Done</h4>
+<h4>Done ({{ done|length }})</h4>
 {% for t in done %}
-<div class="opal-card p-3 mb-2 kanban-task" draggable="true" data-id="{{ t.id }}">
-<strong>{{ t.title }}</strong><br><small>{{ t.module }}</small>
-</div>
-{% empty %}<p>لا توجد مهام.</p>{% endfor %}
+{% include "development_center/tasks/kanban_card.html" %}
+{% empty %}<p class="text-muted">لا توجد مهام.</p>{% endfor %}
 </div>
 </div>
 
@@ -65,41 +57,30 @@
 
 <script>
 function csrfToken(){
-  return document.cookie.split('; ').find(row => row.startsWith('csrftoken='))?.split('=')[1];
+  const row = document.cookie.split('; ').find(row => row.startsWith('csrftoken='));
+  return row ? row.split('=')[1] : '';
 }
 
-let dragged = null;
+function updateTaskStatus(taskId, status){
+  fetch(`/development/tasks/${taskId}/status/`, {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': csrfToken(),
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: `status=${status}`
+  }).then(r => {
+    if (r.ok) {
+      location.reload();
+    } else {
+      alert('لم يتم تحديث المهمة');
+    }
+  }).catch(() => alert('حدث خطأ أثناء تحديث المهمة'));
+}
 
-document.querySelectorAll('.kanban-task').forEach(task => {
-  task.addEventListener('dragstart', () => {
-    dragged = task;
-  });
-});
-
-document.querySelectorAll('.kanban-column').forEach(column => {
-  column.addEventListener('dragover', e => e.preventDefault());
-
-  column.addEventListener('drop', e => {
-    e.preventDefault();
-    if (!dragged) return;
-
-    const taskId = dragged.dataset.id;
-    const status = column.dataset.status;
-
-    fetch(`/development/tasks/${taskId}/status/`, {
-      method: 'POST',
-      headers: {
-        'X-CSRFToken': csrfToken(),
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: `status=${status}`
-    }).then(r => {
-      if (r.ok) {
-        column.appendChild(dragged);
-      } else {
-        alert('لم يتم تحديث المهمة');
-      }
-    });
+document.querySelectorAll('.status-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    updateTaskStatus(btn.dataset.id, btn.dataset.status);
   });
 });
 </script>
