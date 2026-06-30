@@ -17,7 +17,7 @@
 <div class="opal-card p-4 mb-3">
   <div class="d-flex justify-content-between">
     <div>
-      <h4>{{ sprint.title }}</h4>
+      <h4><a href="{% url 'development_center:sprint_detail' sprint.id %}">{{ sprint.title }}</a></h4>
       <p class="text-muted">{{ sprint.goal|default:"لا يوجد هدف محدد." }}</p>
       <small>من {{ sprint.start_date|default:"-" }} إلى {{ sprint.end_date|default:"-" }}</small>
     </div>

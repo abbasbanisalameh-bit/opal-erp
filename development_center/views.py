@@ -331,3 +331,39 @@ def sprint_update(request, pk):
         )
         return redirect("development_center:sprint_list")
     return render(request, "development_center/shared/form.html", {"form": form, "title": "تعديل Sprint"})
+
+from django.utils import timezone
+
+@login_required
+def sprint_detail(request, pk):
+    sprint = get_object_or_404(Sprint, pk=pk)
+    tasks = sprint.tasks.all()
+
+    total = tasks.count()
+    done = tasks.filter(status="done").count()
+    doing = tasks.filter(status="doing").count()
+    review = tasks.filter(status="review").count()
+    todo = tasks.filter(status="todo").count()
+    remaining = total - done
+    progress = round((done / total) * 100) if total else 0
+
+    today = timezone.localdate()
+    days_left = None
+    if sprint.end_date:
+        days_left = (sprint.end_date - today).days
+
+    overdue_tasks = tasks.filter(due_date__lt=today).exclude(status="done")
+
+    return render(request, "development_center/sprints/detail.html", {
+        "sprint": sprint,
+        "tasks": tasks,
+        "total": total,
+        "done": done,
+        "doing": doing,
+        "review": review,
+        "todo": todo,
+        "remaining": remaining,
+        "progress": progress,
+        "days_left": days_left,
+        "overdue_tasks": overdue_tasks,
+    })

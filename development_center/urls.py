@@ -69,3 +69,7 @@ urlpatterns += [
     path("sprints/add/", views.sprint_create, name="sprint_create"),
     path("sprints/<int:pk>/edit/", views.sprint_update, name="sprint_update"),
 ]
+# Sprint Dashboard
+urlpatterns += [
+    path("sprints/<int:pk>/", views.sprint_detail, name="sprint_detail"),
+]
