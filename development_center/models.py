@@ -42,6 +42,13 @@ class Task(models.Model):
     description = models.TextField(blank=True)
     status = models.CharField(max_length=20, choices=STATUS, default="todo")
     progress = models.PositiveSmallIntegerField(default=0)
+    depends_on = models.ManyToManyField(
+        "self",
+        symmetrical=False,
+        blank=True,
+        related_name="blocked_tasks",
+        verbose_name="يعتمد على"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
