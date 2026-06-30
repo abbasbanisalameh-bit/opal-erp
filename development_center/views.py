@@ -367,3 +367,19 @@ def sprint_detail(request, pk):
         "days_left": days_left,
         "overdue_tasks": overdue_tasks,
     })
+
+@login_required
+def sprint_board(request, pk):
+    sprint = get_object_or_404(Sprint, pk=pk)
+
+    tasks = sprint.tasks.all()
+
+    context = {
+        "sprint": sprint,
+        "todo": tasks.filter(status="todo"),
+        "doing": tasks.filter(status="doing"),
+        "review": tasks.filter(status="review"),
+        "done": tasks.filter(status="done"),
+    }
+
+    return render(request, "development_center/sprints/board.html", context)

@@ -1,0 +1,88 @@
+{% extends "base/base.html" %}
+
+{% block page_title %}Sprint Board{% endblock %}
+{% block page_subtitle %}لوحة كانبان الخاصة بالسبرنت{% endblock %}
+
+{% block content %}
+
+<div class="opal-card p-4 mb-4 d-flex justify-content-between align-items-center">
+    <div>
+        <h3>🏃 {{ sprint.title }}</h3>
+        <p class="text-muted mb-0">{{ sprint.goal }}</p>
+    </div>
+
+    <a class="btn btn-outline-primary"
+       href="{% url 'development_center:sprint_detail' sprint.id %}">
+        Sprint Dashboard
+    </a>
+</div>
+
+<div class="row">
+
+<div class="col-md-3">
+<div class="opal-card p-3">
+<h5>📋 To Do</h5>
+{% for t in todo %}
+<div class="card mb-2">
+<div class="card-body">
+<strong>{{ t.title }}</strong><br>
+<small>{{ t.progress }}%</small>
+</div>
+</div>
+{% empty %}
+<p class="text-muted">لا توجد مهام</p>
+{% endfor %}
+</div>
+</div>
+
+<div class="col-md-3">
+<div class="opal-card p-3">
+<h5>⚙️ Doing</h5>
+{% for t in doing %}
+<div class="card mb-2">
+<div class="card-body">
+<strong>{{ t.title }}</strong><br>
+<small>{{ t.progress }}%</small>
+</div>
+</div>
+{% empty %}
+<p class="text-muted">لا توجد مهام</p>
+{% endfor %}
+</div>
+</div>
+
+<div class="col-md-3">
+<div class="opal-card p-3">
+<h5>🔍 Review</h5>
+{% for t in review %}
+<div class="card mb-2">
+<div class="card-body">
+<strong>{{ t.title }}</strong><br>
+<small>{{ t.progress }}%</small>
+</div>
+</div>
+{% empty %}
+<p class="text-muted">لا توجد مهام</p>
+{% endfor %}
+</div>
+</div>
+
+<div class="col-md-3">
+<div class="opal-card p-3">
+<h5>✅ Done</h5>
+{% for t in done %}
+<div class="card mb-2">
+<div class="card-body">
+<strong>{{ t.title }}</strong><br>
+<small>{{ t.progress }}%</small>
+</div>
+</div>
+{% empty %}
+<p class="text-muted">لا توجد مهام</p>
+{% endfor %}
+</div>
+</div>
+
+</div>
+
+{% endblock %}

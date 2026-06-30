@@ -13,7 +13,13 @@
       <small>من {{ sprint.start_date|default:"-" }} إلى {{ sprint.end_date|default:"-" }}</small>
     </div>
     <span class="badge bg-info">{{ sprint.get_status_display }}</span>
-  </div>
+  
+<a href="{% url 'development_center:sprint_board' sprint.id %}"
+class="btn btn-primary">
+فتح Sprint Board
+</a>
+
+</div>
 </div>
 
 <div class="opal-card p-4 mb-4">

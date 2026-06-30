@@ -73,3 +73,6 @@ urlpatterns += [
 urlpatterns += [
     path("sprints/<int:pk>/", views.sprint_detail, name="sprint_detail"),
 ]
+urlpatterns += [
+    path("sprints/<int:pk>/board/", views.sprint_board, name="sprint_board"),
+]
