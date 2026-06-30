@@ -205,6 +205,39 @@ def task_delete(request, pk):
 
 def gantt_chart(request):
     tasks = Task.objects.select_related("module", "release").all().order_by("start_date", "due_date", "id")
+
+    dated_tasks = [t for t in tasks if t.start_date and t.due_date]
+
+    if dated_tasks:
+        min_date = min(t.start_date for t in dated_tasks)
+        max_date = max(t.due_date for t in dated_tasks)
+        total_days = max((max_date - min_date).days + 1, 1)
+    else:
+        min_date = None
+        max_date = None
+        total_days = 1
+
+    rows = []
+    for task in tasks:
+        if task.start_date and task.due_date and min_date:
+            offset = (task.start_date - min_date).days
+            duration = max((task.due_date - task.start_date).days + 1, 1)
+        else:
+            offset = 0
+            duration = 1
+
+        rows.append({
+            "task": task,
+            "offset": offset,
+            "duration": duration,
+            "progress": task.progress or 0,
+            "blocked": task.is_blocked,
+            "has_dates": bool(task.start_date and task.due_date),
+        })
+
     return render(request, "development_center/gantt.html", {
-        "tasks": tasks,
+        "rows": rows,
+        "min_date": min_date,
+        "max_date": max_date,
+        "total_days": total_days,
     })

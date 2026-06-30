@@ -6,44 +6,99 @@
 {% block content %}
 
 <div class="opal-card p-4">
-  <h3 class="mb-3">📅 مخطط جانت - المهام</h3>
+  <h3 class="mb-2">📅 مخطط جانت</h3>
+  <p class="text-muted">
+    من {{ min_date|default:"-" }} إلى {{ max_date|default:"-" }}
+  </p>
 
   <div class="table-responsive">
-    <table class="table table-dark table-striped align-middle">
+    <table class="table table-dark align-middle">
       <thead>
         <tr>
-          <th>المهمة</th>
+          <th style="min-width:220px;">المهمة</th>
           <th>الوحدة</th>
-          <th>الإصدار</th>
           <th>البداية</th>
           <th>النهاية</th>
-          <th>الحالة</th>
-          <th>الإنجاز</th>
+          <th style="min-width:420px;">المخطط الزمني</th>
         </tr>
       </thead>
       <tbody>
-        {% for task in tasks %}
+        {% for row in rows %}
         <tr>
           <td>
-            <a href="{% url 'development_center:task_detail' task.id %}">
-              {{ task.title }}
+            {% if row.blocked %}🔒{% elif row.task.has_dependencies %}🔗{% endif %}
+            <a href="{% url 'development_center:task_detail' row.task.id %}">
+              {{ row.task.title }}
             </a>
+            <br>
+            <small>{{ row.task.get_status_display }} - {{ row.task.progress }}%</small>
           </td>
-          <td>{{ task.module|default:"-" }}</td>
-          <td>{{ task.release|default:"-" }}</td>
-          <td>{{ task.start_date|default:"-" }}</td>
-          <td>{{ task.due_date|default:"-" }}</td>
-          <td>{{ task.get_status_display }}</td>
-          <td>{{ task.progress }}%</td>
+          <td>{{ row.task.module|default:"-" }}</td>
+          <td>{{ row.task.start_date|default:"-" }}</td>
+          <td>{{ row.task.due_date|default:"-" }}</td>
+          <td>
+            {% if row.has_dates %}
+            <div class="gantt-track">
+              <div class="gantt-bar status-{{ row.task.status }}"
+                   style="margin-right: calc({{ row.offset }} * 22px); width: calc({{ row.duration }} * 22px);">
+                <div class="gantt-progress" style="width: {{ row.progress }}%;"></div>
+                <span>{{ row.progress }}%</span>
+              </div>
+            </div>
+            {% else %}
+              <span class="text-muted">لم يتم تحديد التاريخ</span>
+            {% endif %}
+          </td>
         </tr>
         {% empty %}
         <tr>
-          <td colspan="7" class="text-center text-muted">لا توجد مهام بعد.</td>
+          <td colspan="5" class="text-center text-muted">لا توجد مهام.</td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
 </div>
+
+<style>
+.gantt-track {
+  min-width: 420px;
+  height: 34px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 10px;
+  position: relative;
+  overflow-x: auto;
+}
+
+.gantt-bar {
+  height: 26px;
+  margin-top: 4px;
+  border-radius: 8px;
+  position: relative;
+  background: #334155;
+  overflow: hidden;
+  min-width: 28px;
+}
+
+.gantt-progress {
+  height: 100%;
+  background: rgba(34,197,94,0.85);
+}
+
+.gantt-bar span {
+  position: absolute;
+  inset: 0;
+  text-align: center;
+  line-height: 26px;
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.status-todo { background: #475569; }
+.status-doing { background: #2563eb; }
+.status-review { background: #d97706; }
+.status-done { background: #16a34a; }
+</style>
 
 {% endblock %}
