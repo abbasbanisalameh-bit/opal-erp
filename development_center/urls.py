@@ -59,3 +59,7 @@ urlpatterns += [
 urlpatterns += [
     path("gantt/data/", views.gantt_data, name="gantt_data"),
 ]
+# Gantt date update API
+urlpatterns += [
+    path("gantt/<int:pk>/dates/", views.gantt_update_task_dates, name="gantt_update_task_dates"),
+]

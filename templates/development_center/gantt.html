@@ -39,10 +39,31 @@ fetch("https://opalschool2016.pythonanywhere.com/development/gantt/data/")
       return;
     }
 
+    function csrfToken(){
+      const row = document.cookie.split('; ').find(row => row.startsWith('csrftoken='));
+      return row ? row.split('=')[1] : '';
+    }
+
     new Gantt("#gantt", tasks, {
       view_mode: "Day",
       language: "ar",
-      readonly: true
+      on_date_change: function(task, start, end) {
+        fetch(`/development/gantt/${task.id}/dates/`, {
+          method: "POST",
+          headers: {
+            "X-CSRFToken": csrfToken(),
+            "Content-Type": "application/x-www-form-urlencoded"
+          },
+          body: `start_date=${start.toISOString().slice(0,10)}&due_date=${end.toISOString().slice(0,10)}`
+        }).then(async r => {
+          if (!r.ok) {
+            let data = {};
+            try { data = await r.json(); } catch(e) {}
+            alert(data.message || "لم يتم حفظ تعديل Gantt");
+            location.reload();
+          }
+        });
+      }
     });
   });
 </script>
