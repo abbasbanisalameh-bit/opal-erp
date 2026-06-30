@@ -128,9 +128,10 @@ def task_update_status(request, pk):
         incomplete_dependencies = task.depends_on.exclude(status="done")
 
         if new_status in ["doing", "review", "done"] and incomplete_dependencies.exists():
+            dependency_names = "، ".join(incomplete_dependencies.values_list("title", flat=True))
             return JsonResponse({
                 "ok": False,
-                "message": "لا يمكن بدء هذه المهمة حتى تكتمل جميع المهام التي تعتمد عليها."
+                "message": f"لا يمكن نقل هذه المهمة قبل إكمال: {dependency_names}"
             }, status=400)
 
         old_status = task.status
@@ -201,3 +202,9 @@ def task_delete(request, pk):
     )
     obj.delete()
     return redirect("development_center:task_list")
+
+def gantt_chart(request):
+    tasks = Task.objects.select_related("module", "release").all().order_by("start_date", "due_date", "id")
+    return render(request, "development_center/gantt.html", {
+        "tasks": tasks,
+    })

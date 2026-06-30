@@ -47,3 +47,7 @@ urlpatterns += [
     path("tasks/<int:pk>/edit/", views.task_update, name="task_update"),
     path("tasks/<int:pk>/delete/", views.task_delete, name="task_delete"),
 ]
+# Gantt Chart
+urlpatterns += [
+    path("gantt/", views.gantt_chart, name="gantt_chart"),
+]
