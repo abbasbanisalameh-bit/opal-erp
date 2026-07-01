@@ -1,0 +1,93 @@
+{% extends "base/base.html" %}
+
+{% block page_title %}Executive Dashboard{% endblock %}
+{% block page_subtitle %}لوحة مؤشرات مدير المشروع{% endblock %}
+
+{% block content %}
+
+<div class="opal-card p-4 mb-4">
+  <h3>📊 Executive Dashboard</h3>
+  <p class="text-muted mb-0">نظرة تنفيذية شاملة على تقدم مركز تطوير OPAL ERP.</p>
+</div>
+
+<div class="opal-card p-4 mb-4">
+  <div class="d-flex justify-content-between mb-2">
+    <strong>نسبة إنجاز المشروع</strong>
+    <strong>{{ project_progress }}%</strong>
+  </div>
+  <div class="progress" style="height:24px;">
+    <div class="progress-bar" style="width: {{ project_progress }}%;">
+      {{ project_progress }}%
+    </div>
+  </div>
+</div>
+
+<div class="stats-grid mb-4">
+  <div class="stat-card"><span>الوحدات</span><h2>{{ modules_count }}</h2></div>
+  <div class="stat-card"><span>إجمالي المهام</span><h2>{{ total_tasks }}</h2></div>
+  <div class="stat-card"><span>المهام المكتملة</span><h2>{{ done_tasks }}</h2></div>
+  <div class="stat-card"><span>الأخطاء المفتوحة</span><h2>{{ open_bugs }}</h2></div>
+</div>
+
+<div class="opal-card p-4 mb-4">
+  <h4>🏃 تقدم السبرنتات</h4>
+  {% for item in sprint_data %}
+    <div class="mb-3">
+      <div class="d-flex justify-content-between">
+        <strong>{{ item.sprint.title }}</strong>
+        <span>{{ item.progress }}%</span>
+      </div>
+      <div class="progress" style="height:18px;">
+        <div class="progress-bar" style="width: {{ item.progress }}%;"></div>
+      </div>
+    </div>
+  {% empty %}
+    <p class="text-muted">لا توجد سبرنتات.</p>
+  {% endfor %}
+</div>
+
+<div class="opal-card p-4 mb-4">
+  <h4>🚀 تقدم الإصدارات</h4>
+  {% for item in release_data %}
+    <div class="mb-3">
+      <div class="d-flex justify-content-between">
+        <strong>{{ item.release.version }} - {{ item.release.title }}</strong>
+        <span>{{ item.progress }}%</span>
+      </div>
+      <div class="progress" style="height:18px;">
+        <div class="progress-bar" style="width: {{ item.progress }}%;"></div>
+      </div>
+    </div>
+  {% empty %}
+    <p class="text-muted">لا توجد إصدارات.</p>
+  {% endfor %}
+</div>
+
+<div class="opal-card p-4 mb-4">
+  <h4>⚠️ المهام المتأخرة</h4>
+  <ul>
+    {% for task in overdue_tasks %}
+      <li>
+        <a href="{% url 'development_center:task_detail' task.id %}">
+          {{ task.title }}
+        </a>
+        - {{ task.due_date }}
+      </li>
+    {% empty %}
+      <li class="text-muted">لا توجد مهام متأخرة.</li>
+    {% endfor %}
+  </ul>
+</div>
+
+<div class="opal-card p-4">
+  <h4>🔔 آخر الإشعارات</h4>
+  <ul>
+    {% for n in notifications %}
+      <li>{{ n.title }} - {{ n.created_at|date:"Y-m-d H:i" }}</li>
+    {% empty %}
+      <li class="text-muted">لا توجد إشعارات.</li>
+    {% endfor %}
+  </ul>
+</div>
+
+{% endblock %}

@@ -92,3 +92,6 @@ urlpatterns += [
 urlpatterns += [
     path("notifications/generate/tasks/", views.generate_task_notifications, name="generate_task_notifications"),
 ]
+urlpatterns += [
+    path("executive/", views.executive_dashboard, name="executive_dashboard"),
+]

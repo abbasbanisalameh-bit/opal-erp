@@ -511,3 +511,55 @@ def generate_task_notifications(request):
             created += 1
 
     return redirect("development_center:notification_list")
+
+@login_required
+def executive_dashboard(request):
+    modules_count = Module.objects.count()
+    tasks = Task.objects.all()
+    sprints = Sprint.objects.prefetch_related("tasks").all()
+    releases = Release.objects.all()
+    notifications = Notification.objects.all()[:8]
+
+    total_tasks = tasks.count()
+    done_tasks = tasks.filter(status="done").count()
+    overdue_tasks = tasks.filter(due_date__lt=timezone.localdate()).exclude(status="done")
+    open_bugs = Bug.objects.exclude(status="closed").count() if hasattr(Bug, "status") else Bug.objects.count()
+
+    project_progress = round((done_tasks / total_tasks) * 100) if total_tasks else 0
+
+    sprint_data = []
+    for sprint in sprints[:6]:
+        stotal = sprint.tasks.count()
+        sdone = sprint.tasks.filter(status="done").count()
+        sprogress = round((sdone / stotal) * 100) if stotal else 0
+        sprint_data.append({
+            "sprint": sprint,
+            "total": stotal,
+            "done": sdone,
+            "progress": sprogress,
+        })
+
+    release_data = []
+    for release in releases[:6]:
+        r_tasks = release.tasks.all()
+        r_total = r_tasks.count()
+        r_done = r_tasks.filter(status="done").count()
+        r_progress = round((r_done / r_total) * 100) if r_total else 0
+        release_data.append({
+            "release": release,
+            "total": r_total,
+            "done": r_done,
+            "progress": r_progress,
+        })
+
+    return render(request, "development_center/executive_dashboard.html", {
+        "modules_count": modules_count,
+        "total_tasks": total_tasks,
+        "done_tasks": done_tasks,
+        "project_progress": project_progress,
+        "overdue_tasks": overdue_tasks[:10],
+        "open_bugs": open_bugs,
+        "sprint_data": sprint_data,
+        "release_data": release_data,
+        "notifications": notifications,
+    })
