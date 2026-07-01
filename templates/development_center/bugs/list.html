@@ -1,80 +1,29 @@
 {% extends "base/base.html" %}
-
-{% block page_title %}🐞 الأخطاء{% endblock %}
-{% block page_subtitle %}إدارة 🐞 الأخطاء{% endblock %}
-
+{% block page_title %}الأخطاء{% endblock %}
+{% block page_subtitle %}متابعة أخطاء مشروع OPAL ERP{% endblock %}
 {% block content %}
-
-<div class="stats-grid">
-    <div class="stat-card">
-        <span>إجمالي السجلات</span>
-        <h2>{{ items|length }}</h2>
-    </div>
+<div class="opal-card p-4 mb-4">
+  <h3>🐞 الأخطاء</h3>
 </div>
-
-<div class="opal-card" style="padding:24px;">
-
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-    <h3>🐞 الأخطاء</h3>
-
-    <a href="{% url 'development_center:bug_create' %}" class="btn btn-primary">
-        إضافة جديد
-    </a>
-</div>
-
-<table class="table table-hover">
-
-<thead>
-<tr>
-<th>#</th>
-<th>الاسم</th>
-<th>الإجراءات</th>
-</tr>
-</thead>
-
+<div class="opal-card p-4">
+<table class="table table-dark table-striped align-middle">
+<thead><tr><th>#</th><th>العنوان</th><th>الوحدة</th><th>الحالة</th><th>الإجراء</th></tr></thead>
 <tbody>
-
 {% for item in items %}
-
 <tr>
-
 <td>{{ forloop.counter }}</td>
-
+<td>{{ item.title }}</td>
+<td>{{ item.module|default:"-" }}</td>
+<td>{{ item.get_status_display|default:item.status }}</td>
 <td>
-{{ item.title|default:item.name|default:item.version }}
+<a class="btn btn-sm btn-warning" href="{% url 'development_center:bug_update' item.id %}">تعديل</a>
+<a class="btn btn-sm btn-danger" href="{% url 'development_center:bug_delete' item.id %}">حذف</a>
 </td>
-
-<td>
-
-<a class="btn btn-sm btn-warning"
-href="{% url 'development_center:bug_update' item.id %}">
-تعديل
-</a>
-
-<a class="btn btn-sm btn-danger"
-href="{% url 'development_center:bug_delete' item.id %}"
-onclick="return confirm('هل تريد الحذف؟');">
-حذف
-</a>
-
-</td>
-
 </tr>
-
 {% empty %}
-
-<tr>
-<td colspan="3">
-لا توجد بيانات.
-</td>
-</tr>
-
+<tr><td colspan="5" class="text-center text-muted">لا توجد أخطاء.</td></tr>
 {% endfor %}
-
 </tbody>
-
 </table>
-
 </div>
-
 {% endblock %}

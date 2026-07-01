@@ -79,6 +79,17 @@
             <span>لوحة التطوير</span>
         </a>
 
+        <a href="/development/executive/" class="{% if '/development/executive/' in request.path %}active{% endif %}">
+            <i class="bi bi-graph-up-arrow"></i>
+            <span>لوحة المدير التنفيذي</span>
+        </a>
+
+        <a href="/development/workflow/run/">
+            <i class="bi bi-arrow-repeat"></i>
+            <span>تشغيل محرك العمل</span>
+        </a>
+
+
         <a href="/development/modules/" class="{% if '/development/modules/' in request.path %}active{% endif %}">
             <i class="bi bi-grid-fill"></i>
             <span>الوحدات</span>

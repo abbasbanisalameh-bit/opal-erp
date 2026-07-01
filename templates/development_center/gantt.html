@@ -19,7 +19,7 @@
 <script src="https://unpkg.com/frappe-gantt/dist/frappe-gantt.umd.js"></script>
 
 <script>
-fetch("https://opalschool2016.pythonanywhere.com/development/gantt/data/")
+fetch("/development/gantt/data/")
   .then(response => response.json())
   .then(data => {
     const tasks = data.tasks

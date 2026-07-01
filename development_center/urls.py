@@ -5,15 +5,23 @@ app_name = "development_center"
 
 urlpatterns = [
     path("", views.dashboard, name="dashboard"),
-    path("tasks/", views.task_list, name="task_list"),
-    path("tasks/board/", views.tasks_board, name="tasks_board"),
-    path("activity/", views.activity_list, name="activity_list"),
-    path("tasks/<int:pk>/status/", views.task_update_status, name="task_update_status"),
+    path("executive/", views.executive_dashboard, name="executive_dashboard"),
+    path("workflow/run/", views.run_workflow_engine_view, name="run_workflow_engine"),
 
     path("modules/", views.module_list, name="module_list"),
     path("modules/add/", views.module_create, name="module_create"),
     path("modules/<int:pk>/edit/", views.module_update, name="module_update"),
     path("modules/<int:pk>/delete/", views.module_delete, name="module_delete"),
+
+    path("tasks/", views.task_list, name="task_list"),
+    path("tasks/add/", views.task_create, name="task_create"),
+    path("tasks/board/", views.tasks_board, name="tasks_board"),
+    path("tasks/<int:pk>/", views.task_detail, name="task_detail"),
+    path("tasks/<int:pk>/edit/", views.task_update, name="task_update"),
+    path("tasks/<int:pk>/delete/", views.task_delete, name="task_delete"),
+    path("tasks/<int:pk>/status/", views.task_update_status, name="task_update_status"),
+
+    path("activity/", views.activity_list, name="activity_list"),
 
     path("releases/", views.release_list, name="release_list"),
     path("releases/add/", views.release_create, name="release_create"),
@@ -39,63 +47,26 @@ urlpatterns = [
     path("bugs/add/", views.bug_create, name="bug_create"),
     path("bugs/<int:pk>/edit/", views.bug_update, name="bug_update"),
     path("bugs/<int:pk>/delete/", views.bug_delete, name="bug_delete"),
-]
 
-urlpatterns += [
-    path("tasks/add/", views.task_create, name="task_create"),
-    path("tasks/<int:pk>/", views.task_detail, name="task_detail"),
-    path("tasks/<int:pk>/edit/", views.task_update, name="task_update"),
-    path("tasks/<int:pk>/delete/", views.task_delete, name="task_delete"),
-]
-# Gantt Chart
-urlpatterns += [
     path("gantt/", views.gantt_chart, name="gantt_chart"),
-]
-# Roadmap
-urlpatterns += [
-    path("roadmap/", views.roadmap, name="roadmap"),
-]
-# Gantt Pro data API
-urlpatterns += [
     path("gantt/data/", views.gantt_data, name="gantt_data"),
-]
-# Gantt date update API
-urlpatterns += [
     path("gantt/<int:pk>/dates/", views.gantt_update_task_dates, name="gantt_update_task_dates"),
-]
-# Sprint Management
-urlpatterns += [
+
+    path("roadmap/", views.roadmap, name="roadmap"),
+
     path("sprints/", views.sprint_list, name="sprint_list"),
     path("sprints/add/", views.sprint_create, name="sprint_create"),
-    path("sprints/<int:pk>/edit/", views.sprint_update, name="sprint_update"),
-]
-# Sprint Dashboard
-urlpatterns += [
-    path("sprints/<int:pk>/", views.sprint_detail, name="sprint_detail"),
-]
-urlpatterns += [
-    path("sprints/<int:pk>/board/", views.sprint_board, name="sprint_board"),
-]
-urlpatterns += [
-    path("backlog/", views.product_backlog, name="product_backlog"),
-]
-urlpatterns += [
-    path("sprints/<int:pk>/burndown/", views.sprint_burndown, name="sprint_burndown"),
-]
-urlpatterns += [
     path("sprints/velocity/", views.sprint_velocity, name="sprint_velocity"),
-]
-urlpatterns += [
+    path("sprints/<int:pk>/", views.sprint_detail, name="sprint_detail"),
+    path("sprints/<int:pk>/edit/", views.sprint_update, name="sprint_update"),
+    path("sprints/<int:pk>/board/", views.sprint_board, name="sprint_board"),
+    path("sprints/<int:pk>/burndown/", views.sprint_burndown, name="sprint_burndown"),
+    path("backlog/", views.product_backlog, name="product_backlog"),
+
     path("notifications/", views.notification_list, name="notification_list"),
     path("notifications/<int:pk>/read/", views.notification_mark_read, name="notification_mark_read"),
-]
-urlpatterns += [
     path("notifications/generate/tasks/", views.generate_task_notifications, name="generate_task_notifications"),
-]
-urlpatterns += [
-    path("executive/", views.executive_dashboard, name="executive_dashboard"),
-]
-urlpatterns += [
+
     path("reports/tasks.csv", views.tasks_csv_report, name="tasks_csv_report"),
     path("reports/project-print/", views.project_print_report, name="project_print_report"),
 ]
