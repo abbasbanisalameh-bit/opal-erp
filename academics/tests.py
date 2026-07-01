@@ -20,10 +20,10 @@ class AcademicsModelsTest(TestCase):
         self.school = School.objects.create(name="مدرسة اختبار")
         self.branch = Branch.objects.create(school=self.school, name="الفرع الرئيسي")
         self.academic_year = AcademicYear.objects.create(
+            school=self.school,
             name="2026/2027",
             start_date=date(2026, 9, 1),
             end_date=date(2027, 6, 30),
-            is_active=True,
         )
 
     def test_create_grade_section_and_subject(self):
