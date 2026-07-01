@@ -489,3 +489,25 @@ def notification_mark_read(request, pk):
     notification.is_read = True
     notification.save(update_fields=["is_read"])
     return redirect("development_center:notification_list")
+
+@login_required
+def generate_task_notifications(request):
+    today = timezone.localdate()
+    overdue_tasks = Task.objects.filter(due_date__lt=today).exclude(status="done")
+
+    created = 0
+
+    for task in overdue_tasks:
+        title = f"مهمة متأخرة: {task.title}"
+        exists = Notification.objects.filter(title=title, is_read=False).exists()
+
+        if not exists:
+            Notification.objects.create(
+                title=title,
+                message=f"المهمة تجاوزت تاريخ النهاية المحدد: {task.due_date}",
+                level="danger",
+                url=f"/development/tasks/{task.id}/",
+            )
+            created += 1
+
+    return redirect("development_center:notification_list")

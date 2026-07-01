@@ -89,3 +89,6 @@ urlpatterns += [
     path("notifications/", views.notification_list, name="notification_list"),
     path("notifications/<int:pk>/read/", views.notification_mark_read, name="notification_mark_read"),
 ]
+urlpatterns += [
+    path("notifications/generate/tasks/", views.generate_task_notifications, name="generate_task_notifications"),
+]
