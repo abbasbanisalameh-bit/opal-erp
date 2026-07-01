@@ -226,3 +226,70 @@
     padding: 8px 10px;
     margin-bottom: 6px;
 }
+
+/* OPAL Gantt Pro Styling */
+#gantt {
+    background: #0f172a !important;
+    border-radius: 18px;
+    padding: 20px;
+    color: #f8fafc;
+    overflow-x: auto;
+}
+
+.gantt-container,
+.gantt {
+    background: #0f172a !important;
+    color: #f8fafc !important;
+}
+
+.gantt .grid-header,
+.gantt .grid-row {
+    fill: #1e293b !important;
+}
+
+.gantt .row-line,
+.gantt .tick {
+    stroke: rgba(255,255,255,0.12) !important;
+}
+
+.gantt .lower-text,
+.gantt .upper-text,
+.gantt .bar-label {
+    fill: #f8fafc !important;
+    font-family: "Tahoma", "Arial", sans-serif !important;
+}
+
+.gantt .bar {
+    rx: 8;
+    ry: 8;
+}
+
+.gantt .bar-progress {
+    fill: rgba(34,197,94,0.85) !important;
+}
+
+.gantt .bar-wrapper.todo .bar {
+    fill: #64748b !important;
+}
+
+.gantt .bar-wrapper.doing .bar {
+    fill: #2563eb !important;
+}
+
+.gantt .bar-wrapper.review .bar {
+    fill: #f59e0b !important;
+}
+
+.gantt .bar-wrapper.done .bar {
+    fill: #16a34a !important;
+}
+
+.gantt .bar-wrapper.overdue .bar {
+    fill: #dc2626 !important;
+}
+
+.gantt .popup-wrapper {
+    background: #020617 !important;
+    color: #f8fafc !important;
+    border: 1px solid rgba(255,255,255,0.15);
+}

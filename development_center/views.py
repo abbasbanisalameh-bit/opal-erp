@@ -175,7 +175,7 @@ def task_delete(request, pk):
     obj.delete()
     if module:
         # Recalculate via the full engine because the deleted task is gone.
-        run_workflow_engine(user=request.user)
+        run_workflow_engine()
     return redirect("development_center:task_list")
 
 
@@ -372,7 +372,7 @@ def notification_mark_read(request, pk):
 
 @login_required
 def generate_task_notifications(request):
-    result = run_workflow_engine(user=request.user)
+    result = run_workflow_engine()
     Notification.objects.create(
         title="تم تشغيل محرك الإشعارات",
         message=f"تم إنشاء {result.overdue_notifications} إشعار جديد.",
@@ -384,22 +384,19 @@ def generate_task_notifications(request):
 
 @login_required
 def run_workflow_engine_view(request):
-    result = run_workflow_engine(user=request.user)
+    result = run_workflow_engine()
+
+    overdue = result.get("overdue_notifications", 0) if isinstance(result, dict) else 0
+
     Notification.objects.create(
         title="تم تشغيل محرك سير العمل",
-        message=(
-            f"تمت مزامنة {result.normalized_tasks} مهمة، "
-            f"وتحديث {result.module_updates} وحدة، "
-            f"و{result.sprint_updates} Sprint، "
-            f"وإنشاء {result.overdue_notifications} إشعار."
-        ),
+        message=f"تم تحديث الحالات والحسابات، وتم إنشاء {overdue} إشعار تأخير.",
         level="success",
         url="/development/executive/",
     )
+
     return redirect("development_center:executive_dashboard")
 
-
-@login_required
 def executive_dashboard(request):
     today = timezone.localdate()
     tasks = Task.objects.select_related("module", "release", "sprint").all()
