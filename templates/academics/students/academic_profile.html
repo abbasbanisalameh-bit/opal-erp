@@ -1,0 +1,127 @@
+{% extends "base/base.html" %}
+
+{% block page_title %}السجل الأكاديمي للطالب{% endblock %}
+{% block page_subtitle %}Academic Profile{% endblock %}
+
+{% block content %}
+
+<div class="opal-card p-4 mb-4">
+  <h3>🎓 {{ student.full_name }}</h3>
+  <p class="text-muted mb-0">رقم الطالب: {{ student.student_number }}</p>
+</div>
+
+<div class="stats-grid mb-4">
+  <div class="stat-card">
+    <span>المدرسة</span>
+    <h4>{{ student.school }}</h4>
+  </div>
+
+  <div class="stat-card">
+    <span>الفرع</span>
+    <h4>{{ student.branch|default:"-" }}</h4>
+  </div>
+
+  <div class="stat-card">
+    <span>الصف الحالي</span>
+    <h4>{{ current_enrollment.grade|default:"-" }}</h4>
+  </div>
+
+  <div class="stat-card">
+    <span>الشعبة الحالية</span>
+    <h4>{{ current_enrollment.section|default:"-" }}</h4>
+  </div>
+</div>
+
+<div class="opal-card p-4 mb-4">
+  <h4>👤 البيانات الشخصية</h4>
+  <table class="table table-dark table-striped">
+    <tr><th>الاسم</th><td>{{ student.full_name }}</td></tr>
+    <tr><th>الجنس</th><td>{{ student.get_gender_display }}</td></tr>
+    <tr><th>الرقم الوطني</th><td>{{ student.national_id|default:"-" }}</td></tr>
+    <tr><th>اسم الأب</th><td>{{ student.father_name|default:"-" }}</td></tr>
+    <tr><th>اسم الأم</th><td>{{ student.mother_name|default:"-" }}</td></tr>
+    <tr><th>الهاتف</th><td>{{ student.phone|default:"-" }}</td></tr>
+    <tr><th>العنوان</th><td>{{ student.address|default:"-" }}</td></tr>
+    <tr><th>ملاحظات طبية</th><td>{{ student.medical_notes|default:"-" }}</td></tr>
+  </table>
+</div>
+
+<div class="opal-card p-4 mb-4">
+  <h4>📚 التسجيلات الأكاديمية</h4>
+  <table class="table table-dark table-striped">
+    <thead>
+      <tr>
+        <th>العام الدراسي</th>
+        <th>الصف</th>
+        <th>الشعبة</th>
+        <th>الحالة</th>
+        <th>تاريخ الالتحاق</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for e in enrollments %}
+      <tr>
+        <td>{{ e.academic_year }}</td>
+        <td>{{ e.grade|default:"-" }}</td>
+        <td>{{ e.section|default:"-" }}</td>
+        <td>{{ e.get_status_display }}</td>
+        <td>{{ e.joined_at|default:"-" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" class="text-center text-muted">لا توجد تسجيلات.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="opal-card p-4 mb-4">
+  <h4>👨‍👩‍👧 أولياء الأمور</h4>
+  <table class="table table-dark table-striped">
+    <thead>
+      <tr>
+        <th>الاسم</th>
+        <th>صلة القرابة</th>
+        <th>الهاتف</th>
+        <th>أساسي؟</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for g in guardians %}
+      <tr>
+        <td>{{ g.guardian.full_name }}</td>
+        <td>{{ g.guardian.get_relation_display }}</td>
+        <td>{{ g.guardian.phone|default:"-" }}</td>
+        <td>{% if g.is_primary %}نعم{% else %}لا{% endif %}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" class="text-center text-muted">لا يوجد أولياء أمور.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="opal-card p-4">
+  <h4>📄 الوثائق</h4>
+  <table class="table table-dark table-striped">
+    <thead>
+      <tr>
+        <th>النوع</th>
+        <th>العنوان</th>
+        <th>تاريخ الرفع</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for d in documents %}
+      <tr>
+        <td>{{ d.get_document_type_display }}</td>
+        <td>{{ d.title }}</td>
+        <td>{{ d.uploaded_at|date:"Y-m-d" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="3" class="text-center text-muted">لا توجد وثائق.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}

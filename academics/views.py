@@ -129,3 +129,27 @@ def student_admission(request):
         "form": form,
         "title": "تسجيل طالب جديد",
     })
+
+from django.shortcuts import render, get_object_or_404
+from .models import StudentRecord
+
+
+def student_academic_profile(request, pk):
+    student = get_object_or_404(StudentRecord, pk=pk)
+
+    enrollments = student.enrollments.select_related(
+        "academic_year", "grade", "section"
+    ).all()
+
+    guardians = student.guardians.select_related("guardian").all()
+    documents = student.documents.all()
+
+    current_enrollment = enrollments.first()
+
+    return render(request, "academics/students/academic_profile.html", {
+        "student": student,
+        "current_enrollment": current_enrollment,
+        "enrollments": enrollments,
+        "guardians": guardians,
+        "documents": documents,
+    })

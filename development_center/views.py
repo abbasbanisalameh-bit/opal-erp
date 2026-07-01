@@ -597,3 +597,92 @@ def project_print_report(request):
     return render(request, "development_center/reports/project_print.html", {
         "tasks": tasks,
     })
+
+@login_required
+def executive_dashboard(request):
+    today = timezone.localdate()
+
+    tasks = Task.objects.select_related("module", "release", "sprint").all()
+    sprints = Sprint.objects.prefetch_related("tasks").all().order_by("start_date", "id")
+    releases = Release.objects.all()
+    modules = Module.objects.all()
+
+    total_tasks = tasks.count()
+    done_tasks = tasks.filter(status="done").count()
+    doing_tasks = tasks.filter(status="doing").count()
+    review_tasks = tasks.filter(status="review").count()
+    todo_tasks = tasks.filter(status="todo").count()
+    remaining_tasks = total_tasks - done_tasks
+    overdue_tasks = tasks.filter(due_date__lt=today).exclude(status="done")
+
+    project_progress = round((done_tasks / total_tasks) * 100) if total_tasks else 0
+
+    first_sprint = sprints.first()
+    last_sprint = sprints.last()
+
+    project_start = first_sprint.start_date if first_sprint else today
+    project_end = last_sprint.end_date if last_sprint else today
+
+    total_days = max((project_end - project_start).days + 1, 1)
+    elapsed_days = max((today - project_start).days + 1, 0)
+    remaining_days = max((project_end - today).days, 0)
+
+    sprint_data = []
+    for sprint in sprints:
+        stasks = sprint.tasks.all()
+        stotal = stasks.count()
+        sdone = stasks.filter(status="done").count()
+        sprint_data.append({
+            "sprint": sprint,
+            "total": stotal,
+            "done": sdone,
+            "progress": round((sdone / stotal) * 100) if stotal else 0,
+        })
+
+    module_data = []
+    for module in modules:
+        mtasks = tasks.filter(module=module)
+        mtotal = mtasks.count()
+        mdone = mtasks.filter(status="done").count()
+        if mtotal:
+            module_data.append({
+                "module": module,
+                "total": mtotal,
+                "done": mdone,
+                "progress": round((mdone / mtotal) * 100),
+            })
+
+    release_data = []
+    for release in releases:
+        rtasks = tasks.filter(release=release)
+        rtotal = rtasks.count()
+        rdone = rtasks.filter(status="done").count()
+        release_data.append({
+            "release": release,
+            "total": rtotal,
+            "done": rdone,
+            "progress": round((rdone / rtotal) * 100) if rtotal else 0,
+        })
+
+    notifications = Notification.objects.all()[:8]
+
+    return render(request, "development_center/executive_dashboard.html", {
+        "total_tasks": total_tasks,
+        "done_tasks": done_tasks,
+        "doing_tasks": doing_tasks,
+        "review_tasks": review_tasks,
+        "todo_tasks": todo_tasks,
+        "remaining_tasks": remaining_tasks,
+        "overdue_tasks": overdue_tasks[:10],
+        "overdue_count": overdue_tasks.count(),
+        "project_progress": project_progress,
+        "total_days": total_days,
+        "elapsed_days": elapsed_days,
+        "remaining_days": remaining_days,
+        "project_start": project_start,
+        "project_end": project_end,
+        "sprint_data": sprint_data,
+        "module_data": module_data,
+        "release_data": release_data,
+        "notifications": notifications,
+    })

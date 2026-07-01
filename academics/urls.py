@@ -30,3 +30,7 @@ urlpatterns = [
     path("subjects/add/", academic_core_views.subject_create, name="subject_create"),
     path("subjects/<int:pk>/edit/", academic_core_views.subject_update, name="subject_update"),
 ]
+
+urlpatterns += [
+    path("students/<int:pk>/academic-profile/", views.student_academic_profile, name="student_academic_profile"),
+]

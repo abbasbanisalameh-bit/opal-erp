@@ -1,21 +1,24 @@
 {% extends "base/base.html" %}
 
 {% block page_title %}Executive Dashboard{% endblock %}
-{% block page_subtitle %}لوحة مؤشرات مدير المشروع{% endblock %}
+{% block page_subtitle %}لوحة قيادة مشروع OPAL ERP v1.0{% endblock %}
 
 {% block content %}
 
 <div class="opal-card p-4 mb-4">
-  <h3>📊 Executive Dashboard</h3>
-  <p class="text-muted mb-0">نظرة تنفيذية شاملة على تقدم مركز تطوير OPAL ERP.</p>
+  <h3>📊 OPAL ERP v1.0 Executive Dashboard</h3>
+  <p class="text-muted mb-0">
+    من {{ project_start }} إلى {{ project_end }} —
+    مضى {{ elapsed_days }} يوم، والمتبقي {{ remaining_days }} يوم.
+  </p>
 </div>
 
 <div class="opal-card p-4 mb-4">
   <div class="d-flex justify-content-between mb-2">
-    <strong>نسبة إنجاز المشروع</strong>
+    <strong>نسبة إنجاز المشروع الكلية</strong>
     <strong>{{ project_progress }}%</strong>
   </div>
-  <div class="progress" style="height:24px;">
+  <div class="progress" style="height:26px;">
     <div class="progress-bar" style="width: {{ project_progress }}%;">
       {{ project_progress }}%
     </div>
@@ -23,10 +26,12 @@
 </div>
 
 <div class="stats-grid mb-4">
-  <div class="stat-card"><span>الوحدات</span><h2>{{ modules_count }}</h2></div>
   <div class="stat-card"><span>إجمالي المهام</span><h2>{{ total_tasks }}</h2></div>
-  <div class="stat-card"><span>المهام المكتملة</span><h2>{{ done_tasks }}</h2></div>
-  <div class="stat-card"><span>الأخطاء المفتوحة</span><h2>{{ open_bugs }}</h2></div>
+  <div class="stat-card"><span>To Do</span><h2>{{ todo_tasks }}</h2></div>
+  <div class="stat-card"><span>Doing</span><h2>{{ doing_tasks }}</h2></div>
+  <div class="stat-card"><span>Review</span><h2>{{ review_tasks }}</h2></div>
+  <div class="stat-card"><span>Done</span><h2>{{ done_tasks }}</h2></div>
+  <div class="stat-card"><span>متأخرة</span><h2>{{ overdue_count }}</h2></div>
 </div>
 
 <div class="opal-card p-4 mb-4">
@@ -35,14 +40,29 @@
     <div class="mb-3">
       <div class="d-flex justify-content-between">
         <strong>{{ item.sprint.title }}</strong>
-        <span>{{ item.progress }}%</span>
+        <span>{{ item.done }}/{{ item.total }} — {{ item.progress }}%</span>
+      </div>
+      <div class="progress" style="height:18px;">
+        <div class="progress-bar" style="width: {{ item.progress }}%;"></div>
+      </div>
+    </div>
+  {% endfor %}
+</div>
+
+<div class="opal-card p-4 mb-4">
+  <h4>📦 تقدم الوحدات</h4>
+  {% for item in module_data %}
+    <div class="mb-3">
+      <div class="d-flex justify-content-between">
+        <strong>{{ item.module.name }}</strong>
+        <span>{{ item.done }}/{{ item.total }} — {{ item.progress }}%</span>
       </div>
       <div class="progress" style="height:18px;">
         <div class="progress-bar" style="width: {{ item.progress }}%;"></div>
       </div>
     </div>
   {% empty %}
-    <p class="text-muted">لا توجد سبرنتات.</p>
+    <p class="text-muted">لا توجد وحدات مرتبطة بمهام.</p>
   {% endfor %}
 </div>
 
@@ -51,15 +71,13 @@
   {% for item in release_data %}
     <div class="mb-3">
       <div class="d-flex justify-content-between">
-        <strong>{{ item.release.version }} - {{ item.release.title }}</strong>
-        <span>{{ item.progress }}%</span>
+        <strong>{{ item.release.version }}</strong>
+        <span>{{ item.done }}/{{ item.total }} — {{ item.progress }}%</span>
       </div>
       <div class="progress" style="height:18px;">
         <div class="progress-bar" style="width: {{ item.progress }}%;"></div>
       </div>
     </div>
-  {% empty %}
-    <p class="text-muted">لا توجد إصدارات.</p>
   {% endfor %}
 </div>
 
@@ -68,10 +86,8 @@
   <ul>
     {% for task in overdue_tasks %}
       <li>
-        <a href="{% url 'development_center:task_detail' task.id %}">
-          {{ task.title }}
-        </a>
-        - {{ task.due_date }}
+        <a href="{% url 'development_center:task_detail' task.id %}">{{ task.title }}</a>
+        — {{ task.due_date }}
       </li>
     {% empty %}
       <li class="text-muted">لا توجد مهام متأخرة.</li>
@@ -83,7 +99,7 @@
   <h4>🔔 آخر الإشعارات</h4>
   <ul>
     {% for n in notifications %}
-      <li>{{ n.title }} - {{ n.created_at|date:"Y-m-d H:i" }}</li>
+      <li>{{ n.title }} — {{ n.created_at|date:"Y-m-d H:i" }}</li>
     {% empty %}
       <li class="text-muted">لا توجد إشعارات.</li>
     {% endfor %}
