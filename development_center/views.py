@@ -473,3 +473,19 @@ def sprint_velocity(request):
         "total_tasks": json.dumps(total_tasks),
         "avg_velocity": avg_velocity,
     })
+
+from .models import Notification
+
+@login_required
+def notification_list(request):
+    notifications = Notification.objects.all()
+    return render(request, "development_center/notifications/list.html", {
+        "notifications": notifications,
+    })
+
+@login_required
+def notification_mark_read(request, pk):
+    notification = get_object_or_404(Notification, pk=pk)
+    notification.is_read = True
+    notification.save(update_fields=["is_read"])
+    return redirect("development_center:notification_list")

@@ -1,0 +1,49 @@
+{% extends "base/base.html" %}
+
+{% block page_title %}الإشعارات{% endblock %}
+{% block page_subtitle %}Smart Notifications لمركز التطوير{% endblock %}
+
+{% block content %}
+
+<div class="opal-card p-4 mb-4">
+  <h3>🔔 الإشعارات</h3>
+  <p class="text-muted mb-0">تنبيهات ذكية حول المهام والسبرنتات والإصدارات.</p>
+</div>
+
+{% for n in notifications %}
+<div class="opal-card p-3 mb-3 {% if not n.is_read %}border border-warning{% endif %}">
+  <div class="d-flex justify-content-between align-items-start">
+    <div>
+      <h5>
+        {% if n.level == "danger" %}🔴
+        {% elif n.level == "warning" %}🟡
+        {% elif n.level == "success" %}🟢
+        {% else %}🔵
+        {% endif %}
+        {{ n.title }}
+      </h5>
+      <p class="mb-1">{{ n.message }}</p>
+      <small class="text-muted">{{ n.created_at|date:"Y-m-d H:i" }}</small>
+    </div>
+
+    <div>
+      {% if n.url %}
+      <a href="{{ n.url }}" class="btn btn-sm btn-outline-primary">فتح</a>
+      {% endif %}
+
+      {% if not n.is_read %}
+      <a href="{% url 'development_center:notification_mark_read' n.id %}"
+         class="btn btn-sm btn-outline-success">
+        تعليم كمقروء
+      </a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% empty %}
+<div class="opal-card p-4">
+  <p class="text-muted mb-0">لا توجد إشعارات حالياً.</p>
+</div>
+{% endfor %}
+
+{% endblock %}

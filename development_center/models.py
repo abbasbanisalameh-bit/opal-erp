@@ -215,3 +215,37 @@ class ActivityLog(models.Model):
 
     def __str__(self):
         return self.title
+
+class SprintDailySnapshot(models.Model):
+    sprint = models.ForeignKey(Sprint, on_delete=models.CASCADE, related_name="snapshots")
+    date = models.DateField()
+    total_tasks = models.PositiveIntegerField(default=0)
+    remaining_tasks = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        unique_together = ("sprint", "date")
+        ordering = ["date"]
+
+    def __str__(self):
+        return f"{self.sprint} - {self.date}"
+
+class Notification(models.Model):
+    LEVELS = [
+        ("info", "معلومة"),
+        ("warning", "تنبيه"),
+        ("danger", "خطر"),
+        ("success", "نجاح"),
+    ]
+
+    title = models.CharField(max_length=200)
+    message = models.TextField()
+    level = models.CharField(max_length=20, choices=LEVELS, default="info")
+    is_read = models.BooleanField(default=False)
+    url = models.CharField(max_length=300, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return self.title

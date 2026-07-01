@@ -85,3 +85,7 @@ urlpatterns += [
 urlpatterns += [
     path("sprints/velocity/", views.sprint_velocity, name="sprint_velocity"),
 ]
+urlpatterns += [
+    path("notifications/", views.notification_list, name="notification_list"),
+    path("notifications/<int:pk>/read/", views.notification_mark_read, name="notification_mark_read"),
+]
