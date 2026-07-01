@@ -563,3 +563,37 @@ def executive_dashboard(request):
         "release_data": release_data,
         "notifications": notifications,
     })
+
+import csv
+from django.http import HttpResponse
+
+@login_required
+def tasks_csv_report(request):
+    response = HttpResponse(content_type="text/csv; charset=utf-8")
+    response["Content-Disposition"] = 'attachment; filename="development_tasks_report.csv"'
+    response.write("\ufeff")
+
+    writer = csv.writer(response)
+    writer.writerow(["المهمة", "الوحدة", "الإصدار", "السبرنت", "الحالة", "الإنجاز", "البداية", "النهاية"])
+
+    for task in Task.objects.select_related("module", "release", "sprint").all():
+        writer.writerow([
+            task.title,
+            task.module or "",
+            task.release or "",
+            task.sprint or "",
+            task.get_status_display(),
+            f"{task.progress}%",
+            task.start_date or "",
+            task.due_date or "",
+        ])
+
+    return response
+
+
+@login_required
+def project_print_report(request):
+    tasks = Task.objects.select_related("module", "release", "sprint").all()
+    return render(request, "development_center/reports/project_print.html", {
+        "tasks": tasks,
+    })

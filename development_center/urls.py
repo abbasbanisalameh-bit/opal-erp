@@ -95,3 +95,7 @@ urlpatterns += [
 urlpatterns += [
     path("executive/", views.executive_dashboard, name="executive_dashboard"),
 ]
+urlpatterns += [
+    path("reports/tasks.csv", views.tasks_csv_report, name="tasks_csv_report"),
+    path("reports/project-print/", views.project_print_report, name="project_print_report"),
+]
