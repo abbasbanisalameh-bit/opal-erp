@@ -1,0 +1,55 @@
+{% extends "base/base.html" %}
+
+{% block page_title %}Product Backlog{% endblock %}
+{% block page_subtitle %}المهام غير المرتبطة بأي Sprint{% endblock %}
+
+{% block content %}
+
+<div class="opal-card p-4 mb-4">
+  <h3>📦 Product Backlog</h3>
+  <p class="text-muted mb-0">كل المهام التي لم يتم إدخالها بعد في أي Sprint.</p>
+</div>
+
+<div class="opal-card p-4">
+  <div class="table-responsive">
+    <table class="table table-dark table-striped align-middle">
+      <thead>
+        <tr>
+          <th>المهمة</th>
+          <th>الوحدة</th>
+          <th>الإصدار</th>
+          <th>الحالة</th>
+          <th>الإجراء</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for task in tasks %}
+        <tr>
+          <td>
+            <a href="{% url 'development_center:task_detail' task.id %}">
+              {{ task.title }}
+            </a>
+          </td>
+          <td>{{ task.module|default:"-" }}</td>
+          <td>{{ task.release|default:"-" }}</td>
+          <td>{{ task.get_status_display }}</td>
+          <td>
+            <a class="btn btn-sm btn-warning"
+               href="{% url 'development_center:task_update' task.id %}">
+              ربط بـ Sprint
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="text-center text-muted">
+            لا توجد مهام في Product Backlog.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

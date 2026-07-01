@@ -295,7 +295,7 @@ def gantt_update_task_dates(request, pk):
 
     return JsonResponse({"ok": True, "message": message})
 
-from .models import Sprint
+from .models import Sprint, SprintDailySnapshot
 from .forms import SprintForm
 
 @login_required
@@ -383,3 +383,93 @@ def sprint_board(request, pk):
     }
 
     return render(request, "development_center/sprints/board.html", context)
+
+@login_required
+def product_backlog(request):
+    tasks = Task.objects.filter(sprint__isnull=True).select_related("module", "release").order_by("-id")
+    sprints = Sprint.objects.exclude(status="completed").order_by("-start_date", "-id")
+
+    return render(request, "development_center/sprints/backlog.html", {
+        "tasks": tasks,
+        "sprints": sprints,
+    })
+
+import json
+from datetime import timedelta
+
+@login_required
+def sprint_burndown(request, pk):
+    sprint = get_object_or_404(Sprint, pk=pk)
+    tasks = sprint.tasks.all()
+
+    total = tasks.count()
+    remaining = tasks.exclude(status="done").count()
+    today = timezone.localdate()
+
+    SprintDailySnapshot.objects.update_or_create(
+        sprint=sprint,
+        date=today,
+        defaults={
+            "total_tasks": total,
+            "remaining_tasks": remaining,
+        }
+    )
+
+    labels = []
+    ideal = []
+    actual = []
+
+    if sprint.start_date and sprint.end_date:
+        days_count = (sprint.end_date - sprint.start_date).days + 1
+        days_count = max(days_count, 1)
+
+        snapshots = {
+            s.date: s.remaining_tasks
+            for s in sprint.snapshots.all()
+        }
+
+        for i in range(days_count):
+            day = sprint.start_date + timedelta(days=i)
+            labels.append(day.strftime("%Y-%m-%d"))
+
+            ideal_remaining = round(total - ((total / max(days_count - 1, 1)) * i))
+            ideal.append(max(ideal_remaining, 0))
+
+            actual.append(snapshots.get(day, None))
+    else:
+        labels = [today.strftime("%Y-%m-%d")]
+        ideal = [total]
+        actual = [remaining]
+
+    return render(request, "development_center/sprints/burndown.html", {
+        "sprint": sprint,
+        "labels": json.dumps(labels),
+        "ideal": json.dumps(ideal),
+        "actual": json.dumps(actual),
+        "total": total,
+        "remaining": remaining,
+    })
+
+@login_required
+def sprint_velocity(request):
+    sprints = Sprint.objects.prefetch_related("tasks").all().order_by("start_date", "id")
+
+    labels = []
+    completed_tasks = []
+    total_tasks = []
+
+    for sprint in sprints:
+        labels.append(sprint.title)
+        total_tasks.append(sprint.tasks.count())
+        completed_tasks.append(sprint.tasks.filter(status="done").count())
+
+    avg_velocity = 0
+    if completed_tasks:
+        avg_velocity = round(sum(completed_tasks) / len(completed_tasks), 1)
+
+    return render(request, "development_center/sprints/velocity.html", {
+        "labels": json.dumps(labels),
+        "completed_tasks": json.dumps(completed_tasks),
+        "total_tasks": json.dumps(total_tasks),
+        "avg_velocity": avg_velocity,
+    })

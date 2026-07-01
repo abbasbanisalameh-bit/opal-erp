@@ -1,0 +1,69 @@
+{% extends "base/base.html" %}
+
+{% block page_title %}Burndown Chart{% endblock %}
+{% block page_subtitle %}متابعة احتراق مهام السبرنت{% endblock %}
+
+{% block content %}
+
+<div class="opal-card p-4 mb-4">
+  <h3>📉 Burndown Chart - {{ sprint.title }}</h3>
+  <p class="text-muted mb-0">يوضح هل السبرنت يسير حسب الخطة أم لا.</p>
+</div>
+
+<div class="stats-grid mb-4">
+  <div class="stat-card"><span>إجمالي المهام</span><h2>{{ total }}</h2></div>
+  <div class="stat-card"><span>المتبقي</span><h2>{{ remaining }}</h2></div>
+</div>
+
+<div class="opal-card p-4">
+  <canvas id="burndownChart" height="120"></canvas>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const labels = {{ labels|safe }};
+const ideal = {{ ideal|safe }};
+const actual = {{ actual|safe }};
+
+new Chart(document.getElementById("burndownChart"), {
+  type: "line",
+  data: {
+    labels: labels,
+    datasets: [
+      {
+        label: "الخطة المثالية",
+        data: ideal,
+        borderWidth: 2,
+        tension: 0.2
+      },
+      {
+        label: "الواقع الفعلي",
+        data: actual,
+        borderWidth: 3,
+        tension: 0.2
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: {
+        labels: { color: "#fff" }
+      }
+    },
+    scales: {
+      x: {
+        ticks: { color: "#fff" },
+        grid: { color: "rgba(255,255,255,0.1)" }
+      },
+      y: {
+        beginAtZero: true,
+        ticks: { color: "#fff" },
+        grid: { color: "rgba(255,255,255,0.1)" }
+      }
+    }
+  }
+});
+</script>
+
+{% endblock %}

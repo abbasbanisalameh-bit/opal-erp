@@ -16,7 +16,14 @@
   
 <a href="{% url 'development_center:sprint_board' sprint.id %}"
 class="btn btn-primary">
-فتح Sprint Board
+فتح Sprint Board</a>
+
+<a href="{% url 'development_center:sprint_burndown' sprint.id %}"
+class="btn btn-outline-warning">
+Burndown Chart
+</a>
+
+<a style='display:none'
 </a>
 
 </div>

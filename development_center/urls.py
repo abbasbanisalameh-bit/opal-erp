@@ -76,3 +76,12 @@ urlpatterns += [
 urlpatterns += [
     path("sprints/<int:pk>/board/", views.sprint_board, name="sprint_board"),
 ]
+urlpatterns += [
+    path("backlog/", views.product_backlog, name="product_backlog"),
+]
+urlpatterns += [
+    path("sprints/<int:pk>/burndown/", views.sprint_burndown, name="sprint_burndown"),
+]
+urlpatterns += [
+    path("sprints/velocity/", views.sprint_velocity, name="sprint_velocity"),
+]

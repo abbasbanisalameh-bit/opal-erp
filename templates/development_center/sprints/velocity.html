@@ -1,0 +1,69 @@
+{% extends "base/base.html" %}
+
+{% block page_title %}Velocity Chart{% endblock %}
+{% block page_subtitle %}قياس سرعة إنجاز الفريق عبر السبرنتات{% endblock %}
+
+{% block content %}
+
+<div class="opal-card p-4 mb-4">
+  <h3>🚀 Velocity Chart</h3>
+  <p class="text-muted mb-0">يعرض عدد المهام المنجزة في كل Sprint.</p>
+</div>
+
+<div class="stats-grid mb-4">
+  <div class="stat-card">
+    <span>متوسط سرعة الإنجاز</span>
+    <h2>{{ avg_velocity }}</h2>
+  </div>
+</div>
+
+<div class="opal-card p-4">
+  <canvas id="velocityChart" height="120"></canvas>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const labels = {{ labels|safe }};
+const completedTasks = {{ completed_tasks|safe }};
+const totalTasks = {{ total_tasks|safe }};
+
+new Chart(document.getElementById("velocityChart"), {
+  type: "bar",
+  data: {
+    labels: labels,
+    datasets: [
+      {
+        label: "إجمالي المهام",
+        data: totalTasks,
+        borderWidth: 1
+      },
+      {
+        label: "المهام المنجزة",
+        data: completedTasks,
+        borderWidth: 1
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: {
+        labels: { color: "#fff" }
+      }
+    },
+    scales: {
+      x: {
+        ticks: { color: "#fff" },
+        grid: { color: "rgba(255,255,255,0.1)" }
+      },
+      y: {
+        beginAtZero: true,
+        ticks: { color: "#fff" },
+        grid: { color: "rgba(255,255,255,0.1)" }
+      }
+    }
+  }
+});
+</script>
+
+{% endblock %}
