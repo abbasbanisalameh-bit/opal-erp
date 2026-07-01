@@ -14,7 +14,7 @@ from .models import (
 
 class DevelopmentCenterModelsTest(TestCase):
     def test_create_module_task_and_sprint(self):
-        module = Module.objects.create(name="اختبار الوحدة", key="test-module")
+        module = Module.objects.create(name="اختبار الوحدة")
         sprint = Sprint.objects.create(
             title="Sprint Test",
             start_date=date(2026, 7, 1),
