@@ -289,6 +289,7 @@ def sprint_board(request, pk):
         "doing": tasks.filter(status="doing"),
         "review": tasks.filter(status="review"),
         "done": tasks.filter(status="done"),
+        "today": timezone.localdate(),
     })
 
 
