@@ -415,7 +415,24 @@ def executive_dashboard(request):
     todo_tasks = tasks.filter(status="todo").count()
     remaining_tasks = total_tasks - done_tasks
     overdue_tasks = tasks.filter(due_date__lt=today).exclude(status="done")
+    unassigned_tasks = tasks.filter(user__isnull=True).exclude(status="done")
+    due_soon_tasks = tasks.filter(
+        due_date__gte=today,
+        due_date__lte=today + timezone.timedelta(days=2),
+    ).exclude(status="done")
+
     project_progress = round(sum(int(t.progress or 0) for t in tasks) / total_tasks) if total_tasks else 0
+
+    risk_count = overdue_tasks.count() + unassigned_tasks.count()
+    if project_progress >= 80 and risk_count == 0:
+        project_health = "ممتاز"
+        project_health_level = "success"
+    elif project_progress >= 50 and risk_count <= 3:
+        project_health = "جيد"
+        project_health_level = "warning"
+    else:
+        project_health = "يحتاج متابعة"
+        project_health_level = "danger"
 
     first_sprint = sprints.first()
     last_sprint = sprints.last()
@@ -459,6 +476,11 @@ def executive_dashboard(request):
         "remaining_tasks": remaining_tasks,
         "overdue_tasks": overdue_tasks[:10],
         "overdue_count": overdue_tasks.count(),
+        "unassigned_count": unassigned_tasks.count(),
+        "due_soon_count": due_soon_tasks.count(),
+        "risk_count": risk_count,
+        "project_health": project_health,
+        "project_health_level": project_health_level,
         "project_progress": project_progress,
         "total_days": total_days,
         "elapsed_days": elapsed_days,

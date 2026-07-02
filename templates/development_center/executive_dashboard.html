@@ -37,6 +37,16 @@
   <div class="stat-card"><span>قيد المراجعة</span><h2>{{ review_tasks }}</h2></div>
   <div class="stat-card"><span>مكتملة</span><h2>{{ done_tasks }}</h2></div>
   <div class="stat-card"><span>متأخرة</span><h2>{{ overdue_count }}</h2></div>
+  <div class="stat-card"><span>بدون مسؤول</span><h2>{{ unassigned_count }}</h2></div>
+  <div class="stat-card"><span>قريبة التسليم</span><h2>{{ due_soon_count }}</h2></div>
+  <div class="stat-card"><span>مستوى المخاطر</span><h2>{{ risk_count }}</h2></div>
+</div>
+
+<div class="opal-card p-4 mb-4">
+  <h4>🩺 صحة المشروع</h4>
+  <div class="alert alert-{{ project_health_level }} mb-0">
+    الحالة الحالية: <strong>{{ project_health }}</strong>
+  </div>
 </div>
 
 <div class="opal-card p-4 mb-4">
