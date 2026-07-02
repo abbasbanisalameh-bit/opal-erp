@@ -48,7 +48,11 @@
 {% for t in todo %}
 <div class="card mb-2 opal-task-card" data-task-id="{{ t.id }}" data-due-date="{{ t.due_date|date:'Y-m-d' }}">
 <div class="card-body">
-<strong>{{ t.title }}</strong><br>
+<div class="d-flex justify-content-between align-items-start mb-2">
+    <strong>{{ t.title }}</strong>
+    <span class="badge bg-light text-dark">{{ t.get_status_display }}</span>
+</div>
+
 
 <span class="badge {% if t.priority == 1 %}bg-success{% elif t.priority == 2 %}bg-warning text-dark{% else %}bg-danger{% endif %}">
 {% if t.priority == 1 %}
@@ -113,7 +117,20 @@
 </span>
 
 <br>
-<small>{{ t.progress }}%</small>
+<small class="d-block mb-1">التقدم: {{ t.progress }}%</small>
+
+{% if t.due_date %}
+<small class="d-block text-muted">📅 {{ t.due_date }}</small>
+{% endif %}
+
+{% if t.module %}
+<small class="d-block text-info">📦 {{ t.module.name }}</small>
+{% endif %}
+
+{% if t.release %}
+<small class="d-block text-warning">🚀 {{ t.release.version }}</small>
+{% endif %}
+
 </div>
 </div>
 {% empty %}
