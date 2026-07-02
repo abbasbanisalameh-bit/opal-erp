@@ -1,40 +1,61 @@
 {% extends "base/base.html" %}
-{% block content %}
-<div class="page-header">
-  <h1>الشعب الدراسية</h1>
-  <a href="{% url 'academics:section_create' %}" class="btn btn-primary">إضافة شعبة</a>
-</div>
 
-<table class="table">
-  <thead>
-    <tr>
-      <th>العام الدراسي</th>
-      <th>الفرع</th>
-      <th>الصف</th>
-      <th>الشعبة</th>
-      <th>السعة</th>
-      <th>فعال</th>
-      <th>إجراءات</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for section in sections %}
-    <tr>
-      <td>{{ section.academic_year }}</td>
-      <td>{{ section.branch }}</td>
-      <td>{{ section.grade }}</td>
-      <td>{{ section.name }}</td>
-      <td>{{ section.capacity }}</td>
-      <td>{{ section.is_active|yesno:"نعم,لا" }}</td>
-      <td>
-        <a href="{% url 'academics:section_update' section.id %}">تعديل</a>
-        |
-        <a href="{% url 'academics:section_delete' section.id %}" onclick="return confirm('هل أنت متأكد؟')">حذف</a>
-      </td>
-    </tr>
-    {% empty %}
-    <tr><td colspan="7">لا توجد شعب بعد</td></tr>
-    {% endfor %}
-  </tbody>
-</table>
+{% block page_title %}الشعب الدراسية{% endblock %}
+{% block page_subtitle %}إدارة الشعب وربطها بالصفوف والفروع والأعوام الدراسية{% endblock %}
+
+{% block content %}
+<div class="opal-card p-4 mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h3 class="mb-1">الشعب الدراسية</h3>
+            <p class="text-muted mb-0">تنظيم الشعب حسب الصف والفرع والعام الدراسي</p>
+        </div>
+        <a href="{% url 'academics:section_create' %}" class="btn btn-primary">
+            + إضافة شعبة
+        </a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>العام الدراسي</th>
+                    <th>الفرع</th>
+                    <th>الصف</th>
+                    <th>الشعبة</th>
+                    <th>السعة</th>
+                    <th>الحالة</th>
+                    <th class="text-center">الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for section in sections %}
+                <tr>
+                    <td>{{ section.academic_year }}</td>
+                    <td>{{ section.branch }}</td>
+                    <td>{{ section.grade }}</td>
+                    <td>{{ section.name }}</td>
+                    <td>{{ section.capacity }}</td>
+                    <td>
+                        {% if section.is_active %}
+                            <span class="badge bg-success">فعال</span>
+                        {% else %}
+                            <span class="badge bg-secondary">غير فعال</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        <a href="{% url 'academics:section_update' section.id %}" class="btn btn-sm btn-warning">تعديل</a>
+                        <a href="{% url 'academics:section_delete' section.id %}" class="btn btn-sm btn-danger"
+                           onclick="return confirm('هل أنت متأكد من حذف هذه الشعبة؟')">حذف</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-4">لا توجد شعب بعد</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 {% endblock %}
