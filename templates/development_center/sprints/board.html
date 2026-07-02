@@ -26,6 +26,12 @@
         <div id="sprint-progress-bar" class="progress-bar" style="width:0%"></div>
     </div>
 
+    <div class="row text-center mb-3">
+        <div class="col">📦 الإجمالي: <strong id="count-total">0</strong></div>
+        <div class="col">⏰ المتأخرة: <strong id="count-overdue">0</strong></div>
+        <div class="col">📈 الإنجاز: <strong id="metric-progress">0%</strong></div>
+    </div>
+
     <div class="row text-center">
         <div class="col">📋 Todo: <strong id="count-todo">0</strong></div>
         <div class="col">🔥 Doing: <strong id="count-doing">0</strong></div>
@@ -40,7 +46,7 @@
 <div class="opal-card p-3 opal-kanban-column" data-status="todo">
 <h5>📋 لم يبدأ</h5>
 {% for t in todo %}
-<div class="card mb-2 opal-task-card" data-task-id="{{ t.id }}">
+<div class="card mb-2 opal-task-card" data-task-id="{{ t.id }}" data-due-date="{{ t.due_date|date:'Y-m-d' }}">
 <div class="card-body">
 <strong>{{ t.title }}</strong><br>
 <small>{{ t.progress }}%</small>
@@ -56,7 +62,7 @@
 <div class="opal-card p-3 opal-kanban-column" data-status="doing">
 <h5>⚙️ قيد التنفيذ</h5>
 {% for t in doing %}
-<div class="card mb-2 opal-task-card" data-task-id="{{ t.id }}">
+<div class="card mb-2 opal-task-card" data-task-id="{{ t.id }}" data-due-date="{{ t.due_date|date:'Y-m-d' }}">
 <div class="card-body">
 <strong>{{ t.title }}</strong><br>
 <small>{{ t.progress }}%</small>
@@ -72,7 +78,7 @@
 <div class="opal-card p-3 opal-kanban-column" data-status="review">
 <h5>🔍 قيد المراجعة</h5>
 {% for t in review %}
-<div class="card mb-2 opal-task-card" data-task-id="{{ t.id }}">
+<div class="card mb-2 opal-task-card" data-task-id="{{ t.id }}" data-due-date="{{ t.due_date|date:'Y-m-d' }}">
 <div class="card-body">
 <strong>{{ t.title }}</strong><br>
 <small>{{ t.progress }}%</small>
@@ -88,7 +94,7 @@
 <div class="opal-card p-3 opal-kanban-column" data-status="done">
 <h5>✅ مكتملة</h5>
 {% for t in done %}
-<div class="card mb-2 opal-task-card" data-task-id="{{ t.id }}">
+<div class="card mb-2 opal-task-card" data-task-id="{{ t.id }}" data-due-date="{{ t.due_date|date:'Y-m-d' }}">
 <div class="card-body">
 <strong>{{ t.title }}</strong><br>
 <small>{{ t.progress }}%</small>
@@ -125,7 +131,22 @@ document.addEventListener("DOMContentLoaded", function () {
         });
 
         const total = cards.length;
+        const today = new Date().toISOString().slice(0, 10);
+        let overdue = 0;
+
+        cards.forEach(card => {
+            const dueDate = card.dataset.dueDate;
+            const isDone = card.closest('[data-status="done"]') !== null;
+            if (dueDate && dueDate < today && !isDone) {
+                overdue += 1;
+            }
+        });
+
         const percent = total ? Math.round(totalProgress / total) : 0;
+
+        document.getElementById("count-total").textContent = total;
+        document.getElementById("count-overdue").textContent = overdue;
+        document.getElementById("metric-progress").textContent = percent + "%";
 
         document.getElementById("count-todo").textContent = todo;
         document.getElementById("count-doing").textContent = doing;
