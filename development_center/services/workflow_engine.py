@@ -266,6 +266,14 @@ def update_task_status(task, status=None, progress=None, user=None):
         )
 
         if next_task:
+            Task.objects.filter(
+                sprint=task.sprint,
+                status="doing"
+            ).exclude(pk=next_task.pk).update(
+                status="todo",
+                progress=0
+            )
+
             next_task.status = "doing"
             next_task.progress = max(next_task.progress, 1)
             next_task.save(update_fields=["status", "progress"])
