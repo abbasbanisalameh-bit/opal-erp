@@ -111,6 +111,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
             const taskId = e.dataTransfer.getData("taskId");
             const status = column.dataset.status;
+            const card = document.querySelector(`[data-task-id="${taskId}"]`);
+            const oldParent = card ? card.parentElement : null;
 
             fetch(`/development-center/tasks/${taskId}/status/`, {
                 method: "POST",
@@ -121,8 +123,12 @@ document.addEventListener("DOMContentLoaded", function () {
                 body: `status=${status}`
             }).then(response => {
                 if (response.ok) {
-                    location.reload();
+                    const card = document.querySelector(`[data-task-id="${taskId}"]`);
+                    if (card) {
+                        column.appendChild(card);
+                    }
                 } else {
+                    if (card && oldParent) oldParent.appendChild(card);
                     alert("تعذر تحديث حالة المهمة");
                 }
             });
