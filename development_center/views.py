@@ -282,7 +282,7 @@ def sprint_detail(request, pk):
 @login_required
 def sprint_board(request, pk):
     sprint = get_object_or_404(Sprint, pk=pk)
-    tasks = sprint.tasks.all()
+    tasks = sprint.tasks.all().order_by("order", "id")
     return render(request, "development_center/sprints/board.html", {
         "sprint": sprint,
         "todo": tasks.filter(status="todo"),

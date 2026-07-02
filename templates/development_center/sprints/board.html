@@ -20,10 +20,10 @@
 <div class="row">
 
 <div class="col-md-3">
-<div class="opal-card p-3">
+<div class="opal-card p-3 opal-kanban-column" data-status="todo">
 <h5>📋 لم يبدأ</h5>
 {% for t in todo %}
-<div class="card mb-2">
+<div class="card mb-2 opal-task-card" data-task-id="{{ t.id }}">
 <div class="card-body">
 <strong>{{ t.title }}</strong><br>
 <small>{{ t.progress }}%</small>
@@ -36,10 +36,10 @@
 </div>
 
 <div class="col-md-3">
-<div class="opal-card p-3">
+<div class="opal-card p-3 opal-kanban-column" data-status="doing">
 <h5>⚙️ قيد التنفيذ</h5>
 {% for t in doing %}
-<div class="card mb-2">
+<div class="card mb-2 opal-task-card" data-task-id="{{ t.id }}">
 <div class="card-body">
 <strong>{{ t.title }}</strong><br>
 <small>{{ t.progress }}%</small>
@@ -52,10 +52,10 @@
 </div>
 
 <div class="col-md-3">
-<div class="opal-card p-3">
+<div class="opal-card p-3 opal-kanban-column" data-status="review">
 <h5>🔍 قيد المراجعة</h5>
 {% for t in review %}
-<div class="card mb-2">
+<div class="card mb-2 opal-task-card" data-task-id="{{ t.id }}">
 <div class="card-body">
 <strong>{{ t.title }}</strong><br>
 <small>{{ t.progress }}%</small>
@@ -68,10 +68,10 @@
 </div>
 
 <div class="col-md-3">
-<div class="opal-card p-3">
+<div class="opal-card p-3 opal-kanban-column" data-status="done">
 <h5>✅ مكتملة</h5>
 {% for t in done %}
-<div class="card mb-2">
+<div class="card mb-2 opal-task-card" data-task-id="{{ t.id }}">
 <div class="card-body">
 <strong>{{ t.title }}</strong><br>
 <small>{{ t.progress }}%</small>
@@ -85,4 +85,49 @@
 
 </div>
 
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const cards = document.querySelectorAll(".opal-task-card");
+    const columns = document.querySelectorAll(".opal-kanban-column");
+
+    cards.forEach(card => {
+        card.setAttribute("draggable", "true");
+
+        card.addEventListener("dragstart", function (e) {
+            e.dataTransfer.setData("taskId", card.dataset.taskId);
+        });
+    });
+
+    columns.forEach(column => {
+        column.addEventListener("dragover", function (e) {
+            e.preventDefault();
+        });
+
+        column.addEventListener("drop", function (e) {
+            e.preventDefault();
+
+            const taskId = e.dataTransfer.getData("taskId");
+            const status = column.dataset.status;
+
+            fetch(`/development-center/tasks/${taskId}/status/`, {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": "{{ csrf_token }}",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                body: `status=${status}`
+            }).then(response => {
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    alert("تعذر تحديث حالة المهمة");
+                }
+            });
+        });
+    });
+});
+</script>
 {% endblock %}
