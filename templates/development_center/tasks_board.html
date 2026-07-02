@@ -5,6 +5,58 @@
 
 {% block content %}
 
+<div class="opal-card p-3 mb-4">
+  <form method="get" class="row g-2 align-items-end">
+    <div class="col-md-3">
+      <label class="form-label">الوحدة</label>
+      <select name="module" class="form-select">
+        <option value="">الكل</option>
+        {% for m in modules %}
+          <option value="{{ m.id }}" {% if selected_module == m.id|stringformat:"s" %}selected{% endif %}>{{ m.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-md-3">
+      <label class="form-label">الإصدار</label>
+      <select name="release" class="form-select">
+        <option value="">الكل</option>
+        {% for r in releases %}
+          <option value="{{ r.id }}" {% if selected_release == r.id|stringformat:"s" %}selected{% endif %}>{{ r.version }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-md-3">
+      <label class="form-label">السبرنت</label>
+      <select name="sprint" class="form-select">
+        <option value="">الكل</option>
+        {% for s in sprints %}
+          <option value="{{ s.id }}" {% if selected_sprint == s.id|stringformat:"s" %}selected{% endif %}>{{ s.title }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-md-2">
+      <label class="form-label">الأولوية</label>
+      <select name="priority" class="form-select">
+        <option value="">الكل</option>
+        <option value="1" {% if selected_priority == "1" %}selected{% endif %}>منخفضة</option>
+        <option value="2" {% if selected_priority == "2" %}selected{% endif %}>متوسطة</option>
+        <option value="3" {% if selected_priority == "3" %}selected{% endif %}>عالية</option>
+      </select>
+    </div>
+
+    <div class="col-md-1 d-grid">
+      <button class="btn btn-primary">فلترة</button>
+    </div>
+
+    <div class="col-12 mt-2">
+      <a href="{% url 'development_center:tasks_board' %}" class="btn btn-sm btn-outline-secondary">إلغاء الفلترة</a>
+    </div>
+  </form>
+</div>
+
 <div class="stats-grid mb-4">
   <div class="stat-card"><span>لم يبدأ</span><h2>{{ todo|length }}</h2></div>
   <div class="stat-card"><span>قيد التنفيذ</span><h2>{{ doing|length }}</h2></div>

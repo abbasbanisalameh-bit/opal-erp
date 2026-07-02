@@ -118,11 +118,33 @@ def task_detail(request, pk):
 @login_required
 def tasks_board(request):
     tasks = Task.objects.select_related("module", "release", "sprint").all()
+
+    module_id = request.GET.get("module")
+    release_id = request.GET.get("release")
+    sprint_id = request.GET.get("sprint")
+    priority = request.GET.get("priority")
+
+    if module_id:
+        tasks = tasks.filter(module_id=module_id)
+    if release_id:
+        tasks = tasks.filter(release_id=release_id)
+    if sprint_id:
+        tasks = tasks.filter(sprint_id=sprint_id)
+    if priority:
+        tasks = tasks.filter(priority=priority)
+
     return render(request, "development_center/tasks_board.html", {
         "todo": tasks.filter(status="todo"),
         "doing": tasks.filter(status="doing"),
         "review": tasks.filter(status="review"),
         "done": tasks.filter(status="done"),
+        "modules": Module.objects.all(),
+        "releases": Release.objects.all(),
+        "sprints": Sprint.objects.all(),
+        "selected_module": module_id,
+        "selected_release": release_id,
+        "selected_sprint": sprint_id,
+        "selected_priority": priority,
     })
 
 
@@ -415,7 +437,8 @@ def executive_dashboard(request):
     todo_tasks = tasks.filter(status="todo").count()
     remaining_tasks = total_tasks - done_tasks
     overdue_tasks = tasks.filter(due_date__lt=today).exclude(status="done")
-    unassigned_tasks = tasks.filter(user__isnull=True).exclude(status="done")
+    task_has_user = any(f.name == "user" for f in Task._meta.fields)
+    unassigned_tasks = tasks.filter(user__isnull=True).exclude(status="done") if task_has_user else Task.objects.none()
     due_soon_tasks = tasks.filter(
         due_date__gte=today,
         due_date__lte=today + timezone.timedelta(days=2),
