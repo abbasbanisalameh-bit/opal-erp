@@ -1,191 +1,187 @@
 {% extends "base/base.html" %}
 
-{% block page_title %}مخطط جانت الاحترافي{% endblock %}
-{% block page_subtitle %}مخطط زمني واضح لمهام OPAL ERP{% endblock %}
+{% block page_title %}مخطط جانت التفاعلي{% endblock %}
+{% block page_subtitle %}متابعة زمنية تفاعلية لمهام OPAL ERP{% endblock %}
 
 {% block content %}
 
 <style>
-.gantt-page * { color:#f8fafc !important; }
-.gantt-toolbar, .gantt-box {
-  background:#0f172a;
-  border:1px solid rgba(255,255,255,.12);
-  border-radius:18px;
-  padding:16px;
-}
-.gantt-scroll {
-  overflow-x:auto;
-  background:#020617;
-  border-radius:16px;
-  padding:14px;
-}
-.gantt-row {
-  display:grid;
-  grid-template-columns:220px 1fr;
-  gap:10px;
-  min-width:980px;
-  margin-bottom:10px;
-  align-items:center;
-}
-.gantt-title {
-  background:#111827;
-  border-radius:10px;
-  padding:10px;
-  font-weight:700;
-  text-align:right;
-  min-height:44px;
-}
-.gantt-line {
-  position:relative;
-  height:44px;
-  background:repeating-linear-gradient(
-    to right,
-    #0f172a 0,
-    #0f172a 48px,
-    #1e293b 49px
-  );
-  border-radius:10px;
-}
-.gantt-bar {
-  position:absolute;
-  top:7px;
-  height:30px;
-  border-radius:9px;
-  padding:6px 10px;
-  font-size:12px;
-  font-weight:800;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  border:1px solid rgba(255,255,255,.35);
-}
-.todo { background:#64748b; }
-.doing { background:#2563eb; }
-.review { background:#f59e0b; }
-.done { background:#16a34a; }
-.overdue { background:#dc2626; }
-.gantt-head {
-  display:grid;
-  grid-template-columns:220px 1fr;
-  gap:10px;
-  min-width:980px;
-  margin-bottom:12px;
-}
-.gantt-days {
-  display:flex;
-  gap:0;
-}
-.gantt-day {
-  width:50px;
-  text-align:center;
-  font-size:11px;
-  color:#cbd5e1 !important;
-}
+.gantt-page *{color:#f8fafc!important}
+.gantt-card{background:#0f172a;border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:16px;margin-bottom:16px}
+.gantt-controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.gantt-controls button,.gantt-controls input{background:#111827;border:1px solid #334155;color:#fff!important;border-radius:10px;padding:8px 12px}
+.gantt-wrap{overflow:auto;background:#020617;border-radius:18px;padding:14px;max-height:75vh}
+.gantt-grid{min-width:1100px}
+.gantt-head,.gantt-row{display:grid;grid-template-columns:260px 1fr;gap:10px}
+.gantt-head{margin-bottom:10px;position:sticky;top:0;z-index:5;background:#020617;padding-bottom:8px}
+.gantt-days{display:flex}
+.gantt-day{width:54px;text-align:center;font-size:11px;color:#cbd5e1!important;border-left:1px solid rgba(255,255,255,.08)}
+.gantt-title{background:#111827;border-radius:10px;padding:10px;margin-bottom:8px;font-weight:700;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gantt-line{position:relative;height:42px;background:repeating-linear-gradient(to right,#0f172a 0,#0f172a 53px,#1e293b 54px);border-radius:10px;margin-bottom:8px}
+.gantt-bar{position:absolute;top:6px;height:30px;border-radius:9px;padding:6px 10px;font-size:12px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border:1px solid rgba(255,255,255,.35);cursor:pointer}
+.todo{background:#64748b}.doing{background:#2563eb}.review{background:#f59e0b}.done{background:#16a34a}.overdue{background:#dc2626}
+.gantt-popup{position:fixed;display:none;background:#020617;border:1px solid rgba(255,255,255,.2);border-radius:14px;padding:14px;z-index:9999;min-width:240px;box-shadow:0 20px 50px rgba(0,0,0,.5);direction:rtl}
+.gantt-popup h4{margin:0 0 8px;color:#22d3ee!important}
+.gantt-empty{padding:40px;text-align:center;color:#cbd5e1!important}
 </style>
 
 <div class="gantt-page">
   <div class="opal-card p-4 mb-4">
-    <h3>📅 مخطط جانت الاحترافي</h3>
-    <p class="text-muted mb-0">يعرض المهام حسب تاريخ البداية والنهاية ونسبة الإنجاز.</p>
+    <h3>📅 مخطط جانت التفاعلي</h3>
+    <p class="text-muted mb-0">يعرض المهام حسب البداية والنهاية والحالة ونسبة الإنجاز.</p>
   </div>
 
-  <div class="gantt-toolbar mb-4">
-    <strong>الألوان:</strong>
-    رمادي = لم يبدأ،
-    أزرق = قيد التنفيذ،
-    برتقالي = قيد المراجعة،
-    أخضر = مكتملة،
-    أحمر = متأخرة
+  <div class="gantt-card gantt-controls">
+    <div>
+      <button onclick="setZoom(42)">تصغير</button>
+      <button onclick="setZoom(54)">عادي</button>
+      <button onclick="setZoom(72)">تكبير</button>
+    </div>
+    <input id="ganttSearch" placeholder="ابحث عن مهمة..." oninput="renderGantt()">
   </div>
 
-  <div class="gantt-box">
+  <div class="gantt-card">
     <div id="ganttStatus">جاري تحميل البيانات...</div>
-    <div id="ganttChart" class="gantt-scroll" style="display:none;"></div>
+    <div id="ganttBox" class="gantt-wrap" style="display:none">
+      <div id="ganttGrid" class="gantt-grid"></div>
+    </div>
   </div>
 </div>
 
+<div id="ganttPopup" class="gantt-popup"></div>
+
 <script>
-const statusClass = {
-  todo: "todo",
-  doing: "doing",
-  review: "review",
-  done: "done"
+let rawTasks = [];
+let dayWidth = 54;
+
+const statusLabel = {
+  todo: "لم يبدأ",
+  doing: "قيد التنفيذ",
+  review: "قيد المراجعة",
+  done: "مكتملة"
 };
 
-function parseDate(v) {
-  if (!v) return null;
+function parseDate(v){
+  if(!v) return null;
   const d = new Date(String(v).slice(0,10));
   return isNaN(d) ? null : d;
 }
 
-function daysBetween(a,b) {
+function fmt(d){
+  return d.toLocaleDateString("ar-JO",{month:"short",day:"numeric"});
+}
+
+function daysBetween(a,b){
   return Math.round((b-a)/(1000*60*60*24));
 }
 
-function fmt(d) {
-  return d.toLocaleDateString("ar-JO", {month:"short", day:"numeric"});
+function setZoom(w){
+  dayWidth = w;
+  renderGantt();
 }
 
-fetch("/development/gantt/data/", {credentials:"same-origin"})
-.then(r => r.json())
-.then(data => {
-  const rows = Array.isArray(data) ? data : (data.tasks || []);
-  const tasks = rows.map(t => {
-    const start = parseDate(t.start || t.start_date);
-    const end = parseDate(t.end || t.due_date || t.end_date);
-    return {
-      title: t.title || t.name || "مهمة",
-      status: t.status || "todo",
-      progress: Number(t.progress || 0),
-      start,
-      end
-    };
-  }).filter(t => t.start && t.end);
+function showPopup(e,t){
+  const p=document.getElementById("ganttPopup");
+  p.innerHTML = `
+    <h4>${t.title}</h4>
+    <div>الحالة: ${t.statusText}</div>
+    <div>نسبة الإنجاز: ${t.progress}%</div>
+    <div>البداية: ${t.startText}</div>
+    <div>النهاية: ${t.endText}</div>
+    <div>الوحدة: ${t.module || "-"}</div>
+  `;
+  p.style.display="block";
+  p.style.left=(e.clientX-260)+"px";
+  p.style.top=(e.clientY+15)+"px";
+}
+
+document.addEventListener("click",function(e){
+  if(!e.target.classList.contains("gantt-bar")){
+    document.getElementById("ganttPopup").style.display="none";
+  }
+});
+
+function renderGantt(){
+  const q = document.getElementById("ganttSearch").value.trim().toLowerCase();
+
+  const tasks = rawTasks.filter(t =>
+    !q || t.title.toLowerCase().includes(q) || String(t.module || "").toLowerCase().includes(q)
+  );
 
   const status = document.getElementById("ganttStatus");
-  const chart = document.getElementById("ganttChart");
+  const box = document.getElementById("ganttBox");
+  const grid = document.getElementById("ganttGrid");
 
-  if (!tasks.length) {
-    status.innerHTML = "لا توجد مهام لها تواريخ لعرضها في مخطط جانت.";
+  if(!tasks.length){
+    status.style.display="block";
+    box.style.display="none";
+    status.innerHTML="لا توجد مهام مطابقة للعرض.";
     return;
   }
 
-  const minDate = new Date(Math.min(...tasks.map(t => t.start)));
-  const maxDate = new Date(Math.max(...tasks.map(t => t.end)));
-  const totalDays = Math.max(daysBetween(minDate, maxDate) + 1, 1);
+  const minDate = new Date(Math.min(...tasks.map(t=>t.start)));
+  const maxDate = new Date(Math.max(...tasks.map(t=>t.end)));
+  const totalDays = Math.max(daysBetween(minDate,maxDate)+1,1);
 
-  let html = '<div class="gantt-head"><div></div><div class="gantt-days">';
-  for (let i=0; i<totalDays; i++) {
-    const d = new Date(minDate);
+  let html = `<div class="gantt-head"><div></div><div class="gantt-days">`;
+  for(let i=0;i<totalDays;i++){
+    const d=new Date(minDate);
     d.setDate(d.getDate()+i);
-    html += `<div class="gantt-day">${fmt(d)}</div>`;
+    html += `<div class="gantt-day" style="width:${dayWidth}px">${fmt(d)}</div>`;
   }
-  html += '</div></div>';
+  html += `</div></div>`;
 
-  tasks.forEach(t => {
-    const offset = Math.max(daysBetween(minDate, t.start), 0);
-    const duration = Math.max(daysBetween(t.start, t.end)+1, 1);
-    const cls = (t.end < new Date() && t.status !== "done") ? "overdue" : (statusClass[t.status] || "todo");
+  tasks.forEach((t,idx)=>{
+    const offset=Math.max(daysBetween(minDate,t.start),0);
+    const duration=Math.max(daysBetween(t.start,t.end)+1,1);
+    const overdue = t.end < new Date() && t.status !== "done";
+    const cls = overdue ? "overdue" : (t.status || "todo");
 
     html += `
       <div class="gantt-row">
-        <div class="gantt-title">${t.title}</div>
+        <div class="gantt-title" title="${t.title}">${t.title}</div>
         <div class="gantt-line">
           <div class="gantt-bar ${cls}"
-               style="left:${offset*50}px;width:${duration*50}px">
+            data-index="${idx}"
+            style="right:${offset*dayWidth}px;width:${duration*dayWidth}px"
+            onclick="showPopup(event, rawTasks.find(x=>x.id==${t.id}))">
             ${t.progress}% — ${t.title}
           </div>
         </div>
       </div>`;
   });
 
-  status.style.display = "none";
-  chart.style.display = "block";
-  chart.innerHTML = html;
+  status.style.display="none";
+  box.style.display="block";
+  grid.innerHTML=html;
+}
+
+fetch("/development/gantt/data/", {credentials:"same-origin"})
+.then(r=>r.json())
+.then(data=>{
+  const rows = Array.isArray(data) ? data : (data.tasks || []);
+  rawTasks = rows.map(t=>{
+    const start = parseDate(t.start_date || t.start);
+    const end = parseDate(t.due_date || t.end_date || t.end);
+    return {
+      id:t.id,
+      title:t.title || t.name || "مهمة",
+      module:t.module || "",
+      status:t.status || "todo",
+      statusText:t.status_label || statusLabel[t.status] || t.status || "لم يبدأ",
+      progress:Number(t.progress || 0),
+      start,
+      end,
+      startText:t.start_date || t.start || "-",
+      endText:t.due_date || t.end_date || t.end || "-"
+    };
+  }).filter(t=>t.start && t.end);
+
+  renderGantt();
 })
-.catch(e => {
-  document.getElementById("ganttStatus").innerHTML = "تعذر تحميل بيانات مخطط جانت.";
-  console.error(e);
+.catch(err=>{
+  document.getElementById("ganttStatus").innerHTML="تعذر تحميل بيانات مخطط جانت.";
+  console.error(err);
 });
 </script>
 

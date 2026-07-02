@@ -65,6 +65,7 @@ class Task(models.Model):
     description = models.TextField(blank=True)
     status = models.CharField(max_length=20, choices=STATUS, default="todo")
     progress = models.PositiveSmallIntegerField(default=0)
+    order = models.PositiveIntegerField(default=0, verbose_name="ترتيب التنفيذ")
     start_date = models.DateField(null=True, blank=True, verbose_name="تاريخ البداية")
     due_date = models.DateField(null=True, blank=True, verbose_name="تاريخ النهاية")
     depends_on = models.ManyToManyField(

@@ -121,7 +121,8 @@ def recalc_sprints() -> int:
         elif avg >= 100:
             sprint.status = "completed"
         elif avg > 0:
-            sprint.status = "active"
+            active_exists = Sprint.objects.filter(status="active").exclude(pk=sprint.pk).exists()
+            sprint.status = "planned" if active_exists else "active"
         else:
             sprint.status = "planned"
 
@@ -253,6 +254,22 @@ def update_task_status(task, status=None, progress=None, user=None):
         user=user,
     )
     sync_after_task_change(task=task, user=user)
+
+    if task.status == "done" and task.sprint:
+        next_task = (
+            Task.objects.filter(
+                sprint=task.sprint,
+                status="todo"
+            )
+            .order_by("order", "id")
+            .first()
+        )
+
+        if next_task:
+            next_task.status = "doing"
+            next_task.progress = max(next_task.progress, 1)
+            next_task.save(update_fields=["status", "progress"])
+
     return True, "تم تحديث المهمة بنجاح."
 
 # ===== Auto workflow final layer =====
@@ -272,16 +289,66 @@ def auto_recalculate_project():
         _WORKFLOW_RUNNING = False
 
 
-def sync_after_task_change(task=None, user=None):
-    return auto_recalculate_project()
+
+# ===== OPAL Development Engine v1 =====
+
+def auto_activate_next_task(user=None):
+    """
+    تفعيل أول مهمة غير منتهية داخل السبرنت النشط،
+    وإغلاق السبرنت وفتح التالي تلقائياً عند اكتماله.
+    """
+    from development_center.models import Sprint, Task
+
+    active = Sprint.objects.filter(status="active").order_by("start_date", "id").first()
+    if not active:
+        return
+
+    remaining = Task.objects.filter(
+        sprint=active
+    ).exclude(status="done").order_by("order", "id")
+
+    # يوجد مهام متبقية، اجعل أولها Doing
+    if remaining.exists():
+        task = remaining.first()
+        if task.status == "todo":
+            task.status = "doing"
+            task.progress = max(task.progress, 1)
+            task.save(update_fields=["status", "progress"])
+            _activity(
+                title=f"بدء المهمة تلقائياً: {task.title}",
+                description="تم تفعيل أول مهمة غير منتهية تلقائياً.",
+                task=task,
+                user=user,
+            )
+        return
+
+    # لا توجد مهام، أغلق السبرنت
+    active.status = "completed"
+    active.save(update_fields=["status"])
+
+    next_sprint = Sprint.objects.filter(
+        status="planned"
+    ).order_by("start_date", "id").first()
+
+    if next_sprint:
+        next_sprint.status = "active"
+        next_sprint.save(update_fields=["status"])
+
+        first_task = Task.objects.filter(
+            sprint=next_sprint
+        ).exclude(status="done").order_by("order", "id").first()
+
+        if first_task:
+            first_task.status = "doing"
+            first_task.progress = max(first_task.progress, 1)
+            first_task.save(update_fields=["status", "progress"])
 
 
-def update_task_status(task, status=None, progress=None, user=None):
-    if status is not None:
-        task.status = status
+# ربط محرك الأتمتة بالمحرك الرئيسي
+_original_run_workflow_engine = run_workflow_engine
 
-    if progress is not None:
-        task.progress = progress
+def run_workflow_engine(user=None):
+    result = _original_run_workflow_engine(user=user)
+    auto_activate_next_task(user=user)
+    return result
 
-    task.save()
-    return task

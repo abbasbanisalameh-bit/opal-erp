@@ -1,0 +1,29 @@
+{% extends "base/base.html" %}
+
+{% block page_title %}تعطيل الطالب{% endblock %}
+{% block page_subtitle %}تأكيد تعطيل الطالب{% endblock %}
+
+{% block content %}
+<div class="opal-card p-4">
+
+    <h3 class="text-danger mb-3">تأكيد تعطيل الطالب</h3>
+
+    <p>
+        هل أنت متأكد من رغبتك في تعطيل الطالب
+        <strong>{{ student.full_name }}</strong>؟
+    </p>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <button type="submit" class="btn btn-danger">
+            تعطيل الطالب
+        </button>
+
+        <a href="{% url 'students:student_detail' student.pk %}" class="btn btn-secondary">
+            إلغاء
+        </a>
+    </form>
+
+</div>
+{% endblock %}

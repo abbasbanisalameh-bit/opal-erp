@@ -77,7 +77,7 @@ def student_admission(request):
         if form.is_valid():
             school = School.objects.first()
             branch = Branch.objects.first()
-            academic_year = AcademicYear.objects.filter(is_current=True).first()
+            academic_year = AcademicYear.objects.filter(is_active=True).first()
 
             student = StudentRecord.objects.create(
                 school=school,
