@@ -1,6 +1,7 @@
 {% extends "base/base.html" %}
+{% load dev_labels %}
 
-{% block page_title %}Sprint Dashboard{% endblock %}
+{% block page_title %}لوحة دورة التطوير{% endblock %}
 {% block page_subtitle %}لوحة متابعة السبرنت{% endblock %}
 
 {% block content %}
@@ -14,8 +15,8 @@
     </div>
     <div class="d-flex gap-2 flex-wrap">
       <span class="badge bg-info align-self-center">{{ sprint.get_status_display }}</span>
-      <a href="{% url 'development_center:sprint_board' sprint.id %}" class="btn btn-primary">فتح Sprint Board</a>
-      <a href="{% url 'development_center:sprint_burndown' sprint.id %}" class="btn btn-outline-warning">Burndown Chart</a>
+      <a href="{% url 'development_center:sprint_board' sprint.id %}" class="btn btn-primary">فتح لوحة دورة التطوير</a>
+      <a href="{% url 'development_center:sprint_burndown' sprint.id %}" class="btn btn-outline-warning">مخطط الاحتراق</a>
       <a href="{% url 'development_center:sprint_update' sprint.id %}" class="btn btn-outline-light">تعديل</a>
     </div>
   </div>
@@ -33,10 +34,10 @@
 
 <div class="stats-grid mb-4">
   <div class="stat-card"><span>إجمالي المهام</span><h2>{{ total }}</h2></div>
-  <div class="stat-card"><span>To Do</span><h2>{{ todo }}</h2></div>
-  <div class="stat-card"><span>Doing</span><h2>{{ doing }}</h2></div>
-  <div class="stat-card"><span>Review</span><h2>{{ review }}</h2></div>
-  <div class="stat-card"><span>Done</span><h2>{{ done }}</h2></div>
+  <div class="stat-card"><span>لم يبدأ</span><h2>{{ todo }}</h2></div>
+  <div class="stat-card"><span>قيد التنفيذ</span><h2>{{ doing }}</h2></div>
+  <div class="stat-card"><span>قيد المراجعة</span><h2>{{ review }}</h2></div>
+  <div class="stat-card"><span>مكتملة</span><h2>{{ done }}</h2></div>
   <div class="stat-card"><span>المتبقي</span><h2>{{ remaining }}</h2></div>
 </div>
 
@@ -73,7 +74,7 @@
         {% for task in tasks %}
         <tr>
           <td><a href="{% url 'development_center:task_detail' task.id %}">{{ task.title }}</a></td>
-          <td>{{ task.get_status_display }}</td>
+          <td>{{ task.status|ar_status }}</td>
           <td>{{ task.progress }}%</td>
           <td>{{ task.due_date|default:"-" }}</td>
         </tr>

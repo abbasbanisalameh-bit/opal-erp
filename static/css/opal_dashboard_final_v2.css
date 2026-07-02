@@ -293,3 +293,131 @@
     color: #f8fafc !important;
     border: 1px solid rgba(255,255,255,0.15);
 }
+
+/* إصلاح وضوح النصوص في واجهة OPAL */
+.opal-card,
+.opal-card *,
+.sidebar,
+.sidebar *,
+.stat-card,
+.stat-card *,
+.table,
+.table *,
+.nav-link,
+.btn,
+label,
+small,
+.text-muted {
+    color: #f8fafc !important;
+}
+
+.text-muted,
+.opal-card .text-muted {
+    color: #cbd5e1 !important;
+}
+
+input,
+select,
+textarea {
+    color: #f8fafc !important;
+    background-color: #0f172a !important;
+    border-color: rgba(255,255,255,0.18) !important;
+}
+
+input::placeholder {
+    color: #94a3b8 !important;
+}
+
+.table td,
+.table th {
+    color: #f8fafc !important;
+}
+
+.progress,
+.progress * {
+    color: #f8fafc !important;
+}
+
+/* OPAL GLOBAL TEXT VISIBILITY FIX */
+body,
+main,
+.content,
+.opal-card,
+.card,
+.sidebar,
+.table,
+.dropdown-menu,
+.modal,
+form,
+label,
+p,
+span,
+div,
+h1,h2,h3,h4,h5,h6,
+a,
+li,
+td,
+th,
+small,
+strong {
+    color: #f8fafc !important;
+}
+
+.text-muted,
+small,
+.form-text {
+    color: #cbd5e1 !important;
+}
+
+input,
+select,
+textarea,
+.form-control,
+.form-select {
+    color: #f8fafc !important;
+    background-color: #0f172a !important;
+    border: 1px solid rgba(255,255,255,0.25) !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+    color: #94a3b8 !important;
+}
+
+.btn {
+    color: #ffffff !important;
+}
+
+.table thead th,
+.table tbody td {
+    color: #f8fafc !important;
+}
+
+/* Gantt SVG text force */
+.gantt text,
+.gantt .bar-label,
+.gantt .lower-text,
+.gantt .upper-text {
+    fill: #ffffff !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    stroke: #020617 !important;
+    stroke-width: 2px !important;
+    paint-order: stroke fill !important;
+}
+
+.gantt .grid-row {
+    fill: #0f172a !important;
+}
+
+.gantt .grid-header {
+    fill: #111827 !important;
+}
+
+.gantt .popup-wrapper,
+.gantt .popup-wrapper *,
+.opal-gantt-popup,
+.opal-gantt-popup * {
+    color: #f8fafc !important;
+    background-color: #020617 !important;
+}

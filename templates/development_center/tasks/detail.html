@@ -1,4 +1,5 @@
 {% extends "base/base.html" %}
+{% load dev_labels %}
 
 {% block page_title %}تفاصيل المهمة
 <div class="opal-card p-3 mt-3">
@@ -10,7 +11,7 @@
       {% for dep in task.depends_on.all %}
         <li>
           <a href="{% url 'development_center:task_detail' dep.id %}">{{ dep.title }}</a>
-          <small class="text-muted">({{ dep.get_status_display }})</small>
+          <small class="text-muted">({{ dep.status|ar_status }})</small>
         </li>
       {% empty %}
         <li class="text-muted">لا توجد مهام سابقة تعتمد عليها.</li>
@@ -24,7 +25,7 @@
       {% for blocked in task.blocked_tasks.all %}
         <li>
           <a href="{% url 'development_center:task_detail' blocked.id %}">{{ blocked.title }}</a>
-          <small class="text-muted">({{ blocked.get_status_display }})</small>
+          <small class="text-muted">({{ blocked.status|ar_status }})</small>
         </li>
       {% empty %}
         <li class="text-muted">لا توجد مهام تنتظرها.</li>
@@ -52,7 +53,7 @@
 
     <p><strong>الوحدة:</strong> {{ task.module }}</p>
     <p><strong>الإصدار:</strong> {{ task.release|default:"-" }}</p>
-    <p><strong>الحالة:</strong> {{ task.get_status_display }}</p>
+    <p><strong>الحالة:</strong> {{ task.status|ar_status }}</p>
     <p><strong>نسبة الإنجاز:</strong> {{ task.progress }}%</p>
     <p><strong>تاريخ الإنشاء:</strong> {{ task.created_at|date:'Y-m-d H:i' }}</p>
     <p><strong>الوصف:</strong></p>

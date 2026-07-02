@@ -1,4 +1,5 @@
 {% extends "base/base.html" %}
+{% load dev_labels %}
 
 {% block page_title %}تقرير المشروع{% endblock %}
 {% block page_subtitle %}تقرير قابل للطباعة PDF{% endblock %}
@@ -29,7 +30,7 @@
         <td>{{ task.module|default:"-" }}</td>
         <td>{{ task.release|default:"-" }}</td>
         <td>{{ task.sprint|default:"-" }}</td>
-        <td>{{ task.get_status_display }}</td>
+        <td>{{ task.status|ar_status }}</td>
         <td>{{ task.progress }}%</td>
       </tr>
       {% endfor %}

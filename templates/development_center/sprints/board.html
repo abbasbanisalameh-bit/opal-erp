@@ -1,6 +1,6 @@
 {% extends "base/base.html" %}
 
-{% block page_title %}Sprint Board{% endblock %}
+{% block page_title %}لوحة دورة التطوير{% endblock %}
 {% block page_subtitle %}لوحة كانبان الخاصة بالسبرنت{% endblock %}
 
 {% block content %}
@@ -13,7 +13,7 @@
 
     <a class="btn btn-outline-primary"
        href="{% url 'development_center:sprint_detail' sprint.id %}">
-        Sprint Dashboard
+        لوحة دورة التطوير
     </a>
 </div>
 
@@ -21,7 +21,7 @@
 
 <div class="col-md-3">
 <div class="opal-card p-3">
-<h5>📋 To Do</h5>
+<h5>📋 لم يبدأ</h5>
 {% for t in todo %}
 <div class="card mb-2">
 <div class="card-body">
@@ -37,7 +37,7 @@
 
 <div class="col-md-3">
 <div class="opal-card p-3">
-<h5>⚙️ Doing</h5>
+<h5>⚙️ قيد التنفيذ</h5>
 {% for t in doing %}
 <div class="card mb-2">
 <div class="card-body">
@@ -53,7 +53,7 @@
 
 <div class="col-md-3">
 <div class="opal-card p-3">
-<h5>🔍 Review</h5>
+<h5>🔍 قيد المراجعة</h5>
 {% for t in review %}
 <div class="card mb-2">
 <div class="card-body">
@@ -69,7 +69,7 @@
 
 <div class="col-md-3">
 <div class="opal-card p-3">
-<h5>✅ Done</h5>
+<h5>✅ مكتملة</h5>
 {% for t in done %}
 <div class="card mb-2">
 <div class="card-body">

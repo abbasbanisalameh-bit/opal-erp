@@ -1,4 +1,5 @@
 {% extends "base/base.html" %}
+{% load dev_labels %}
 
 {% block page_title %}المهام{% endblock %}
 {% block page_subtitle %}إدارة مهام تطوير OPAL ERP{% endblock %}
@@ -14,7 +15,7 @@
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;gap:12px;flex-wrap:wrap;">
     <h3>المهام</h3>
     <div style="display:flex;gap:10px;">
-        <a href="{% url 'development_center:tasks_board' %}" class="btn btn-secondary">لوحة Kanban</a>
+        <a href="{% url 'development_center:tasks_board' %}" class="btn btn-secondary">لوحة كانبان</a>
         <a href="{% url 'development_center:task_create' %}" class="btn btn-primary">إضافة مهمة</a>
     </div>
 </div>
@@ -38,7 +39,7 @@
 <td><a href="{% url 'development_center:task_detail' task.id %}">{{ task.title }}</a></td>
 <td>{{ task.module }}</td>
 <td>{{ task.release|default:"-" }}</td>
-<td>{{ task.get_status_display }}</td>
+<td>{{ task.status|ar_status }}</td>
 <td>{{ task.progress }}%</td>
 <td>
 <a class="btn btn-sm btn-info" href="{% url 'development_center:task_detail' task.id %}">عرض</a>

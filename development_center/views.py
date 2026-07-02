@@ -184,7 +184,6 @@ def gantt_chart(request):
     return render(request, "development_center/gantt.html")
 
 
-@login_required
 def gantt_data(request):
     return JsonResponse({"tasks": get_gantt_tasks()})
 
@@ -372,7 +371,7 @@ def notification_mark_read(request, pk):
 
 @login_required
 def generate_task_notifications(request):
-    result = run_workflow_engine()
+    result = run_workflow_engine(user=request.user)
     Notification.objects.create(
         title="تم تشغيل محرك الإشعارات",
         message=f"تم إنشاء {result.overdue_notifications} إشعار جديد.",
@@ -384,19 +383,23 @@ def generate_task_notifications(request):
 
 @login_required
 def run_workflow_engine_view(request):
-    result = run_workflow_engine()
-
-    overdue = result.get("overdue_notifications", 0) if isinstance(result, dict) else 0
+    result = run_workflow_engine(user=request.user)
 
     Notification.objects.create(
         title="تم تشغيل محرك سير العمل",
-        message=f"تم تحديث الحالات والحسابات، وتم إنشاء {overdue} إشعار تأخير.",
+        message=(
+            f"تم تحديث {result.normalized_tasks} مهمة، "
+            f"وتحديث {result.updated_sprints} دورة تطوير، "
+            f"وتحديث {result.updated_modules} وحدة، "
+            f"وإنشاء {result.overdue_notifications} إشعار تأخير."
+        ),
         level="success",
         url="/development/executive/",
     )
 
     return redirect("development_center:executive_dashboard")
 
+@login_required
 def executive_dashboard(request):
     today = timezone.localdate()
     tasks = Task.objects.select_related("module", "release", "sprint").all()
@@ -411,7 +414,7 @@ def executive_dashboard(request):
     todo_tasks = tasks.filter(status="todo").count()
     remaining_tasks = total_tasks - done_tasks
     overdue_tasks = tasks.filter(due_date__lt=today).exclude(status="done")
-    project_progress = round((done_tasks / total_tasks) * 100) if total_tasks else 0
+    project_progress = round(sum(int(t.progress or 0) for t in tasks) / total_tasks) if total_tasks else 0
 
     first_sprint = sprints.first()
     last_sprint = sprints.last()
@@ -426,7 +429,8 @@ def executive_dashboard(request):
         stasks = sprint.tasks.all()
         stotal = stasks.count()
         sdone = stasks.filter(status="done").count()
-        sprint_data.append({"sprint": sprint, "total": stotal, "done": sdone, "progress": round((sdone / stotal) * 100) if stotal else 0})
+        sprogress = round(sum(int(t.progress or 0) for t in stasks) / stotal) if stotal else 0
+        sprint_data.append({"sprint": sprint, "total": stotal, "done": sdone, "progress": sprogress})
 
     module_data = []
     for module in modules:
@@ -434,14 +438,16 @@ def executive_dashboard(request):
         mtotal = mtasks.count()
         mdone = mtasks.filter(status="done").count()
         if mtotal:
-            module_data.append({"module": module, "total": mtotal, "done": mdone, "progress": round((mdone / mtotal) * 100)})
+            mprogress = round(sum(int(t.progress or 0) for t in mtasks) / mtotal)
+            module_data.append({"module": module, "total": mtotal, "done": mdone, "progress": mprogress})
 
     release_data = []
     for release in releases:
         rtasks = tasks.filter(release=release)
         rtotal = rtasks.count()
         rdone = rtasks.filter(status="done").count()
-        release_data.append({"release": release, "total": rtotal, "done": rdone, "progress": round((rdone / rtotal) * 100) if rtotal else 0})
+        rprogress = round(sum(int(t.progress or 0) for t in rtasks) / rtotal) if rtotal else 0
+        release_data.append({"release": release, "total": rtotal, "done": rdone, "progress": rprogress})
 
     return render(request, "development_center/executive_dashboard.html", {
         "total_tasks": total_tasks,

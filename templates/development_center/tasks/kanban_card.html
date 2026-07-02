@@ -12,10 +12,10 @@
   <small>الإنجاز: {{ t.progress }}%</small>
 
   <div class="mt-2 d-flex flex-wrap gap-1">
-    <button class="btn btn-sm btn-outline-secondary status-btn" data-id="{{ t.id }}" data-status="todo">To Do</button>
-    <button class="btn btn-sm btn-outline-primary status-btn" data-id="{{ t.id }}" data-status="doing">Doing</button>
-    <button class="btn btn-sm btn-outline-warning status-btn" data-id="{{ t.id }}" data-status="review">Review</button>
-    <button class="btn btn-sm btn-outline-success status-btn" data-id="{{ t.id }}" data-status="done">Done</button>
+    <button class="btn btn-sm btn-outline-secondary status-btn" data-id="{{ t.id }}" data-status="todo">لم يبدأ</button>
+    <button class="btn btn-sm btn-outline-primary status-btn" data-id="{{ t.id }}" data-status="doing">قيد التنفيذ</button>
+    <button class="btn btn-sm btn-outline-warning status-btn" data-id="{{ t.id }}" data-status="review">قيد المراجعة</button>
+    <button class="btn btn-sm btn-outline-success status-btn" data-id="{{ t.id }}" data-status="done">مكتملة</button>
   </div>
 
   <a href="{% url 'development_center:task_detail' t.id %}" class="btn btn-sm btn-light mt-2">تفاصيل</a>

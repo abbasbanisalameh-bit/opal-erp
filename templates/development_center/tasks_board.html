@@ -1,15 +1,15 @@
 {% extends "base/base.html" %}
 
-{% block page_title %}لوحة Kanban{% endblock %}
+{% block page_title %}لوحة كانبان{% endblock %}
 {% block page_subtitle %}إدارة مهام مركز التطوير OPAL ERP{% endblock %}
 
 {% block content %}
 
 <div class="stats-grid mb-4">
-  <div class="stat-card"><span>To Do</span><h2>{{ todo|length }}</h2></div>
-  <div class="stat-card"><span>Doing</span><h2>{{ doing|length }}</h2></div>
-  <div class="stat-card"><span>Review</span><h2>{{ review|length }}</h2></div>
-  <div class="stat-card"><span>Done</span><h2>{{ done|length }}</h2></div>
+  <div class="stat-card"><span>لم يبدأ</span><h2>{{ todo|length }}</h2></div>
+  <div class="stat-card"><span>قيد التنفيذ</span><h2>{{ doing|length }}</h2></div>
+  <div class="stat-card"><span>قيد المراجعة</span><h2>{{ review|length }}</h2></div>
+  <div class="stat-card"><span>مكتملة</span><h2>{{ done|length }}</h2></div>
 </div>
 
 <div class="row g-3">
@@ -19,7 +19,7 @@
 
 <div class="col-lg-3">
 <div class="opal-card p-3 kanban-column" data-status="todo">
-<h4>To Do ({{ todo|length }})</h4>
+<h4>لم يبدأ ({{ todo|length }})</h4>
 {% for t in todo %}
 {% include "development_center/tasks/kanban_card.html" %}
 {% empty %}<p class="text-muted">لا توجد مهام.</p>{% endfor %}
@@ -28,7 +28,7 @@
 
 <div class="col-lg-3">
 <div class="opal-card p-3 kanban-column" data-status="doing">
-<h4>Doing ({{ doing|length }})</h4>
+<h4>قيد التنفيذ ({{ doing|length }})</h4>
 {% for t in doing %}
 {% include "development_center/tasks/kanban_card.html" %}
 {% empty %}<p class="text-muted">لا توجد مهام.</p>{% endfor %}
@@ -37,7 +37,7 @@
 
 <div class="col-lg-3">
 <div class="opal-card p-3 kanban-column" data-status="review">
-<h4>Review ({{ review|length }})</h4>
+<h4>قيد المراجعة ({{ review|length }})</h4>
 {% for t in review %}
 {% include "development_center/tasks/kanban_card.html" %}
 {% empty %}<p class="text-muted">لا توجد مهام.</p>{% endfor %}
@@ -46,7 +46,7 @@
 
 <div class="col-lg-3">
 <div class="opal-card p-3 kanban-column" data-status="done">
-<h4>Done ({{ done|length }})</h4>
+<h4>مكتملة ({{ done|length }})</h4>
 {% for t in done %}
 {% include "development_center/tasks/kanban_card.html" %}
 {% empty %}<p class="text-muted">لا توجد مهام.</p>{% endfor %}

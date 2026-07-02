@@ -1,19 +1,34 @@
+from django.utils import timezone
 from django.utils.dateparse import parse_date
-from development_center.models import Task, ActivityLog
+
+from development_center.models import ActivityLog, Task
+
+
+STATUS_LABELS = {
+    "todo": "لم يبدأ",
+    "doing": "قيد التنفيذ",
+    "review": "قيد المراجعة",
+    "done": "مكتملة",
+}
 
 
 def get_gantt_tasks():
     tasks = Task.objects.select_related("module", "release").prefetch_related("depends_on").all()
+    today = timezone.localdate()
 
     data = []
     for task in tasks:
+        is_overdue = bool(task.due_date and task.due_date < today and task.status != "done")
+        css_class = "overdue" if is_overdue else task.status
         data.append({
             "id": task.id,
             "title": task.title,
             "module": str(task.module) if task.module else "",
             "release": str(task.release) if task.release else "",
             "status": task.status,
-            "progress": task.progress,
+            "status_label": STATUS_LABELS.get(task.status, task.status),
+            "css_class": css_class,
+            "progress": int(task.progress or 0),
             "start_date": task.start_date.isoformat() if task.start_date else "",
             "due_date": task.due_date.isoformat() if task.due_date else "",
             "blocked": task.is_blocked,
@@ -45,7 +60,7 @@ def update_task_dates(task, start_date_value, due_date_value, user=None):
 
     ActivityLog.objects.create(
         action="update",
-        title=f"تعديل تواريخ Gantt: {task}",
+        title=f"تعديل تواريخ مخطط جانت: {task}",
         description=f"من {old_start} - {old_due} إلى {start} - {due}",
         module=task.module,
         task=task,

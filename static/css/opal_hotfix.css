@@ -1,0 +1,53 @@
+html,body{
+    color:#f8fafc;
+}
+
+.card,
+.opal-card,
+.table,
+.table *,
+.modal-content,
+.dropdown-menu,
+.list-group-item,
+.form-control,
+.form-select,
+input,
+select,
+textarea,
+label,
+small,
+p,
+span,
+a,
+td,
+th,
+h1,h2,h3,h4,h5,h6{
+    color:#f8fafc !important;
+}
+
+.text-muted{
+    color:#cbd5e1 !important;
+}
+
+.table{
+    background:#0f172a !important;
+}
+
+.table thead th{
+    background:#111827 !important;
+}
+
+input,
+select,
+textarea{
+    background:#111827 !important;
+    border:1px solid #334155 !important;
+}
+
+.btn-outline-secondary{
+    color:#fff !important;
+}
+
+svg text{
+    fill:#fff !important;
+}

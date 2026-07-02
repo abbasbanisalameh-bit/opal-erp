@@ -1,13 +1,13 @@
 {% extends "base/base.html" %}
 
-{% block page_title %}Velocity Chart{% endblock %}
+{% block page_title %}مخطط سرعة الإنجاز{% endblock %}
 {% block page_subtitle %}قياس سرعة إنجاز الفريق عبر السبرنتات{% endblock %}
 
 {% block content %}
 
 <div class="opal-card p-4 mb-4">
-  <h3>🚀 Velocity Chart</h3>
-  <p class="text-muted mb-0">يعرض عدد المهام المنجزة في كل Sprint.</p>
+  <h3>🚀 مخطط سرعة الإنجاز</h3>
+  <p class="text-muted mb-0">يعرض عدد المهام المنجزة في كل دورة تطوير.</p>
 </div>
 
 <div class="stats-grid mb-4">
@@ -24,8 +24,8 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 const labels = {{ labels|safe }};
-const completedTasks = {{ completed_tasks|safe }};
-const totalTasks = {{ total_tasks|safe }};
+const completedمهمةs = {{ completed_tasks|safe }};
+const totalمهمةs = {{ total_tasks|safe }};
 
 new Chart(document.getElementById("velocityChart"), {
   type: "bar",
@@ -34,12 +34,12 @@ new Chart(document.getElementById("velocityChart"), {
     datasets: [
       {
         label: "إجمالي المهام",
-        data: totalTasks,
+        data: totalمهمةs,
         borderWidth: 1
       },
       {
         label: "المهام المنجزة",
-        data: completedTasks,
+        data: completedمهمةs,
         borderWidth: 1
       }
     ]

@@ -1,16 +1,17 @@
 {% extends "base/base.html" %}
+{% load dev_labels %}
 
-{% block page_title %}Sprint Management{% endblock %}
+{% block page_title %}إدارة دورات التطوير{% endblock %}
 {% block page_subtitle %}إدارة السبرنتات ومهام التطوير{% endblock %}
 
 {% block content %}
 
 <div class="opal-card p-4 mb-4 d-flex justify-content-between align-items-center">
   <div>
-    <h3>🏃 Sprint Management</h3>
+    <h3>🏃 إدارة دورات التطوير</h3>
     <p class="text-muted mb-0">تنظيم المهام داخل دورات تطوير محددة.</p>
   </div>
-  <a href="{% url 'development_center:sprint_create' %}" class="btn btn-primary">إضافة Sprint</a>
+  <a href="{% url 'development_center:sprint_create' %}" class="btn btn-primary">إضافة دورة تطوير</a>
 </div>
 
 {% for sprint in sprints %}
@@ -34,7 +35,7 @@
     {% for task in sprint.tasks.all %}
       <li>
         <a href="{% url 'development_center:task_detail' task.id %}">{{ task.title }}</a>
-        - {{ task.get_status_display }} - {{ task.progress }}%
+        - {{ task.status|ar_status }} - {{ task.progress }}%
       </li>
     {% empty %}
       <li class="text-muted">لا توجد مهام مرتبطة بهذا السبرنت.</li>
