@@ -17,6 +17,23 @@
     </a>
 </div>
 
+<div class="opal-card p-3 mb-4">
+    <div class="d-flex justify-content-between mb-2">
+        <strong>تقدم السبرنت</strong>
+        <span id="sprint-progress-text">0%</span>
+    </div>
+    <div class="progress mb-3">
+        <div id="sprint-progress-bar" class="progress-bar" style="width:0%"></div>
+    </div>
+
+    <div class="row text-center">
+        <div class="col">📋 Todo: <strong id="count-todo">0</strong></div>
+        <div class="col">🔥 Doing: <strong id="count-doing">0</strong></div>
+        <div class="col">🔍 Review: <strong id="count-review">0</strong></div>
+        <div class="col">✅ Done: <strong id="count-done">0</strong></div>
+    </div>
+</div>
+
 <div class="row">
 
 <div class="col-md-3">
@@ -90,6 +107,35 @@
 {% block extra_js %}
 <script>
 document.addEventListener("DOMContentLoaded", function () {
+
+    function updateBoardStats() {
+        const todo = document.querySelectorAll('[data-status="todo"] .opal-task-card').length;
+        const doing = document.querySelectorAll('[data-status="doing"] .opal-task-card').length;
+        const review = document.querySelectorAll('[data-status="review"] .opal-task-card').length;
+        const done = document.querySelectorAll('[data-status="done"] .opal-task-card').length;
+
+        const cards = document.querySelectorAll(".opal-task-card");
+        let totalProgress = 0;
+
+        cards.forEach(card => {
+            const m = card.innerText.match(/(\d+)%/);
+            if (m) {
+                totalProgress += parseInt(m[1]);
+            }
+        });
+
+        const total = cards.length;
+        const percent = total ? Math.round(totalProgress / total) : 0;
+
+        document.getElementById("count-todo").textContent = todo;
+        document.getElementById("count-doing").textContent = doing;
+        document.getElementById("count-review").textContent = review;
+        document.getElementById("count-done").textContent = done;
+
+        document.getElementById("sprint-progress-text").textContent = percent + "%";
+        document.getElementById("sprint-progress-bar").style.width = percent + "%";
+    }
+
     const cards = document.querySelectorAll(".opal-task-card");
     const columns = document.querySelectorAll(".opal-kanban-column");
 
@@ -126,6 +172,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     const card = document.querySelector(`[data-task-id="${taskId}"]`);
                     if (card) {
                         column.appendChild(card);
+                        updateBoardStats();
                     }
                 } else {
                     if (card && oldParent) oldParent.appendChild(card);
@@ -134,6 +181,8 @@ document.addEventListener("DOMContentLoaded", function () {
             });
         });
     });
+
+    updateBoardStats();
 });
 </script>
 {% endblock %}
