@@ -490,6 +490,28 @@ def executive_dashboard(request):
         rprogress = round(sum(int(t.progress or 0) for t in rtasks) / rtotal) if rtotal else 0
         release_data.append({"release": release, "total": rtotal, "done": rdone, "progress": rprogress})
 
+    task_status_chart = json.dumps([
+        {"status": "لم يبدأ", "count": todo_tasks},
+        {"status": "قيد التنفيذ", "count": doing_tasks},
+        {"status": "قيد المراجعة", "count": review_tasks},
+        {"status": "مكتملة", "count": done_tasks},
+    ])
+
+    sprint_progress_chart = json.dumps([
+        {"name": item["sprint"].title, "progress": item["progress"]}
+        for item in sprint_data
+    ])
+
+    module_progress_chart = json.dumps([
+        {"name": item["module"].name, "progress": item["progress"]}
+        for item in module_data
+    ])
+
+    release_progress_chart = json.dumps([
+        {"name": item["release"].version, "progress": item["progress"]}
+        for item in release_data
+    ])
+
     return render(request, "development_center/executive_dashboard.html", {
         "total_tasks": total_tasks,
         "done_tasks": done_tasks,
@@ -513,6 +535,10 @@ def executive_dashboard(request):
         "sprint_data": sprint_data,
         "module_data": module_data,
         "release_data": release_data,
+        "task_status_chart": task_status_chart,
+        "sprint_progress_chart": sprint_progress_chart,
+        "module_progress_chart": module_progress_chart,
+        "release_progress_chart": release_progress_chart,
         "notifications": Notification.objects.all()[:8],
     })
 

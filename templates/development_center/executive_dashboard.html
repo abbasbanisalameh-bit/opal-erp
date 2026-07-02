@@ -50,6 +50,25 @@
 </div>
 
 <div class="opal-card p-4 mb-4">
+  <h4>📊 الرسوم التحليلية</h4>
+
+  <div class="row g-4">
+    <div class="col-md-6">
+      <canvas id="taskStatusChart"></canvas>
+    </div>
+    <div class="col-md-6">
+      <canvas id="sprintProgressChart"></canvas>
+    </div>
+    <div class="col-md-6">
+      <canvas id="moduleProgressChart"></canvas>
+    </div>
+    <div class="col-md-6">
+      <canvas id="releaseProgressChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="opal-card p-4 mb-4">
   <h4>🏃 تقدم السبرنتات</h4>
   {% for item in sprint_data %}
     <div class="mb-3">
@@ -121,4 +140,44 @@
   </ul>
 </div>
 
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const taskStatusData = {{ task_status_chart|safe }};
+const sprintProgressData = {{ sprint_progress_chart|safe }};
+const moduleProgressData = {{ module_progress_chart|safe }};
+const releaseProgressData = {{ release_progress_chart|safe }};
+
+new Chart(document.getElementById("taskStatusChart"), {
+  type: "doughnut",
+  data: {
+    labels: taskStatusData.map(x => x.status),
+    datasets: [{ data: taskStatusData.map(x => x.count) }]
+  }
+});
+
+function barChart(canvasId, rows, title) {
+  new Chart(document.getElementById(canvasId), {
+    type: "bar",
+    data: {
+      labels: rows.map(x => x.name),
+      datasets: [{
+        label: title,
+        data: rows.map(x => x.progress)
+      }]
+    },
+    options: {
+      scales: {
+        y: { beginAtZero: true, max: 100 }
+      }
+    }
+  });
+}
+
+barChart("sprintProgressChart", sprintProgressData, "تقدم السبرنتات %");
+barChart("moduleProgressChart", moduleProgressData, "تقدم الوحدات %");
+barChart("releaseProgressChart", releaseProgressData, "تقدم الإصدارات %");
+</script>
 {% endblock %}
