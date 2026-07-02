@@ -169,17 +169,57 @@ def recalc_releases() -> int:
 def generate_overdue_notifications() -> int:
     today = timezone.localdate()
     created = 0
-    overdue_tasks = Task.objects.filter(due_date__lt=today).exclude(status="done")
-    for task in overdue_tasks:
-        title = f"مهمة متأخرة: {task.title}"
+
+    def create_once(title, message, level="info", url=""):
+        nonlocal created
         if not Notification.objects.filter(title=title, is_read=False).exists():
             Notification.objects.create(
                 title=title,
-                message=f"المهمة متأخرة منذ {task.due_date}",
-                level="danger",
-                url=f"/development/tasks/{task.id}/",
+                message=message,
+                level=level,
+                url=url,
             )
             created += 1
+
+    overdue_tasks = Task.objects.filter(due_date__lt=today).exclude(status="done")
+    for task in overdue_tasks:
+        create_once(
+            title=f"مهمة متأخرة: {task.title}",
+            message=f"المهمة متأخرة منذ {task.due_date}",
+            level="danger",
+            url=f"/development/tasks/{task.id}/",
+        )
+
+    due_soon_tasks = Task.objects.filter(
+        due_date__gte=today,
+        due_date__lte=today + timezone.timedelta(days=2),
+    ).exclude(status="done")
+    for task in due_soon_tasks:
+        create_once(
+            title=f"موعد قريب: {task.title}",
+            message=f"موعد تسليم المهمة قريب: {task.due_date}",
+            level="warning",
+            url=f"/development/tasks/{task.id}/",
+        )
+
+    unassigned_tasks = Task.objects.filter(user__isnull=True).exclude(status="done")
+    for task in unassigned_tasks:
+        create_once(
+            title=f"مهمة بلا مسؤول: {task.title}",
+            message="هذه المهمة لا يوجد لها مسؤول محدد.",
+            level="warning",
+            url=f"/development/tasks/{task.id}/",
+        )
+
+    completed_sprints = Sprint.objects.filter(status="completed")
+    for sprint in completed_sprints:
+        create_once(
+            title=f"اكتمل السبرنت: {sprint.title}",
+            message="تم اكتمال جميع مهام هذا السبرنت.",
+            level="success",
+            url=f"/development-center/sprints/{sprint.id}/",
+        )
+
     return created
 
 
