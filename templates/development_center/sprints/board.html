@@ -69,7 +69,23 @@
 {% else %}
 <small class="text-muted">📅 بدون تاريخ</small>
 {% endif %}<br>
+
 <small>📊 {{ t.progress }}%</small>
+
+<div class="progress mt-2" style="height:6px;">
+    <div class="progress-bar
+        {% if t.progress < 40 %}
+            bg-danger
+        {% elif t.progress < 80 %}
+            bg-warning
+        {% else %}
+            bg-success
+        {% endif %}"
+        role="progressbar"
+        style="width: {{ t.progress }}%;">
+    </div>
+</div>
+
 </div>
 </div>
 {% empty %}
