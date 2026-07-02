@@ -254,3 +254,34 @@ def update_task_status(task, status=None, progress=None, user=None):
     )
     sync_after_task_change(task=task, user=user)
     return True, "تم تحديث المهمة بنجاح."
+
+# ===== Auto workflow final layer =====
+_WORKFLOW_RUNNING = False
+
+def auto_recalculate_project():
+    global _WORKFLOW_RUNNING
+
+    if _WORKFLOW_RUNNING:
+        return {"skipped": True}
+
+    _WORKFLOW_RUNNING = True
+    try:
+        result = run_workflow_engine()
+        return result
+    finally:
+        _WORKFLOW_RUNNING = False
+
+
+def sync_after_task_change(task=None, user=None):
+    return auto_recalculate_project()
+
+
+def update_task_status(task, status=None, progress=None, user=None):
+    if status is not None:
+        task.status = status
+
+    if progress is not None:
+        task.progress = progress
+
+    task.save()
+    return task
