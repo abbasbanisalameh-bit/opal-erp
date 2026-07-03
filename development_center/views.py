@@ -45,6 +45,16 @@ def crud_views(model, form_class, template_dir, url_name):
     @login_required
     def list_view(request):
         qs = model.objects.all()
+
+        if url_name == "module":
+            qs = model.objects.prefetch_related("tasks__release").all()
+            for module in qs:
+                versions = []
+                for task in module.tasks.all():
+                    if task.release and task.release.version not in versions:
+                        versions.append(task.release.version)
+                module.release_versions = versions
+
         context = {"items": qs}
         if url_name == "module":
             context["modules"] = qs

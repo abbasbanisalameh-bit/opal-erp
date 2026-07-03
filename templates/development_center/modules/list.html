@@ -32,8 +32,16 @@
 {% for module in modules %}
   <div class="dev-card" style="background:#13253f;color:white;border-radius:16px;padding:16px;box-shadow:0 8px 20px rgba(0,0,0,.18);">
     <h3>{{ module.name }}</h3>
-    <div class="dev-meta" style="color:#cbd5e1;font-size:13px;margin:8px 0;">{{ module.category|default:"بدون تصنيف" }} · {{ module.version|default:"بدون إصدار" }}</div>
-    <div class="dev-status">{{ module.get_status_display }}</div>
+    <div class="dev-meta" style="color:#cbd5e1;font-size:13px;margin:8px 0;">
+                {{ module.category|default:"بدون تصنيف" }}<br>
+                <strong>الإصدار:</strong>
+                {% if module.release_versions %}
+                    {{ module.release_versions|join:", " }}
+                {% else %}
+                    غير محدد
+                {% endif %}
+            </div>
+            <div class="dev-status">{{ module.get_status_display }}</div>
 
     <div>الإنجاز: <strong>{{ module.progress }}%</strong></div>
     <div class="dev-progress" style="height:10px;background:#334155;border-radius:999px;overflow:hidden;margin:8px 0;">
