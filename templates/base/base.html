@@ -14,6 +14,26 @@
     <link rel="stylesheet" href="{% static 'css/opal_dashboard_final_v2.css' %}">
 {% load static %}
 <link rel="stylesheet" href="{% static 'css/opal_hotfix.css' %}">
+
+<style>
+.opal-system-logo{
+    width:58px;
+    height:58px;
+    border-radius:50%;
+    object-fit:cover;
+    border:2px solid rgba(255,255,255,.35);
+    background:#fff;
+}
+.opal-copyright-footer{
+    text-align:center;
+    padding:14px 8px;
+    margin-top:30px;
+    color:rgba(255,255,255,.75);
+    border-top:1px solid rgba(255,255,255,.12);
+    font-size:13px;
+}
+</style>
+
 </head>
 <body>
 <div class="opal-layout">
@@ -47,6 +67,15 @@
         {% endif %}
 
         {% block content %}{% endblock %}
+
+<div class="opal-copyright-footer text-center py-3 mt-4">
+    <small class="text-muted">
+        <strong>OPAL ERP 2026</strong><br>
+        Designed & Developed by <strong>Abbas Bani Salameh</strong><br>
+        0775115362
+    </small>
+</div>
+
     </main>
 </div>
 
@@ -54,5 +83,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="{% static 'js/opal_erp.js' %}"></script>
 {% block extra_js %}{% endblock %}
+
+
 </body>
 </html>
