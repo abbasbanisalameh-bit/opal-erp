@@ -85,7 +85,7 @@ def student_admission(request):
                 student_number=generate_code("student", "STD"),
                 full_name=form.cleaned_data["full_name"],
                 father_name=form.cleaned_data["father_name"],
-                mother_name=form.cleaned_data["mother_name"],
+                mother_name="",
                 gender=form.cleaned_data["gender"],
                 phone=form.cleaned_data["phone"],
                 address=form.cleaned_data["address"],
