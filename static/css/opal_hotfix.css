@@ -132,3 +132,30 @@ span {
     display: block !important;
     border-radius: 50% !important;
 }
+
+/* Stable topbar school logo */
+.profile .avatar {
+    width: 56px !important;
+    height: 56px !important;
+    min-width: 56px !important;
+    min-height: 56px !important;
+    padding: 0 !important;
+    margin: 0 0 0 12px !important;
+    border-radius: 50% !important;
+    overflow: hidden !important;
+    background: transparent !important;
+    border: 2px solid rgba(94, 234, 212, 0.55) !important;
+    box-shadow: 0 0 0 4px rgba(94, 234, 212, 0.12) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.profile .avatar img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+    display: block !important;
+    border-radius: 50% !important;
+    background: #ffffff !important;
+}
