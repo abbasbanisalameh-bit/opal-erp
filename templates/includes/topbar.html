@@ -1,3 +1,4 @@
+{% load static %}
 <div class="topbar">
 
     <div class="top-left">
@@ -17,7 +18,9 @@
         <div class="profile">
 
             <div class="avatar">
-                O
+                <img src="{% static 'img/opal-logo.png' %}"
+                     alt="OPAL ERP"
+                     style="width:48px;height:48px;border-radius:50%;object-fit:cover;display:block;">
             </div>
 
             <div>
