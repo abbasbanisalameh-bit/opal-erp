@@ -202,14 +202,15 @@ def generate_overdue_notifications() -> int:
             url=f"/development/tasks/{task.id}/",
         )
 
-    unassigned_tasks = Task.objects.filter(user__isnull=True).exclude(status="done")
-    for task in unassigned_tasks:
-        create_once(
-            title=f"مهمة بلا مسؤول: {task.title}",
-            message="هذه المهمة لا يوجد لها مسؤول محدد.",
-            level="warning",
-            url=f"/development/tasks/{task.id}/",
-        )
+    if _has_field(Task, "user"):
+        unassigned_tasks = Task.objects.filter(user__isnull=True).exclude(status="done")
+        for task in unassigned_tasks:
+            create_once(
+                title=f"مهمة بلا مسؤول: {task.title}",
+                message="هذه المهمة لا يوجد لها مسؤول محدد.",
+                level="warning",
+                url=f"/development/tasks/{task.id}/",
+            )
 
     completed_sprints = Sprint.objects.filter(status="completed")
     for sprint in completed_sprints:
