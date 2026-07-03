@@ -108,3 +108,27 @@ a,
 span {
     color: #f8fafc !important;
 }
+
+/* OPAL logo avatar fix */
+.profile .avatar,
+.top-right .avatar,
+.avatar {
+    width: 64px !important;
+    height: 64px !important;
+    padding: 0 !important;
+    border-radius: 50% !important;
+    overflow: hidden !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.profile .avatar img,
+.top-right .avatar img,
+.avatar img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+    display: block !important;
+    border-radius: 50% !important;
+}
