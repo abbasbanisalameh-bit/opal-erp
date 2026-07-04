@@ -25,7 +25,6 @@ class Student(models.Model):
 
     phone = models.CharField("رقم الهاتف", max_length=30, blank=True)
     address = models.TextField("العنوان", blank=True)
-    medical_notes = models.TextField("ملاحظات صحية", blank=True)
 
     fees_total = models.DecimalField("الرسوم المستحقة", max_digits=10, decimal_places=2, default=0)
     fees_paid = models.DecimalField("المدفوع", max_digits=10, decimal_places=2, default=0)
@@ -36,7 +35,6 @@ class Student(models.Model):
     ministry_sync_status = models.CharField("حالة المزامنة مع الوزارة", max_length=50, blank=True, default="not_synced")
     last_ministry_sync_at = models.DateTimeField("آخر مزامنة مع الوزارة", null=True, blank=True)
     archived_at = models.DateTimeField("تاريخ الأرشفة", null=True, blank=True)
-    is_active = models.BooleanField("نشط", default=True)
 
     photo = models.ImageField("صورة الطالب", upload_to="students/photos/", null=True, blank=True)
 

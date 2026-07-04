@@ -1,38 +1,14 @@
 {% extends "base/base.html" %}
-
-{% block page_title %}ملف الطالب{% endblock %}
-{% block page_subtitle %}{{ student.full_name }}{% endblock %}
-
 {% block content %}
-<div class="opal-card p-4">
-
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h3>{{ student.full_name }}</h3>
-        <p class="text-muted mb-0">رقم الطالب: {{ student.student_number }}</p>
-    </div>
-
-    <div>
-        <a href="{% url 'students:student_update' student.pk %}" class="btn btn-warning">تعديل</a>
-        <a href="{% url 'students:student_delete' student.pk %}" class="btn btn-danger">تعطيل</a>
-    </div>
-</div>
-
-<table class="table table-striped align-middle">
-    <tr><th width="220">ولي الأمر</th><td>{{ student.guardian_name|default:"-" }}</td></tr>
-    <tr><th>اسم الأب</th><td>{{ student.father_name|default:"-" }}</td></tr>
-    <tr><th>الصف</th><td>{{ student.grade }}</td></tr>
-    <tr><th>الشعبة</th><td>{{ student.section|default:"-" }}</td></tr>
-    <tr><th>الهاتف</th><td>{{ student.phone|default:"-" }}</td></tr>
-    <tr><th>الرسوم المستحقة</th><td>{{ student.fees_total }}</td></tr>
-    <tr><th>المدفوع</th><td>{{ student.fees_paid }}</td></tr>
-    <tr><th>المتبقي</th><td>{{ student.fees_remaining }}</td></tr>
-    <tr><th>الحالة</th><td>{{ student.get_status_display }}</td></tr>
-    <tr><th>تاريخ التسجيل</th><td>{{ student.enrollment_date|default:"-" }}</td></tr>
-    <tr><th>العنوان</th><td>{{ student.address|default:"-" }}</td></tr>
-</table>
-
-<a href="{% url 'students:student_list' %}" class="btn btn-secondary">رجوع</a>
-
+<div class="opal-card">
+  <h2>{{ student.full_name }}</h2>
+  <p><strong>رقم الطالب:</strong> {{ student.student_number }}</p>
+  <p><strong>الرقم الوطني:</strong> {{ student.national_id|default:"غير مدخل" }}</p>
+  <p><strong>ولي الأمر:</strong> {{ student.guardian_name|default:"غير مدخل" }}</p>
+  <p><strong>الصف:</strong> {{ student.grade }}</p>
+  <p><strong>الشعبة:</strong> {{ student.section }}</p>
+  <p><strong>الحالة:</strong> {{ student.get_status_display }}</p>
+  <a href="{% url 'students:student_update' student.pk %}" class="btn btn-warning">تعديل</a>
+  <a href="{% url 'students:student_list' %}" class="btn btn-secondary">رجوع</a>
 </div>
 {% endblock %}

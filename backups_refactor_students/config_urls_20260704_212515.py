@@ -7,7 +7,6 @@ from django.contrib.auth.views import LoginView
 
 
 urlpatterns = [
-    path('students/', include('students.urls')),
     path("parent/",include("parent_portal.urls")),
     path(
         'accounts/login/',
@@ -31,7 +30,7 @@ urlpatterns = [
     path('accounting/', include('accounting.urls')),
     path('attendance/', include('attendance_v2.urls')),
 
-    path('students/', lambda request: redirect('students:student_list')),
+    path('students/', lambda request: redirect('academics:student_list')),
     path('students/add/', lambda request: redirect('academics:student_admission')),
 ]
 

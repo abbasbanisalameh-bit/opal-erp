@@ -29,7 +29,7 @@ class DocumentTemplate(models.Model):
 
 class IssuedDocument(models.Model):
     template = models.ForeignKey(DocumentTemplate, on_delete=models.SET_NULL, null=True, blank=True)
-    student = models.ForeignKey("academics.StudentRecord", on_delete=models.SET_NULL, null=True, blank=True)
+    student = models.ForeignKey("students.Student", on_delete=models.SET_NULL, null=True, blank=True)
     applicant_name = models.CharField(max_length=200, blank=True)
 
     document_number = models.CharField(max_length=50, unique=True)
@@ -47,7 +47,7 @@ class IssuedDocument(models.Model):
 
 class StudentIssuedDocument(models.Model):
     student = models.ForeignKey(
-        "academics.StudentRecord",
+        "students.Student",
         on_delete=models.CASCADE,
         related_name="issued_documents"
     )

@@ -1,10 +1,11 @@
 from django import forms
-from .models import StudentRecord, Guardian, Grade, Section
+from students.models import Student
+from .models import Guardian, Grade, Section
 
 
 class StudentRecordForm(forms.ModelForm):
     class Meta:
-        model = StudentRecord
+        model = Student
         fields = [
             "full_name",
             "national_id",
@@ -34,7 +35,7 @@ class StudentAdmissionForm(forms.Form):
     full_name = forms.CharField(label="اسم الطالب الكامل", widget=forms.TextInput(attrs={"class": "form-control"}))
     national_id = forms.CharField(label="الرقم الوطني", required=False, widget=forms.TextInput(attrs={"class": "form-control"}))
     father_name = forms.CharField(label="اسم ولي الأمر / الأب", required=False, widget=forms.TextInput(attrs={"class": "form-control"}))
-    gender = forms.ChoiceField(label="الجنس", choices=StudentRecord.GENDER_CHOICES, widget=forms.Select(attrs={"class": "form-control"}))
+    gender = forms.ChoiceField(label="الجنس", choices=Student.STATUS_CHOICES, widget=forms.Select(attrs={"class": "form-control"}))
     blood_type = forms.CharField(label="فصيلة الدم", required=False, widget=forms.TextInput(attrs={"class": "form-control"}))
     address = forms.CharField(label="العنوان", required=False, widget=forms.Textarea(attrs={"class": "form-control", "rows": 3}))
     medical_notes = forms.CharField(label="ملاحظات صحية", required=False, widget=forms.Textarea(attrs={"class": "form-control", "rows": 3}))
