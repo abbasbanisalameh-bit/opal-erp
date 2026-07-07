@@ -10,9 +10,9 @@
     <div class="d-flex align-items-center gap-4 flex-wrap">
 
         {% if student.photo %}
-            <img src="{{ student.photo.url }}" width="120" height="120" class="opal-student-photo">
+            <img src="{{ student.photo.url }}" width="120" height="120" style="border-radius:24px; object-fit:cover;">
         {% else %}
-            <div class="opal-user-avatar opal-student-avatar">
+            <div class="opal-user-avatar" style="width:120px;height:120px;font-size:42px;">
                 {{ student.full_name|slice:":1" }}
             </div>
         {% endif %}
@@ -68,7 +68,7 @@
 
         <div class="tab-pane fade" id="guardian">
             {% for item in student.guardians.all %}
-                <div class="p-3 mb-3 rounded opal-info-box">
+                <div class="p-3 mb-3 rounded" style="background:rgba(255,255,255,.05);">
                     <p><strong>الاسم:</strong> {{ item.guardian.full_name }}</p>
                     <p><strong>الصلة:</strong> {{ item.guardian.get_relation_display }}</p>
                     <p><strong>الهاتف:</strong> {{ item.guardian.phone }}</p>
@@ -81,7 +81,7 @@
 
         <div class="tab-pane fade" id="academic">
             {% for enrollment in student.enrollments.all %}
-                <div class="p-3 mb-3 rounded opal-info-box">
+                <div class="p-3 mb-3 rounded" style="background:rgba(255,255,255,.05);">
                     <p><strong>السنة:</strong> {{ enrollment.academic_year }}</p>
                     <p><strong>الصف:</strong> {{ enrollment.grade }}</p>
                     <p><strong>الشعبة:</strong> {{ enrollment.section|default:"غير محددة" }}</p>
@@ -94,7 +94,7 @@
 
         <div class="tab-pane fade" id="documents">
             {% for document in student.documents.all %}
-                <div class="p-3 mb-3 rounded opal-info-box">
+                <div class="p-3 mb-3 rounded" style="background:rgba(255,255,255,.05);">
                     <p><strong>النوع:</strong> {{ document.get_document_type_display }}</p>
                     <p><strong>العنوان:</strong> {{ document.title }}</p>
                     <a href="{{ document.file.url }}" target="_blank" class="btn btn-sm btn-outline-info">فتح الوثيقة</a>
@@ -133,7 +133,7 @@
 
 <div class="tab-pane fade" id="timeline">
 
-            <div class="p-3 rounded opal-info-box">
+            <div class="p-3 rounded" style="background:rgba(255,255,255,.05);">
                 <p class="mb-1">🟢 تم إنشاء ملف الطالب</p>
                 <small class="text-secondary">{{ student.created_at|date:"Y-m-d H:i" }}</small>
             </div>
