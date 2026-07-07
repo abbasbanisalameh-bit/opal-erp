@@ -150,6 +150,14 @@
         </a>
     </nav>
 
+        <a href="/settings/system/" class="{% if '/settings/system/' in request.path %}active{% endif %}">
+            <i class="bi bi-gear-fill"></i>
+            <span>إعدادات النظام</span>
+        </a>
+        <a href="/accounts/profile/" class="{% if '/accounts/profile/' in request.path %}active{% endif %}">
+            <i class="bi bi-person-circle"></i>
+            <span>المعلومات الشخصية</span>
+        </a>
     <form method="post" action="/accounts/logout/" class="opal-logout-form">
         {% csrf_token %}
         <button class="btn btn-outline-light w-100">

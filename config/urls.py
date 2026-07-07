@@ -18,8 +18,9 @@ urlpatterns = [
         name='login'
     ),
     path('login/', lambda request: redirect('/accounts/login/')),
-    path('accounts/', include('django.contrib.auth.urls')),
+    path('accounts/', include('accounts.urls')),
     path('admin/', admin.site.urls),
+    path('settings/', include('core.urls')),
 
     path('', include('dashboard.urls')),
     path('development/', include('development_center.urls')),
