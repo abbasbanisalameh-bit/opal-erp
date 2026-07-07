@@ -1,40 +1,59 @@
 {% extends "base/base.html" %}
+{% block title %}الخطة الدراسية | OPAL ERP{% endblock %}
+{% block page_title %}الخطة الدراسية{% endblock %}
+{% block page_subtitle %}إدارة الخطط الدراسية ضمن نظام OPAL ERP{% endblock %}
+
 {% block content %}
-<div class="page-header">
-  <h1>الخطة الدراسية</h1>
-  <a href="{% url 'curriculum:curriculum_create' %}" class="btn btn-primary">إضافة خطة</a>
+<div class="opal-card mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+            <h3 class="fw-bold mb-1">الخطة الدراسية</h3>
+            <p class="text-secondary mb-0">قائمة الخطط الدراسية المعتمدة</p>
+        </div>
+        <a href="{% url 'curriculum:curriculum_create' %}" class="btn btn-primary">+ إضافة خطة</a>
+    </div>
 </div>
 
-<table class="table">
-  <thead>
-    <tr>
-      <th>العام الدراسي</th>
-      <th>الصف</th>
-      <th>المادة</th>
-      <th>الحصص الأسبوعية</th>
-      <th>إجباري</th>
-      <th>فعال</th>
-      <th>إجراءات</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for item in items %}
-    <tr>
-      <td>{{ item.academic_year }}</td>
-      <td>{{ item.grade }}</td>
-      <td>{{ item.subject }}</td>
-      <td>{{ item.weekly_periods }}</td>
-      <td>{{ item.is_required|yesno:"نعم,لا" }}</td>
-      <td>{{ item.is_active|yesno:"نعم,لا" }}</td>
-      <td>
-        <a href="{% url 'curriculum:curriculum_update' item.id %}">تعديل</a>
-        |
-        <a href="{% url 'curriculum:curriculum_delete' item.id %}" onclick="return confirm('هل أنت متأكد؟')">حذف</a>
-      </td>
-    </tr>
-    {% empty %}
-    <tr><td colspan="7">لا توجد خطط دراسية بعد</td></tr>
-    {% endfor %}
-  </tbody>
-</table>
+<div class="opal-card">
+    <div class="table-responsive">
+        <table class="opal-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>اسم الخطة</th>
+                    <th>الصف</th>
+                    <th>السنة الدراسية</th>
+                    <th>الحالة</th>
+                    <th>الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in curriculums %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td class="fw-bold">{{ item.name }}</td>
+                    <td>{{ item.grade|default:"-" }}</td>
+                    <td>{{ item.academic_year|default:"-" }}</td>
+                    <td>
+                        {% if item.is_active %}
+                            <span class="badge bg-success">فعال</span>
+                        {% else %}
+                            <span class="badge bg-secondary">غير فعال</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{% url 'curriculum:curriculum_update' item.id %}" class="btn btn-sm btn-warning">تعديل</a>
+                        <a href="{% url 'curriculum:curriculum_delete' item.id %}" class="btn btn-sm btn-danger"
+                           onclick="return confirm('هل تريد حذف هذه الخطة؟');">حذف</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center text-secondary">لا توجد خطط دراسية</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 {% endblock %}

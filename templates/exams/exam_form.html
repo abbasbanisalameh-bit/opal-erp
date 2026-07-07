@@ -1,21 +1,30 @@
 {% extends "base/base.html" %}
-
-{% block title %}{{ title }}{% endblock %}
-{% block page_title %}{{ title }}{% endblock %}
+{% block title %}{{ title|default:"نموذج الامتحان" }} | OPAL ERP{% endblock %}
+{% block page_title %}{{ title|default:"الامتحانات" }}{% endblock %}
+{% block page_subtitle %}إضافة أو تعديل بيانات الامتحان{% endblock %}
 
 {% block content %}
 <div class="opal-card">
+    <h3 class="fw-bold mb-4">{{ title|default:"بيانات الامتحان" }}</h3>
+
     <form method="post">
         {% csrf_token %}
-        {{ form.as_p }}
+        <div class="row g-3">
+            {% for field in form %}
+            <div class="col-md-6">
+                <label class="form-label fw-bold">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}
+                    <div class="text-danger small mt-1">{{ field.errors }}</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
 
-        <button type="submit" class="btn btn-success">
-            حفظ الامتحان
-        </button>
-
-        <a href="{% url 'exams:exam_list' %}" class="btn btn-secondary">
-            رجوع
-        </a>
+        <div class="mt-4 d-flex gap-2">
+            <button type="submit" class="btn btn-primary">حفظ</button>
+            <a href="{% url 'exams:exam_list' %}" class="btn btn-secondary">رجوع</a>
+        </div>
     </form>
 </div>
 {% endblock %}

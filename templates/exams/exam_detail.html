@@ -1,55 +1,61 @@
 {% extends "base/base.html" %}
-
-{% block title %}تفاصيل الامتحان{% endblock %}
+{% block title %}تفاصيل الامتحان | OPAL ERP{% endblock %}
 {% block page_title %}تفاصيل الامتحان{% endblock %}
+{% block page_subtitle %}عرض تفاصيل الامتحان وإحصائيات العلامات{% endblock %}
 
 {% block content %}
-
 <div class="opal-card mb-4">
-<h4>{{ exam.name }} - {{ exam.grade }} - {{ exam.subject }}</h4>
-
-<div class="row text-center mt-4">
-<div class="col-md-2"><div class="alert alert-info">عدد العلامات<br>{{ stats.count }}</div></div>
-<div class="col-md-2"><div class="alert alert-success">أعلى علامة<br>{{ stats.highest }}</div></div>
-<div class="col-md-2"><div class="alert alert-warning">أقل علامة<br>{{ stats.lowest }}</div></div>
-<div class="col-md-2"><div class="alert alert-primary">المتوسط<br>{{ stats.average }}</div></div>
-<div class="col-md-2"><div class="alert alert-success">ناجح<br>{{ stats.passed }}</div></div>
-<div class="col-md-2"><div class="alert alert-danger">راسب<br>{{ stats.failed }}</div></div>
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+            <h3 class="fw-bold mb-1">{{ exam.name }}</h3>
+            <p class="text-secondary mb-0">{{ exam.grade }} - {{ exam.subject }}</p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{% url 'exams:exam_marks_bulk' exam.id %}" class="btn btn-primary">إدخال العلامات</a>
+            <a href="{% url 'exams:exam_update' exam.id %}" class="btn btn-warning">تعديل</a>
+            <a href="{% url 'exams:exam_delete' exam.id %}" class="btn btn-danger">حذف</a>
+            <a href="{% url 'exams:exam_list' %}" class="btn btn-secondary">رجوع</a>
+        </div>
+    </div>
 </div>
 
-<a href="{% url 'exams:exam_marks_bulk' exam.id %}" class="btn btn-success">
-إدخال علامات الصف
-</a>
-<a href="{% url 'exams:exam_update' exam.id %}" class="btn btn-warning">تعديل</a>
-<a href="{% url 'exams:exam_delete' exam.id %}" class="btn btn-danger">حذف</a>
-<a href="{% url 'exams:exam_list' %}" class="btn btn-secondary">رجوع</a>
+<div class="row g-3 mb-4">
+    <div class="col-md-2 col-6"><div class="opal-card text-center"><span class="text-secondary">عدد العلامات</span><h4 class="fw-bold mt-2">{{ stats.count }}</h4></div></div>
+    <div class="col-md-2 col-6"><div class="opal-card text-center"><span class="text-secondary">أعلى علامة</span><h4 class="fw-bold mt-2">{{ stats.highest }}</h4></div></div>
+    <div class="col-md-2 col-6"><div class="opal-card text-center"><span class="text-secondary">أقل علامة</span><h4 class="fw-bold mt-2">{{ stats.lowest }}</h4></div></div>
+    <div class="col-md-2 col-6"><div class="opal-card text-center"><span class="text-secondary">المتوسط</span><h4 class="fw-bold mt-2">{{ stats.average }}</h4></div></div>
+    <div class="col-md-2 col-6"><div class="opal-card text-center"><span class="text-secondary">ناجح</span><h4 class="fw-bold mt-2">{{ stats.passed }}</h4></div></div>
+    <div class="col-md-2 col-6"><div class="opal-card text-center"><span class="text-secondary">راسب</span><h4 class="fw-bold mt-2">{{ stats.failed }}</h4></div></div>
 </div>
 
 <div class="opal-card">
-<table class="table table-striped">
-<thead>
-<tr>
-<th>الترتيب</th>
-<th>الطالب</th>
-<th>العلامة</th>
-<th>النسبة</th>
-<th>التقدير</th>
-</tr>
-</thead>
-<tbody>
-{% for m in marks %}
-<tr>
-<td>{{ forloop.counter }}</td>
-<td>{{ m.student.full_name }}</td>
-<td>{{ m.mark }}</td>
-<td>{{ m.percentage }}%</td>
-<td>{{ m.grade_letter }}</td>
-</tr>
-{% empty %}
-<tr><td colspan="5">لا توجد علامات لهذا الامتحان.</td></tr>
-{% endfor %}
-</tbody>
-</table>
+    <div class="table-responsive">
+        <table class="opal-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>الطالب</th>
+                    <th>العلامة</th>
+                    <th>النسبة</th>
+                    <th>التقدير</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in marks %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td class="fw-bold">{{ m.student.full_name }}</td>
+                    <td>{{ m.mark }}</td>
+                    <td>{{ m.percentage }}%</td>
+                    <td>{{ m.grade_letter }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center text-secondary">لا توجد علامات لهذا الامتحان</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
-
 {% endblock %}
