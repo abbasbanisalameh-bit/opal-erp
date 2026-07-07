@@ -93,6 +93,55 @@ def sibling_discount_already_used(sibling_student):
     return StudentRegistration.objects.filter(discount_type="sibling").filter(models.Q(sibling_student=sibling_student) | models.Q(student=sibling_student)).exists()
 
 
+
+def find_existing_siblings(*, phone="", father_name="", family_name="", exclude_student_id=None):
+    qs = Student.objects.filter(is_active=True)
+    filters = models.Q()
+    if phone:
+        filters |= models.Q(phone=phone)
+    if father_name and family_name:
+        filters |= models.Q(father_name__iexact=father_name.strip(), full_name__icontains=family_name.strip())
+    if not filters:
+        return Student.objects.none()
+    qs = qs.filter(filters).distinct()
+    if exclude_student_id:
+        qs = qs.exclude(id=exclude_student_id)
+    return qs
+
+
+def sibling_discount_used_registration(siblings):
+    if not siblings:
+        return None
+    sibling_ids = list(siblings.values_list("id", flat=True))
+    return (
+        StudentRegistration.objects
+        .filter(discount_type="sibling")
+        .filter(models.Q(student_id__in=sibling_ids) | models.Q(sibling_student_id__in=sibling_ids))
+        .select_related("student", "sibling_student")
+        .first()
+    )
+
+
+def resolve_sibling_discount_for_form(data, settings):
+    siblings = find_existing_siblings(
+        phone=data.get("phone") or "",
+        father_name=data.get("father_name") or "",
+        family_name=data.get("family_name") or "",
+    )
+
+    if not siblings.exists():
+        return "none", None, ""
+
+    first_sibling = siblings.first()
+    used = sibling_discount_used_registration(siblings)
+
+    if settings.sibling_discount_once_per_family and used:
+        used_student = used.student or used.sibling_student
+        used_name = used_student.full_name if used_student else used.full_name
+        return "none", first_sibling, f"يوجد أخ مسجل، لكن الطالب {used_name} استفاد سابقًا من خصم الإخوة، لذلك تم إلغاء خصم الإخوة لهذا الطالب."
+
+    return "sibling", first_sibling, f"تم التعرف على أخ مسجل: {first_sibling.full_name}. تم تفعيل خصم الإخوة تلقائيًا."
+
 def discount_amount(tuition_fee, discount_type, settings=None, admin_discount_value=0, sibling_student=None):
     settings = settings or get_registration_settings()
     tuition_fee = money(tuition_fee)
@@ -150,13 +199,26 @@ def create_student_registration(form, user=None):
     school = active_school()
     academic_year = current_academic_year(school)
     full_name = compose_full_name(data.get("first_name"), data.get("father_name"), data.get("grandfather_name"), data.get("family_name"))
+    settings = get_registration_settings(school)
+
+    # OPAL: التعرف الذكي على الإخوة
+    selected_discount_type = data.get("discount_type")
+    selected_sibling_student = data.get("sibling_student")
+    sibling_message = ""
+
+    # لا نطبق خصم الإخوة فوق خصم آخر، لكن إذا لم يختر المستخدم خصمًا نفعله تلقائيًا عند وجود أخ مؤهل.
+    if selected_discount_type in (None, "", "none", "sibling"):
+        resolved_discount, resolved_sibling, sibling_message = resolve_sibling_discount_for_form(data, settings)
+        selected_discount_type = resolved_discount
+        selected_sibling_student = resolved_sibling
+
     totals = calculate_registration_totals(
         grade=data.get("grade"),
         transport_route=data.get("transport_route"),
         transport_type=data.get("transport_type"),
-        discount_type=data.get("discount_type"),
+        discount_type=selected_discount_type,
         admin_discount_value=data.get("admin_discount_value"),
-        sibling_student=data.get("sibling_student"),
+        sibling_student=selected_sibling_student,
         first_payment=data.get("first_payment"),
         school=school,
         academic_year=academic_year,
@@ -238,14 +300,14 @@ def create_student_registration(form, user=None):
         photo=data.get("photo"),
         transport_route=data.get("transport_route"),
         transport_type=data.get("transport_type"),
-        discount_type=data.get("discount_type"),
+        discount_type=selected_discount_type,
         admin_discount_value=data.get("admin_discount_value") or 0,
-        sibling_student=data.get("sibling_student"),
+        sibling_student=selected_sibling_student,
         invoice=invoice,
         payment=payment,
         receipt=receipt,
         created_by=user if getattr(user, "is_authenticated", False) else None,
-        notes=data.get("notes") or "",
+        notes=((data.get("notes") or "") + ("\n" + sibling_message if sibling_message else "")),
         **totals,
     )
     return registration

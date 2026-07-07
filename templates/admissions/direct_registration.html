@@ -48,7 +48,7 @@
             <div class="col-md-3"><label class="form-label fw-bold">{{ form.transport_type.label }}</label>{{ form.transport_type }}</div>
             <div class="col-md-3"><label class="form-label fw-bold">{{ form.discount_type.label }}</label>{{ form.discount_type }}</div>
             <div class="col-md-3"><label class="form-label fw-bold">{{ form.admin_discount_value.label }}</label>{{ form.admin_discount_value }}</div>
-            <div class="col-md-6"><label class="form-label fw-bold">{{ form.sibling_student.label }}</label>{{ form.sibling_student }}</div>
+            <div class="col-md-6"><label class="form-label fw-bold">{{ form.sibling_student.label }}</label>{{ form.sibling_student }}<div id="siblingSmartMessage" class="mt-2 small fw-bold"></div></div>
             <div class="col-md-6"><label class="form-label fw-bold">{{ form.notes.label }}</label>{{ form.notes }}</div>
         </div>
     </div>
@@ -118,6 +118,66 @@ function calc(){
     document.getElementById('remainingAmount').value = money(remaining);
 }
 document.querySelectorAll('#registrationForm select, #registrationForm input').forEach(item => item.addEventListener('input', function(){ if(this.name === 'first_payment') this.dataset.userEdited='1'; calc(); }));
+
+let siblingTimer = null;
+
+function setSiblingMessage(text, ok){
+    const box = document.getElementById('siblingSmartMessage');
+    if(!box) return;
+    box.innerText = text || '';
+    box.className = ok ? 'mt-2 small fw-bold text-success' : 'mt-2 small fw-bold text-warning';
+}
+
+function checkSiblingSmart(){
+    clearTimeout(siblingTimer);
+    siblingTimer = setTimeout(async function(){
+        const phone = el('phone')?.value || '';
+        const father = el('father_name')?.value || '';
+        const family = el('family_name')?.value || '';
+
+        if(!phone && !(father && family)){
+            setSiblingMessage('', true);
+            return;
+        }
+
+        const url = `/admissions/sibling-check/?phone=${encodeURIComponent(phone)}&father_name=${encodeURIComponent(father)}&family_name=${encodeURIComponent(family)}`;
+        const res = await fetch(url);
+        const data = await res.json();
+
+        const discount = el('discount_type');
+        const sibling = el('sibling_student');
+
+        if(data.has_sibling){
+            if(sibling && data.sibling_id){
+                sibling.value = String(data.sibling_id);
+            }
+
+            if(data.apply_discount){
+                if(discount && (!discount.value || discount.value === 'none' || discount.value === 'sibling')){
+                    discount.value = 'sibling';
+                }
+                setSiblingMessage(data.message, true);
+            } else {
+                if(discount && discount.value === 'sibling'){
+                    discount.value = 'none';
+                }
+                setSiblingMessage(data.message, false);
+            }
+            calc();
+        } else {
+            setSiblingMessage('', true);
+        }
+    }, 450);
+}
+
+['phone','father_name','family_name'].forEach(function(name){
+    const field = el(name);
+    if(field){
+        field.addEventListener('input', checkSiblingSmart);
+        field.addEventListener('change', checkSiblingSmart);
+    }
+});
+checkSiblingSmart();
 calc();
 </script>
 {% endblock %}

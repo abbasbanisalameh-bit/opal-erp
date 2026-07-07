@@ -155,3 +155,10 @@ def student_academic_profile(request, pk):
         "guardians": guardians,
         "documents": documents,
     })
+
+
+# ===== OPAL Smart Registration Redirect =====
+# تم تعطيل نموذج التسجيل القديم واعتماد نموذج التسجيل الذكي الجديد فقط.
+def student_admission(request):
+    from django.shortcuts import redirect
+    return redirect('/admissions/register/')

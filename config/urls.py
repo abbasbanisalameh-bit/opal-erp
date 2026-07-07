@@ -33,7 +33,7 @@ urlpatterns = [
     path('attendance/', include('attendance_v2.urls')),
 
     path('students/', lambda request: redirect('students:student_list')),
-    path('students/add/', lambda request: redirect('academics:student_admission')),
+    path('students/add/', lambda request: redirect('/admissions/register/')),
 ]
 
 if settings.DEBUG:

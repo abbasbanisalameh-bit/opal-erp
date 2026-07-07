@@ -6,7 +6,7 @@ from django.http import JsonResponse
 import json
 from .models import AdmissionApplication, StudentRegistration, GradeFee, TransportRoute
 from .forms import GradeFeeForm, TransportRouteForm, RegistrationSettingsForm, DirectStudentRegistrationForm
-from .services import active_school, get_registration_settings, calculate_registration_totals, create_student_registration, current_academic_year
+from .services import active_school, get_registration_settings, calculate_registration_totals, create_student_registration, current_academic_year, find_existing_siblings, sibling_discount_used_registration
 
 
 def can_manage_registration(user):
@@ -47,7 +47,7 @@ def direct_registration(request):
 @login_required
 def registration_receipt(request, pk):
     registration = get_object_or_404(StudentRegistration.objects.select_related("student", "receipt", "grade", "section", "school"), pk=pk)
-    return render(request, "admissions/registration_receipt.html", {"registration": registration})
+    return render(request, "admissions/registration_receipt.html", {"registration": registration, "receipt_copies": ["نسخة المدرسة", "نسخة ولي الأمر"]})
 
 
 @login_required
@@ -105,3 +105,42 @@ def registration_calculate_api(request):
         first_payment=request.GET.get("first_payment") or None,
     )
     return JsonResponse({k: str(v) for k, v in totals.items()})
+
+
+
+@login_required
+def sibling_check_api(request):
+    school = active_school()
+    settings = get_registration_settings(school)
+    phone = request.GET.get("phone", "").strip()
+    father_name = request.GET.get("father_name", "").strip()
+    family_name = request.GET.get("family_name", "").strip()
+
+    siblings = find_existing_siblings(phone=phone, father_name=father_name, family_name=family_name)
+    if not siblings.exists():
+        return JsonResponse({
+            "has_sibling": False,
+            "apply_discount": False,
+            "message": "",
+            "sibling_id": "",
+        })
+
+    first_sibling = siblings.first()
+    used = sibling_discount_used_registration(siblings)
+
+    if settings.sibling_discount_once_per_family and used:
+        used_student = used.student or used.sibling_student
+        used_name = used_student.full_name if used_student else used.full_name
+        return JsonResponse({
+            "has_sibling": True,
+            "apply_discount": False,
+            "sibling_id": first_sibling.id,
+            "message": f"يوجد أخ مسجل: {first_sibling.full_name}. لكن الطالب {used_name} استفاد سابقًا من خصم الإخوة، لذلك تم إلغاء خصم الإخوة لهذا الطالب.",
+        })
+
+    return JsonResponse({
+        "has_sibling": True,
+        "apply_discount": True,
+        "sibling_id": first_sibling.id,
+        "message": f"تم التعرف على أخ مسجل: {first_sibling.full_name}. تم تفعيل خصم الإخوة تلقائيًا.",
+    })
