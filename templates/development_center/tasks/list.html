@@ -10,17 +10,17 @@
     <div class="stat-card"><span>إجمالي المهام</span><h2>{{ tasks|length }}</h2></div>
 </div>
 
-<div class="opal-card" style="padding:24px;">
+<div class="opal-card">
 
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;gap:12px;flex-wrap:wrap;">
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
     <h3>المهام</h3>
-    <div style="display:flex;gap:10px;">
+    <div class="d-flex gap-2">
         <a href="{% url 'development_center:tasks_board' %}" class="btn btn-secondary">لوحة كانبان</a>
         <a href="{% url 'development_center:task_create' %}" class="btn btn-primary">إضافة مهمة</a>
     </div>
 </div>
 
-<table class="table table-dark table-hover">
+<table class="opal-table">
 <thead>
 <tr>
 <th>#</th>
