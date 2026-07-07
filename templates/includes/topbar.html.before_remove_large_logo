@@ -1,0 +1,35 @@
+{% load static %}
+<div class="topbar">
+
+    <div class="top-left">
+        <input class="search-box" placeholder="ابحث هنا...">
+    </div>
+
+    <div class="top-right">
+
+        <button class="icon-btn">
+            🔔
+        </button>
+
+        <button class="icon-btn">
+            ✉️
+        </button>
+
+        <div class="profile">
+
+            <div class="opal-topbar-logo-frame">
+                <img class="opal-topbar-logo-img" src="{% static 'img/opal-logo.png' %}"
+                     alt="OPAL ERP"
+                     >
+            </div>
+
+            <div>
+                <strong>مدير النظام</strong><br>
+                <small>OPAL ERP</small>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
