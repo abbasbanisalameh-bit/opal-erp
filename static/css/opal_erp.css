@@ -512,3 +512,15 @@ input {
     line-height:1.3 !important;
     margin:0 !important;
 }
+
+/* ===== OPAL Smart Registration ===== */
+.registration-receipt .opal-table th{
+    width: 18%;
+}
+.registration-receipt{
+    border:1px solid rgba(212,175,55,.22) !important;
+}
+@media print{
+    body{background:#fff!important;color:#000!important;}
+    .registration-receipt, .registration-receipt *{color:#000!important;}
+}

@@ -3,6 +3,15 @@
 {% block page_title %}إعدادات النظام{% endblock %}
 {% block page_subtitle %}إدارة بيانات المدرسة العامة وشعارها{% endblock %}
 {% block content %}
+
+<div class="opal-card mb-4">
+    <h3 class="fw-bold mb-3">إعدادات التسجيل والمالية</h3>
+    <p class="text-secondary">إدارة رسوم الصفوف، جولات المواصلات، الخصومات، والدفعة الأولى من وحدة التسجيل.</p>
+    <a href="{% url 'admissions:registration_settings' %}" class="btn btn-primary">
+        <i class="bi bi-sliders"></i> فتح إعدادات التسجيل والرسوم
+    </a>
+</div>
+
 <div class="opal-card">
     <h3 class="fw-bold mb-4">بيانات المدرسة</h3>
     <form method="post" enctype="multipart/form-data">

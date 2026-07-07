@@ -24,6 +24,16 @@
             <span>الطلاب</span>
         </a>
 
+        <a href="/admissions/register/" class="{% if '/admissions/register/' in request.path %}active{% endif %}">
+            <i class="bi bi-person-plus-fill"></i>
+            <span>تسجيل طالب جديد</span>
+        </a>
+
+        <a href="/admissions/" class="{% if request.path == '/admissions/' %}active{% endif %}">
+            <i class="bi bi-card-checklist"></i>
+            <span>سجل التسجيل</span>
+        </a>
+
         <a href="/academics/grades/">
             <i class="bi bi-diagram-3-fill"></i>
             <span>الصفوف الدراسية</span>

@@ -1,0 +1,59 @@
+
+{% extends "base/base.html" %}
+{% block title %}إعدادات التسجيل | OPAL ERP{% endblock %}
+{% block page_title %}إعدادات التسجيل والرسوم{% endblock %}
+{% block page_subtitle %}رسوم الصفوف، المواصلات، الخصومات، والدفعة الأولى{% endblock %}
+{% block content %}
+<div class="opal-card mb-4">
+    <h3 class="fw-bold mb-3">إعدادات الخصومات والدفعة الأولى</h3>
+    <form method="post">
+        {% csrf_token %}<input type="hidden" name="action" value="settings">
+        <div class="row g-3">
+            {% for field in settings_form %}
+            <div class="col-md-3">
+                <label class="form-label fw-bold">{{ field.label }}</label>
+                {{ field }}
+            </div>
+            {% endfor %}
+        </div>
+        <button class="btn btn-primary mt-4">حفظ إعدادات الخصومات</button>
+    </form>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="opal-card h-100">
+            <h3 class="fw-bold mb-3">رسوم الصفوف</h3>
+            <form method="post" class="mb-4">
+                {% csrf_token %}<input type="hidden" name="action" value="grade_fee">
+                <div class="row g-3">
+                    {% for field in grade_fee_form %}
+                    <div class="col-md-6"><label class="form-label fw-bold">{{ field.label }}</label>{{ field }}</div>
+                    {% endfor %}
+                </div>
+                <button class="btn btn-primary mt-3">إضافة رسوم صف</button>
+            </form>
+            <div class="table-responsive"><table class="opal-table"><thead><tr><th>العام</th><th>الصف</th><th>الرسوم</th><th>الحالة</th></tr></thead><tbody>
+                {% for item in grade_fees %}<tr><td>{{ item.academic_year|default:"عام" }}</td><td>{{ item.grade }}</td><td>{{ item.tuition_fee }}</td><td>{{ item.is_active|yesno:"فعالة,موقوفة" }}</td></tr>{% empty %}<tr><td colspan="4" class="text-center text-secondary">لا توجد رسوم صفوف.</td></tr>{% endfor %}
+            </tbody></table></div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="opal-card h-100">
+            <h3 class="fw-bold mb-3">جولات المواصلات</h3>
+            <form method="post" class="mb-4">
+                {% csrf_token %}<input type="hidden" name="action" value="route">
+                <div class="row g-3">
+                    {% for field in route_form %}
+                    <div class="col-md-6"><label class="form-label fw-bold">{{ field.label }}</label>{{ field }}</div>
+                    {% endfor %}
+                </div>
+                <button class="btn btn-primary mt-3">إضافة جولة</button>
+            </form>
+            <div class="table-responsive"><table class="opal-table"><thead><tr><th>الجولة</th><th>ذهاب وعودة</th><th>ذهاب/عودة فقط</th><th>الحالة</th></tr></thead><tbody>
+                {% for item in routes %}<tr><td>{{ item.name }}</td><td>{{ item.full_fee }}</td><td>{{ item.full_fee|floatformat:2 }}</td><td>{{ item.is_active|yesno:"فعالة,موقوفة" }}</td></tr>{% empty %}<tr><td colspan="4" class="text-center text-secondary">لا توجد جولات مواصلات.</td></tr>{% endfor %}
+            </tbody></table></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
