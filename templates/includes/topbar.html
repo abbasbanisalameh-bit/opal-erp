@@ -1,33 +1,38 @@
 {% load static %}
 <div class="topbar">
-
     <div class="top-left">
         <input class="search-box" placeholder="ابحث هنا...">
     </div>
 
     <div class="top-right">
-
-        <button class="icon-btn">
-            🔔
-        </button>
-
-        <button class="icon-btn">
-            ✉️
-        </button>
+        <button class="icon-btn">🔔</button>
+        <button class="icon-btn">✉️</button>
 
         <div class="profile">
-
-            <div class="opal-topbar-logo-frame">
-                <i class="bi bi-mortarboard-fill"></i>
+            <div class="opal-user-photo-frame">
+                {% if request.user.is_authenticated and request.user.profile.photo %}
+                    <img src="{{ request.user.profile.photo.url }}" alt="{{ request.user.profile.full_name|default:request.user.username }}">
+                {% else %}
+                    <i class="bi bi-person-fill"></i>
+                {% endif %}
             </div>
 
             <div>
-                <strong>مدير النظام</strong><br>
-                <small>OPAL ERP</small>
+                <strong>
+                    {% if request.user.is_authenticated and request.user.profile.full_name %}
+                        {{ request.user.profile.full_name }}
+                    {% else %}
+                        {{ request.user.username }}
+                    {% endif %}
+                </strong><br>
+                <small>
+                    {% if request.user.is_authenticated and request.user.profile.role %}
+                        {{ request.user.profile.role.name }}
+                    {% else %}
+                        OPAL ERP
+                    {% endif %}
+                </small>
             </div>
-
         </div>
-
     </div>
-
 </div>

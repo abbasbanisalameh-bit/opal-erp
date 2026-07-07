@@ -442,3 +442,73 @@ input {
     display:block;
     border-radius:50%;
 }
+
+/* ===== OPAL User Profile Image Size Fix ===== */
+.topbar .profile .opal-user-photo-frame{
+    width:56px !important;
+    height:56px !important;
+    min-width:56px !important;
+    max-width:56px !important;
+    min-height:56px !important;
+    max-height:56px !important;
+    border-radius:50% !important;
+    overflow:hidden !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    background:linear-gradient(135deg, var(--opal-accent), var(--opal-accent-2)) !important;
+    border:1.5px solid #d4af37 !important;
+    flex:0 0 56px !important;
+}
+
+.topbar .profile .opal-user-photo-frame img{
+    width:56px !important;
+    height:56px !important;
+    max-width:56px !important;
+    max-height:56px !important;
+    object-fit:cover !important;
+    border-radius:50% !important;
+    display:block !important;
+}
+
+.topbar .profile img{
+    max-width:56px !important;
+    max-height:56px !important;
+    object-fit:cover !important;
+    border-radius:50% !important;
+}
+
+/* ===== OPAL Sidebar School Logo Final Fix ===== */
+.opal-brand .opal-logo{
+    width:64px !important;
+    height:64px !important;
+    min-width:64px !important;
+    max-width:64px !important;
+    min-height:64px !important;
+    max-height:64px !important;
+    border-radius:50% !important;
+    padding:4px !important;
+    background:#ffffff !important;
+    border:2px solid #d4af37 !important;
+    overflow:hidden !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    box-shadow:0 0 0 4px rgba(212,175,55,.12) !important;
+}
+
+.opal-brand .opal-logo img{
+    width:100% !important;
+    height:100% !important;
+    max-width:100% !important;
+    max-height:100% !important;
+    object-fit:cover !important;
+    border-radius:50% !important;
+    display:block !important;
+}
+
+.opal-brand h3{
+    font-size:17px !important;
+    line-height:1.3 !important;
+    margin:0 !important;
+}
