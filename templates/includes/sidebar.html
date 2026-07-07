@@ -1,10 +1,14 @@
 <aside class="opal-sidebar">
     <div class="opal-brand">
         <div class="opal-logo">
-            <i class="bi bi-mortarboard-fill"></i>
+            {% if opal_school and opal_school.logo %}
+                <img src="{{ opal_school.logo.url }}" alt="{{ opal_school.name }}">
+            {% else %}
+                <i class="bi bi-mortarboard-fill"></i>
+            {% endif %}
         </div>
         <div>
-            <h3>OPAL</h3>
+            <h3>{{ opal_school.name|default:"OPAL" }}</h3>
             <span>School ERP</span>
         </div>
     </div>

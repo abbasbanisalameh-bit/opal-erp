@@ -88,6 +88,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'announcements.context_processors.active_announcement',
+                'core.context_processors.opal_identity',
             ],
         },
     },
