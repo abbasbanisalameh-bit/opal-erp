@@ -2,14 +2,12 @@
 
 {% block title %}تقرير الحضور{% endblock %}
 {% block page_title %}تقرير الحضور{% endblock %}
-{% block page_subtitle %}عرض سجلات حضور وغياب الطلاب مع إمكانية التعديل{% endblock %}
-{% block page_subtitle %}عرض سجلات حضور وغياب الطلاب مع إمكانية التعديل{% endblock %}
 
 {% block content %}
 
 <div class="opal-card">
 
-<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4"><div><h3 class="fw-bold mb-1">تقرير الحضور</h3><p class="text-secondary mb-0">سجل حضور وغياب الطلاب حسب التاريخ والحالة</p></div></div><div class="table-responsive">
+<h3>تقرير الحضور</h3>
 
 <table class="opal-table">
 
@@ -46,7 +44,7 @@ href="{% url 'attendance_v2:attendance_edit' r.id %}">
 {% empty %}
 
 <tr>
-<td colspan="5" class="text-center text-secondary">لا توجد سجلات حضور.</td>
+<td colspan="5">لا توجد سجلات حضور.</td>
 </tr>
 
 {% endfor %}
