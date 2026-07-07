@@ -1,0 +1,17 @@
+{% extends "base/base.html" %}
+
+{% block title %}حذف امتحان{% endblock %}
+{% block page_title %}حذف امتحان{% endblock %}
+
+{% block content %}
+<div class="opal-card">
+<h4>هل تريد حذف الامتحان؟</h4>
+<p>{{ exam.name }}</p>
+
+<form method="post">
+{% csrf_token %}
+<button class="btn btn-danger">نعم، حذف</button>
+<a href="{% url 'exams:exam_detail' exam.id %}" class="btn btn-secondary">إلغاء</a>
+</form>
+</div>
+{% endblock %}

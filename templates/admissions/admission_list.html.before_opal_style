@@ -1,0 +1,53 @@
+{% extends "base/base.html" %}
+
+{% block title %}طلبات القبول{% endblock %}
+{% block page_title %}طلبات القبول والتسجيل{% endblock %}
+{% block page_subtitle %}إدارة طلبات التحاق الطلاب بالمدرسة{% endblock %}
+
+{% block content %}
+
+<div class="opal-card">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="fw-bold mb-0">قائمة طلبات القبول</h4>
+        <a href="#" class="btn btn-info fw-bold">
+            طلب قبول جديد
+        </a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table opal-table align-middle">
+            <thead>
+                <tr>
+                    <th>رقم الطلب</th>
+                    <th>اسم الطالب</th>
+                    <th>ولي الأمر</th>
+                    <th>الهاتف</th>
+                    <th>الصف</th>
+                    <th>الحالة</th>
+                    <th>التاريخ</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for app in applications %}
+                <tr>
+                    <td>{{ app.application_number }}</td>
+                    <td>{{ app.student_full_name }}</td>
+                    <td>{{ app.guardian_name }}</td>
+                    <td>{{ app.guardian_phone }}</td>
+                    <td>{{ app.grade }}</td>
+                    <td>{{ app.get_status_display }}</td>
+                    <td>{{ app.created_at|date:"Y-m-d" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center text-secondary">
+                        لا توجد طلبات قبول حتى الآن
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}
