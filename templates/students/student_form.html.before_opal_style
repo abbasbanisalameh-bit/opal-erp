@@ -1,0 +1,12 @@
+{% extends "base/base.html" %}
+{% block content %}
+<div class="opal-card">
+  <h2 class="mb-4">{{ title }}</h2>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button class="btn btn-primary">حفظ</button>
+    <a href="{% url 'students:student_list' %}" class="btn btn-secondary">رجوع</a>
+  </form>
+</div>
+{% endblock %}

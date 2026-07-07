@@ -11,7 +11,7 @@
 تسجيل دفعة جديدة
 </a>
 
-<table class="opal-table">
+<table class="table table-striped">
 <thead>
 <tr>
 <th>رقم السند</th>
