@@ -1,0 +1,40 @@
+{% extends "base/base.html" %}
+{% block content %}
+<div class="page-header">
+  <h1>الخطة الدراسية</h1>
+  <a href="{% url 'curriculum:curriculum_create' %}" class="btn btn-primary">إضافة خطة</a>
+</div>
+
+<table class="table">
+  <thead>
+    <tr>
+      <th>العام الدراسي</th>
+      <th>الصف</th>
+      <th>المادة</th>
+      <th>الحصص الأسبوعية</th>
+      <th>إجباري</th>
+      <th>فعال</th>
+      <th>إجراءات</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for item in items %}
+    <tr>
+      <td>{{ item.academic_year }}</td>
+      <td>{{ item.grade }}</td>
+      <td>{{ item.subject }}</td>
+      <td>{{ item.weekly_periods }}</td>
+      <td>{{ item.is_required|yesno:"نعم,لا" }}</td>
+      <td>{{ item.is_active|yesno:"نعم,لا" }}</td>
+      <td>
+        <a href="{% url 'curriculum:curriculum_update' item.id %}">تعديل</a>
+        |
+        <a href="{% url 'curriculum:curriculum_delete' item.id %}" onclick="return confirm('هل أنت متأكد؟')">حذف</a>
+      </td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="7">لا توجد خطط دراسية بعد</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

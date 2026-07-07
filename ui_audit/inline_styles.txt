@@ -1,0 +1,59 @@
+templates/academics/student_detail.html:13:            <img src="{{ student.photo.url }}" width="120" height="120" style="border-radius:24px; object-fit:cover;">
+templates/academics/student_detail.html:15:            <div class="opal-user-avatar" style="width:120px;height:120px;font-size:42px;">
+templates/academics/student_detail.html:71:                <div class="p-3 mb-3 rounded" style="background:rgba(255,255,255,.05);">
+templates/academics/student_detail.html:84:                <div class="p-3 mb-3 rounded" style="background:rgba(255,255,255,.05);">
+templates/academics/student_detail.html:97:                <div class="p-3 mb-3 rounded" style="background:rgba(255,255,255,.05);">
+templates/academics/student_detail.html:136:            <div class="p-3 rounded" style="background:rgba(255,255,255,.05);">
+templates/base/base.html:46:            <div class="opal-announcement-track" style="animation-duration: {{ active_announcement.speed_seconds }}s;">
+templates/development_center/decisions/list.html:15:<div class="opal-card" style="padding:24px;">
+templates/development_center/decisions/list.html:17:<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+templates/development_center/gantt.html:45:    <div id="ganttBox" class="gantt-wrap" style="display:none">
+templates/development_center/gantt.html:130:    html += `<div class="gantt-day" style="width:${dayWidth}px">${fmt(d)}</div>`;
+templates/development_center/gantt.html:146:            style="right:${offset*dayWidth}px;width:${duration*dayWidth}px"
+templates/development_center/roadmap.html:23:  <div class="progress mb-3" style="height: 22px;">
+templates/development_center/roadmap.html:24:    <div class="progress-bar" style="width: {{ item.progress }}%;">
+templates/development_center/dashboard.html:17:  <div class="progress" style="height: 24px;">
+templates/development_center/dashboard.html:19:         style="width: {{ overall_progress }}%;"
+templates/development_center/dashboard.html:67:<div class="opal-card" style="padding:25px;margin-bottom:20px;">
+templates/development_center/dashboard.html:94:<div class="opal-card" style="padding:25px;">
+templates/development_center/shared/form.html:8:<div class="opal-card" style="padding:28px;max-width:900px;margin:auto;">
+templates/development_center/shared/form.html:16:            <label class="form-label" style="color:#cbd5e1;font-weight:700;">
+templates/development_center/shared/form.html:23:            <div style="color:#94a3b8;font-size:13px;margin-top:4px;">
+templates/development_center/shared/form.html:29:            <div style="color:#f87171;font-size:13px;margin-top:4px;">
+templates/development_center/shared/form.html:37:    <div style="display:flex;gap:12px;margin-top:24px;">
+templates/development_center/sprints/board.html:26:        <div id="sprint-progress-bar" class="progress-bar" style="width:0%"></div>
+templates/development_center/sprints/board.html:79:<div class="progress mt-2" style="height:6px;">
+templates/development_center/sprints/board.html:89:        style="width: {{ t.progress }}%;">
+templates/development_center/sprints/detail.html:30:  <div class="progress" style="height:24px;">
+templates/development_center/sprints/detail.html:31:    <div class="progress-bar" style="width: {{ progress }}%;">{{ progress }}%</div>
+templates/development_center/releases/list.html:15:<div class="opal-card" style="padding:24px;">
+templates/development_center/releases/list.html:17:<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+templates/development_center/activity/list.html:8:<div class="opal-card" style="padding:24px;">
+templates/development_center/modules/list_old.html:9:<div class="card" style="padding:20px;">
+templates/development_center/modules/list_old.html:28:  <div style="background:#e5e7eb;border-radius:10px;overflow:hidden;">
+templates/development_center/modules/list_old.html:29:    <div style="width:{{ module.progress }}%;background:#0f766e;color:white;padding:3px 0;text-align:center;">
+templates/development_center/modules/list.html:31:<div class="dev-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;">
+templates/development_center/modules/list.html:33:  <div class="dev-card" style="background:#13253f;color:white;border-radius:16px;padding:16px;box-shadow:0 8px 20px rgba(0,0,0,.18);">
+templates/development_center/modules/list.html:35:    <div class="dev-meta" style="color:#cbd5e1;font-size:13px;margin:8px 0;">
+templates/development_center/modules/list.html:47:    <div class="dev-progress" style="height:10px;background:#334155;border-radius:999px;overflow:hidden;margin:8px 0;">
+templates/development_center/modules/list.html:48:      <span style="display:block;height:100%;width:{{ module.progress }}%;background:#22d3ee;"></span>
+templates/development_center/modules/list.html:57:  <div class="dev-card" style="background:#13253f;color:white;border-radius:16px;padding:16px;box-shadow:0 8px 20px rgba(0,0,0,.18);">لا توجد وحدات.</div>
+templates/development_center/executive_dashboard.html:26:  <div class="progress" style="height:26px;">
+templates/development_center/executive_dashboard.html:27:    <div class="progress-bar" style="width: {{ project_progress }}%;">
+templates/development_center/executive_dashboard.html:79:      <div class="progress" style="height:18px;">
+templates/development_center/executive_dashboard.html:80:        <div class="progress-bar" style="width: {{ item.progress }}%;"></div>
+templates/development_center/executive_dashboard.html:94:      <div class="progress" style="height:18px;">
+templates/development_center/executive_dashboard.html:95:        <div class="progress-bar" style="width: {{ item.progress }}%;"></div>
+templates/development_center/executive_dashboard.html:111:      <div class="progress" style="height:18px;">
+templates/development_center/executive_dashboard.html:112:        <div class="progress-bar" style="width: {{ item.progress }}%;"></div>
+templates/development_center/tasks/detail.html:42:<div class="opal-card" style="padding:24px;margin-bottom:20px;">
+templates/development_center/tasks/detail.html:43:    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+templates/development_center/tasks/detail.html:45:        <div style="display:flex;gap:10px;">
+templates/development_center/tasks/detail.html:60:    <div style="white-space:pre-wrap;color:#cbd5e1;">{{ task.description|default:"لا يوجد وصف." }}</div>
+templates/development_center/tasks/detail.html:63:<div class="opal-card" style="padding:24px;">
+templates/development_center/tasks/list.html:13:<div class="opal-card" style="padding:24px;">
+templates/development_center/tasks/list.html:15:<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;gap:12px;flex-wrap:wrap;">
+templates/development_center/tasks/list.html:17:    <div style="display:flex;gap:10px;">
+templates/includes/topbar.html:20:            <div class="avatar" style="width:72px;height:72px;border-radius:50%;overflow:hidden;background:transparent !important;border:0 !important;padding:0 !important;box-shadow:none !important;">
+templates/includes/topbar.html:23:                     style="width:100%;height:100%;object-fit:cover;display:block;border-radius:50%;">
+templates/includes/sidebar.html:73:        <div style="padding:12px 18px 6px;color:#9ca3af;font-size:13px;">
