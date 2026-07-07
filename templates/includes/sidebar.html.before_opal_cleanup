@@ -70,7 +70,7 @@
             <span>الإدارة</span>
         </a>
 
-        <div class="opal-menu-section">
+        <div style="padding:12px 18px 6px;color:#9ca3af;font-size:13px;">
             مركز التطوير
         </div>
 
