@@ -95,6 +95,20 @@
         </a>
 
         <div class="opal-menu-section">
+            تكامل الوزارة
+        </div>
+
+        <a href="/openemis/settings/" class="{% if '/openemis/settings/' in request.path %}active{% endif %}">
+            <i class="bi bi-cloud-arrow-up-fill"></i>
+            <span>إعدادات OpenEMIS</span>
+        </a>
+
+        <a href="/openemis/logs/" class="{% if '/openemis/logs/' in request.path %}active{% endif %}">
+            <i class="bi bi-list-check"></i>
+            <span>سجل مزامنة OpenEMIS</span>
+        </a>
+
+        <div class="opal-menu-section">
             مركز التطوير
         </div>
 
@@ -177,11 +191,6 @@
             <span>المعلومات الشخصية</span>
         </a>
     </nav>
-
-        <a href="/openemis/settings/" class="{% if '/openemis/' in request.path %}active{% endif %}">
-            <i class="bi bi-cloud-arrow-up-fill"></i>
-            <span>تكامل OpenEMIS</span>
-        </a>
     <form method="post" action="/accounts/logout/" class="opal-logout-form">
         {% csrf_token %}
         <button class="btn btn-outline-light w-100">

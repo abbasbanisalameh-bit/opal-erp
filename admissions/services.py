@@ -325,7 +325,10 @@ def create_student_registration(form, user=None):
     # إنشاء/تحديث حساب ولي الأمر وربط جميع الأبناء بحساب واحد.
     try:
         from parent_portal.services import create_or_update_parent_family_for_student
-        create_or_update_parent_family_for_student(student, guardian_name=data.get("guardian_name") or "", phone=data.get("phone") or "", school=school)
+        family = create_or_update_parent_family_for_student(student, guardian_name=data.get("guardian_name") or "", phone=data.get("phone") or "", school=school, national_id="")
+        if family and getattr(family, "user", None):
+            registration.notes = ((registration.notes or "") + f"\nبيانات حساب ولي الأمر: {family.user.username} / {getattr(family, 'initial_password', '')}").strip()
+            registration.save(update_fields=["notes"])
     except Exception:
         pass
 

@@ -54,6 +54,15 @@
             <div><span>المبلغ المدفوع:</span><strong>{{ registration.first_payment }} د.أ</strong></div>
         </div>
 
+
+
+        <div class="parent-login-box">
+            <strong>بيانات دخول ولي الأمر إلى بوابة OPAL</strong>
+            <div>اسم المستخدم: <span>{{ parent_username|default:"-" }}</span></div>
+            <div>كلمة المرور الأولية: <span>{{ parent_initial_password|default:"-" }}</span></div>
+            <small>يُنصح بتغيير كلمة المرور بعد أول دخول. إذا سبق تغييرها، يمكن إعادة تعيينها من إدارة النظام.</small>
+        </div>
+
         <div class="receipt-signatures">
             <div>
                 <div class="sig-line"></div>
@@ -63,13 +72,7 @@
                 <div class="sig-line"></div>
                 <strong>توقيع المستلم</strong>
                 <small>
-                    {% if registration.created_by.profile.full_name %}
-                        {{ registration.created_by.profile.full_name }}
-                    {% elif registration.created_by %}
-                        {{ registration.created_by.username }}
-                    {% else %}
-                        -
-                    {% endif %}
+{{ receiver_name }}{% if receiver_title %} - {{ receiver_title }}{% endif %}
                 </small>
             </div>
         </div>
@@ -194,6 +197,19 @@
     border-bottom:1px dotted #d1d5db;
     padding-bottom:4px;
 }
+.parent-login-box{
+    margin:12px 0 8px;
+    border:1px dashed #d4af37;
+    border-radius:10px;
+    background:#fffbeb;
+    padding:8px;
+    color:#111827;
+    font-size:12px;
+    line-height:1.6;
+}
+.parent-login-box strong{display:block;margin-bottom:4px;color:#92400e;}
+.parent-login-box span{font-weight:800;color:#111827;}
+.parent-login-box small{display:block;color:#6b7280;margin-top:3px;}
 .receipt-signatures{
     display:grid;
     grid-template-columns:1fr 1fr;

@@ -5,56 +5,114 @@ from accounts.models import Role, UserProfile
 from .models import Family, FamilyStudent, ParentProfile
 
 
-def _safe_username_from_phone(phone):
-    digits = "".join(ch for ch in (phone or "") if ch.isdigit())
+DEFAULT_PARENT_PASSWORD = "opal12345"
+
+
+def normalize_phone(phone):
+    return "".join(ch for ch in (phone or "") if ch.isdigit())
+
+
+def initial_parent_password(phone):
+    digits = normalize_phone(phone)
+    return digits[-6:] if len(digits) >= 6 else DEFAULT_PARENT_PASSWORD
+
+
+def _safe_username_from_phone(phone, fallback="parent"):
+    digits = normalize_phone(phone)
     if digits:
         return f"parent_{digits[-10:]}"
-    return "parent_user"
+    clean = "".join(ch for ch in (fallback or "parent") if ch.isalnum())[:20] or "parent"
+    return f"parent_{clean}"
+
+
+def _unique_username(base):
+    username = base
+    counter = 1
+    while User.objects.filter(username=username).exists():
+        counter += 1
+        username = f"{base}_{counter}"
+    return username
+
+
+def find_existing_family(*, school=None, guardian_name="", phone="", national_id=""):
+    digits = normalize_phone(phone)
+    qs = Family.objects.all()
+    if school:
+        qs = qs.filter(school=school)
+    if national_id:
+        found = qs.filter(national_id__iexact=national_id.strip()).first()
+        if found:
+            return found
+    if digits:
+        found = qs.filter(phone__icontains=digits[-9:]).first() or qs.filter(phone=phone).first()
+        if found:
+            return found
+    if guardian_name:
+        found = qs.filter(guardian_name__iexact=guardian_name.strip()).first()
+        if found:
+            return found
+    return None
 
 
 @transaction.atomic
-def create_or_update_parent_family_for_student(student, guardian_name="", phone="", school=None):
+def create_or_update_parent_family_for_student(student, guardian_name="", phone="", school=None, national_id=""):
     school = school or School.objects.filter(is_active=True).first()
-    guardian_name = guardian_name or student.guardian_name or "ولي أمر"
-    phone = phone or student.phone or ""
+    guardian_name = (guardian_name or student.guardian_name or "ولي أمر").strip()
+    phone = (phone or student.phone or "").strip()
+    national_id = (national_id or "").strip()
 
-    family = None
-    if phone:
-        family = Family.objects.filter(phone=phone).first()
-    if family is None and guardian_name:
-        family = Family.objects.filter(guardian_name__iexact=guardian_name).first()
+    family = find_existing_family(school=school, guardian_name=guardian_name, phone=phone, national_id=national_id)
+    created_user = False
+    password = initial_parent_password(phone)
 
     if family is None:
-        username_base = _safe_username_from_phone(phone)
-        username = username_base
-        counter = 1
-        while User.objects.filter(username=username).exists():
-            counter += 1
-            username = f"{username_base}_{counter}"
-        user = User.objects.create_user(username=username, password=phone[-6:] if len(phone) >= 6 else "opal12345")
+        username = _unique_username(_safe_username_from_phone(phone, guardian_name))
+        user = User.objects.create_user(username=username, password=password)
+        created_user = True
         user.first_name = guardian_name
         user.save(update_fields=["first_name"])
-        parent_role, _ = Role.objects.get_or_create(code="parent", defaults={"name": "ولي أمر", "description": "حساب ولي أمر"})
-        UserProfile.objects.get_or_create(
-            user=user,
-            defaults={"school": school, "role": parent_role, "full_name": guardian_name, "phone": phone, "is_school_user": False},
-        )
-        family = Family.objects.create(school=school, user=user, guardian_name=guardian_name, phone=phone)
+        family = Family.objects.create(school=school, user=user, guardian_name=guardian_name, phone=phone, national_id=national_id)
     else:
         if not family.user:
-            username = _safe_username_from_phone(phone)
-            counter = 1
-            base = username
-            while User.objects.filter(username=username).exists():
-                counter += 1
-                username = f"{base}_{counter}"
-            family.user = User.objects.create_user(username=username, password=phone[-6:] if len(phone) >= 6 else "opal12345")
-        if not family.guardian_name and guardian_name:
+            username = _unique_username(_safe_username_from_phone(phone, guardian_name))
+            family.user = User.objects.create_user(username=username, password=password)
+            created_user = True
+        if guardian_name and not family.guardian_name:
             family.guardian_name = guardian_name
-        if not family.phone and phone:
+        if phone and not family.phone:
             family.phone = phone
+        if national_id and not family.national_id:
+            family.national_id = national_id
+        if school and not family.school:
+            family.school = school
         family.save()
+
+    parent_role, _ = Role.objects.get_or_create(code="parent", defaults={"name": "ولي أمر", "description": "حساب ولي أمر"})
+    profile, _ = UserProfile.objects.get_or_create(user=family.user)
+    changed = []
+    if school and profile.school_id != getattr(school, "id", None):
+        profile.school = school
+        changed.append("school")
+    if profile.role_id != getattr(parent_role, "id", None):
+        profile.role = parent_role
+        changed.append("role")
+    if guardian_name and not profile.full_name:
+        profile.full_name = guardian_name
+        changed.append("full_name")
+    if phone and not profile.phone:
+        profile.phone = phone
+        changed.append("phone")
+    if profile.is_school_user:
+        profile.is_school_user = False
+        changed.append("is_school_user")
+    if changed:
+        profile.save(update_fields=changed)
 
     FamilyStudent.objects.get_or_create(family=family, student=student, defaults={"relation": "ولي أمر"})
     ParentProfile.objects.get_or_create(user=family.user, defaults={"student": student, "phone": phone})
+
+    # Attach transient info for the current receipt only; no database migration needed.
+    family.initial_username = family.user.username if family.user else ""
+    family.initial_password = password
+    family.account_created_now = created_user
     return family

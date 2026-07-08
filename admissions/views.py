@@ -15,6 +15,8 @@ from .financial_services import (
     student_remaining, student_payment_status, create_siblings_fee_payment,
 )
 from students.models import Student
+from parent_portal.models import Family
+from parent_portal.services import initial_parent_password, normalize_phone
 
 
 def can_manage_registration(user):
@@ -60,11 +62,22 @@ def registration_receipt(request, pk):
         pk=pk
     )
     receiver_name, receiver_title = receiver_identity(registration.created_by)
+    digits = normalize_phone(registration.phone)
+    parent_family = None
+    if digits:
+        parent_family = Family.objects.filter(phone__icontains=digits[-9:]).select_related("user").first()
+    if parent_family is None and registration.guardian_name:
+        parent_family = Family.objects.filter(guardian_name__iexact=registration.guardian_name).select_related("user").first()
+    parent_username = parent_family.user.username if parent_family and parent_family.user else "-"
+    parent_initial_password = initial_parent_password(registration.phone)
     return render(request, "admissions/registration_receipt.html", {
         "registration": registration,
         "receipt_copies": ["نسخة المدرسة", "نسخة ولي الأمر"],
         "receiver_name": receiver_name,
         "receiver_title": receiver_title,
+        "parent_family": parent_family,
+        "parent_username": parent_username,
+        "parent_initial_password": parent_initial_password,
     })
 
 
