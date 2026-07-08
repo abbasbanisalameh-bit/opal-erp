@@ -531,3 +531,168 @@ input {
 .sibling-payment-table .sibling-partial td{background:rgba(250,204,21,.14)!important;}
 .receipt-mini-table{width:100%;border-collapse:collapse;}
 .receipt-mini-table th,.receipt-mini-table td{border:1px solid rgba(0,0,0,.2);padding:5px;text-align:center;}
+
+/* ===== OPAL Sidebar School Logo Desktop Fix ===== */
+.opal-brand,
+.sidebar .opal-brand,
+.opal-sidebar .opal-brand {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    padding: 14px 12px !important;
+    overflow: hidden !important;
+}
+
+.opal-brand .opal-logo,
+.sidebar .opal-brand .opal-logo,
+.opal-sidebar .opal-brand .opal-logo {
+    width: 58px !important;
+    height: 58px !important;
+    min-width: 58px !important;
+    max-width: 58px !important;
+    min-height: 58px !important;
+    max-height: 58px !important;
+    border-radius: 50% !important;
+    padding: 3px !important;
+    background: #ffffff !important;
+    border: 2px solid #d4af37 !important;
+    overflow: hidden !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex: 0 0 58px !important;
+    box-shadow: 0 0 0 4px rgba(212,175,55,.12) !important;
+}
+
+.opal-brand .opal-logo img,
+.sidebar .opal-brand .opal-logo img,
+.opal-sidebar .opal-brand .opal-logo img {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    object-fit: contain !important;
+    border-radius: 50% !important;
+    display: block !important;
+}
+
+.opal-brand h3,
+.sidebar .opal-brand h3,
+.opal-sidebar .opal-brand h3 {
+    font-size: 16px !important;
+    line-height: 1.25 !important;
+    margin: 0 !important;
+    max-width: 130px !important;
+    white-space: normal !important;
+    overflow: hidden !important;
+}
+
+.opal-brand span,
+.sidebar .opal-brand span,
+.opal-sidebar .opal-brand span {
+    font-size: 11px !important;
+    opacity: .85 !important;
+    display: block !important;
+    margin-top: 3px !important;
+}
+
+/* ===== OPAL FORCE FIX SCHOOL LOGO SIZE ===== */
+.opal-sidebar .opal-brand img,
+.sidebar .opal-brand img,
+aside .opal-brand img,
+.opal-brand img {
+    width: 62px !important;
+    height: 62px !important;
+    min-width: 62px !important;
+    max-width: 62px !important;
+    min-height: 62px !important;
+    max-height: 62px !important;
+    object-fit: contain !important;
+    border-radius: 50% !important;
+    background: #fff !important;
+    border: 2px solid #d4af37 !important;
+    padding: 3px !important;
+    display: block !important;
+    position: static !important;
+    transform: none !important;
+}
+
+.opal-sidebar .opal-brand,
+.sidebar .opal-brand,
+aside .opal-brand,
+.opal-brand {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    overflow: hidden !important;
+    max-height: 95px !important;
+}
+
+.opal-sidebar .opal-brand h3,
+.sidebar .opal-brand h3,
+aside .opal-brand h3,
+.opal-brand h3 {
+    font-size: 16px !important;
+    line-height: 1.3 !important;
+    margin: 0 !important;
+    max-width: 135px !important;
+}
+
+/* ===== OPAL HARD FIX SIDEBAR SCHOOL LOGO ===== */
+.opal-school-brand-fixed{
+    display:flex !important;
+    align-items:center !important;
+    gap:10px !important;
+    padding:12px 10px !important;
+    max-height:92px !important;
+    overflow:hidden !important;
+}
+
+.opal-school-logo-fixed{
+    width:62px !important;
+    height:62px !important;
+    min-width:62px !important;
+    max-width:62px !important;
+    min-height:62px !important;
+    max-height:62px !important;
+    flex:0 0 62px !important;
+    border-radius:50% !important;
+    overflow:hidden !important;
+    background:#fff !important;
+    border:2px solid #d4af37 !important;
+    padding:3px !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+}
+
+.opal-school-logo-img-fixed{
+    width:56px !important;
+    height:56px !important;
+    min-width:56px !important;
+    max-width:56px !important;
+    min-height:56px !important;
+    max-height:56px !important;
+    object-fit:contain !important;
+    border-radius:50% !important;
+    display:block !important;
+    position:static !important;
+    transform:none !important;
+}
+
+.opal-school-brand-text-fixed{
+    min-width:0 !important;
+    overflow:hidden !important;
+}
+
+.opal-school-brand-text-fixed h3{
+    font-size:16px !important;
+    line-height:1.25 !important;
+    margin:0 !important;
+    white-space:normal !important;
+}
+
+.opal-school-brand-text-fixed span{
+    font-size:11px !important;
+    opacity:.85 !important;
+}
