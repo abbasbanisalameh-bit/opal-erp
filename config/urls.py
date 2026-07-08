@@ -21,6 +21,7 @@ urlpatterns = [
     path('accounts/', include('accounts.urls')),
     path('admin/', admin.site.urls),
     path('settings/', include('core.urls')),
+    path('openemis/', include('openemis_integration.urls')),
 
     path('', include('dashboard.urls')),
     path('development/', include('development_center.urls')),

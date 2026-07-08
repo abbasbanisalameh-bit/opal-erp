@@ -1,0 +1,25 @@
+{% extends "base/base.html" %}
+{% block title %}سجل OpenEMIS | OPAL ERP{% endblock %}
+{% block page_title %}سجل مزامنة OpenEMIS{% endblock %}
+{% block page_subtitle %}متابعة العمليات الناجحة والفاشلة والمعلقة{% endblock %}
+{% block content %}
+<div class="opal-card">
+    <div class="table-responsive">
+        <table class="opal-table">
+            <thead><tr><th>العملية</th><th>الطالب</th><th>الحالة</th><th>المستخدم</th><th>الرسالة</th><th>التاريخ</th></tr></thead>
+            <tbody>
+            {% for log in logs %}
+            <tr>
+                <td>{{ log.get_operation_display }}</td>
+                <td>{{ log.student|default:"-" }}</td>
+                <td>{{ log.get_status_display }}</td>
+                <td>{{ log.created_by|default:"-" }}</td>
+                <td>{{ log.message }}</td>
+                <td>{{ log.created_at|date:"Y-m-d H:i:s" }}</td>
+            </tr>
+            {% empty %}<tr><td colspan="6">لا توجد عمليات.</td></tr>{% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

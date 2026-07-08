@@ -178,6 +178,10 @@
         </a>
     </nav>
 
+        <a href="/openemis/settings/" class="{% if '/openemis/' in request.path %}active{% endif %}">
+            <i class="bi bi-cloud-arrow-up-fill"></i>
+            <span>تكامل OpenEMIS</span>
+        </a>
     <form method="post" action="/accounts/logout/" class="opal-logout-form">
         {% csrf_token %}
         <button class="btn btn-outline-light w-100">

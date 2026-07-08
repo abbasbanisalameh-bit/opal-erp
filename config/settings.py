@@ -31,6 +31,7 @@ ALLOWED_HOSTS = [
 INSTALLED_APPS = [
     'attendance_v2',
     'parent_portal',
+    'openemis_integration',
     'accounting',
     'exams',
     'documents',

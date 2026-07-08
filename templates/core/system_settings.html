@@ -4,6 +4,15 @@
 {% block page_subtitle %}إدارة بيانات المدرسة العامة وشعارها{% endblock %}
 {% block content %}
 
+
+<div class="opal-card mb-4">
+    <h3 class="fw-bold mb-3">تكامل OpenEMIS</h3>
+    <p class="text-secondary">إعداد الربط مع OpenEMIS، اختبار الاتصال، ومتابعة سجل المزامنة.</p>
+    <a href="{% url 'openemis:settings' %}" class="btn btn-secondary">
+        <i class="bi bi-cloud-arrow-up-fill"></i> فتح إعدادات OpenEMIS
+    </a>
+</div>
+
 <div class="opal-card mb-4">
     <h3 class="fw-bold mb-3">إعدادات التسجيل والمالية</h3>
     <p class="text-secondary">إدارة رسوم الصفوف، جولات المواصلات، الخصومات، والدفعة الأولى من وحدة التسجيل.</p>

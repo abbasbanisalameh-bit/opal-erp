@@ -1,199 +1,44 @@
 {% extends "base/base.html" %}
-
-{% block title %}بوابة ولي الأمر{% endblock %}
+{% block title %}بوابة ولي الأمر | OPAL ERP{% endblock %}
 {% block page_title %}بوابة ولي الأمر{% endblock %}
-
+{% block page_subtitle %}متابعة الأبناء والرسوم والحضور والنتائج من مكان واحد{% endblock %}
 {% block content %}
-
-<div class="opal-card">
-
-<h3>{{ student.full_name }}</h3>
-
-<h4>الفواتير</h4>
-
-<table class="opal-table">
-
-<tr>
-
-<th>الرسوم</th>
-
-<th>المبلغ</th>
-
-<th>الحالة</th>
-
-</tr>
-
-{% for i in invoices %}
-
-<tr>
-
-<td>{{ i.fee_category }}</td>
-
-<td>{{ i.amount }}</td>
-
-<td>
-
-{% if i.paid %}
-
-<span class="badge bg-success">مدفوعة</span>
-
-{% else %}
-
-<span class="badge bg-danger">غير مدفوعة</span>
-
-{% endif %}
-
-</td>
-
-</tr>
-
-{% endfor %}
-
-</table>
-
-<h4>آخر الحضور</h4>
-
-<table class="opal-table">
-
-<tr>
-
-<th>التاريخ</th>
-
-<th>الحالة</th>
-
-</tr>
-
-{% for a in attendance %}
-
-<tr>
-
-<td>{{ a.date }}</td>
-
-<td>{{ a.get_status_display }}</td>
-
-</tr>
-
-{% endfor %}
-
-</table>
-
-<h4>آخر الإعلانات</h4>
-
-<ul>
-
-{% for a in announcements %}
-
-<li>{{ a.title }}</li>
-
-{% endfor %}
-
-</ul>
-
-
-<h4>نتائج الامتحانات</h4>
-
-<table class="opal-table">
-
-<tr>
-<th>الامتحان</th>
-<th>العلامة</th>
-</tr>
-
-{% for m in marks %}
-<tr>
-<td>{{ m.exam }}</td>
-<td>{{ m.mark }}</td>
-</tr>
-{% empty %}
-<tr>
-<td colspan="2">لا توجد علامات.</td>
-</tr>
-{% endfor %}
-
-</table>
-
-<h4>الاختبارات</h4>
-
-
-<ul>
-
-{% for e in exams %}
-
-<li>{{ e }}</li>
-
-{% endfor %}
-
-</ul>
-
-
-
-
-
-<h4>الإشعارات</h4>
-
-<ul class="list-group mb-4">
-
-{% for n in notifications %}
-
-<li class="list-group-item">
-
-<strong>{{ n.title }}</strong><br>
-
-{{ n.body }}
-
-</li>
-
-{% empty %}
-
-<li class="list-group-item">
-
-لا توجد إشعارات.
-
-</li>
-
-{% endfor %}
-
-</ul>
-
-<h4>الرسائل</h4>
-
-
-<table class="opal-table">
-
-<tr>
-
-<th>العنوان</th>
-<th>التاريخ</th>
-
-</tr>
-
-{% for m in messages %}
-
-<tr>
-
-<td>{{ m.subject }}</td>
-
-<td>{{ m.created_at|date:"Y-m-d H:i" }}</td>
-
-</tr>
-
-{% empty %}
-
-<tr>
-
-<td colspan="2">
-
-لا توجد رسائل
-
-</td>
-
-</tr>
-
-{% endfor %}
-
-</table>
-
+<div class="stats-grid mb-4">
+    {% for card in cards %}
+    <div class="stat-card">
+        <span>{{ card.student.grade }} - {{ card.student.section|default:"-" }}</span>
+        <h2>{{ card.student.full_name }}</h2>
+        <p class="mb-1">المدفوع: {{ card.paid }} د.أ</p>
+        <p class="mb-2">المتبقي: {{ card.remaining }} د.أ</p>
+        <a class="btn btn-sm btn-primary" href="{% url 'parent_portal:student_detail' card.student.id %}">فتح ملف الطالب</a>
+    </div>
+    {% endfor %}
 </div>
 
-{% endblock %}
+<div class="opal-card mb-4">
+    <h3 class="fw-bold mb-3">آخر إيصالات الدفعات</h3>
+    <div class="table-responsive">
+        <table class="opal-table">
+            <thead><tr><th>رقم الإيصال</th><th>النوع</th><th>المبلغ</th><th>المتبقي بعد الدفعة</th><th>التاريخ</th></tr></thead>
+            <tbody>
+            {% for p in payments %}
+            <tr>
+                <td>{{ p.receipt_number }}</td>
+                <td>{{ p.get_scope_display }}</td>
+                <td>{{ p.total_amount }}</td>
+                <td>{{ p.total_due_after }}</td>
+                <td>{{ p.created_at|date:"Y-m-d H:i" }}</td>
+            </tr>
+            {% empty %}<tr><td colspan="5">لا توجد دفعات بعد.</td></tr>{% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 
+<div class="opal-card">
+    <h3 class="fw-bold mb-3">الإعلانات</h3>
+    <ul class="mb-0">
+        {% for a in announcements %}<li>{{ a.title }}</li>{% empty %}<li>لا توجد إعلانات.</li>{% endfor %}
+    </ul>
+</div>
+{% endblock %}

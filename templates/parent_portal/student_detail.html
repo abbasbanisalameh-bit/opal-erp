@@ -1,0 +1,41 @@
+{% extends "base/base.html" %}
+{% block title %}{{ student.full_name }} | بوابة ولي الأمر{% endblock %}
+{% block page_title %}{{ student.full_name }}{% endblock %}
+{% block page_subtitle %}الملف المالي والأكاديمي للطالب{% endblock %}
+{% block content %}
+<div class="stats-grid mb-4">
+    <div class="stat-card"><span>إجمالي الرسوم</span><h2>{{ total }}</h2></div>
+    <div class="stat-card"><span>إجمالي المدفوع</span><h2>{{ paid }}</h2></div>
+    <div class="stat-card"><span>المتبقي</span><h2>{{ remaining }}</h2></div>
+</div>
+
+<div class="opal-card mb-4">
+    <h3 class="fw-bold mb-3">كشف مالي مختصر</h3>
+    <div class="table-responsive">
+        <table class="opal-table">
+            <thead><tr><th>الإيصال</th><th>المبلغ</th><th>قبل الدفعة</th><th>بعد الدفعة</th><th>التاريخ</th></tr></thead>
+            <tbody>
+            {% for a in allocations %}
+            <tr>
+                <td>{{ a.fee_payment.receipt_number }}</td>
+                <td>{{ a.amount }}</td>
+                <td>{{ a.remaining_before }}</td>
+                <td>{{ a.remaining_after }}</td>
+                <td>{{ a.created_at|date:"Y-m-d H:i" }}</td>
+            </tr>
+            {% empty %}<tr><td colspan="5">لا توجد دفعات.</td></tr>{% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="opal-card mb-4">
+    <h3 class="fw-bold mb-3">آخر الحضور</h3>
+    <div class="table-responsive"><table class="opal-table"><thead><tr><th>التاريخ</th><th>الحالة</th></tr></thead><tbody>{% for a in attendance %}<tr><td>{{ a.date }}</td><td>{{ a.get_status_display }}</td></tr>{% empty %}<tr><td colspan="2">لا توجد سجلات حضور.</td></tr>{% endfor %}</tbody></table></div>
+</div>
+
+<div class="opal-card">
+    <h3 class="fw-bold mb-3">النتائج</h3>
+    <div class="table-responsive"><table class="opal-table"><thead><tr><th>الامتحان</th><th>العلامة</th></tr></thead><tbody>{% for m in marks %}<tr><td>{{ m.exam }}</td><td>{{ m.mark }}</td></tr>{% empty %}<tr><td colspan="2">لا توجد علامات.</td></tr>{% endfor %}</tbody></table></div>
+</div>
+{% endblock %}

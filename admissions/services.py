@@ -9,6 +9,7 @@ from academics.models import Enrollment, Guardian, StudentGuardian
 from accounting.models import FeeCategory, StudentInvoice, StudentPayment, Receipt
 from admissions.models import GradeFee, RegistrationSettings, StudentRegistration
 
+
 TWOPLACES = Decimal("0.01")
 
 
@@ -320,4 +321,18 @@ def create_student_registration(form, user=None):
         notes=((data.get("notes") or "") + ("\n" + sibling_message if sibling_message else "")),
         **totals,
     )
+
+    # إنشاء/تحديث حساب ولي الأمر وربط جميع الأبناء بحساب واحد.
+    try:
+        from parent_portal.services import create_or_update_parent_family_for_student
+        create_or_update_parent_family_for_student(student, guardian_name=data.get("guardian_name") or "", phone=data.get("phone") or "", school=school)
+    except Exception:
+        pass
+
+    # تجهيز سجل مزامنة OpenEMIS بدون تعطيل التسجيل إذا لم تكن بيانات الربط متوفرة.
+    try:
+        from openemis_integration.services import queue_student_push
+        queue_student_push(student, user, reason="registration")
+    except Exception:
+        pass
     return registration
