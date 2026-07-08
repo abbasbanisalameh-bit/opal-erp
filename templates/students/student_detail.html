@@ -9,6 +9,8 @@
   <p><strong>الشعبة:</strong> {{ student.section }}</p>
   <p><strong>الحالة:</strong> {{ student.get_status_display }}</p>
   <a href="{% url 'students:student_update' student.pk %}" class="btn btn-warning">تعديل</a>
+  <a href="{% url 'admissions:student_financial_record' student.pk %}" class="btn btn-primary">السجل المالي</a>
+  <a href="{% url 'admissions:fee_payment_create' %}?student={{ student.pk }}" class="btn btn-success">تسجيل دفعة</a>
   <a href="{% url 'students:student_list' %}" class="btn btn-secondary">رجوع</a>
 </div>
 {% endblock %}

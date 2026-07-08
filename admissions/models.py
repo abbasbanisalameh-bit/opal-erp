@@ -176,3 +176,53 @@ class StudentRegistration(models.Model):
 
     def __str__(self):
         return f"{self.registration_number} - {self.full_name}"
+
+
+
+class FeePayment(models.Model):
+    PAYMENT_SCOPE_CHOICES = [
+        ("single", "دفعة طالب"),
+        ("all_siblings", "دفعة عن جميع الإخوة"),
+    ]
+
+    school = models.ForeignKey(School, on_delete=models.CASCADE, related_name="fee_payments")
+    receipt_number = models.CharField("رقم الإيصال", max_length=50, unique=True)
+    scope = models.CharField("نوع الدفعة", max_length=30, choices=PAYMENT_SCOPE_CHOICES, default="single")
+    main_student = models.ForeignKey("students.Student", on_delete=models.SET_NULL, null=True, blank=True, related_name="main_fee_payments")
+    guardian_name = models.CharField("اسم ولي الأمر", max_length=200, blank=True)
+    phone = models.CharField("هاتف ولي الأمر", max_length=50, blank=True)
+    total_amount = models.DecimalField("مبلغ الدفعة", max_digits=10, decimal_places=2, default=0)
+    total_due_before = models.DecimalField("إجمالي المتبقي قبل الدفعة", max_digits=10, decimal_places=2, default=0)
+    total_due_after = models.DecimalField("إجمالي المتبقي بعد الدفعة", max_digits=10, decimal_places=2, default=0)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    notes = models.TextField("ملاحظات", blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "إيصال دفعة رسوم"
+        verbose_name_plural = "إيصالات دفعات الرسوم"
+
+    def __str__(self):
+        return f"{self.receipt_number} - {self.total_amount}"
+
+
+class FeePaymentAllocation(models.Model):
+    fee_payment = models.ForeignKey(FeePayment, on_delete=models.CASCADE, related_name="allocations")
+    student = models.ForeignKey("students.Student", on_delete=models.CASCADE, related_name="fee_payment_allocations")
+    invoice = models.ForeignKey("accounting.StudentInvoice", on_delete=models.SET_NULL, null=True, blank=True)
+    accounting_payment = models.ForeignKey("accounting.StudentPayment", on_delete=models.SET_NULL, null=True, blank=True)
+    amount = models.DecimalField("المدفوع في هذا الإيصال", max_digits=10, decimal_places=2, default=0)
+    total_fees = models.DecimalField("إجمالي رسوم الطالب", max_digits=10, decimal_places=2, default=0)
+    paid_before = models.DecimalField("المدفوع سابقًا", max_digits=10, decimal_places=2, default=0)
+    remaining_before = models.DecimalField("المتبقي قبل الدفعة", max_digits=10, decimal_places=2, default=0)
+    remaining_after = models.DecimalField("المتبقي بعد الدفعة", max_digits=10, decimal_places=2, default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["student__full_name"]
+        verbose_name = "توزيع دفعة"
+        verbose_name_plural = "توزيعات الدفعات"
+
+    def __str__(self):
+        return f"{self.student} - {self.amount}"

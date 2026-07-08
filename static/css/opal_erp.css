@@ -524,3 +524,10 @@ input {
     body{background:#fff!important;color:#000!important;}
     .registration-receipt, .registration-receipt *{color:#000!important;}
 }
+
+/* ===== OPAL Smart Payments ===== */
+.sibling-payment-table .sibling-paid td{background:rgba(34,197,94,.14)!important;}
+.sibling-payment-table .sibling-unpaid td{background:rgba(239,68,68,.14)!important;}
+.sibling-payment-table .sibling-partial td{background:rgba(250,204,21,.14)!important;}
+.receipt-mini-table{width:100%;border-collapse:collapse;}
+.receipt-mini-table th,.receipt-mini-table td{border:1px solid rgba(0,0,0,.2);padding:5px;text-align:center;}

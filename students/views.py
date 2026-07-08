@@ -30,14 +30,8 @@ def student_detail(request, pk):
 
 @login_required
 def student_create(request):
-    if request.method == "POST":
-        form = StudentForm(request.POST, request.FILES)
-        if form.is_valid():
-            student = form.save()
-            return redirect("students:student_detail", pk=student.pk)
-    else:
-        form = StudentForm()
-    return render(request, "students/student_form.html", {"form": form, "title": "إضافة طالب"})
+    # تم اعتماد نموذج التسجيل الذكي كنموذج التسجيل الوحيد في النظام.
+    return redirect("/admissions/register/")
 
 @login_required
 def student_update(request, pk):

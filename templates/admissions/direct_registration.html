@@ -131,36 +131,32 @@ function setSiblingMessage(text, ok){
 function checkSiblingSmart(){
     clearTimeout(siblingTimer);
     siblingTimer = setTimeout(async function(){
-        const phone = el('phone')?.value || '';
-        const father = el('father_name')?.value || '';
-        const family = el('family_name')?.value || '';
+        const params = new URLSearchParams({
+            phone: el('phone')?.value || '',
+            father_name: el('father_name')?.value || '',
+            family_name: el('family_name')?.value || '',
+            mother_name: el('mother_name')?.value || '',
+            guardian_name: el('guardian_name')?.value || '',
+            national_id: el('national_id')?.value || '',
+        });
 
-        if(!phone && !(father && family)){
+        if(!params.get('phone') && !params.get('father_name') && !params.get('mother_name') && !params.get('guardian_name') && !params.get('national_id')){
             setSiblingMessage('', true);
             return;
         }
 
-        const url = `/admissions/sibling-check/?phone=${encodeURIComponent(phone)}&father_name=${encodeURIComponent(father)}&family_name=${encodeURIComponent(family)}`;
-        const res = await fetch(url);
+        const res = await fetch('/admissions/sibling-check/?' + params.toString());
         const data = await res.json();
-
         const discount = el('discount_type');
         const sibling = el('sibling_student');
 
         if(data.has_sibling){
-            if(sibling && data.sibling_id){
-                sibling.value = String(data.sibling_id);
-            }
-
+            if(sibling && data.sibling_id){ sibling.value = String(data.sibling_id); }
             if(data.apply_discount){
-                if(discount && (!discount.value || discount.value === 'none' || discount.value === 'sibling')){
-                    discount.value = 'sibling';
-                }
+                if(discount && (!discount.value || discount.value === 'none' || discount.value === 'sibling')){ discount.value = 'sibling'; }
                 setSiblingMessage(data.message, true);
             } else {
-                if(discount && discount.value === 'sibling'){
-                    discount.value = 'none';
-                }
+                if(discount && discount.value === 'sibling'){ discount.value = 'none'; }
                 setSiblingMessage(data.message, false);
             }
             calc();
@@ -170,7 +166,7 @@ function checkSiblingSmart(){
     }, 450);
 }
 
-['phone','father_name','family_name'].forEach(function(name){
+['phone','father_name','family_name','mother_name','guardian_name','national_id'].forEach(function(name){
     const field = el(name);
     if(field){
         field.addEventListener('input', checkSiblingSmart);

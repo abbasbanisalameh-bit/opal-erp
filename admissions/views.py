@@ -1,12 +1,20 @@
-
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 import json
-from .models import AdmissionApplication, StudentRegistration, GradeFee, TransportRoute
+from .models import AdmissionApplication, StudentRegistration, GradeFee, TransportRoute, FeePayment
 from .forms import GradeFeeForm, TransportRouteForm, RegistrationSettingsForm, DirectStudentRegistrationForm
-from .services import active_school, get_registration_settings, calculate_registration_totals, create_student_registration, current_academic_year, find_existing_siblings, sibling_discount_used_registration
+from .services import (
+    active_school, get_registration_settings, calculate_registration_totals,
+    create_student_registration, current_academic_year,
+    find_existing_siblings, sibling_discount_used_registration,
+)
+from .financial_services import (
+    search_students, find_sibling_students, student_total_fees, student_total_paid,
+    student_remaining, student_payment_status, create_siblings_fee_payment,
+)
+from students.models import Student
 
 
 def can_manage_registration(user):
@@ -30,6 +38,7 @@ def direct_registration(request):
             return redirect("admissions:registration_receipt", pk=registration.pk)
     else:
         form = DirectStudentRegistrationForm()
+
     school = active_school()
     academic_year = current_academic_year(school)
     settings = get_registration_settings(school)
@@ -46,8 +55,26 @@ def direct_registration(request):
 
 @login_required
 def registration_receipt(request, pk):
-    registration = get_object_or_404(StudentRegistration.objects.select_related("student", "receipt", "grade", "section", "school"), pk=pk)
-    return render(request, "admissions/registration_receipt.html", {"registration": registration, "receipt_copies": ["نسخة المدرسة", "نسخة ولي الأمر"]})
+    registration = get_object_or_404(
+        StudentRegistration.objects.select_related("student", "receipt", "grade", "section", "school", "created_by"),
+        pk=pk
+    )
+    receiver_name, receiver_title = receiver_identity(registration.created_by)
+    return render(request, "admissions/registration_receipt.html", {
+        "registration": registration,
+        "receipt_copies": ["نسخة المدرسة", "نسخة ولي الأمر"],
+        "receiver_name": receiver_name,
+        "receiver_title": receiver_title,
+    })
+
+
+def receiver_identity(user):
+    if not user:
+        return "-", ""
+    profile = getattr(user, "profile", None)
+    name = getattr(profile, "full_name", "") or user.username
+    title = getattr(getattr(profile, "role", None), "name", "") or ""
+    return name, title
 
 
 @login_required
@@ -107,23 +134,20 @@ def registration_calculate_api(request):
     return JsonResponse({k: str(v) for k, v in totals.items()})
 
 
-
 @login_required
 def sibling_check_api(request):
     school = active_school()
     settings = get_registration_settings(school)
-    phone = request.GET.get("phone", "").strip()
-    father_name = request.GET.get("father_name", "").strip()
-    family_name = request.GET.get("family_name", "").strip()
-
-    siblings = find_existing_siblings(phone=phone, father_name=father_name, family_name=family_name)
+    siblings = find_existing_siblings(
+        phone=request.GET.get("phone", "").strip(),
+        father_name=request.GET.get("father_name", "").strip(),
+        family_name=request.GET.get("family_name", "").strip(),
+        mother_name=request.GET.get("mother_name", "").strip(),
+        guardian_name=request.GET.get("guardian_name", "").strip(),
+        national_id=request.GET.get("national_id", "").strip(),
+    )
     if not siblings.exists():
-        return JsonResponse({
-            "has_sibling": False,
-            "apply_discount": False,
-            "message": "",
-            "sibling_id": "",
-        })
+        return JsonResponse({"has_sibling": False, "apply_discount": False, "message": "", "sibling_id": ""})
 
     first_sibling = siblings.first()
     used = sibling_discount_used_registration(siblings)
@@ -143,4 +167,80 @@ def sibling_check_api(request):
         "apply_discount": True,
         "sibling_id": first_sibling.id,
         "message": f"تم التعرف على أخ مسجل: {first_sibling.full_name}. تم تفعيل خصم الإخوة تلقائيًا.",
+    })
+
+
+@login_required
+def fee_payment_create(request):
+    query = request.GET.get("q", "").strip()
+    student_id = request.GET.get("student") or request.POST.get("student")
+    selected_student = Student.objects.filter(pk=student_id).first() if student_id else None
+    search_results = search_students(query) if query and not selected_student else []
+    siblings_data = []
+
+    if selected_student:
+        siblings = find_sibling_students(selected_student)
+        for student in siblings:
+            siblings_data.append({
+                "student": student,
+                "total": student_total_fees(student),
+                "paid": student_total_paid(student),
+                "remaining": student_remaining(student),
+                "status": student_payment_status(student),
+            })
+
+    if request.method == "POST" and selected_student:
+        amount = request.POST.get("amount") or "0"
+        notes = request.POST.get("notes") or ""
+        try:
+            fee_payment = create_siblings_fee_payment(main_student=selected_student, amount=amount, user=request.user, notes=notes)
+            messages.success(request, "تم تسجيل دفعة عن جميع الإخوة وإصدار الإيصال بنجاح.")
+            return redirect("admissions:fee_payment_receipt", pk=fee_payment.pk)
+        except Exception as exc:
+            messages.error(request, f"تعذر تسجيل الدفعة: {exc}")
+
+    return render(request, "admissions/fee_payment_form.html", {
+        "query": query,
+        "search_results": search_results,
+        "selected_student": selected_student,
+        "siblings_data": siblings_data,
+    })
+
+
+@login_required
+def fee_payment_receipt(request, pk):
+    fee_payment = get_object_or_404(
+        FeePayment.objects.select_related("school", "main_student", "created_by").prefetch_related("allocations__student"),
+        pk=pk,
+    )
+    receiver_name, receiver_title = receiver_identity(fee_payment.created_by)
+    return render(request, "admissions/fee_payment_receipt.html", {
+        "fee_payment": fee_payment,
+        "receipt_copies": ["نسخة المدرسة", "نسخة ولي الأمر"],
+        "receiver_name": receiver_name,
+        "receiver_title": receiver_title,
+    })
+
+
+@login_required
+def fee_payment_archive(request):
+    payments = FeePayment.objects.select_related("main_student", "created_by").prefetch_related("allocations").all()
+    registrations = StudentRegistration.objects.select_related("student", "receipt", "created_by", "grade").all()
+    return render(request, "admissions/fee_payment_archive.html", {"payments": payments, "registrations": registrations})
+
+
+@login_required
+def student_financial_record(request, student_id):
+    student = get_object_or_404(Student, pk=student_id)
+    invoices = student.invoices.select_related("fee_category").prefetch_related("payments").all()
+    allocations = student.fee_payment_allocations.select_related("fee_payment", "fee_payment__created_by").all()
+    registrations = student.registrations.select_related("receipt", "created_by").all()
+    return render(request, "admissions/student_financial_record.html", {
+        "student": student,
+        "invoices": invoices,
+        "allocations": allocations,
+        "registrations": registrations,
+        "total_fees": student_total_fees(student),
+        "total_paid": student_total_paid(student),
+        "remaining": student_remaining(student),
     })

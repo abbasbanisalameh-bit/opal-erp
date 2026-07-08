@@ -94,13 +94,20 @@ def sibling_discount_already_used(sibling_student):
 
 
 
-def find_existing_siblings(*, phone="", father_name="", family_name="", exclude_student_id=None):
+def find_existing_siblings(*, phone="", father_name="", family_name="", mother_name="", guardian_name="", national_id="", exclude_student_id=None):
     qs = Student.objects.filter(is_active=True)
     filters = models.Q()
     if phone:
-        filters |= models.Q(phone=phone)
+        filters |= models.Q(phone__iexact=phone.strip())
     if father_name and family_name:
-        filters |= models.Q(father_name__iexact=father_name.strip(), full_name__icontains=family_name.strip())
+        filters |= models.Q(father_name__icontains=father_name.strip(), full_name__icontains=family_name.strip())
+    if mother_name:
+        filters |= models.Q(mother_name__icontains=mother_name.strip())
+    if guardian_name:
+        filters |= models.Q(guardian_name__icontains=guardian_name.strip())
+    # الرقم الوطني هنا يساعد في كشف التكرار، وليس شرطًا وحيدًا للأخوة حتى لا نربط الطالب بنفسه بالخطأ.
+    if national_id:
+        filters |= models.Q(national_id__iexact=national_id.strip())
     if not filters:
         return Student.objects.none()
     qs = qs.filter(filters).distinct()
@@ -127,6 +134,9 @@ def resolve_sibling_discount_for_form(data, settings):
         phone=data.get("phone") or "",
         father_name=data.get("father_name") or "",
         family_name=data.get("family_name") or "",
+        mother_name=data.get("mother_name") or "",
+        guardian_name=data.get("guardian_name") or "",
+        national_id=data.get("national_id") or "",
     )
 
     if not siblings.exists():

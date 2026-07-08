@@ -34,6 +34,16 @@
             <span>سجل التسجيل</span>
         </a>
 
+        <a href="/admissions/payments/new/" class="{% if '/admissions/payments/new/' in request.path %}active{% endif %}">
+            <i class="bi bi-cash-coin"></i>
+            <span>تسجيل دفعة</span>
+        </a>
+
+        <a href="/admissions/payments/archive/" class="{% if '/admissions/payments/archive/' in request.path %}active{% endif %}">
+            <i class="bi bi-receipt-cutoff"></i>
+            <span>أرشيف الإيصالات</span>
+        </a>
+
         <a href="/academics/grades/">
             <i class="bi bi-diagram-3-fill"></i>
             <span>الصفوف الدراسية</span>
