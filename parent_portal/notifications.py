@@ -2,7 +2,7 @@ from django.db import models
 
 class Notification(models.Model):
     student=models.ForeignKey(
-        "academics.StudentRecord",
+        "students.Student",
         on_delete=models.CASCADE,
         related_name="notifications"
     )

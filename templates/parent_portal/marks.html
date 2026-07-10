@@ -1,0 +1,8 @@
+{% extends "base/base.html" %}
+{% block title %}النتائج{% endblock %}
+{% block page_title %}نتائج الأبناء{% endblock %}
+{% block page_subtitle %}علامات الامتحانات والتقديرات{% endblock %}
+{% block content %}
+{% include "parent_portal/_nav.html" %}
+<div class="opal-card"><div class="table-responsive"><table class="opal-table"><thead><tr><th>الطالب</th><th>الامتحان</th><th>المادة</th><th>العلامة</th><th>النسبة</th><th>التقدير</th></tr></thead><tbody>{% for m in records %}<tr><td>{{ m.student.full_name }}</td><td>{{ m.exam.name }}</td><td>{{ m.exam.subject }}</td><td>{{ m.mark }} / {{ m.exam.max_mark }}</td><td>{{ m.percentage }}%</td><td>{{ m.grade_letter }}</td></tr>{% empty %}<tr><td colspan="6">لا توجد نتائج.</td></tr>{% endfor %}</tbody></table></div></div>
+{% endblock %}

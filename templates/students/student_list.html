@@ -1,75 +1,47 @@
 {% extends "base/base.html" %}
-
-{% block page_title %}الطلاب{% endblock %}
-{% block page_subtitle %}إدارة بيانات الطلاب ضمن نظام OPAL ERP{% endblock %}
-
 {% block content %}
-<div class="opal-card p-4 mb-4">
+<div class="opal-card">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>الطلاب</h2>
+    <a href="/admissions/register/" class="btn btn-primary">إضافة طالب</a>
+  </div>
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <div>
-        <h3 class="mb-1">سجل الطلاب</h3>
-        <p class="text-muted mb-0">عرض وإدارة بيانات الطلاب</p>
+  <form method="get" class="row g-2 mb-4">
+    <div class="col-md-5"><input name="q" value="{{ q }}" class="form-control" placeholder="بحث بالاسم أو الرقم"></div>
+    <div class="col-md-4">
+      <select name="status" class="form-control">
+        <option value="">جميع الحالات</option>
+        {% for value,label in status_choices %}
+          <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
     </div>
+    <div class="col-md-3"><button class="btn btn-info w-100">بحث</button></div>
+  </form>
 
-    <a href="{% url 'students:student_create' %}" class="btn btn-primary">
-        + إضافة طالب
-    </a>
-</div>
-
-<form method="get" class="row g-2 mb-3">
-    <div class="col-md-10">
-        <input type="text" name="q" value="{{ q }}" class="form-control"
-               placeholder="ابحث باسم الطالب أو رقم الطالب">
-    </div>
-    <div class="col-md-2">
-        <button class="btn btn-dark w-100" type="submit">بحث</button>
-    </div>
-</form>
-
-<div class="table-responsive">
-    <table class="table table-hover align-middle">
-        <thead>
-            <tr>
-                <th>رقم الطالب</th>
-                <th>الاسم الكامل</th>
-                <th>الصف</th>
-                <th>الشعبة</th>
-                <th>الهاتف</th>
-                <th>المتبقي</th>
-                <th>الحالة</th>
-                <th class="text-center">الإجراءات</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for s in students %}
-            <tr>
-                <td>{{ s.student_number }}</td>
-                <td>
-                    <a href="{% url 'students:student_detail' s.pk %}">
-                        {{ s.full_name }}
-                    </a>
-                </td>
-                <td>{{ s.grade }}</td>
-                <td>{{ s.section|default:"-" }}</td>
-                <td>{{ s.phone|default:"-" }}</td>
-                <td>{{ s.fees_remaining }}</td>
-                <td>{{ s.get_status_display }}</td>
-                <td class="text-center">
-                    <a href="{% url 'students:student_update' s.pk %}" class="btn btn-sm btn-warning">تعديل</a>
-                    <a href="{% url 'students:student_delete' s.pk %}" class="btn btn-sm btn-danger">حذف</a>
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="8" class="text-center text-muted">
-                    لا يوجد طلاب مسجلون.
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
+  <div class="table-responsive">
+    <table class="opal-table">
+      <thead><tr><th>#</th><th>رقم الطالب</th><th>الاسم</th><th>الصف</th><th>الشعبة</th><th>الحالة</th><th>إجراءات</th></tr></thead>
+      <tbody>
+      {% for student in students %}
+        <tr>
+          <td>{{ forloop.counter }}</td>
+          <td>{{ student.student_number }}</td>
+          <td>{{ student.full_name }}</td>
+          <td>{{ student.grade }}</td>
+          <td>{{ student.section }}</td>
+          <td>{{ student.get_status_display }}</td>
+          <td>
+            <a href="{% url 'students:student_detail' student.pk %}" class="btn btn-sm btn-info">عرض</a>
+            <a href="{% url 'students:student_update' student.pk %}" class="btn btn-sm btn-warning">تعديل</a>
+            <a href="{% url 'students:student_archive' student.pk %}" class="btn btn-sm btn-secondary">أرشفة</a>
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="7" class="text-center">لا يوجد طلاب</td></tr>
+      {% endfor %}
+      </tbody>
     </table>
-</div>
-
+  </div>
 </div>
 {% endblock %}

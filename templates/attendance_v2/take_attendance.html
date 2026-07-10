@@ -1,12 +1,14 @@
 {% extends "base/base.html" %}
 {% block title %}تسجيل الحضور{% endblock %}
 {% block page_title %}تسجيل حضور الصف{% endblock %}
+{% block page_subtitle %}اختيار الصف وتسجيل حالة حضور الطلاب{% endblock %}
 
 {% block content %}
 <div class="opal-card">
+<h3 class="fw-bold mb-4">تسجيل الحضور اليومي</h3>
 
 <form method="get" class="mb-4">
-<label>اختر الصف</label>
+<label class="form-label fw-bold">اختر الصف</label>
 <select name="grade" class="form-control" onchange="this.form.submit()">
 <option value="">-- اختر الصف --</option>
 {% for grade in grades %}
@@ -20,7 +22,8 @@
 {% csrf_token %}
 <input type="hidden" name="date" value="{{ date }}">
 
-<table class="table table-striped">
+<div class="table-responsive mb-4">
+<table class="opal-table">
 <thead>
 <tr>
 <th>الطالب</th>

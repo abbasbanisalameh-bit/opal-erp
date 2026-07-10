@@ -1,0 +1,4 @@
+templates/base/base.html:9:    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+templates/base/base.html:11:    <link href="{% static 'css/opal_erp.css' %}" rel="stylesheet">
+templates/base/base.html:14:    <link rel="stylesheet" href="{% static 'css/opal_dashboard_final_v2.css' %}">
+templates/base/base.html:16:<link rel="stylesheet" href="{% static 'css/opal_hotfix.css' %}">

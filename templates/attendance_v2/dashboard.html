@@ -1,23 +1,24 @@
 {% extends "base/base.html" %}
 {% block title %}الحضور والغياب{% endblock %}
 {% block page_title %}الحضور والغياب{% endblock %}
+{% block page_subtitle %}متابعة حضور الطلاب وإدارة سجلات الحضور اليومية{% endblock %}
 
 {% block content %}
-<div class="opal-card">
-<h4>اليوم: {{ today }}</h4>
+<div class="stats-grid"><div class="stat-card"><div class="opal-stat-icon"><i class="bi bi-calendar-check-fill"></i></div><span>تاريخ اليوم</span><h2>{{ today }}</h2></div><div class="stat-card"><div class="opal-stat-icon"><i class="bi bi-people-fill"></i></div><span>إجمالي المسجلين</span><h2>{{ total_today }}</h2></div><div class="stat-card"><div class="opal-stat-icon"><i class="bi bi-person-x-fill"></i></div><span>الغياب اليوم</span><h2>{{ absent_today }}</h2></div></div><div class="opal-card">
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4"><div><h3 class="fw-bold mb-1">إدارة الحضور والغياب</h3><p class="text-secondary mb-0">متابعة الحضور اليومي وإدارة تقارير الحضور.</p></div></div>
 
 <div class="row mt-3">
 <div class="col-md-4"><div class="alert alert-info">إجمالي المسجل اليوم<br>{{ total_today }}</div></div>
 <div class="col-md-4"><div class="alert alert-danger">الغياب اليوم<br>{{ absent_today }}</div></div>
 </div>
 
-<a href="{% url 'attendance_v2:take_attendance' %}" class="btn btn-success">
+<a href="{% url 'attendance_v2:take_attendance' %}" class="btn btn-primary">
 تسجيل حضور صف
 </a>
 
 
 <a href="{% url 'attendance_v2:report' %}"
-class="btn btn-primary mt-3">
+class="btn btn-secondary">
 
 تقرير الحضور
 

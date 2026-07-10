@@ -1,0 +1,44 @@
+{% extends "base/base.html" %}
+{% block title %}{{ student.full_name }}{% endblock %}
+{% block page_title %}{{ student.full_name }}{% endblock %}
+{% block page_subtitle %}الملف المالي والأكاديمي للطالب{% endblock %}
+{% block content %}
+{% include "parent_portal/_nav.html" %}
+<div class="stats-grid mb-4">
+  <div class="stat-card"><span>إجمالي الرسوم</span><h2>💰 {{ total }}</h2></div>
+  <div class="stat-card"><span>إجمالي المدفوع</span><h2>✅ {{ paid }}</h2></div>
+  <div class="stat-card"><span>المتبقي</span><h2>⚠️ {{ remaining }}</h2></div>
+</div>
+
+<div class="opal-card mb-4">
+  <h3 class="fw-bold mb-3">👤 بيانات الطالب</h3>
+  <div class="row g-3">
+    <div class="col-md-4"><strong>رقم الطالب:</strong> {{ student.student_number }}</div>
+    <div class="col-md-4"><strong>الصف:</strong> {{ student.grade }}</div>
+    <div class="col-md-4"><strong>الشعبة:</strong> {{ student.section|default:"-" }}</div>
+    <div class="col-md-4"><strong>ولي الأمر:</strong> {{ student.guardian_name|default:"-" }}</div>
+    <div class="col-md-4"><strong>الهاتف:</strong> {{ student.phone|default:"-" }}</div>
+    <div class="col-md-4"><strong>الحالة:</strong> {{ student.get_status_display }}</div>
+  </div>
+</div>
+
+<div class="opal-card mb-4">
+  <h3 class="fw-bold mb-3">💳 كشف مالي مختصر</h3>
+  <div class="table-responsive"><table class="opal-table"><thead><tr><th>الإيصال</th><th>المبلغ</th><th>قبل الدفعة</th><th>بعد الدفعة</th><th>التاريخ</th></tr></thead><tbody>{% for a in allocations %}<tr><td>{{ a.fee_payment.receipt_number }}</td><td>{{ a.amount }}</td><td>{{ a.remaining_before }}</td><td>{{ a.remaining_after }}</td><td>{{ a.created_at|date:"Y-m-d H:i" }}</td></tr>{% empty %}<tr><td colspan="5">لا توجد دفعات.</td></tr>{% endfor %}</tbody></table></div>
+</div>
+
+<div class="opal-card mb-4">
+  <h3 class="fw-bold mb-3">✅ آخر الحضور</h3>
+  <div class="table-responsive"><table class="opal-table"><thead><tr><th>التاريخ</th><th>الحالة</th><th>ملاحظات</th></tr></thead><tbody>{% for a in attendance %}<tr><td>{{ a.date }}</td><td>{{ a.get_status_display }}</td><td>{{ a.notes|default:"-" }}</td></tr>{% empty %}<tr><td colspan="3">لا توجد سجلات حضور.</td></tr>{% endfor %}</tbody></table></div>
+</div>
+
+<div class="opal-card mb-4">
+  <h3 class="fw-bold mb-3">📊 النتائج</h3>
+  <div class="table-responsive"><table class="opal-table"><thead><tr><th>الامتحان</th><th>المادة</th><th>العلامة</th><th>النسبة</th><th>التقدير</th></tr></thead><tbody>{% for m in marks %}<tr><td>{{ m.exam.name }}</td><td>{{ m.exam.subject }}</td><td>{{ m.mark }} / {{ m.exam.max_mark }}</td><td>{{ m.percentage }}%</td><td>{{ m.grade_letter }}</td></tr>{% empty %}<tr><td colspan="5">لا توجد علامات.</td></tr>{% endfor %}</tbody></table></div>
+</div>
+
+<div class="opal-card">
+  <h3 class="fw-bold mb-3">📄 الوثائق</h3>
+  <div class="table-responsive"><table class="opal-table"><thead><tr><th>رقم الوثيقة</th><th>العنوان</th><th>تاريخ الإصدار</th></tr></thead><tbody>{% for d in documents %}<tr><td>{{ d.issued_document.document_number }}</td><td>{{ d.issued_document.title }}</td><td>{{ d.issued_document.issued_at|date:"Y-m-d" }}</td></tr>{% empty %}<tr><td colspan="3">لا توجد وثائق صادرة.</td></tr>{% endfor %}</tbody></table></div>
+</div>
+{% endblock %}

@@ -1,0 +1,8 @@
+{% extends "base/base.html" %}
+{% block title %}الوثائق{% endblock %}
+{% block page_title %}وثائق الأبناء{% endblock %}
+{% block page_subtitle %}الوثائق الصادرة للطلاب المرتبطين بالحساب{% endblock %}
+{% block content %}
+{% include "parent_portal/_nav.html" %}
+<div class="opal-card"><div class="table-responsive"><table class="opal-table"><thead><tr><th>الطالب</th><th>رقم الوثيقة</th><th>العنوان</th><th>تاريخ الإصدار</th></tr></thead><tbody>{% for d in records %}<tr><td>{{ d.student.full_name }}</td><td>{{ d.issued_document.document_number }}</td><td>{{ d.issued_document.title }}</td><td>{{ d.issued_document.issued_at|date:"Y-m-d" }}</td></tr>{% empty %}<tr><td colspan="4">لا توجد وثائق صادرة.</td></tr>{% endfor %}</tbody></table></div></div>
+{% endblock %}

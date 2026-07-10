@@ -1,35 +1,39 @@
 {% extends "base/base.html" %}
-
+{% block title %}الصفوف الدراسية | OPAL ERP{% endblock %}
 {% block page_title %}الصفوف الدراسية{% endblock %}
 {% block page_subtitle %}إدارة الصفوف الدراسية ضمن نظام OPAL ERP{% endblock %}
 
 {% block content %}
-<div class="opal-card p-4 mb-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
+<div class="opal-card mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
         <div>
-            <h3 class="mb-1">الصفوف الدراسية</h3>
-            <p class="text-muted mb-0">إضافة وتعديل وتنظيم الصفوف حسب ترتيبها الأكاديمي</p>
+            <h3 class="fw-bold mb-1">الصفوف الدراسية</h3>
+            <p class="text-secondary mb-0">قائمة الصفوف المعتمدة في المدرسة</p>
         </div>
         <a href="{% url 'academics:grade_create' %}" class="btn btn-primary">
             + إضافة صف
         </a>
     </div>
+</div>
 
+<div class="opal-card">
     <div class="table-responsive">
-        <table class="table table-hover align-middle">
+        <table class="opal-table">
             <thead>
                 <tr>
+                    <th>#</th>
                     <th>اسم الصف</th>
                     <th>الترتيب</th>
                     <th>الحالة</th>
-                    <th class="text-center">الإجراءات</th>
+                    <th>الإجراءات</th>
                 </tr>
             </thead>
             <tbody>
                 {% for grade in grades %}
                 <tr>
-                    <td>{{ grade.name }}</td>
-                    <td>{{ grade.order }}</td>
+                    <td>{{ forloop.counter }}</td>
+                    <td class="fw-bold">{{ grade.name }}</td>
+                    <td>{{ grade.order|default:"-" }}</td>
                     <td>
                         {% if grade.is_active %}
                             <span class="badge bg-success">فعال</span>
@@ -37,15 +41,15 @@
                             <span class="badge bg-secondary">غير فعال</span>
                         {% endif %}
                     </td>
-                    <td class="text-center">
+                    <td>
                         <a href="{% url 'academics:grade_update' grade.id %}" class="btn btn-sm btn-warning">تعديل</a>
                         <a href="{% url 'academics:grade_delete' grade.id %}" class="btn btn-sm btn-danger"
-                           onclick="return confirm('هل أنت متأكد من حذف هذا الصف؟')">حذف</a>
+                           onclick="return confirm('هل تريد حذف هذا الصف؟');">حذف</a>
                     </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="4" class="text-center text-muted py-4">لا توجد صفوف بعد</td>
+                    <td colspan="5" class="text-center text-secondary">لا توجد صفوف دراسية</td>
                 </tr>
                 {% endfor %}
             </tbody>

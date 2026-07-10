@@ -1,0 +1,179 @@
+
+{% extends "base/base.html" %}
+
+{% block title %}تسجيل طالب جديد | OPAL ERP{% endblock %}
+{% block page_title %}تسجيل طالب جديد{% endblock %}
+{% block page_subtitle %}نموذج التسجيل المباشر مع حساب الرسوم والدفعة الأولى تلقائياً{% endblock %}
+
+{% block content %}
+<form method="post" enctype="multipart/form-data" id="registrationForm">
+    {% csrf_token %}
+
+    <div class="opal-card mb-4">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+            <div>
+                <h3 class="fw-bold mb-1">بيانات الطالب</h3>
+                <p class="text-secondary mb-0">تُستخدم هذه البيانات لإنشاء سجل الطالب الرسمي داخل النظام.</p>
+            </div>
+            <a href="{% url 'admissions:registration_settings' %}" class="btn btn-secondary">إعدادات الرسوم</a>
+        </div>
+        <div class="row g-3">
+            <div class="col-md-3"><label class="form-label fw-bold">{{ form.first_name.label }}</label>{{ form.first_name }}</div>
+            <div class="col-md-3"><label class="form-label fw-bold">{{ form.father_name.label }}</label>{{ form.father_name }}</div>
+            <div class="col-md-3"><label class="form-label fw-bold">{{ form.grandfather_name.label }}</label>{{ form.grandfather_name }}</div>
+            <div class="col-md-3"><label class="form-label fw-bold">{{ form.family_name.label }}</label>{{ form.family_name }}</div>
+            <div class="col-md-3"><label class="form-label fw-bold">{{ form.national_id.label }}</label>{{ form.national_id }}</div>
+            <div class="col-md-3"><label class="form-label fw-bold">{{ form.gender.label }}</label>{{ form.gender }}</div>
+            <div class="col-md-3"><label class="form-label fw-bold">{{ form.birth_date.label }}</label>{{ form.birth_date }}</div>
+            <div class="col-md-3"><label class="form-label fw-bold">{{ form.photo.label }}</label>{{ form.photo }}</div>
+        </div>
+    </div>
+
+    <div class="opal-card mb-4">
+        <h3 class="fw-bold mb-3">بيانات ولي الأمر والدراسة</h3>
+        <div class="row g-3">
+            <div class="col-md-4"><label class="form-label fw-bold">{{ form.guardian_name.label }}</label>{{ form.guardian_name }}</div>
+            <div class="col-md-4"><label class="form-label fw-bold">{{ form.mother_name.label }}</label>{{ form.mother_name }}</div>
+            <div class="col-md-4"><label class="form-label fw-bold">{{ form.phone.label }}</label>{{ form.phone }}</div>
+            <div class="col-md-4"><label class="form-label fw-bold">{{ form.grade.label }}</label>{{ form.grade }}</div>
+            <div class="col-md-4"><label class="form-label fw-bold">{{ form.section.label }}</label>{{ form.section }}</div>
+            <div class="col-md-4"><label class="form-label fw-bold">{{ form.address.label }}</label>{{ form.address }}</div>
+        </div>
+    </div>
+
+    <div class="opal-card mb-4">
+        <h3 class="fw-bold mb-3">المواصلات والخصومات</h3>
+        <div class="row g-3">
+            <div class="col-md-3"><label class="form-label fw-bold">{{ form.transport_route.label }}</label>{{ form.transport_route }}</div>
+            <div class="col-md-3"><label class="form-label fw-bold">{{ form.transport_type.label }}</label>{{ form.transport_type }}</div>
+            <div class="col-md-3"><label class="form-label fw-bold">{{ form.discount_type.label }}</label>{{ form.discount_type }}</div>
+            <div class="col-md-3"><label class="form-label fw-bold">{{ form.admin_discount_value.label }}</label>{{ form.admin_discount_value }}</div>
+            <div class="col-md-6"><label class="form-label fw-bold">{{ form.sibling_student.label }}</label>{{ form.sibling_student }}<div id="siblingSmartMessage" class="mt-2 small fw-bold"></div></div>
+            <div class="col-md-6"><label class="form-label fw-bold">{{ form.notes.label }}</label>{{ form.notes }}</div>
+        </div>
+    </div>
+
+    <div class="stats-grid mb-4">
+        <div class="stat-card"><span>رسوم الصف</span><h2 id="tuitionFee">0.00</h2></div>
+        <div class="stat-card"><span>المواصلات</span><h2 id="transportFee">0.00</h2></div>
+        <div class="stat-card"><span>قيمة الخصم</span><h2 id="discountValue">0.00</h2></div>
+        <div class="stat-card"><span>صافي الرسوم</span><h2 id="netTotal">0.00</h2></div>
+    </div>
+
+    <div class="opal-card mb-4">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-4"><label class="form-label fw-bold">{{ form.first_payment.label }}</label>{{ form.first_payment }}</div>
+            <div class="col-md-4"><label class="form-label fw-bold">المتبقي</label><input class="form-control" id="remainingAmount" readonly></div>
+            <div class="col-md-4"><button class="btn btn-primary w-100 btn-lg"><i class="bi bi-save2"></i> حفظ وطباعة الإيصال</button></div>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const gradeFees = {{ grade_fees_json|safe }};
+const routeFees = {{ route_fees_json|safe }};
+const settings = {
+    firstPaymentPercent: Number("{{ settings.first_payment_percent|default:20 }}"),
+    cash: Number("{{ settings.cash_discount_percent|default:10 }}"),
+    sibling: Number("{{ settings.sibling_discount_percent|default:5 }}"),
+    quran25: Number("{{ settings.quran_25_percent|default:25 }}"),
+    quran50: Number("{{ settings.quran_50_percent|default:50 }}"),
+    quran75: Number("{{ settings.quran_75_percent|default:75 }}"),
+    quran100: Number("{{ settings.quran_100_percent|default:100 }}"),
+};
+function money(v){ return (Number(v || 0)).toFixed(2); }
+function el(name){ return document.querySelector(`[name="${name}"]`); }
+function calc(){
+    const gradeId = el('grade') ? el('grade').value : '';
+    const routeId = el('transport_route') ? el('transport_route').value : '';
+    const transportType = el('transport_type') ? el('transport_type').value : 'none';
+    const discountType = el('discount_type') ? el('discount_type').value : 'none';
+    const adminDiscount = Number(el('admin_discount_value')?.value || 0);
+    let tuition = Number(gradeFees[gradeId] || 0);
+    let fullTransport = Number(routeFees[routeId] || 0);
+    let transport = 0;
+    if(transportType === 'both') transport = fullTransport;
+    if(transportType === 'go' || transportType === 'return') transport = fullTransport / 2;
+    let discount = 0;
+    if(discountType === 'quran_100') discount = tuition * settings.quran100 / 100;
+    else if(discountType === 'quran_75') discount = tuition * settings.quran75 / 100;
+    else if(discountType === 'quran_50') discount = tuition * settings.quran50 / 100;
+    else if(discountType === 'quran_25') discount = tuition * settings.quran25 / 100;
+    else if(discountType === 'cash') discount = tuition * settings.cash / 100;
+    else if(discountType === 'sibling') discount = tuition * settings.sibling / 100;
+    else if(discountType === 'admin') discount = Math.min(adminDiscount, tuition);
+    let net = Math.max((tuition + transport - discount), 0);
+    const firstPaymentInput = el('first_payment');
+    if(firstPaymentInput && !firstPaymentInput.dataset.userEdited){
+        firstPaymentInput.value = money(net * settings.firstPaymentPercent / 100);
+    }
+    let firstPayment = Number(firstPaymentInput?.value || 0);
+    let remaining = Math.max(net - firstPayment, 0);
+    document.getElementById('tuitionFee').innerText = money(tuition);
+    document.getElementById('transportFee').innerText = money(transport);
+    document.getElementById('discountValue').innerText = money(discount);
+    document.getElementById('netTotal').innerText = money(net);
+    document.getElementById('remainingAmount').value = money(remaining);
+}
+document.querySelectorAll('#registrationForm select, #registrationForm input').forEach(item => item.addEventListener('input', function(){ if(this.name === 'first_payment') this.dataset.userEdited='1'; calc(); }));
+
+let siblingTimer = null;
+
+function setSiblingMessage(text, ok){
+    const box = document.getElementById('siblingSmartMessage');
+    if(!box) return;
+    box.innerText = text || '';
+    box.className = ok ? 'mt-2 small fw-bold text-success' : 'mt-2 small fw-bold text-warning';
+}
+
+function checkSiblingSmart(){
+    clearTimeout(siblingTimer);
+    siblingTimer = setTimeout(async function(){
+        const params = new URLSearchParams({
+            phone: el('phone')?.value || '',
+            father_name: el('father_name')?.value || '',
+            family_name: el('family_name')?.value || '',
+            mother_name: el('mother_name')?.value || '',
+            guardian_name: el('guardian_name')?.value || '',
+            national_id: el('national_id')?.value || '',
+        });
+
+        if(!params.get('phone') && !params.get('father_name') && !params.get('mother_name') && !params.get('guardian_name') && !params.get('national_id')){
+            setSiblingMessage('', true);
+            return;
+        }
+
+        const res = await fetch('/admissions/sibling-check/?' + params.toString());
+        const data = await res.json();
+        const discount = el('discount_type');
+        const sibling = el('sibling_student');
+
+        if(data.has_sibling){
+            if(sibling && data.sibling_id){ sibling.value = String(data.sibling_id); }
+            if(data.apply_discount){
+                if(discount && (!discount.value || discount.value === 'none' || discount.value === 'sibling')){ discount.value = 'sibling'; }
+                setSiblingMessage(data.message, true);
+            } else {
+                if(discount && discount.value === 'sibling'){ discount.value = 'none'; }
+                setSiblingMessage(data.message, false);
+            }
+            calc();
+        } else {
+            setSiblingMessage('', true);
+        }
+    }, 450);
+}
+
+['phone','father_name','family_name','mother_name','guardian_name','national_id'].forEach(function(name){
+    const field = el(name);
+    if(field){
+        field.addEventListener('input', checkSiblingSmart);
+        field.addEventListener('change', checkSiblingSmart);
+    }
+});
+checkSiblingSmart();
+calc();
+</script>
+{% endblock %}

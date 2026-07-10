@@ -3,6 +3,7 @@ from core.models import School, Branch
 
 
 class Teacher(models.Model):
+    user = models.OneToOneField("auth.User", on_delete=models.SET_NULL, null=True, blank=True, related_name="teacher_profile", verbose_name="حساب المستخدم")
     GENDER_CHOICES = [
         ("male", "ذكر"),
         ("female", "أنثى"),

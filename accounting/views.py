@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from .models import FeeCategory, StudentInvoice, StudentPayment, Receipt
 from .forms import FeeCategoryForm, StudentInvoiceForm, StudentPaymentForm
-from academics.models import StudentRecord
+from students.models import Student
 
 
 @login_required
@@ -53,7 +53,7 @@ def payment_create(request):
 
 @login_required
 def student_statement(request, student_id):
-    student = get_object_or_404(StudentRecord, pk=student_id)
+    student = get_object_or_404(Student, pk=student_id)
 
     invoices = StudentInvoice.objects.filter(student=student)
     payments = StudentPayment.objects.filter(invoice__student=student)

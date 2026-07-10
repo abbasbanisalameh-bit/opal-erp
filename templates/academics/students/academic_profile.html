@@ -34,7 +34,7 @@
 
 <div class="opal-card p-4 mb-4">
   <h4>👤 البيانات الشخصية</h4>
-  <table class="table table-dark table-striped">
+  <table class="opal-table">
     <tr><th>الاسم</th><td>{{ student.full_name }}</td></tr>
     <tr><th>الجنس</th><td>{{ student.get_gender_display }}</td></tr>
     <tr><th>الرقم الوطني</th><td>{{ student.national_id|default:"-" }}</td></tr>
@@ -48,7 +48,7 @@
 
 <div class="opal-card p-4 mb-4">
   <h4>📚 التسجيلات الأكاديمية</h4>
-  <table class="table table-dark table-striped">
+  <table class="opal-table">
     <thead>
       <tr>
         <th>العام الدراسي</th>
@@ -76,7 +76,7 @@
 
 <div class="opal-card p-4 mb-4">
   <h4>👨‍👩‍👧 أولياء الأمور</h4>
-  <table class="table table-dark table-striped">
+  <table class="opal-table">
     <thead>
       <tr>
         <th>الاسم</th>
@@ -102,7 +102,7 @@
 
 <div class="opal-card p-4">
   <h4>📄 الوثائق</h4>
-  <table class="table table-dark table-striped">
+  <table class="opal-table">
     <thead>
       <tr>
         <th>النوع</th>

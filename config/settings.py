@@ -2,6 +2,7 @@
 Django settings for Opal School Management System.
 """
 
+import os
 from pathlib import Path
 
 # -------------------------
@@ -13,9 +14,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # -------------------------
 # الأمان
 # -------------------------
-SECRET_KEY = "django-insecure-akrenm=s^o&3mx#gbk79h4%1+6qhd-%it9zt$##wbm(c0xh_02"
+SECRET_KEY = os.environ.get(
+    "OPAL_SECRET_KEY",
+    "django-insecure-change-this-key-before-production",
+)
 
-DEBUG = True
+DEBUG = os.environ.get("OPAL_DEBUG", "True").strip().lower() in {"1", "true", "yes", "on"}
 
 ALLOWED_HOSTS = [
     "Opalschool2016.pythonanywhere.com",
@@ -31,6 +35,7 @@ ALLOWED_HOSTS = [
 INSTALLED_APPS = [
     'attendance_v2',
     'parent_portal',
+    'openemis_integration',
     'accounting',
     'exams',
     'documents',
@@ -66,6 +71,8 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'parent_portal.middleware.ParentPortalAccessMiddleware',
+    'teachers.middleware.TeacherPortalAccessMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -88,6 +95,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'announcements.context_processors.active_announcement',
+                'core.context_processors.opal_identity',
             ],
         },
     },
@@ -170,3 +178,12 @@ LOGOUT_REDIRECT_URL = "/accounts/login/"
 CSRF_TRUSTED_ORIGINS = [
     "https://opalschool2016.pythonanywhere.com",
 ]
+
+
+# Production hardening is enabled automatically when OPAL_DEBUG=False.
+if not DEBUG:
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    X_FRAME_OPTIONS = "DENY"
+    SECURE_REFERRER_POLICY = "same-origin"

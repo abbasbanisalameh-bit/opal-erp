@@ -1,0 +1,22 @@
+{% extends "base/base.html" %}
+{% block title %}الرسوم والإيصالات{% endblock %}
+{% block page_title %}الرسوم والإيصالات{% endblock %}
+{% block page_subtitle %}كشف مالي مجمع لجميع الأبناء المرتبطين بحساب ولي الأمر{% endblock %}
+{% block content %}
+{% include "parent_portal/_nav.html" %}
+<div class="stats-grid mb-4">
+{% for card in cards %}
+  <div class="stat-card border border-{{ card.status_class }}">
+    <span>{{ card.student.full_name }}</span>
+    <h2>{{ card.status_label }}</h2>
+    <p>إجمالي الرسوم: {{ card.total }}</p>
+    <p>المدفوع: {{ card.paid }}</p>
+    <p>المتبقي: {{ card.remaining }}</p>
+  </div>
+{% endfor %}
+</div>
+<div class="opal-card">
+<h3 class="fw-bold mb-3">💳 الإيصالات</h3>
+<div class="table-responsive"><table class="opal-table"><thead><tr><th>رقم الإيصال</th><th>النوع</th><th>المبلغ</th><th>المتبقي بعد الدفعة</th><th>التاريخ</th></tr></thead><tbody>{% for p in payments %}<tr><td>{{ p.receipt_number }}</td><td>{{ p.get_scope_display }}</td><td>{{ p.total_amount }}</td><td>{{ p.total_due_after }}</td><td>{{ p.created_at|date:"Y-m-d H:i" }}</td></tr>{% empty %}<tr><td colspan="5">لا توجد إيصالات.</td></tr>{% endfor %}</tbody></table></div>
+</div>
+{% endblock %}

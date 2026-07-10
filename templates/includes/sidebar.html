@@ -1,156 +1,53 @@
 <aside class="opal-sidebar">
-    <div class="opal-brand">
-        <div class="opal-logo">
-            <i class="bi bi-mortarboard-fill"></i>
-        </div>
-        <div>
-            <h3>OPAL</h3>
-            <span>School ERP</span>
-        </div>
-    </div>
-
-    <nav class="opal-menu">
-        <a href="/" class="{% if request.path == '/' %}active{% endif %}">
-            <i class="bi bi-grid-1x2-fill"></i>
-            <span>لوحة التحكم</span>
-        </a>
-
-        <a href="/students/" class="{% if '/students/' in request.path or '/academics/students/' in request.path %}active{% endif %}">
-            <i class="bi bi-people-fill"></i>
-            <span>الطلاب</span>
-        </a>
-
-        <a href="/academics/grades/">
-            <i class="bi bi-diagram-3-fill"></i>
-            <span>الصفوف الدراسية</span>
-        </a>
-
-        <a href="/curriculum/">
-            <i class="bi bi-journal-check"></i>
-            <span>الخطة الدراسية</span>
-        </a>
-
-        <a href="/academics/subjects/">
-            <i class="bi bi-book-fill"></i>
-            <span>المواد الدراسية</span>
-        </a>
-
-        <a href="/academics/sections/">
-            <i class="bi bi-collection-fill"></i>
-            <span>الشعب</span>
-        </a>
-
-        <a href="/attendance/" class="{% if '/attendance/' in request.path %}active{% endif %}">
-            <i class="bi bi-calendar-check-fill"></i>
-            <span>الحضور</span>
-        </a>
-
-        <a href="/accounting/" class="{% if '/accounting/' in request.path %}active{% endif %}">
-            <i class="bi bi-cash-stack"></i>
-            <span>النظام المالي</span>
-        </a>
-
-        <a href="/exams/" class="{% if '/exams/' in request.path %}active{% endif %}">
-            <i class="bi bi-journal-check"></i>
-            <span>الامتحانات والنتائج</span>
-        </a>
-
-        <a href="/documents/" class="{% if '/documents/' in request.path %}active{% endif %}">
-            <i class="bi bi-file-earmark-text-fill"></i>
-            <span>الوثائق</span>
-        </a>
-
-        <a href="/parent/" class="{% if '/parent/' in request.path %}active{% endif %}">
-            <i class="bi bi-person-heart"></i>
-            <span>بوابة أولياء الأمور</span>
-        </a>
-
-        <a href="/">
-            <i class="bi bi-gear-fill"></i>
-            <span>الإدارة</span>
-        </a>
-
-        <div style="padding:12px 18px 6px;color:#9ca3af;font-size:13px;">
-            مركز التطوير
-        </div>
-
-        <a href="/development/" class="{% if request.path == '/development/' %}active{% endif %}">
-            <i class="bi bi-speedometer2"></i>
-            <span>لوحة التطوير</span>
-        </a>
-
-        <a href="/development/executive/" class="{% if '/development/executive/' in request.path %}active{% endif %}">
-            <i class="bi bi-graph-up-arrow"></i>
-            <span>لوحة المدير التنفيذي</span>
-        </a>
-
-        <a href="/development/workflow/run/">
-            <i class="bi bi-arrow-repeat"></i>
-            <span>تشغيل محرك العمل</span>
-        </a>
-
-
-        <a href="/development/modules/" class="{% if '/development/modules/' in request.path %}active{% endif %}">
-            <i class="bi bi-grid-fill"></i>
-            <span>الوحدات</span>
-        </a>
-
-        <a href="/development/tasks/" class="{% if '/development/tasks/' in request.path %}active{% endif %}">
-            <i class="bi bi-kanban-fill"></i>
-            <span>المهام</span>
-        </a>
-
-        <a href="/development/gantt/" class="{% if '/development/gantt/' in request.path %}active{% endif %}">
-            <i class="bi bi-bar-chart-steps"></i>
-            <span>مخطط جانت</span>
-        </a>
-
-        <a href="/development/roadmap/" class="{% if '/development/roadmap/' in request.path %}active{% endif %}">
-            <i class="bi bi-map-fill"></i>
-            <span>خارطة الطريق</span>
-        </a>
-
-        <a href="/development/sprints/" class="{% if '/development/sprints/' in request.path %}active{% endif %}">
-            <i class="bi bi-lightning-charge-fill"></i>
-            <span>دورات التطوير</span>
-        </a>
-
-        <a href="/development/releases/" class="{% if '/development/releases/' in request.path %}active{% endif %}">
-            <i class="bi bi-box-seam-fill"></i>
-            <span>الإصدارات</span>
-        </a>
-
-        <a href="/development/milestones/" class="{% if '/development/milestones/' in request.path %}active{% endif %}">
-            <i class="bi bi-flag-fill"></i>
-            <span>المراحل</span>
-        </a>
-
-        <a href="/development/ideas/" class="{% if '/development/ideas/' in request.path %}active{% endif %}">
-            <i class="bi bi-lightbulb-fill"></i>
-            <span>الأفكار</span>
-        </a>
-
-        <a href="/development/decisions/" class="{% if '/development/decisions/' in request.path %}active{% endif %}">
-            <i class="bi bi-diagram-3-fill"></i>
-            <span>القرارات</span>
-        </a>
-
-        <a href="/development/bugs/" class="{% if '/development/bugs/' in request.path %}active{% endif %}">
-            <i class="bi bi-bug-fill"></i>
-            <span>الأخطاء</span>
-        </a>
-
-        <a href="/development/activity/" class="{% if '/development/activity/' in request.path %}active{% endif %}">
-            <i class="bi bi-clock-history"></i>
-            <span>سجل النشاط</span>
-        </a>
-    </nav>
-
-    <form method="post" action="/accounts/logout/" class="opal-logout-form">
-        {% csrf_token %}
-        <button class="btn btn-outline-light w-100">
-            <i class="bi bi-box-arrow-right"></i>
-            تسجيل الخروج
-        </button>
-    </form>
+  <div class="opal-brand opal-school-brand-fixed">
+    <div class="opal-logo opal-school-logo-fixed">{% if opal_school and opal_school.logo %}<img src="{{ opal_school.logo.url }}" alt="{{ opal_school.name }}" class="opal-school-logo-img-fixed">{% else %}<i class="bi bi-mortarboard-fill"></i>{% endif %}</div>
+    <div class="opal-school-brand-text-fixed"><h3>{{ opal_school.name|default:"OPAL" }}</h3><span>School ERP</span></div>
+  </div>
+  <nav class="opal-menu">
+  {% if request.user.is_staff or request.user.is_superuser %}
+    <a href="/" class="{% if request.path == '/' %}active{% endif %}"><i class="bi bi-grid-1x2-fill"></i><span>لوحة التحكم</span></a>
+    <a href="/students/"><i class="bi bi-people-fill"></i><span>الطلاب</span></a>
+    <a href="/admissions/register/"><i class="bi bi-person-plus-fill"></i><span>تسجيل طالب جديد</span></a>
+    <a href="/admissions/"><i class="bi bi-card-checklist"></i><span>سجل التسجيل</span></a>
+    <a href="/admissions/payments/new/"><i class="bi bi-cash-coin"></i><span>تسجيل دفعة</span></a>
+    <a href="/admissions/payments/archive/"><i class="bi bi-receipt-cutoff"></i><span>أرشيف الإيصالات</span></a>
+    <a href="/academics/grades/"><i class="bi bi-diagram-3-fill"></i><span>الصفوف الدراسية</span></a>
+    <a href="/curriculum/"><i class="bi bi-journal-check"></i><span>الخطة الدراسية</span></a>
+    <a href="/academics/subjects/"><i class="bi bi-book-fill"></i><span>المواد الدراسية</span></a>
+    <a href="/academics/sections/"><i class="bi bi-collection-fill"></i><span>الشعب</span></a>
+    <a href="/attendance/"><i class="bi bi-calendar-check-fill"></i><span>الحضور</span></a>
+    <a href="/accounting/"><i class="bi bi-cash-stack"></i><span>النظام المالي</span></a>
+    <a href="/exams/"><i class="bi bi-journal-check"></i><span>الامتحانات والنتائج</span></a>
+    <a href="/documents/"><i class="bi bi-file-earmark-text-fill"></i><span>الوثائق</span></a>
+    <a href="/teachers/"><i class="bi bi-person-badge-fill"></i><span>المعلمون</span></a>
+    <a href="/parent/manage/"><i class="bi bi-person-heart"></i><span>أولياء الأمور</span></a>
+    <a href="/openemis/settings/"><i class="bi bi-cloud-arrow-up-fill"></i><span>إعدادات OpenEMIS</span></a>
+    <a href="/openemis/logs/"><i class="bi bi-list-check"></i><span>سجل مزامنة OpenEMIS</span></a>
+    <div class="mt-2 mb-1 px-2 text-white-50 small">مركز التطوير</div>
+    <a href="/development/"><i class="bi bi-speedometer2"></i><span>لوحة المركز</span></a>
+    <a href="/development/executive/"><i class="bi bi-graph-up-arrow"></i><span>اللوحة التنفيذية</span></a>
+    <a href="/development/modules/"><i class="bi bi-boxes"></i><span>الوحدات</span></a>
+    <a href="/development/tasks/"><i class="bi bi-list-task"></i><span>المهام</span></a>
+    <a href="/development/tasks/board/"><i class="bi bi-kanban"></i><span>لوحة المهام</span></a>
+    <a href="/development/roadmap/"><i class="bi bi-signpost-split"></i><span>خارطة الطريق</span></a>
+    <a href="/development/releases/"><i class="bi bi-box-arrow-up"></i><span>الإصدارات</span></a>
+    <a href="/development/bugs/"><i class="bi bi-bug"></i><span>الأخطاء</span></a>
+    <a href="/development/reports/project-print/"><i class="bi bi-printer"></i><span>تقرير المشروع</span></a>
+    <a href="/settings/system/"><i class="bi bi-gear-fill"></i><span>إعدادات النظام</span></a>
+  {% elif request.user.teacher_profile %}
+    <a href="/teachers/portal/"><i class="bi bi-house-door-fill"></i><span>لوحة المعلم</span></a>
+    <a href="/teachers/portal/"><i class="bi bi-calendar3"></i><span>الجدول والتكليفات</span></a>
+  {% else %}
+    <a href="/parent/"><i class="bi bi-house-heart-fill"></i><span>الرئيسية</span></a>
+    <a href="/parent/children/"><i class="bi bi-people-fill"></i><span>الأبناء</span></a>
+    <a href="/parent/fees/"><i class="bi bi-wallet2"></i><span>الرسوم والإيصالات</span></a>
+    <a href="/parent/attendance/"><i class="bi bi-calendar-check-fill"></i><span>الحضور</span></a>
+    <a href="/parent/marks/"><i class="bi bi-bar-chart-fill"></i><span>النتائج</span></a>
+    <a href="/parent/timetable/"><i class="bi bi-calendar3"></i><span>الجداول</span></a>
+    <a href="/parent/documents/"><i class="bi bi-file-earmark-text-fill"></i><span>الوثائق</span></a>
+    <a href="/parent/announcements/"><i class="bi bi-bell-fill"></i><span>الإعلانات</span></a>
+    <a href="/parent/account/"><i class="bi bi-person-circle"></i><span>الحساب</span></a>
+  {% endif %}
+  </nav>
+  <form method="post" action="/accounts/logout/" class="opal-logout-form">{% csrf_token %}<button class="btn btn-outline-light w-100"><i class="bi bi-box-arrow-right"></i> تسجيل الخروج</button></form>
 </aside>

@@ -1,21 +1,43 @@
 {% extends "base/base.html" %}
 
-{% block title %}مركز الوثائق{% endblock %}
+{% block title %}مركز الوثائق | OPAL ERP{% endblock %}
+
 {% block page_title %}مركز الوثائق{% endblock %}
-{% block page_subtitle %}الوثائق والشهادات الصادرة من النظام{% endblock %}
+
+{% block page_subtitle %}
+الوثائق والشهادات الصادرة من النظام
+{% endblock %}
 
 {% block content %}
 
 <div class="opal-card">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4 class="fw-bold mb-0">الوثائق الصادرة</h4>
-        <a href="#" class="btn btn-info fw-bold">إصدار وثيقة جديدة</a>
+
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+
+        <div>
+            <h3 class="fw-bold mb-1">
+                مركز الوثائق
+            </h3>
+
+            <p class="text-secondary mb-0">
+                إدارة الوثائق والشهادات الصادرة من النظام
+            </p>
+        </div>
+
+        <a href="#"
+           class="btn btn-primary">
+            إصدار وثيقة جديدة
+        </a>
+
     </div>
 
     <div class="table-responsive">
-        <table class="table opal-table align-middle">
+
+        <table class="opal-table">
+
             <thead>
                 <tr>
+                    <th>#</th>
                     <th>رقم الوثيقة</th>
                     <th>العنوان</th>
                     <th>الطالب</th>
@@ -23,25 +45,53 @@
                     <th>التاريخ</th>
                 </tr>
             </thead>
+
             <tbody>
-                {% for doc in documents %}
+
+            {% for doc in documents %}
+
                 <tr>
-                    <td>{{ doc.document_number }}</td>
-                    <td>{{ doc.title }}</td>
-                    <td>{{ doc.student|default:doc.applicant_name }}</td>
-                    <td>{{ doc.issued_by }}</td>
-                    <td>{{ doc.issued_at|date:"Y-m-d H:i" }}</td>
+
+                    <td>{{ forloop.counter }}</td>
+
+                    <td class="fw-bold">
+                        {{ doc.document_number }}
+                    </td>
+
+                    <td>
+                        {{ doc.title }}
+                    </td>
+
+                    <td>
+                        {{ doc.student|default:doc.applicant_name }}
+                    </td>
+
+                    <td>
+                        {{ doc.issued_by }}
+                    </td>
+
+                    <td>
+                        {{ doc.issued_at|date:"Y-m-d H:i" }}
+                    </td>
+
                 </tr>
-                {% empty %}
+
+            {% empty %}
+
                 <tr>
-                    <td colspan="5" class="text-center text-secondary">
+                    <td colspan="6" class="text-center text-secondary">
                         لا توجد وثائق صادرة حتى الآن
                     </td>
                 </tr>
-                {% endfor %}
+
+            {% endfor %}
+
             </tbody>
+
         </table>
+
     </div>
+
 </div>
 
 {% endblock %}

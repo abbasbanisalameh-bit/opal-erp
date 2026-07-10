@@ -16,3 +16,22 @@ media/
 .DS_Store
 .idea/
 .vscode/
+
+# OPAL local/backup artifacts
+*.swp
+*.swo
+*.before_*
+*.before-*
+*.zip
+db.sqlite3
+backups/
+backups_before_install/
+
+# Local backups
+backups_refactor_students/
+
+# Private runtime data
+db.sqlite3
+media/
+staticfiles/
+.env

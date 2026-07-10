@@ -8,7 +8,7 @@ class ParentMessage(models.Model):
     )
 
     student=models.ForeignKey(
-        "academics.StudentRecord",
+        "students.Student",
         on_delete=models.CASCADE
     )
 

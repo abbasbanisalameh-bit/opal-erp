@@ -7,6 +7,7 @@ from django.contrib.auth.views import LoginView
 
 
 urlpatterns = [
+    path('students/', include('students.urls')),
     path("parent/",include("parent_portal.urls")),
     path(
         'accounts/login/',
@@ -17,8 +18,10 @@ urlpatterns = [
         name='login'
     ),
     path('login/', lambda request: redirect('/accounts/login/')),
-    path('accounts/', include('django.contrib.auth.urls')),
+    path('accounts/', include('accounts.urls')),
     path('admin/', admin.site.urls),
+    path('settings/', include('core.urls')),
+    path('openemis/', include('openemis_integration.urls')),
 
     path('', include('dashboard.urls')),
     path('development/', include('development_center.urls')),
@@ -29,9 +32,10 @@ urlpatterns = [
     path('exams/', include('exams.urls')),
     path('accounting/', include('accounting.urls')),
     path('attendance/', include('attendance_v2.urls')),
+    path('teachers/', include('teachers.urls')),
 
-    path('students/', lambda request: redirect('academics:student_list')),
-    path('students/add/', lambda request: redirect('academics:student_admission')),
+    path('students/', lambda request: redirect('students:student_list')),
+    path('students/add/', lambda request: redirect('/admissions/register/')),
 ]
 
 if settings.DEBUG:

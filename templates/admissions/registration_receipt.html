@@ -1,0 +1,272 @@
+{% extends "base/base.html" %}
+{% block title %}إيصال تسجيل | OPAL ERP{% endblock %}
+{% block page_title %}إيصال تسجيل طالب{% endblock %}
+{% block page_subtitle %}نسختان على ورقة واحدة: نسخة المدرسة ونسخة ولي الأمر{% endblock %}
+
+{% block content %}
+<div class="receipt-toolbar no-print">
+    <button onclick="window.print()" class="btn btn-primary">
+        <i class="bi bi-printer-fill"></i> طباعة
+    </button>
+    <a href="{% url 'admissions:direct_registration' %}" class="btn btn-secondary">تسجيل طالب جديد</a>
+</div>
+
+<div class="receipt-a4-landscape">
+    {% for copy_title in receipt_copies %}
+    <section class="official-receipt-copy">
+        <div class="copy-badge">{{ copy_title }}</div>
+
+        <div class="receipt-header">
+            {% if registration.school.logo %}
+                <img class="receipt-logo" src="{{ registration.school.logo.url }}" alt="{{ registration.school.name }}">
+            {% endif %}
+            <h2>{{ registration.school.name }}</h2>
+            <div class="school-en">Opal International School</div>
+        </div>
+
+        <div class="receipt-line"></div>
+
+        <h3 class="receipt-title">إيصال تسجيل</h3>
+
+        <div class="receipt-info">
+            <div><strong>رقم الإيصال:</strong> {{ registration.receipt.receipt_number|default:registration.registration_number }}</div>
+            <div><strong>التاريخ:</strong> {{ registration.created_at|date:"Y-m-d" }}</div>
+            <div><strong>الطالب:</strong> {{ registration.full_name }}</div>
+            <div><strong>الصف:</strong> {{ registration.grade }}</div>
+            <div><strong>الشعبة:</strong> {{ registration.section|default:"-" }}</div>
+            <div><strong>هاتف ولي الأمر:</strong> {{ registration.phone|default:"-" }}</div>
+        </div>
+
+        <div class="paid-box">
+            {{ registration.first_payment }} د.أ
+        </div>
+
+        <div class="receipt-warning">
+            المتبقي: {{ registration.remaining_amount }} د.أ
+        </div>
+
+        <div class="receipt-summary">
+            <div><span>الرسوم الدراسية:</span><strong>{{ registration.tuition_fee }} د.أ</strong></div>
+            <div><span>رسوم المواصلات:</span><strong>{{ registration.transport_fee }} د.أ</strong></div>
+            <div><span>نوع الخصم:</span><strong>{{ registration.get_discount_type_display }}</strong></div>
+            <div><span>قيمة الخصم:</span><strong>{{ registration.discount_value }} د.أ</strong></div>
+            <div><span>صافي الرسوم:</span><strong>{{ registration.net_total }} د.أ</strong></div>
+            <div><span>المبلغ المدفوع:</span><strong>{{ registration.first_payment }} د.أ</strong></div>
+        </div>
+
+
+
+        <div class="parent-login-box">
+            <strong>بيانات دخول ولي الأمر إلى بوابة OPAL</strong>
+            <div>اسم المستخدم: <span>{{ parent_username|default:"-" }}</span></div>
+            <div>كلمة المرور الأولية: <span>{{ parent_initial_password|default:"-" }}</span></div>
+            <small>يُنصح بتغيير كلمة المرور بعد أول دخول. إذا سبق تغييرها، يمكن إعادة تعيينها من إدارة النظام.</small>
+        </div>
+
+        <div class="receipt-signatures">
+            <div>
+                <div class="sig-line"></div>
+                <strong>توقيع ولي الأمر</strong>
+            </div>
+            <div>
+                <div class="sig-line"></div>
+                <strong>توقيع المستلم</strong>
+                <small>
+{{ receiver_name }}{% if receiver_title %} - {{ receiver_title }}{% endif %}
+                </small>
+            </div>
+        </div>
+
+        <div class="receipt-footer">
+            شكرًا لثقتكم بمدرستنا — هذا الإيصال صادر ومحفوظ في نظام إدارة المدرسة
+        </div>
+    </section>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<style>
+.receipt-toolbar{
+    display:flex;
+    gap:10px;
+    justify-content:flex-end;
+    margin-bottom:16px;
+}
+.receipt-a4-landscape{
+    direction:rtl;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:14px;
+    background:#f3f4f6;
+    padding:14px;
+    border-radius:18px;
+}
+.official-receipt-copy{
+    position:relative;
+    background:#fff;
+    color:#111827;
+    border:2px solid #f2c94c;
+    border-radius:14px;
+    padding:18px;
+    min-height:560px;
+    box-shadow:0 8px 22px rgba(0,0,0,.12);
+    font-family:Arial, sans-serif;
+}
+.copy-badge{
+    position:absolute;
+    top:12px;
+    right:12px;
+    background:#fbbf24;
+    color:#111827;
+    border-radius:999px;
+    padding:5px 12px;
+    font-size:12px;
+    font-weight:800;
+}
+.receipt-header{
+    text-align:center;
+    padding-top:6px;
+}
+.receipt-logo{
+    width:70px;
+    height:70px;
+    object-fit:cover;
+    border-radius:50%;
+    border:2px solid #d4af37;
+    background:#fff;
+}
+.receipt-header h2{
+    color:#111827 !important;
+    font-size:18px;
+    margin:8px 0 2px;
+}
+.school-en{
+    color:#6b7280;
+    font-size:11px;
+}
+.receipt-line{
+    height:2px;
+    background:#d4af37;
+    margin:14px 0;
+}
+.receipt-title{
+    color:#111827 !important;
+    text-align:center;
+    font-size:18px;
+    font-weight:800;
+    margin-bottom:12px;
+}
+.receipt-info{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:7px 12px;
+    font-size:13px;
+}
+.receipt-info div,
+.receipt-summary div{
+    color:#111827;
+}
+.paid-box{
+    border:2px dashed #14b8a6;
+    border-radius:12px;
+    text-align:center;
+    color:#059669;
+    font-size:28px;
+    font-weight:900;
+    padding:13px;
+    margin:18px 0 12px;
+}
+.receipt-warning{
+    background:#fef3c7;
+    color:#111827;
+    border-radius:10px;
+    text-align:center;
+    padding:9px;
+    font-weight:800;
+    margin-bottom:12px;
+}
+.receipt-summary{
+    font-size:13px;
+    display:grid;
+    gap:6px;
+}
+.receipt-summary div{
+    display:flex;
+    justify-content:space-between;
+    border-bottom:1px dotted #d1d5db;
+    padding-bottom:4px;
+}
+.parent-login-box{
+    margin:12px 0 8px;
+    border:1px dashed #d4af37;
+    border-radius:10px;
+    background:#fffbeb;
+    padding:8px;
+    color:#111827;
+    font-size:12px;
+    line-height:1.6;
+}
+.parent-login-box strong{display:block;margin-bottom:4px;color:#92400e;}
+.parent-login-box span{font-weight:800;color:#111827;}
+.parent-login-box small{display:block;color:#6b7280;margin-top:3px;}
+.receipt-signatures{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:28px;
+    margin-top:26px;
+    text-align:center;
+    color:#111827;
+}
+.sig-line{
+    border-top:1px dashed #111827;
+    height:18px;
+}
+.receipt-signatures small{
+    display:block;
+    margin-top:4px;
+    color:#374151;
+}
+.receipt-footer{
+    margin-top:18px;
+    border-top:1px solid #e5e7eb;
+    padding-top:8px;
+    text-align:center;
+    color:#9ca3af;
+    font-size:11px;
+}
+
+@media print{
+    @page{
+        size:A4 landscape;
+        margin:8mm;
+    }
+    body{
+        background:#fff !important;
+    }
+    .no-print,
+    .opal-sidebar,
+    .topbar,
+    .opal-copyright-footer,
+    .page-header{
+        display:none !important;
+    }
+    .main-content{
+        margin:0 !important;
+        padding:0 !important;
+        width:100% !important;
+    }
+    .receipt-a4-landscape{
+        padding:0 !important;
+        background:#fff !important;
+        gap:8mm !important;
+        border-radius:0 !important;
+    }
+    .official-receipt-copy{
+        box-shadow:none !important;
+        min-height:178mm !important;
+        page-break-inside:avoid;
+    }
+}
+</style>
+{% endblock %}

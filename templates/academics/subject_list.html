@@ -1,24 +1,25 @@
 {% extends "base/base.html" %}
-
+{% block title %}المواد الدراسية | OPAL ERP{% endblock %}
 {% block page_title %}المواد الدراسية{% endblock %}
 {% block page_subtitle %}إدارة المواد وربطها بالصفوف الدراسية{% endblock %}
 
 {% block content %}
-<div class="opal-card p-4 mb-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
+<div class="opal-card mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
         <div>
-            <h3 class="mb-1">المواد الدراسية</h3>
-            <p class="text-muted mb-0">تنظيم المواد حسب الصف والرمز والحالة</p>
+            <h3 class="fw-bold mb-1">المواد الدراسية</h3>
+            <p class="text-secondary mb-0">تنظيم المواد حسب الصف والرمز والحالة</p>
         </div>
-        <a href="{% url 'academics:subject_create' %}" class="btn btn-primary">
-            + إضافة مادة
-        </a>
+        <a href="{% url 'academics:subject_create' %}" class="btn btn-primary">+ إضافة مادة</a>
     </div>
+</div>
 
+<div class="opal-card">
     <div class="table-responsive">
-        <table class="table table-hover align-middle">
+        <table class="opal-table">
             <thead>
                 <tr>
+                    <th>#</th>
                     <th>المادة</th>
                     <th>الرمز</th>
                     <th>الصف</th>
@@ -29,7 +30,8 @@
             <tbody>
                 {% for s in subjects %}
                 <tr>
-                    <td>{{ s.name }}</td>
+                    <td>{{ forloop.counter }}</td>
+                    <td class="fw-bold">{{ s.name }}</td>
                     <td>{{ s.code|default:"-" }}</td>
                     <td>{{ s.grade|default:"-" }}</td>
                     <td>
@@ -45,7 +47,7 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="5" class="text-center text-muted py-4">لا توجد مواد دراسية.</td>
+                    <td colspan="6" class="text-center text-secondary">لا توجد مواد دراسية</td>
                 </tr>
                 {% endfor %}
             </tbody>

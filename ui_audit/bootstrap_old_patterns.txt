@@ -1,0 +1,140 @@
+templates/academics/subject_form.html:14:            <button type="submit" class="btn btn-primary">حفظ</button>
+templates/academics/subject_form.html:15:            <a href="{% url 'academics:subject_list' %}" class="btn btn-secondary">رجوع</a>
+templates/academics/subject_list.html:13:        <a href="{% url 'academics:subject_create' %}" class="btn btn-primary">
+templates/academics/subject_list.html:43:                        <a href="{% url 'academics:subject_update' s.id %}" class="btn btn-sm btn-warning">تعديل</a>
+templates/academics/student_form.html:78:        <button type="submit" class="btn btn-info fw-bold">حفظ</button>
+templates/academics/student_form.html:79:        <a href="{% url 'academics:student_list' %}" class="btn btn-secondary">رجوع</a>
+templates/academics/components/student_card.html:26:                <a class="btn btn-primary">
+templates/academics/student_admission.html:54:        <button type="submit" class="btn btn-info fw-bold">حفظ التسجيل</button>
+templates/academics/student_admission.html:55:        <a href="{% url 'academics:student_list' %}" class="btn btn-secondary">رجوع</a>
+templates/academics/student_detail.html:33:            <a href="{% url 'documents:issue_student_certificate' student.id %}" class="btn btn-info">
+templates/academics/student_detail.html:36:            <a href="{% url 'academics:student_update' student.id %}" class="btn btn-warning">
+templates/academics/student_detail.html:39:            <a href="{% url 'academics:student_list' %}" class="btn btn-secondary">
+templates/academics/student_detail.html:100:                    <a href="{{ document.file.url }}" target="_blank" class="btn btn-sm btn-outline-info">فتح الوثيقة</a>
+templates/academics/sections/section_form.html:14:            <button type="submit" class="btn btn-primary">حفظ</button>
+templates/academics/sections/section_form.html:15:            <a href="{% url 'academics:section_list' %}" class="btn btn-secondary">رجوع</a>
+templates/academics/sections/section_list.html:13:        <a href="{% url 'academics:section_create' %}" class="btn btn-primary">
+templates/academics/sections/section_list.html:47:                        <a href="{% url 'academics:section_update' section.id %}" class="btn btn-sm btn-warning">تعديل</a>
+templates/academics/sections/section_list.html:48:                        <a href="{% url 'academics:section_delete' section.id %}" class="btn btn-sm btn-danger"
+templates/academics/students/academic_profile.html:37:  <table class="table table-dark table-striped">
+templates/academics/students/academic_profile.html:51:  <table class="table table-dark table-striped">
+templates/academics/students/academic_profile.html:79:  <table class="table table-dark table-striped">
+templates/academics/students/academic_profile.html:105:  <table class="table table-dark table-striped">
+templates/academics/student_list.html:73:                        <a class="btn btn-sm btn-success" href="/accounting/student/{{ student.id }}/statement/">كشف الحساب</a>
+templates/academics/student_list.html:76:                        <a class="btn btn-sm btn-outline-info" href="{% url 'academics:student_detail' student.id %}">عرض</a>
+templates/academics/student_list.html:77:                        <a class="btn btn-sm btn-outline-warning" href="{% url 'academics:student_update' student.id %}">تعديل</a>
+templates/academics/grades/grade_list.html:13:        <a href="{% url 'academics:grade_create' %}" class="btn btn-primary">
+templates/academics/grades/grade_list.html:41:                        <a href="{% url 'academics:grade_update' grade.id %}" class="btn btn-sm btn-warning">تعديل</a>
+templates/academics/grades/grade_list.html:42:                        <a href="{% url 'academics:grade_delete' grade.id %}" class="btn btn-sm btn-danger"
+templates/academics/grades/grade_form.html:14:            <button type="submit" class="btn btn-primary">حفظ</button>
+templates/academics/grades/grade_form.html:15:            <a href="{% url 'academics:grade_list' %}" class="btn btn-secondary">رجوع</a>
+templates/curriculum/curriculum_list.html:5:  <a href="{% url 'curriculum:curriculum_create' %}" class="btn btn-primary">إضافة خطة</a>
+templates/curriculum/curriculum_form.html:10:  <button type="submit" class="btn btn-primary">حفظ</button>
+templates/curriculum/curriculum_form.html:11:  <a href="{% url 'curriculum:curriculum_list' %}" class="btn btn-secondary">رجوع</a>
+templates/attendance_v2/dashboard.html:14:<a href="{% url 'attendance_v2:take_attendance' %}" class="btn btn-success">
+templates/attendance_v2/dashboard.html:20:class="btn btn-primary mt-3">
+templates/attendance_v2/report.html:12:<table class="table table-striped">
+templates/attendance_v2/report.html:36:<a class="btn btn-warning btn-sm"
+templates/attendance_v2/take_attendance.html:23:<table class="table table-striped">
+templates/attendance_v2/take_attendance.html:49:<button class="btn btn-success">حفظ الحضور</button>
+templates/attendance_v2/edit.html:24:<button class="btn btn-success">حفظ</button>
+templates/documents/document_list.html:12:        <a href="#" class="btn btn-info fw-bold">إصدار وثيقة جديدة</a>
+templates/development_center/decisions/list.html:19:    <a href="{% url 'development_center:decision_create' %}" class="btn btn-primary">إضافة قرار</a>
+templates/development_center/decisions/list.html:22:<table class="table table-dark table-hover">
+templates/development_center/decisions/list.html:39:<a class="btn btn-sm btn-warning" href="{% url 'development_center:decision_update' item.id %}">تعديل</a>
+templates/development_center/decisions/list.html:40:<a class="btn btn-sm btn-danger" href="{% url 'development_center:decision_delete' item.id %}" onclick="return confirm('هل تريد الحذف؟');">حذف</a>
+templates/development_center/dashboard.html:70:<table class="table table-dark table-hover">
+templates/development_center/dashboard.html:98:<table class="table table-dark table-hover">
+templates/development_center/shared/form.html:38:        <button class="btn btn-primary" type="submit">
+templates/development_center/shared/form.html:42:        <a class="btn btn-secondary" href="javascript:history.back()">
+templates/development_center/bugs/list.html:9:<table class="table table-dark table-striped align-middle">
+templates/development_center/bugs/list.html:19:<a class="btn btn-sm btn-warning" href="{% url 'development_center:bug_update' item.id %}">تعديل</a>
+templates/development_center/bugs/list.html:20:<a class="btn btn-sm btn-danger" href="{% url 'development_center:bug_delete' item.id %}">حذف</a>
+templates/development_center/sprints/board.html:14:    <a class="btn btn-outline-primary"
+templates/development_center/sprints/backlog.html:16:    <table class="table table-dark table-striped align-middle">
+templates/development_center/sprints/backlog.html:38:            <a class="btn btn-sm btn-warning"
+templates/development_center/sprints/detail.html:18:      <a href="{% url 'development_center:sprint_board' sprint.id %}" class="btn btn-primary">فتح لوحة دورة التطوير</a>
+templates/development_center/sprints/detail.html:19:      <a href="{% url 'development_center:sprint_burndown' sprint.id %}" class="btn btn-outline-warning">مخطط الاحتراق</a>
+templates/development_center/sprints/detail.html:20:      <a href="{% url 'development_center:sprint_update' sprint.id %}" class="btn btn-outline-light">تعديل</a>
+templates/development_center/sprints/detail.html:71:    <table class="table table-dark table-striped align-middle">
+templates/development_center/sprints/list.html:14:  <a href="{% url 'development_center:sprint_create' %}" class="btn btn-primary">إضافة دورة تطوير</a>
+templates/development_center/sprints/list.html:27:      <a href="{% url 'development_center:sprint_update' sprint.id %}" class="btn btn-sm btn-warning">تعديل</a>
+templates/development_center/releases/list.html:20:    <a href="{% url 'development_center:release_create' %}" class="btn btn-primary">
+templates/development_center/releases/list.html:25:<table class="table table-dark table-hover">
+templates/development_center/releases/list.html:44:<a class="btn btn-sm btn-warning" href="{% url 'development_center:release_update' item.id %}">تعديل</a>
+templates/development_center/releases/list.html:45:<a class="btn btn-sm btn-danger" href="{% url 'development_center:release_delete' item.id %}" onclick="return confirm('هل تريد الحذف؟');">حذف</a>
+templates/development_center/notifications/list.html:31:      <a href="{{ n.url }}" class="btn btn-sm btn-outline-primary">فتح</a>
+templates/development_center/notifications/list.html:36:         class="btn btn-sm btn-outline-success">
+templates/development_center/reports/project_print.html:11:  <button onclick="window.print()" class="btn btn-primary">طباعة / حفظ PDF</button>
+templates/development_center/reports/project_print.html:15:  <table class="table table-dark table-striped">
+templates/development_center/ideas/list.html:9:<table class="table table-dark table-striped align-middle">
+templates/development_center/ideas/list.html:18:<a class="btn btn-sm btn-warning" href="{% url 'development_center:idea_update' item.id %}">تعديل</a>
+templates/development_center/ideas/list.html:19:<a class="btn btn-sm btn-danger" href="{% url 'development_center:idea_delete' item.id %}">حذف</a>
+templates/development_center/milestones/list.html:9:<table class="table table-dark table-striped align-middle">
+templates/development_center/milestones/list.html:20:<a class="btn btn-sm btn-warning" href="{% url 'development_center:milestone_update' item.id %}">تعديل</a>
+templates/development_center/milestones/list.html:21:<a class="btn btn-sm btn-danger" href="{% url 'development_center:milestone_delete' item.id %}">حذف</a>
+templates/development_center/tasks_board.html:51:      <button class="btn btn-primary">فلترة</button>
+templates/development_center/tasks_board.html:55:      <a href="{% url 'development_center:tasks_board' %}" class="btn btn-sm btn-outline-secondary">إلغاء الفلترة</a>
+templates/development_center/activity/list.html:10:<table class="table table-dark table-hover">
+templates/development_center/modules/form.html:8:<button type="submit" class="btn btn-primary">حفظ</button>
+templates/development_center/modules/form.html:9:<a href="{% url 'development_center:module_list' %}" class="btn btn-secondary">رجوع</a>
+templates/development_center/modules/list_old.html:6:  <a href="{% url 'development_center:module_create' %}" class="btn btn-primary">إضافة وحدة</a>
+templates/development_center/executive_dashboard.html:16:  <a href="{% url 'development_center:run_workflow_engine' %}" class="btn btn-warning">
+templates/development_center/tasks/kanban_card.html:15:    <button class="btn btn-sm btn-outline-secondary status-btn" data-id="{{ t.id }}" data-status="todo">لم يبدأ</button>
+templates/development_center/tasks/kanban_card.html:16:    <button class="btn btn-sm btn-outline-primary status-btn" data-id="{{ t.id }}" data-status="doing">قيد التنفيذ</button>
+templates/development_center/tasks/kanban_card.html:17:    <button class="btn btn-sm btn-outline-warning status-btn" data-id="{{ t.id }}" data-status="review">قيد المراجعة</button>
+templates/development_center/tasks/kanban_card.html:18:    <button class="btn btn-sm btn-outline-success status-btn" data-id="{{ t.id }}" data-status="done">مكتملة</button>
+templates/development_center/tasks/kanban_card.html:21:  <a href="{% url 'development_center:task_detail' t.id %}" class="btn btn-sm btn-light mt-2">تفاصيل</a>
+templates/development_center/tasks/detail.html:46:            <a class="btn btn-secondary" href="{% url 'development_center:task_list' %}">رجوع للمهام</a>
+templates/development_center/tasks/detail.html:47:            <a class="btn btn-warning" href="{% url 'development_center:task_update' task.id %}">تعديل</a>
+templates/development_center/tasks/detail.html:48:            <a class="btn btn-danger" href="{% url 'development_center:task_delete' task.id %}" onclick="return confirm('هل تريد حذف المهمة؟');">حذف</a>
+templates/development_center/tasks/detail.html:65:<table class="table table-dark table-hover">
+templates/development_center/tasks/list.html:18:        <a href="{% url 'development_center:tasks_board' %}" class="btn btn-secondary">لوحة كانبان</a>
+templates/development_center/tasks/list.html:19:        <a href="{% url 'development_center:task_create' %}" class="btn btn-primary">إضافة مهمة</a>
+templates/development_center/tasks/list.html:23:<table class="table table-dark table-hover">
+templates/development_center/tasks/list.html:45:<a class="btn btn-sm btn-info" href="{% url 'development_center:task_detail' task.id %}">عرض</a>
+templates/development_center/tasks/list.html:46:<a class="btn btn-sm btn-warning" href="{% url 'development_center:task_update' task.id %}">تعديل</a>
+templates/development_center/tasks/list.html:47:<a class="btn btn-sm btn-danger" href="{% url 'development_center:task_delete' task.id %}" onclick="return confirm('هل تريد حذف المهمة؟');">حذف</a>
+templates/students/student_form.html:8:    <button class="btn btn-primary">حفظ</button>
+templates/students/student_form.html:9:    <a href="{% url 'students:student_list' %}" class="btn btn-secondary">رجوع</a>
+templates/students/student_detail.html:11:  <a href="{% url 'students:student_update' student.pk %}" class="btn btn-warning">تعديل</a>
+templates/students/student_detail.html:12:  <a href="{% url 'students:student_list' %}" class="btn btn-secondary">رجوع</a>
+templates/students/student_list.html:6:    <a href="{% url 'students:student_create' %}" class="btn btn-primary">إضافة طالب</a>
+templates/students/student_list.html:19:    <div class="col-md-3"><button class="btn btn-info w-100">بحث</button></div>
+templates/students/student_list.html:35:            <a href="{% url 'students:student_detail' student.pk %}" class="btn btn-sm btn-info">عرض</a>
+templates/students/student_list.html:36:            <a href="{% url 'students:student_update' student.pk %}" class="btn btn-sm btn-warning">تعديل</a>
+templates/students/student_list.html:37:            <a href="{% url 'students:student_archive' student.pk %}" class="btn btn-sm btn-secondary">أرشفة</a>
+templates/students/student_confirm_delete.html:19:        <button type="submit" class="btn btn-danger">
+templates/students/student_confirm_delete.html:23:        <a href="{% url 'students:student_detail' student.pk %}" class="btn btn-secondary">
+templates/includes/sidebar.html:151:        <button class="btn btn-outline-light w-100">
+templates/exams/exam_form.html:12:        <button type="submit" class="btn btn-success">
+templates/exams/exam_form.html:16:        <a href="{% url 'exams:exam_list' %}" class="btn btn-secondary">
+templates/exams/mark_form.html:12:<button class="btn btn-success">حفظ</button>
+templates/exams/mark_form.html:14:<a href="{% url 'exams:mark_list' %}" class="btn btn-secondary">
+templates/exams/bulk_marks.html:14:<table class="table table-striped">
+templates/exams/bulk_marks.html:40:<button class="btn btn-success">حفظ جميع العلامات</button>
+templates/exams/bulk_marks.html:41:<a href="{% url 'exams:exam_list' %}" class="btn btn-secondary">رجوع</a>
+templates/exams/exam_list.html:10:        <a href="{% url 'exams:exam_create' %}" class="btn btn-info">إضافة امتحان</a>
+templates/exams/exam_list.html:34:                <td><a class="btn btn-sm btn-success" href="{% url 'exams:exam_marks_bulk' exam.id %}">إدخال علامات الصف</a> <a class="btn btn-sm btn-info" href="{% url 'exams:exam_detail' exam.id %}">التفاصيل</a></td>
+templates/exams/mark_list.html:10:<a href="{% url 'exams:mark_create' %}" class="btn btn-primary">
+templates/exams/mark_list.html:15:<table class="table table-striped">
+templates/exams/exam_confirm_delete.html:13:<button class="btn btn-danger">نعم، حذف</button>
+templates/exams/exam_confirm_delete.html:14:<a href="{% url 'exams:exam_detail' exam.id %}" class="btn btn-secondary">إلغاء</a>
+templates/exams/exam_detail.html:20:<a href="{% url 'exams:exam_marks_bulk' exam.id %}" class="btn btn-success">
+templates/exams/exam_detail.html:23:<a href="{% url 'exams:exam_update' exam.id %}" class="btn btn-warning">تعديل</a>
+templates/exams/exam_detail.html:24:<a href="{% url 'exams:exam_delete' exam.id %}" class="btn btn-danger">حذف</a>
+templates/exams/exam_detail.html:25:<a href="{% url 'exams:exam_list' %}" class="btn btn-secondary">رجوع</a>
+templates/exams/exam_detail.html:29:<table class="table table-striped">
+templates/accounting/student_statement.html:20:<table class="table table-striped">
+templates/accounting/form.html:14:<button class="btn btn-success">
+templates/accounting/dashboard.html:40:<a class="btn btn-success" href="{% url 'accounting:invoice_create' %}">
+templates/accounting/dashboard.html:44:<a class="btn btn-primary" href="{% url 'accounting:invoice_list' %}">
+templates/accounting/dashboard.html:48:<a class="btn btn-warning" href="{% url 'accounting:payment_create' %}">
+templates/accounting/receipt_list.html:10:<a href="{% url 'accounting:payment_create' %}" class="btn btn-success mb-3">
+templates/accounting/receipt_list.html:14:<table class="table table-striped">
+templates/accounting/receipt_list.html:33:<a class="btn btn-sm btn-primary" href="{% url 'accounting:receipt_print' r.id %}" target="_blank">
+templates/accounting/invoice_list.html:8:<a class="btn btn-success mb-3" href="{% url 'accounting:invoice_create' %}">
+templates/accounting/invoice_list.html:12:<table class="table table-striped">
+templates/parent_portal/dashboard.html:56:<table class="table table-striped">
+templates/parent_portal/dashboard.html:161:<table class="table table-striped">
+templates/admissions/admission_list.html:12:        <a href="#" class="btn btn-info fw-bold">

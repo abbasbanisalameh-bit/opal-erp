@@ -1,0 +1,4 @@
+static/css/opal_dashboard.css
+static/css/opal_dashboard_final_v2.css
+static/css/opal_erp.css
+static/css/opal_hotfix.css

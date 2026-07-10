@@ -1,20 +1,30 @@
 {% extends "base/base.html" %}
-
-{% block title %}إدخال علامة{% endblock %}
+{% block title %}إدخال علامة | OPAL ERP{% endblock %}
 {% block page_title %}إدخال علامة{% endblock %}
+{% block page_subtitle %}إضافة أو تعديل علامة طالب{% endblock %}
 
 {% block content %}
 <div class="opal-card">
-<form method="post">
-{% csrf_token %}
-{{ form.as_p }}
+    <h3 class="fw-bold mb-4">بيانات العلامة</h3>
 
-<button class="btn btn-success">حفظ</button>
+    <form method="post">
+        {% csrf_token %}
+        <div class="row g-3">
+            {% for field in form %}
+            <div class="col-md-6">
+                <label class="form-label fw-bold">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}
+                    <div class="text-danger small mt-1">{{ field.errors }}</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
 
-<a href="{% url 'exams:mark_list' %}" class="btn btn-secondary">
-رجوع
-</a>
-
-</form>
+        <div class="mt-4 d-flex gap-2">
+            <button type="submit" class="btn btn-primary">حفظ</button>
+            <a href="{% url 'exams:mark_list' %}" class="btn btn-secondary">رجوع</a>
+        </div>
+    </form>
 </div>
 {% endblock %}

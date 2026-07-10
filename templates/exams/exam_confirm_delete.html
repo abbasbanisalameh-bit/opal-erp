@@ -1,17 +1,53 @@
 {% extends "base/base.html" %}
 
-{% block title %}حذف امتحان{% endblock %}
+{% block title %}حذف امتحان | OPAL ERP{% endblock %}
+
 {% block page_title %}حذف امتحان{% endblock %}
 
-{% block content %}
-<div class="opal-card">
-<h4>هل تريد حذف الامتحان؟</h4>
-<p>{{ exam.name }}</p>
+{% block page_subtitle %}
+تأكيد حذف الامتحان من النظام
+{% endblock %}
 
-<form method="post">
-{% csrf_token %}
-<button class="btn btn-danger">نعم، حذف</button>
-<a href="{% url 'exams:exam_detail' exam.id %}" class="btn btn-secondary">إلغاء</a>
-</form>
+{% block content %}
+
+<div class="opal-card text-center">
+
+    <div class="mb-4">
+        <i class="bi bi-exclamation-triangle-fill text-danger"
+           style="font-size:70px;"></i>
+    </div>
+
+    <h2 class="fw-bold mb-3">
+        هل أنت متأكد؟
+    </h2>
+
+    <p class="text-secondary fs-5">
+        سيتم حذف الامتحان:
+    </p>
+
+    <h3 class="fw-bold mb-4">
+        {{ exam.name }}
+    </h3>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="d-flex justify-content-center gap-3 flex-wrap">
+
+            <button class="btn btn-danger btn-lg">
+                <i class="bi bi-trash-fill"></i>
+                حذف الامتحان
+            </button>
+
+            <a href="{% url 'exams:exam_detail' exam.id %}"
+               class="btn btn-secondary btn-lg">
+                رجوع
+            </a>
+
+        </div>
+
+    </form>
+
 </div>
+
 {% endblock %}

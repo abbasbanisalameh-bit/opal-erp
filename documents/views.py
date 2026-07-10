@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.http import FileResponse
 
-from academics.models import StudentRecord
+from students.models import Student
 from .models import IssuedDocument
 from .utils import generate_document_number
 from .services.pdf import student_certificate
@@ -18,7 +18,7 @@ def document_list(request):
 
 @login_required
 def issue_student_certificate(request, student_id):
-    student = StudentRecord.objects.get(pk=student_id)
+    student = Student.objects.get(pk=student_id)
 
     number = generate_document_number()
 

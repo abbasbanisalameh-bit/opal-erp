@@ -1,0 +1,105 @@
+{% extends "base/base.html" %}
+{% block title %}تسجيل دفعة رسوم | OPAL ERP{% endblock %}
+{% block page_title %}تسجيل دفعة رسوم{% endblock %}
+{% block page_subtitle %}بحث ذكي عن الطالب وتسجيل دفعة عن جميع الإخوة تلقائيًا{% endblock %}
+
+{% block content %}
+<div class="opal-card mb-4">
+    <h3 class="fw-bold mb-3">البحث عن الطالب</h3>
+    <form method="get" class="row g-3">
+        <div class="col-md-9">
+            <input name="q" value="{{ query }}" class="form-control" placeholder="ابحث بالاسم، رقم الطالب، الرقم الوطني، هاتف ولي الأمر، اسم ولي الأمر">
+        </div>
+        <div class="col-md-3">
+            <button class="btn btn-primary w-100"><i class="bi bi-search"></i> بحث</button>
+        </div>
+    </form>
+</div>
+
+{% if search_results %}
+<div class="opal-card mb-4">
+    <h4 class="fw-bold mb-3">نتائج البحث</h4>
+    <div class="table-responsive">
+        <table class="opal-table">
+            <thead><tr><th>رقم الطالب</th><th>الاسم</th><th>ولي الأمر</th><th>الهاتف</th><th>الصف</th><th></th></tr></thead>
+            <tbody>
+            {% for student in search_results %}
+            <tr>
+                <td>{{ student.student_number }}</td>
+                <td>{{ student.full_name }}</td>
+                <td>{{ student.guardian_name|default:"-" }}</td>
+                <td>{{ student.phone|default:"-" }}</td>
+                <td>{{ student.grade }}</td>
+                <td><a class="btn btn-sm btn-primary" href="?student={{ student.id }}">اختيار</a></td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{% if selected_student %}
+<div class="opal-card mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+        <div>
+            <h3 class="fw-bold mb-1">دفعة عن جميع الإخوة</h3>
+            <p class="text-secondary mb-0">تم اختيار: <strong>{{ selected_student.full_name }}</strong>. سيتم توزيع الدفعة تلقائيًا على الإخوة غير المسددين فقط.</p>
+        </div>
+        <a href="{% url 'admissions:fee_payment_create' %}" class="btn btn-secondary">بحث جديد</a>
+    </div>
+
+    <div class="table-responsive mb-4">
+        <table class="opal-table sibling-payment-table">
+            <thead>
+            <tr>
+                <th>الطالب</th><th>الصف</th><th>إجمالي الرسوم</th><th>المدفوع</th><th>المتبقي</th><th>الحالة</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for row in siblings_data %}
+            <tr class="sibling-row sibling-{{ row.status }}">
+                <td>{{ row.student.full_name }}</td>
+                <td>{{ row.student.grade }}</td>
+                <td>{{ row.total }}</td>
+                <td>{{ row.paid }}</td>
+                <td>{{ row.remaining }}</td>
+                <td>
+                    {% if row.status == "paid" %}
+                        <span class="badge bg-success">مسدد بالكامل</span>
+                    {% elif row.status == "unpaid" %}
+                        <span class="badge bg-danger">لم يدفع شيئًا</span>
+                    {% else %}
+                        <span class="badge bg-warning text-dark">عليه متبقٍ</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <form method="post" class="row g-3">
+        {% csrf_token %}
+        <input type="hidden" name="student" value="{{ selected_student.id }}">
+        <div class="col-md-4">
+            <label class="form-label fw-bold">مبلغ الدفعة</label>
+            <input name="amount" type="number" step="0.01" min="0.01" max="{{ family_total_remaining }}" class="form-control" required {% if not has_payable_siblings %}disabled{% endif %}>
+            <div class="form-text">الحد الأعلى: {{ family_total_remaining }} د.أ</div>
+        </div>
+        <div class="col-md-8">
+            <label class="form-label fw-bold">ملاحظات</label>
+            <input name="notes" class="form-control" placeholder="اختياري">
+        </div>
+        <div class="col-12">
+            <div class="alert alert-info">
+                التوزيع تلقائي بالكامل: يوزع النظام المبلغ بالتساوي على الإخوة ذوي الرصيد المستحق فقط، ولا يقبل مبلغًا يتجاوز إجمالي المتبقي. الطالب المسدد بالكامل لا يستقبل أي مبلغ.
+            </div>
+        </div>
+        <div class="col-12">
+            <button class="btn btn-primary" {% if not has_payable_siblings %}disabled{% endif %}><i class="bi bi-cash-stack"></i> حفظ وطباعة إيصال الدفعة</button>
+        </div>
+    </form>
+</div>
+{% endif %}
+{% endblock %}

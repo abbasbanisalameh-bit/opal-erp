@@ -1,57 +1,53 @@
-from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, redirect, get_object_or_404
 from .models import Student
 from .forms import StudentForm
 
-
+@login_required
 def student_list(request):
     q = request.GET.get("q", "").strip()
-    students = Student.objects.all().order_by("-id")
+    status_filter = request.GET.get("status", "").strip()
+
+    students = Student.objects.all().order_by("full_name")
 
     if q:
-        students = students.filter(full_name__icontains=q) | students.filter(student_number__icontains=q)
+        students = students.filter(full_name__icontains=q) | Student.objects.filter(student_number__icontains=q)
+
+    if status_filter:
+        students = students.filter(status=status_filter)
 
     return render(request, "students/student_list.html", {
         "students": students,
         "q": q,
+        "status_filter": status_filter,
+        "status_choices": Student.STATUS_CHOICES,
     })
 
-
+@login_required
 def student_detail(request, pk):
     student = get_object_or_404(Student, pk=pk)
-    return render(request, "students/student_detail.html", {
-        "student": student,
-    })
+    return render(request, "students/student_detail.html", {"student": student})
 
-
+@login_required
 def student_create(request):
-    form = StudentForm(request.POST or None, request.FILES or None)
-    if form.is_valid():
-        form.save()
-        return redirect("students:student_list")
-    return render(request, "students/student_form.html", {
-        "form": form,
-        "title": "إضافة طالب",
-    })
+    # تم اعتماد نموذج التسجيل الذكي كنموذج التسجيل الوحيد في النظام.
+    return redirect("/admissions/register/")
 
-
+@login_required
 def student_update(request, pk):
     student = get_object_or_404(Student, pk=pk)
-    form = StudentForm(request.POST or None, request.FILES or None, instance=student)
-    if form.is_valid():
-        form.save()
-        return redirect("students:student_detail", pk=student.pk)
-    return render(request, "students/student_form.html", {
-        "form": form,
-        "title": "تعديل طالب",
-    })
-
-
-def student_delete(request, pk):
-    student = get_object_or_404(Student, pk=pk)
     if request.method == "POST":
-        student.status = "inactive"
-        student.save(update_fields=["status"])
-        return redirect("students:student_list")
-    return render(request, "students/student_confirm_delete.html", {
-        "student": student,
-    })
+        form = StudentForm(request.POST, request.FILES, instance=student)
+        if form.is_valid():
+            form.save()
+            return redirect("students:student_detail", pk=student.pk)
+    else:
+        form = StudentForm(instance=student)
+    return render(request, "students/student_form.html", {"form": form, "title": "تعديل طالب"})
+
+@login_required
+def student_archive(request, pk):
+    student = get_object_or_404(Student, pk=pk)
+    student.status = "archived"
+    student.save(update_fields=["status"])
+    return redirect("students:student_list")

@@ -217,3 +217,482 @@ label { color: #dbeafe; margin-bottom: 6px; }
     .page-heading h1 { font-size: 28px; }
     .dashboard-layout { grid-template-columns: 1fr; }
 }
+
+/* ===== OPAL Unified UI Components ===== */
+.opal-card,
+.stat-card,
+.panel {
+    background: rgba(15, 23, 42, 0.92) !important;
+    border: 1px solid rgba(255,255,255,.10) !important;
+    border-radius: 22px !important;
+    padding: 24px !important;
+    color: #e5f4ff !important;
+    box-shadow: 0 12px 30px rgba(0,0,0,.25) !important;
+}
+
+.stat-card span,
+.opal-card .text-muted,
+.opal-card p,
+.opal-card li,
+.opal-card small {
+    color: #cbd5e1 !important;
+}
+
+.stat-card h2,
+.opal-card h1,
+.opal-card h2,
+.opal-card h3,
+.opal-card h4 {
+    color: #ffffff !important;
+    font-weight: 800 !important;
+}
+
+.opal-table,
+.opal-card table,
+.table {
+    width: 100% !important;
+    color: #e5f4ff !important;
+    border-collapse: separate !important;
+    border-spacing: 0 8px !important;
+}
+
+.opal-table thead th,
+.opal-card table thead th,
+.table thead th {
+    color: #7dd3fc !important;
+    border: 0 !important;
+    background: rgba(255,255,255,.06) !important;
+    padding: 14px !important;
+}
+
+.opal-table tbody td,
+.opal-card table tbody td,
+.table tbody td {
+    background: rgba(255,255,255,.04) !important;
+    border: 0 !important;
+    padding: 14px !important;
+    color: #e5f4ff !important;
+}
+
+.form-control,
+.form-select,
+textarea,
+select,
+input {
+    background: rgba(255,255,255,.06) !important;
+    border: 1px solid rgba(255,255,255,.12) !important;
+    color: #ffffff !important;
+    border-radius: 14px !important;
+}
+
+.form-control::placeholder {
+    color: #94a3b8 !important;
+}
+
+.btn-primary,
+.btn-info,
+.btn-success {
+    border: 0 !important;
+    border-radius: 14px !important;
+    font-weight: 700 !important;
+}
+
+.btn-primary {
+    background: linear-gradient(90deg, #14b8a6, #22d3ee) !important;
+}
+
+.btn-warning {
+    border-radius: 14px !important;
+    font-weight: 700 !important;
+}
+
+.btn-secondary,
+.btn-danger {
+    border-radius: 14px !important;
+    font-weight: 700 !important;
+}
+
+.badge {
+    border-radius: 999px !important;
+    padding: 8px 12px !important;
+}
+
+/* ===== OPAL Student Detail ===== */
+
+.opal-student-photo {
+    width: 120px;
+    height: 120px;
+    border-radius: 24px;
+    object-fit: cover;
+}
+
+.opal-student-avatar {
+    width: 120px;
+    height: 120px;
+    font-size: 42px;
+}
+
+.opal-info-box {
+    background: rgba(255,255,255,.05);
+}
+
+
+/* ===== OPAL Base Layout ===== */
+
+.opal-system-logo{
+    width:58px;
+    height:58px;
+    border-radius:50%;
+    object-fit:cover;
+    border:2px solid rgba(255,255,255,.35);
+    background:#fff;
+}
+
+.opal-copyright-footer{
+    text-align:center;
+    padding:14px 8px;
+    margin-top:30px;
+    color:rgba(255,255,255,.75);
+    border-top:1px solid rgba(255,255,255,.12);
+    font-size:13px;
+}
+
+
+/* ===== OPAL Sidebar ===== */
+
+.opal-menu-section{
+    padding:12px 18px 6px;
+    color:#9ca3af;
+    font-size:13px;
+}
+
+
+/* ===== OPAL Topbar ===== */
+
+.opal-topbar-avatar{
+    width:72px;
+    height:72px;
+    border-radius:50%;
+    overflow:hidden;
+    background:transparent;
+    border:0;
+    padding:0;
+    box-shadow:none;
+}
+
+.opal-topbar-avatar img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:block;
+    border-radius:50%;
+}
+
+
+/* ===== OPAL Topbar Logo Isolated ===== */
+.opal-topbar-logo-frame{
+    width:56px;
+    height:56px;
+    min-width:56px;
+    max-width:56px;
+    min-height:56px;
+    max-height:56px;
+    border-radius:50%;
+    overflow:hidden;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:transparent;
+    border:2px solid rgba(94,234,212,.55);
+    box-shadow:0 0 0 4px rgba(94,234,212,.12);
+    flex:0 0 56px;
+}
+.opal-topbar-logo-img{
+    width:56px !important;
+    height:56px !important;
+    max-width:56px !important;
+    max-height:56px !important;
+    object-fit:contain !important;
+    display:block !important;
+    border-radius:50% !important;
+}
+
+/* ===== OPAL Topbar Identity Icon ===== */
+.opal-topbar-logo-frame{
+    width:56px;
+    height:56px;
+    min-width:56px;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:linear-gradient(135deg, var(--opal-accent), var(--opal-accent-2));
+    color:#061120;
+    font-size:28px;
+    box-shadow:0 0 25px rgba(20,184,166,.25);
+    overflow:hidden;
+}
+
+/* ===== OPAL Dynamic Identity ===== */
+.opal-logo img,
+.opal-topbar-logo-frame img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:block;
+    border-radius:50%;
+}
+
+/* ===== OPAL User Profile Image Size Fix ===== */
+.topbar .profile .opal-user-photo-frame{
+    width:56px !important;
+    height:56px !important;
+    min-width:56px !important;
+    max-width:56px !important;
+    min-height:56px !important;
+    max-height:56px !important;
+    border-radius:50% !important;
+    overflow:hidden !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    background:linear-gradient(135deg, var(--opal-accent), var(--opal-accent-2)) !important;
+    border:1.5px solid #d4af37 !important;
+    flex:0 0 56px !important;
+}
+
+.topbar .profile .opal-user-photo-frame img{
+    width:56px !important;
+    height:56px !important;
+    max-width:56px !important;
+    max-height:56px !important;
+    object-fit:cover !important;
+    border-radius:50% !important;
+    display:block !important;
+}
+
+.topbar .profile img{
+    max-width:56px !important;
+    max-height:56px !important;
+    object-fit:cover !important;
+    border-radius:50% !important;
+}
+
+/* ===== OPAL Sidebar School Logo Final Fix ===== */
+.opal-brand .opal-logo{
+    width:64px !important;
+    height:64px !important;
+    min-width:64px !important;
+    max-width:64px !important;
+    min-height:64px !important;
+    max-height:64px !important;
+    border-radius:50% !important;
+    padding:4px !important;
+    background:#ffffff !important;
+    border:2px solid #d4af37 !important;
+    overflow:hidden !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    box-shadow:0 0 0 4px rgba(212,175,55,.12) !important;
+}
+
+.opal-brand .opal-logo img{
+    width:100% !important;
+    height:100% !important;
+    max-width:100% !important;
+    max-height:100% !important;
+    object-fit:cover !important;
+    border-radius:50% !important;
+    display:block !important;
+}
+
+.opal-brand h3{
+    font-size:17px !important;
+    line-height:1.3 !important;
+    margin:0 !important;
+}
+
+/* ===== OPAL Smart Registration ===== */
+.registration-receipt .opal-table th{
+    width: 18%;
+}
+.registration-receipt{
+    border:1px solid rgba(212,175,55,.22) !important;
+}
+@media print{
+    body{background:#fff!important;color:#000!important;}
+    .registration-receipt, .registration-receipt *{color:#000!important;}
+}
+
+/* ===== OPAL Smart Payments ===== */
+.sibling-payment-table .sibling-paid td{background:rgba(34,197,94,.14)!important;}
+.sibling-payment-table .sibling-unpaid td{background:rgba(239,68,68,.14)!important;}
+.sibling-payment-table .sibling-partial td{background:rgba(250,204,21,.14)!important;}
+.receipt-mini-table{width:100%;border-collapse:collapse;}
+.receipt-mini-table th,.receipt-mini-table td{border:1px solid rgba(0,0,0,.2);padding:5px;text-align:center;}
+
+/* ===== OPAL Sidebar School Logo Desktop Fix ===== */
+.opal-brand,
+.sidebar .opal-brand,
+.opal-sidebar .opal-brand {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    padding: 14px 12px !important;
+    overflow: hidden !important;
+}
+
+.opal-brand .opal-logo,
+.sidebar .opal-brand .opal-logo,
+.opal-sidebar .opal-brand .opal-logo {
+    width: 58px !important;
+    height: 58px !important;
+    min-width: 58px !important;
+    max-width: 58px !important;
+    min-height: 58px !important;
+    max-height: 58px !important;
+    border-radius: 50% !important;
+    padding: 3px !important;
+    background: #ffffff !important;
+    border: 2px solid #d4af37 !important;
+    overflow: hidden !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex: 0 0 58px !important;
+    box-shadow: 0 0 0 4px rgba(212,175,55,.12) !important;
+}
+
+.opal-brand .opal-logo img,
+.sidebar .opal-brand .opal-logo img,
+.opal-sidebar .opal-brand .opal-logo img {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    object-fit: contain !important;
+    border-radius: 50% !important;
+    display: block !important;
+}
+
+.opal-brand h3,
+.sidebar .opal-brand h3,
+.opal-sidebar .opal-brand h3 {
+    font-size: 16px !important;
+    line-height: 1.25 !important;
+    margin: 0 !important;
+    max-width: 130px !important;
+    white-space: normal !important;
+    overflow: hidden !important;
+}
+
+.opal-brand span,
+.sidebar .opal-brand span,
+.opal-sidebar .opal-brand span {
+    font-size: 11px !important;
+    opacity: .85 !important;
+    display: block !important;
+    margin-top: 3px !important;
+}
+
+/* ===== OPAL FORCE FIX SCHOOL LOGO SIZE ===== */
+.opal-sidebar .opal-brand img,
+.sidebar .opal-brand img,
+aside .opal-brand img,
+.opal-brand img {
+    width: 62px !important;
+    height: 62px !important;
+    min-width: 62px !important;
+    max-width: 62px !important;
+    min-height: 62px !important;
+    max-height: 62px !important;
+    object-fit: contain !important;
+    border-radius: 50% !important;
+    background: #fff !important;
+    border: 2px solid #d4af37 !important;
+    padding: 3px !important;
+    display: block !important;
+    position: static !important;
+    transform: none !important;
+}
+
+.opal-sidebar .opal-brand,
+.sidebar .opal-brand,
+aside .opal-brand,
+.opal-brand {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    overflow: hidden !important;
+    max-height: 95px !important;
+}
+
+.opal-sidebar .opal-brand h3,
+.sidebar .opal-brand h3,
+aside .opal-brand h3,
+.opal-brand h3 {
+    font-size: 16px !important;
+    line-height: 1.3 !important;
+    margin: 0 !important;
+    max-width: 135px !important;
+}
+
+/* ===== OPAL HARD FIX SIDEBAR SCHOOL LOGO ===== */
+.opal-school-brand-fixed{
+    display:flex !important;
+    align-items:center !important;
+    gap:10px !important;
+    padding:12px 10px !important;
+    max-height:92px !important;
+    overflow:hidden !important;
+}
+
+.opal-school-logo-fixed{
+    width:62px !important;
+    height:62px !important;
+    min-width:62px !important;
+    max-width:62px !important;
+    min-height:62px !important;
+    max-height:62px !important;
+    flex:0 0 62px !important;
+    border-radius:50% !important;
+    overflow:hidden !important;
+    background:#fff !important;
+    border:2px solid #d4af37 !important;
+    padding:3px !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+}
+
+.opal-school-logo-img-fixed{
+    width:56px !important;
+    height:56px !important;
+    min-width:56px !important;
+    max-width:56px !important;
+    min-height:56px !important;
+    max-height:56px !important;
+    object-fit:contain !important;
+    border-radius:50% !important;
+    display:block !important;
+    position:static !important;
+    transform:none !important;
+}
+
+.opal-school-brand-text-fixed{
+    min-width:0 !important;
+    overflow:hidden !important;
+}
+
+.opal-school-brand-text-fixed h3{
+    font-size:16px !important;
+    line-height:1.25 !important;
+    margin:0 !important;
+    white-space:normal !important;
+}
+
+.opal-school-brand-text-fixed span{
+    font-size:11px !important;
+    opacity:.85 !important;
+}

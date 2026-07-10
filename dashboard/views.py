@@ -5,7 +5,8 @@ from django.db.models.functions import TruncMonth
 from django.shortcuts import render
 from django.utils import timezone
 
-from academics.models import Section, StudentRecord
+from academics.models import Section
+from students.models import Student
 from accounting.models import StudentInvoice, StudentPayment
 from announcements.models import Announcement
 from attendance_v2.models import Attendance
@@ -16,7 +17,7 @@ from exams.models import Exam
 def home(request):
     today = timezone.localdate()
 
-    students_count = StudentRecord.objects.count()
+    students_count = Student.objects.count()
     teachers_count = User.objects.filter(is_staff=True).count()
     sections_count = Section.objects.count()
     exams_count = Exam.objects.count()
@@ -55,7 +56,7 @@ def home(request):
         monthly_income_labels.append(month.strftime("%Y-%m") if month else "-")
         monthly_income_values.append(float(row.get("total") or 0))
 
-    latest_students = StudentRecord.objects.order_by("-created_at")[:8]
+    latest_students = Student.objects.order_by("-created_at")[:8]
     latest_announcements = Announcement.objects.order_by("-id")[:5]
     latest_exams = Exam.objects.order_by("-id")[:5]
 

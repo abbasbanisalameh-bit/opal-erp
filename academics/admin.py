@@ -3,7 +3,6 @@ from .models import (
     Grade,
     Section,
     Subject,
-    StudentRecord,
     Enrollment,
     Guardian,
     StudentGuardian,
@@ -34,13 +33,6 @@ class SectionAdmin(admin.ModelAdmin):
     search_fields = ("name", "grade__name", "branch__name")
     list_filter = ("branch", "grade", "is_active")
 
-
-@admin.register(StudentRecord)
-class StudentRecordAdmin(admin.ModelAdmin):
-    list_display = ("student_number", "full_name", "father_name", "gender", "phone", "school", "branch", "is_active")
-    search_fields = ("student_number", "full_name", "father_name", "phone")
-    list_filter = ("school", "branch", "gender", "is_active")
-    inlines = [StudentGuardianInline, StudentDocumentInline]
 
 
 @admin.register(Enrollment)

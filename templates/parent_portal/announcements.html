@@ -1,0 +1,8 @@
+{% extends "base/base.html" %}
+{% block title %}الإعلانات{% endblock %}
+{% block page_title %}إعلانات المدرسة{% endblock %}
+{% block page_subtitle %}آخر الإعلانات والتنبيهات المنشورة{% endblock %}
+{% block content %}
+{% include "parent_portal/_nav.html" %}
+<div class="row g-4">{% for a in records %}<div class="col-md-6"><div class="opal-card h-100"><h3>🔔 {{ a.title }}</h3><p>{{ a.message }}</p><small>{{ a.created_at|date:"Y-m-d H:i" }}</small></div></div>{% empty %}<div class="col-12"><div class="opal-card">لا توجد إعلانات.</div></div>{% endfor %}</div>
+{% endblock %}

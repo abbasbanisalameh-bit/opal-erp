@@ -11,7 +11,7 @@ class Attendance(models.Model):
     ]
 
     student = models.ForeignKey(
-        "academics.StudentRecord",
+        "students.Student",
         on_delete=models.CASCADE,
         related_name="attendance_records"
     )

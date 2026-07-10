@@ -1,0 +1,42 @@
+{% extends "base/base.html" %}
+{% block title %}إعدادات النظام | OPAL ERP{% endblock %}
+{% block page_title %}إعدادات النظام{% endblock %}
+{% block page_subtitle %}إدارة بيانات المدرسة العامة وشعارها{% endblock %}
+{% block content %}
+
+
+<div class="opal-card mb-4">
+    <h3 class="fw-bold mb-3">تكامل OpenEMIS</h3>
+    <p class="text-secondary">إعداد الربط مع OpenEMIS، اختبار الاتصال، ومتابعة سجل المزامنة.</p>
+    <a href="{% url 'openemis:settings' %}" class="btn btn-secondary">
+        <i class="bi bi-cloud-arrow-up-fill"></i> فتح إعدادات OpenEMIS
+    </a>
+</div>
+
+<div class="opal-card mb-4">
+    <h3 class="fw-bold mb-3">إعدادات التسجيل والمالية</h3>
+    <p class="text-secondary">إدارة رسوم الصفوف، جولات المواصلات، الخصومات، والدفعة الأولى من وحدة التسجيل.</p>
+    <a href="{% url 'admissions:registration_settings' %}" class="btn btn-primary">
+        <i class="bi bi-sliders"></i> فتح إعدادات التسجيل والرسوم
+    </a>
+</div>
+
+<div class="opal-card">
+    <h3 class="fw-bold mb-4">بيانات المدرسة</h3>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="row g-3">
+            {% for field in form %}
+            <div class="col-md-6">
+                <label class="form-label fw-bold">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}<div class="text-danger small mt-1">{{ field.errors }}</div>{% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        <div class="mt-4">
+            <button class="btn btn-primary">حفظ إعدادات النظام</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

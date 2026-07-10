@@ -1,0 +1,34 @@
+{% extends "base/base.html" %}
+{% block title %}السجل المالي | {{ student.full_name }}{% endblock %}
+{% block page_title %}السجل المالي للطالب{% endblock %}
+{% block page_subtitle %}كشف حساب تفصيلي بجميع الرسوم والدفعات والإيصالات{% endblock %}
+{% block content %}
+<div class="stats-grid">
+    <div class="stat-card"><span>إجمالي الرسوم</span><h2>{{ total_fees }}</h2></div>
+    <div class="stat-card"><span>إجمالي المدفوع</span><h2>{{ total_paid }}</h2></div>
+    <div class="stat-card"><span>المتبقي</span><h2>{{ remaining }}</h2></div>
+</div>
+
+<div class="opal-card mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div><h3 class="fw-bold mb-1">{{ student.full_name }}</h3><p class="text-secondary mb-0">{{ student.student_number }} | {{ student.grade }} | {{ student.section }}</p></div>
+        <a class="btn btn-primary" href="{% url 'admissions:fee_payment_create' %}?student={{ student.id }}">تسجيل دفعة</a>
+    </div>
+</div>
+
+<div class="opal-card mb-4">
+    <h4 class="fw-bold mb-3">الدفعات والإيصالات</h4>
+    <div class="table-responsive"><table class="opal-table"><thead><tr><th>رقم الإيصال</th><th>التاريخ والوقت</th><th>نوع الدفعة</th><th>المدفوع للطالب</th><th>المتبقي بعد الدفعة</th><th>المستلم</th><th></th></tr></thead><tbody>
+    {% for a in allocations %}
+    <tr><td>{{ a.fee_payment.receipt_number }}</td><td>{{ a.fee_payment.created_at|date:"Y-m-d H:i" }}</td><td>{{ a.fee_payment.get_scope_display }}</td><td>{{ a.amount }}</td><td>{{ a.remaining_after }}</td><td>{% if a.fee_payment.created_by.profile.full_name %}{{ a.fee_payment.created_by.profile.full_name }}{% elif a.fee_payment.created_by %}{{ a.fee_payment.created_by.username }}{% else %}-{% endif %}</td><td><a class="btn btn-sm btn-primary" href="{% url 'admissions:fee_payment_receipt' a.fee_payment.pk %}" target="_blank">طباعة</a></td></tr>
+    {% empty %}<tr><td colspan="7" class="text-center">لا توجد دفعات محفوظة.</td></tr>{% endfor %}
+    </tbody></table></div>
+</div>
+
+<div class="opal-card mb-4">
+    <h4 class="fw-bold mb-3">فواتير الطالب</h4>
+    <div class="table-responsive"><table class="opal-table"><thead><tr><th>البند</th><th>القيمة</th><th>المدفوع</th><th>المتبقي</th><th>الاستحقاق</th><th>الحالة</th></tr></thead><tbody>
+    {% for i in invoices %}<tr><td>{{ i.fee_category.name }}</td><td>{{ i.amount }}</td><td>{{ i.total_paid }}</td><td>{{ i.remaining }}</td><td>{{ i.due_date }}</td><td>{% if i.paid %}<span class="badge bg-success">مدفوعة</span>{% else %}<span class="badge bg-warning text-dark">عليها متبقٍ</span>{% endif %}</td></tr>{% empty %}<tr><td colspan="6" class="text-center">لا توجد فواتير.</td></tr>{% endfor %}
+    </tbody></table></div>
+</div>
+{% endblock %}
