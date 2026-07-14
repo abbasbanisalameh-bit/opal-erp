@@ -1,0 +1,7 @@
+{% extends "base/base.html" %}
+{% block title %}مركز التقارير{% endblock %}
+{% block page_title %}مركز التقارير الموحد{% endblock %}
+{% block page_subtitle %}تقارير مدرسية أكاديمية ومالية وتشغيلية جاهزة للتصدير{% endblock %}
+{% block content %}
+<div class="row g-4">{% for report in reports %}<div class="col-md-6 col-xl-4"><article class="opal-report-card"><div class="opal-report-icon"><i class="bi bi-{{ report.icon }}"></i></div><h4 class="mt-3 fw-bold">{{ report.title }}</h4><p class="text-secondary">{{ report.description }}</p><a class="btn primary-btn" href="{% url 'enterprise_ops:report_export_csv' report.code %}"><i class="bi bi-filetype-csv"></i> تصدير CSV</a></article></div>{% empty %}<div class="col-12"><div class="opal-empty-state"><i class="bi bi-bar-chart"></i>لا توجد تقارير متاحة.</div></div>{% endfor %}</div>
+{% endblock %}

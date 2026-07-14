@@ -1,0 +1,21 @@
+{% extends "base/base.html" %}
+{% block title %}إنشاء حساب المعلم{% endblock %}
+{% block content %}
+<div class="container py-4" style="max-width:720px">
+  <div class="opal-card p-4">
+    <h3 class="mb-2">إنشاء حساب للمعلم</h3>
+    <p class="text-muted">{{ teacher.full_name }} · {{ teacher.employee_number }}</p>
+    <form method="post">{% csrf_token %}
+      <div class="mb-3">
+        <label class="form-label">{{ form.username.label }}</label>
+        {{ form.username }}
+        <div class="form-text">{{ form.username.help_text }}</div>
+        {% for error in form.username.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+      </div>
+      <div class="alert alert-info">سيتم إنشاء كلمة مرور مؤقتة وعرضها مرة واحدة فقط. اطلب من المعلم تغييرها بعد أول دخول.</div>
+      <button class="btn btn-primary">إنشاء الحساب</button>
+      <a class="btn btn-outline-secondary" href="{% url 'teachers:teacher_detail' teacher.pk %}">إلغاء</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

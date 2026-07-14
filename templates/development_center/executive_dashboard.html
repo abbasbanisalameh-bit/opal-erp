@@ -1,0 +1,183 @@
+{% extends "base/base.html" %}
+
+{% block page_title %}لوحة المدير التنفيذي{% endblock %}
+{% block page_subtitle %}لوحة قيادة مشروع OPAL ERP v1.0{% endblock %}
+
+{% block content %}
+
+<div class="opal-card p-4 mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <div>
+    <h3>📊 OPAL ERP v1.0 لوحة المدير التنفيذي</h3>
+  <p class="text-muted mb-0">
+    من {{ project_start }} إلى {{ project_end }} —
+    مضى {{ elapsed_days }} يوم، والمتبقي {{ remaining_days }} يوم.
+  </p>
+  </div>
+  <a href="{% url 'development_center:run_workflow_engine' %}" class="btn btn-warning">
+    تشغيل محرك سير العمل
+  </a>
+</div>
+
+<div class="opal-card p-4 mb-4">
+  <div class="d-flex justify-content-between mb-2">
+    <strong>نسبة إنجاز المشروع الكلية</strong>
+    <strong>{{ project_progress }}%</strong>
+  </div>
+  <div class="progress" style="height:26px;">
+    <div class="progress-bar" style="width: {{ project_progress }}%;">
+      {{ project_progress }}%
+    </div>
+  </div>
+</div>
+
+<div class="stats-grid mb-4">
+  <div class="stat-card"><span>إجمالي المهام</span><h2>{{ total_tasks }}</h2></div>
+  <div class="stat-card"><span>لم يبدأ</span><h2>{{ todo_tasks }}</h2></div>
+  <div class="stat-card"><span>قيد التنفيذ</span><h2>{{ doing_tasks }}</h2></div>
+  <div class="stat-card"><span>قيد المراجعة</span><h2>{{ review_tasks }}</h2></div>
+  <div class="stat-card"><span>مكتملة</span><h2>{{ done_tasks }}</h2></div>
+  <div class="stat-card"><span>متأخرة</span><h2>{{ overdue_count }}</h2></div>
+  <div class="stat-card"><span>بدون مسؤول</span><h2>{{ unassigned_count }}</h2></div>
+  <div class="stat-card"><span>قريبة التسليم</span><h2>{{ due_soon_count }}</h2></div>
+  <div class="stat-card"><span>مستوى المخاطر</span><h2>{{ risk_count }}</h2></div>
+</div>
+
+<div class="opal-card p-4 mb-4">
+  <h4>🩺 صحة المشروع</h4>
+  <div class="alert alert-{{ project_health_level }} mb-0">
+    الحالة الحالية: <strong>{{ project_health }}</strong>
+  </div>
+</div>
+
+<div class="opal-card p-4 mb-4">
+  <h4>📊 الرسوم التحليلية</h4>
+
+  <div class="row g-4">
+    <div class="col-md-6">
+      <canvas id="taskStatusChart"></canvas>
+    </div>
+    <div class="col-md-6">
+      <canvas id="sprintProgressChart"></canvas>
+    </div>
+    <div class="col-md-6">
+      <canvas id="moduleProgressChart"></canvas>
+    </div>
+    <div class="col-md-6">
+      <canvas id="releaseProgressChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="opal-card p-4 mb-4">
+  <h4>🏃 تقدم السبرنتات</h4>
+  {% for item in sprint_data %}
+    <div class="mb-3">
+      <div class="d-flex justify-content-between">
+        <strong>{{ item.sprint.title }}</strong>
+        <span>{{ item.done }}/{{ item.total }} — {{ item.progress }}%</span>
+      </div>
+      <div class="progress" style="height:18px;">
+        <div class="progress-bar" style="width: {{ item.progress }}%;"></div>
+      </div>
+    </div>
+  {% endfor %}
+</div>
+
+<div class="opal-card p-4 mb-4">
+  <h4>📦 تقدم الوحدات</h4>
+  {% for item in module_data %}
+    <div class="mb-3">
+      <div class="d-flex justify-content-between">
+        <strong>{{ item.module.name }}</strong>
+        <span>{{ item.done }}/{{ item.total }} — {{ item.progress }}%</span>
+      </div>
+      <div class="progress" style="height:18px;">
+        <div class="progress-bar" style="width: {{ item.progress }}%;"></div>
+      </div>
+    </div>
+  {% empty %}
+    <p class="text-muted">لا توجد وحدات مرتبطة بمهام.</p>
+  {% endfor %}
+</div>
+
+<div class="opal-card p-4 mb-4">
+  <h4>🚀 تقدم الإصدارات</h4>
+  {% for item in release_data %}
+    <div class="mb-3">
+      <div class="d-flex justify-content-between">
+        <strong>{{ item.release.version }}</strong>
+        <span>{{ item.done }}/{{ item.total }} — {{ item.progress }}%</span>
+      </div>
+      <div class="progress" style="height:18px;">
+        <div class="progress-bar" style="width: {{ item.progress }}%;"></div>
+      </div>
+    </div>
+  {% endfor %}
+</div>
+
+<div class="opal-card p-4 mb-4">
+  <h4>⚠️ المهام المتأخرة</h4>
+  <ul>
+    {% for task in overdue_tasks %}
+      <li>
+        <a href="{% url 'development_center:task_detail' task.id %}">{{ task.title }}</a>
+        — {{ task.due_date }}
+      </li>
+    {% empty %}
+      <li class="text-muted">لا توجد مهام متأخرة.</li>
+    {% endfor %}
+  </ul>
+</div>
+
+<div class="opal-card p-4">
+  <h4>🔔 آخر الإشعارات</h4>
+  <ul>
+    {% for n in notifications %}
+      <li>{{ n.title }} — {{ n.created_at|date:"Y-m-d H:i" }}</li>
+    {% empty %}
+      <li class="text-muted">لا توجد إشعارات.</li>
+    {% endfor %}
+  </ul>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const taskStatusData = {{ task_status_chart|safe }};
+const sprintProgressData = {{ sprint_progress_chart|safe }};
+const moduleProgressData = {{ module_progress_chart|safe }};
+const releaseProgressData = {{ release_progress_chart|safe }};
+
+new Chart(document.getElementById("taskStatusChart"), {
+  type: "doughnut",
+  data: {
+    labels: taskStatusData.map(x => x.status),
+    datasets: [{ data: taskStatusData.map(x => x.count) }]
+  }
+});
+
+function barChart(canvasId, rows, title) {
+  new Chart(document.getElementById(canvasId), {
+    type: "bar",
+    data: {
+      labels: rows.map(x => x.name),
+      datasets: [{
+        label: title,
+        data: rows.map(x => x.progress)
+      }]
+    },
+    options: {
+      scales: {
+        y: { beginAtZero: true, max: 100 }
+      }
+    }
+  });
+}
+
+barChart("sprintProgressChart", sprintProgressData, "تقدم السبرنتات %");
+barChart("moduleProgressChart", moduleProgressData, "تقدم الوحدات %");
+barChart("releaseProgressChart", releaseProgressData, "تقدم الإصدارات %");
+</script>
+{% endblock %}

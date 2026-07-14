@@ -1,0 +1,7 @@
+{% extends "base/base.html" %}
+{% block title %}الحضور{% endblock %}
+{% block page_title %}حضور الأبناء{% endblock %}
+{% block page_subtitle %}آخر سجلات الحضور والغياب والتأخير{% endblock %}
+{% block content %}
+<div class="opal-card"><div class="table-responsive"><table class="opal-table"><thead><tr><th>الطالب</th><th>التاريخ</th><th>الحالة</th><th>ملاحظات</th></tr></thead><tbody>{% for r in records %}<tr><td>{{ r.student.full_name }}</td><td>{{ r.date }}</td><td>{{ r.get_status_display }}</td><td>{{ r.notes|default:"-" }}</td></tr>{% empty %}<tr><td colspan="4">لا توجد سجلات حضور.</td></tr>{% endfor %}</tbody></table></div></div>
+{% endblock %}

@@ -1,0 +1,7 @@
+{% extends "base/base.html" %}
+{% block title %}مصفوفة الصلاحيات{% endblock %}
+{% block page_title %}مصفوفة الصلاحيات المؤسسية{% endblock %}
+{% block page_subtitle %}تحديد ما يمكن لكل دور عرضه أو إنشاؤه أو اعتماده أو تصديره{% endblock %}
+{% block content %}
+<form method="post">{% csrf_token %}{{ formset.management_form }}<section class="opal-enterprise-section"><div class="section-head"><h3 class="section-title"><i class="bi bi-key me-2"></i>الأدوار والصلاحيات</h3><button class="btn primary-btn"><i class="bi bi-floppy"></i> حفظ الصلاحيات</button></div><div class="table-responsive"><table class="table opal-enterprise-table align-middle text-center"><thead><tr><th class="text-start">الدور</th><th class="text-start">الوحدة</th><th>عرض</th><th>إنشاء</th><th>تعديل</th><th>اعتماد</th><th>تصدير</th><th>فعال</th></tr></thead><tbody>{% for form in formset %}<tr>{{ form.id }}<td class="text-start fw-bold">{{ form.instance.role_code }}</td><td class="text-start">{{ form.instance.get_feature_display }}</td><td class="opal-permission-check">{{ form.can_view }}</td><td class="opal-permission-check">{{ form.can_create }}</td><td class="opal-permission-check">{{ form.can_update }}</td><td class="opal-permission-check">{{ form.can_approve }}</td><td class="opal-permission-check">{{ form.can_export }}</td><td class="opal-permission-check">{{ form.is_active }}</td></tr>{% endfor %}</tbody></table></div></section></form>
+{% endblock %}

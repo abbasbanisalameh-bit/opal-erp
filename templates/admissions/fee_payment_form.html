@@ -1,0 +1,99 @@
+{% extends "base/base.html" %}
+{% block title %}دفعة عن جميع الإخوة | OPAL ERP{% endblock %}
+{% block page_title %}دفعة عن جميع الإخوة{% endblock %}
+{% block page_subtitle %}توزيع تلقائي كامل على الأرصدة المستحقة فقط مع معاينة قبل الحفظ{% endblock %}
+
+{% block content %}
+<div class="opal-card mb-4">
+    <h3 class="fw-bold mb-3">البحث عن الطالب أو الأسرة</h3>
+    <form method="get" class="row g-3">
+        <div class="col-md-9">
+            <input name="q" value="{{ query }}" class="form-control" placeholder="الاسم، رقم الطالب، الرقم الوطني، هاتف ولي الأمر أو اسمه">
+        </div>
+        <div class="col-md-3"><button class="btn btn-primary w-100"><i class="bi bi-search"></i> بحث</button></div>
+    </form>
+</div>
+
+{% if search_results %}
+<div class="opal-card mb-4">
+    <h4 class="fw-bold mb-3">نتائج البحث</h4>
+    <div class="table-responsive"><table class="opal-table">
+        <thead><tr><th>رقم الطالب</th><th>الاسم</th><th>ولي الأمر</th><th>الهاتف</th><th>الصف</th><th></th></tr></thead>
+        <tbody>{% for student in search_results %}<tr>
+            <td>{{ student.student_number }}</td><td>{{ student.full_name }}</td><td>{{ student.guardian_name|default:"-" }}</td>
+            <td>{{ student.phone|default:"-" }}</td><td>{{ student.grade }}</td>
+            <td><a class="btn btn-sm btn-primary" href="?student={{ student.id }}">اختيار الأسرة</a></td>
+        </tr>{% endfor %}</tbody>
+    </table></div>
+</div>
+{% endif %}
+
+{% if selected_student %}
+<div class="row g-3 mb-4">
+    <div class="col-md-4"><div class="opal-card h-100"><div class="text-secondary">عدد الأبناء</div><div class="display-6 fw-bold">{{ siblings_data|length }}</div></div></div>
+    <div class="col-md-4"><div class="opal-card h-100"><div class="text-secondary">إجمالي المتبقي</div><div class="display-6 fw-bold text-danger">{{ family_total_remaining }}</div></div></div>
+    <div class="col-md-4"><div class="opal-card h-100"><div class="text-secondary">الطالب المرجعي</div><div class="h4 fw-bold">{{ selected_student.full_name }}</div></div></div>
+</div>
+
+<div class="opal-card mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+        <div><h3 class="fw-bold mb-1">حالة أبناء الأسرة</h3><p class="text-secondary mb-0">الأخضر مسدد، الأصفر جزئي، الأحمر غير مسدد.</p></div>
+        <a href="{% url 'admissions:fee_payment_create' %}" class="btn btn-secondary">بحث جديد</a>
+    </div>
+    <div class="table-responsive"><table class="opal-table" id="familyRows">
+        <thead><tr><th>الطالب</th><th>الصف</th><th>الرسوم</th><th>المدفوع</th><th>المتبقي</th><th>الحالة</th></tr></thead>
+        <tbody>{% for row in siblings_data %}<tr class="sibling-{{ row.status }}">
+            <td>{{ row.student.full_name }}</td><td>{{ row.student.grade }}</td><td>{{ row.total }}</td><td>{{ row.paid }}</td><td>{{ row.remaining }}</td>
+            <td>{% if row.status == "paid" %}<span class="badge bg-success">مسدد بالكامل</span>{% elif row.status == "unpaid" %}<span class="badge bg-danger">غير مسدد</span>{% else %}<span class="badge bg-warning text-dark">سداد جزئي</span>{% endif %}</td>
+        </tr>{% endfor %}</tbody>
+    </table></div>
+</div>
+
+<div class="opal-card mb-4">
+    <form method="post" id="paymentForm" class="row g-3">
+        {% csrf_token %}<input type="hidden" name="student" value="{{ selected_student.id }}">
+        <div class="col-md-4"><label class="form-label fw-bold">مبلغ الدفعة</label>
+            <input id="paymentAmount" name="amount" type="number" step="0.01" min="0.01" max="{{ family_total_remaining }}" class="form-control" required {% if not has_payable_siblings %}disabled{% endif %}>
+            <div class="form-text">الحد الأعلى {{ family_total_remaining }} د.أ. لا يقبل النظام أي زيادة.</div>
+        </div>
+        <div class="col-md-8"><label class="form-label fw-bold">ملاحظات</label><input name="notes" class="form-control" placeholder="اختياري"></div>
+        <div class="col-12"><div class="alert alert-info mb-0">التوزيع تلقائي فقط وبالتساوي بين الأبناء ذوي الرصيد، ثم يعاد توزيع حصة أي طالب يصل للصفر على البقية. الطالب المسدد لا يستقبل دفعة.</div></div>
+        <div class="col-12"><button type="button" id="previewBtn" class="btn btn-outline-primary" {% if not has_payable_siblings %}disabled{% endif %}><i class="bi bi-eye"></i> معاينة التوزيع</button>
+            <button id="submitBtn" class="btn btn-primary" disabled><i class="bi bi-cash-stack"></i> اعتماد الدفعة وطباعة الإيصال</button></div>
+    </form>
+</div>
+
+<div class="opal-card d-none" id="previewCard">
+    <div class="d-flex justify-content-between align-items-center mb-3"><h3 class="fw-bold mb-0">معاينة التوزيع التلقائي</h3><span id="previewValidity" class="badge"></span></div>
+    <div class="row g-3 mb-3">
+        <div class="col-md-4"><div class="p-3 rounded border">قبل الدفعة<br><strong id="dueBefore">0.00</strong></div></div>
+        <div class="col-md-4"><div class="p-3 rounded border">الموزع<br><strong id="allocatedTotal">0.00</strong></div></div>
+        <div class="col-md-4"><div class="p-3 rounded border">بعد الدفعة<br><strong id="dueAfter">0.00</strong></div></div>
+    </div>
+    <div class="table-responsive"><table class="opal-table"><thead><tr><th>الطالب</th><th>المتبقي قبل</th><th>حصة الطالب</th><th>المتبقي بعد</th><th>الحالة بعد</th></tr></thead><tbody id="previewBody"></tbody></table></div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% if selected_student %}<script>
+(() => {
+ const amount = document.getElementById('paymentAmount'), previewBtn = document.getElementById('previewBtn'), submitBtn = document.getElementById('submitBtn');
+ const card = document.getElementById('previewCard'), body = document.getElementById('previewBody'), validity = document.getElementById('previewValidity');
+ amount?.addEventListener('input', () => { submitBtn.disabled = true; card.classList.add('d-none'); });
+ previewBtn?.addEventListener('click', async () => {
+   const value = amount.value; if (!value || Number(value) <= 0) return;
+   previewBtn.disabled = true;
+   try {
+     const url = `{% url 'admissions:fee_payment_preview_api' %}?student={{ selected_student.id }}&amount=${encodeURIComponent(value)}`;
+     const response = await fetch(url, {headers:{'X-Requested-With':'XMLHttpRequest'}}); const data = await response.json();
+     if (!response.ok || !data.ok) throw new Error(data.message || 'تعذر إنشاء المعاينة');
+     document.getElementById('dueBefore').textContent = data.due_before; document.getElementById('allocatedTotal').textContent = data.allocated_total; document.getElementById('dueAfter').textContent = data.due_after;
+     body.innerHTML = data.rows.map(r => `<tr><td>${r.student_name}</td><td>${r.remaining_before}</td><td><strong>${r.allocated}</strong></td><td>${r.remaining_after}</td><td><span class="badge bg-${r.status_after==='paid'?'success':r.status_after==='unpaid'?'danger':'warning'}">${r.status_after_label}</span></td></tr>`).join('');
+     validity.className = `badge ${data.is_valid ? 'bg-success' : 'bg-danger'}`; validity.textContent = data.is_valid ? 'جاهز للاعتماد' : 'المبلغ غير صالح';
+     submitBtn.disabled = !data.is_valid; card.classList.remove('d-none'); card.scrollIntoView({behavior:'smooth'});
+   } catch (e) { alert(e.message); submitBtn.disabled = true; } finally { previewBtn.disabled = false; }
+ });
+})();
+</script>{% endif %}
+{% endblock %}

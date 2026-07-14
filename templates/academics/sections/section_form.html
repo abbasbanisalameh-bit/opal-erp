@@ -1,0 +1,31 @@
+{% extends "base/base.html" %}
+{% block title %}نموذج الشعبة | OPAL ERP{% endblock %}
+{% block page_title %}الشعب الدراسية{% endblock %}
+{% block page_subtitle %}إضافة أو تعديل شعبة دراسية{% endblock %}
+
+{% block content %}
+<div class="opal-card">
+    <h3 class="fw-bold mb-4">{{ title|default:"بيانات الشعبة الدراسية" }}</h3>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="row g-3">
+            {% for field in form %}
+            <div class="col-md-6">
+                <label class="form-label fw-bold">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}
+                    <div class="text-danger small mt-1">{{ field.errors }}</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="mt-4 d-flex gap-2">
+            <button type="submit" class="btn btn-primary">حفظ</button>
+            <a href="{% url 'academics:section_list' %}" class="btn btn-secondary">رجوع</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

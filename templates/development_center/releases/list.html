@@ -1,0 +1,58 @@
+{% extends "base/base.html" %}
+
+{% block page_title %}الإصدارات{% endblock %}
+{% block page_subtitle %}إدارة إصدارات OPAL ERP{% endblock %}
+
+{% block content %}
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <span>إجمالي الإصدارات</span>
+        <h2>{{ items|length }}</h2>
+    </div>
+</div>
+
+<div class="opal-card">
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3>الإصدارات</h3>
+
+    <a href="{% url 'development_center:release_create' %}" class="btn btn-primary">
+        إضافة إصدار
+    </a>
+</div>
+
+<table class="opal-table">
+<thead>
+<tr>
+<th>#</th>
+<th>الإصدار</th>
+<th>العنوان</th>
+<th>الحالة</th>
+<th>الإجراءات</th>
+</tr>
+</thead>
+
+<tbody>
+{% for item in items %}
+<tr>
+<td>{{ forloop.counter }}</td>
+<td>{{ item.version }}</td>
+<td>{{ item.title }}</td>
+<td>{% if item.released %}تم الإطلاق{% else %}مخطط{% endif %}</td>
+<td>
+<a class="btn btn-sm btn-warning" href="{% url 'development_center:release_update' item.id %}">تعديل</a>
+<a class="btn btn-sm btn-danger" href="{% url 'development_center:release_delete' item.id %}" onclick="return confirm('هل تريد الحذف؟');">حذف</a>
+</td>
+</tr>
+{% empty %}
+<tr>
+<td colspan="5">لا توجد إصدارات.</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+
+</div>
+
+{% endblock %}

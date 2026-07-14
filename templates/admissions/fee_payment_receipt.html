@@ -1,0 +1,66 @@
+{% extends "base/base.html" %}
+{% block title %}إيصال دفعة رسوم دراسية | OPAL ERP{% endblock %}
+{% block page_title %}إيصال دفعة رسوم دراسية{% endblock %}
+{% block page_subtitle %}إيصال رسمي محفوظ ويمكن إعادة طباعته في أي وقت{% endblock %}
+
+{% block content %}
+<div class="receipt-toolbar no-print">
+    <button onclick="window.print()" class="btn btn-primary"><i class="bi bi-printer-fill"></i> طباعة</button>
+    <a href="{% url 'admissions:fee_payment_create' %}" class="btn btn-secondary">تسجيل دفعة جديدة</a>
+</div>
+
+<div class="receipt-a4-landscape">
+    {% for copy_title in receipt_copies %}
+    <section class="official-receipt-copy">
+        <div class="copy-badge">{{ copy_title }}</div>
+        <div class="receipt-header">
+            {% if fee_payment.school.logo %}<img class="receipt-logo" src="{{ fee_payment.school.logo.url }}" alt="{{ fee_payment.school.name }}">{% endif %}
+            <h2>{{ fee_payment.school.name }}</h2>
+            <div class="school-en">OPAL ERP</div>
+        </div>
+        <div class="receipt-line"></div>
+        <h3 class="receipt-title">إيصال دفعة رسوم دراسية</h3>
+
+        <div class="receipt-info">
+            <div><strong>رقم الإيصال:</strong> {{ fee_payment.receipt_number }}</div>
+            <div><strong>التاريخ والوقت:</strong> {{ fee_payment.created_at|date:"Y-m-d H:i" }}</div>
+            <div><strong>ولي الأمر:</strong> {{ fee_payment.guardian_name|default:"-" }}</div>
+            <div><strong>الهاتف:</strong> {{ fee_payment.phone|default:"-" }}</div>
+            <div><strong>نوع الدفعة:</strong> {{ fee_payment.get_scope_display }}</div>
+            <div><strong>الطالب المرجعي:</strong> {{ fee_payment.main_student.full_name|default:"-" }}</div>
+        </div>
+
+        <div class="paid-box">{{ fee_payment.total_amount }} د.أ</div>
+        <div class="receipt-warning">قبل الدفعة: {{ fee_payment.total_due_before }} د.أ &nbsp; | &nbsp; بعد الدفعة: {{ fee_payment.total_due_after }} د.أ</div>
+
+        <table class="receipt-mini-table">
+            <thead><tr><th>الطالب</th><th>الرسوم</th><th>المدفوع سابقًا</th><th>هذه الدفعة</th><th>المتبقي بعد</th><th>الحالة</th></tr></thead>
+            <tbody>
+            {% for a in fee_payment.allocations.all %}
+            <tr>
+                <td>{{ a.student.full_name }}</td>
+                <td>{{ a.total_fees }}</td>
+                <td>{{ a.paid_before }}</td>
+                <td>{{ a.amount }}</td>
+                <td>{{ a.remaining_after }}</td>
+                <td>{% if a.remaining_after <= 0 %}<strong style="color:#059669">مسدد</strong>{% elif a.paid_before|add:a.amount > 0 %}<strong style="color:#d97706">جزئي</strong>{% else %}<strong style="color:#dc2626">غير مسدد</strong>{% endif %}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="receipt-signatures">
+            <div><div class="sig-line"></div><strong>توقيع ولي الأمر</strong></div>
+            <div><div class="sig-line"></div><strong>توقيع المستلم</strong><small>{{ receiver_name }}{% if receiver_title %} - {{ receiver_title }}{% endif %}</small></div>
+        </div>
+        <div class="receipt-footer">هذا الإيصال صادر ومحفوظ في نظام OPAL ERP ويمكن الرجوع إليه وإعادة طباعته في أي وقت.</div>
+    </section>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<style>
+.receipt-toolbar{display:flex;gap:10px;justify-content:flex-end;margin-bottom:16px}.receipt-a4-landscape{direction:rtl;display:grid;grid-template-columns:1fr 1fr;gap:14px;background:#f3f4f6;padding:14px;border-radius:18px}.official-receipt-copy{position:relative;background:#fff;color:#111827;border:2px solid #f2c94c;border-radius:14px;padding:14px;min-height:560px;box-shadow:0 8px 22px rgba(0,0,0,.12);font-family:Arial,sans-serif}.copy-badge{position:absolute;top:10px;right:10px;background:#fbbf24;color:#111827;border-radius:999px;padding:5px 12px;font-size:12px;font-weight:800}.receipt-header{text-align:center;padding-top:4px}.receipt-logo{width:62px;height:62px;object-fit:cover;border-radius:50%;border:2px solid #d4af37;background:#fff}.receipt-header h2{color:#111827!important;font-size:17px;margin:6px 0 2px}.school-en{color:#6b7280;font-size:11px}.receipt-line{height:2px;background:#d4af37;margin:10px 0}.receipt-title{color:#111827!important;text-align:center;font-size:17px;font-weight:800;margin-bottom:10px}.receipt-info{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;font-size:12px}.paid-box{border:2px dashed #14b8a6;border-radius:12px;text-align:center;color:#059669;font-size:25px;font-weight:900;padding:9px;margin:12px 0 8px}.receipt-warning{background:#fef3c7;color:#111827;border-radius:10px;text-align:center;padding:7px;font-weight:800;margin-bottom:8px}.receipt-mini-table{width:100%;border-collapse:collapse;color:#111827;font-size:11px}.receipt-mini-table th,.receipt-mini-table td{border:1px solid #d1d5db;padding:5px;text-align:center}.receipt-mini-table th{background:#f3f4f6}.receipt-signatures{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:18px;text-align:center;color:#111827}.sig-line{border-top:1px dashed #111827;height:16px}.receipt-signatures small{display:block;margin-top:3px;color:#374151}.receipt-footer{margin-top:12px;border-top:1px solid #e5e7eb;padding-top:6px;text-align:center;color:#9ca3af;font-size:10px}@media print{@page{size:A4 landscape;margin:8mm}.no-print,.opal-sidebar,.topbar,.opal-copyright-footer,.page-header{display:none!important}.main-content{margin:0!important;padding:0!important;width:100%!important}.receipt-a4-landscape{padding:0!important;background:#fff!important;gap:8mm!important;border-radius:0!important}.official-receipt-copy{box-shadow:none!important;min-height:178mm!important;page-break-inside:avoid}}
+</style>
+{% endblock %}

@@ -1,0 +1,32 @@
+<aside class="opal-sidebar">
+  <div class="opal-brand opal-school-brand-fixed">
+    <div class="opal-logo opal-school-logo-fixed">{% if opal_school and opal_school.logo %}<img src="{{ opal_school.logo.url }}" alt="{{ opal_school.name }}" class="opal-school-logo-img-fixed">{% else %}<i class="bi bi-mortarboard-fill"></i>{% endif %}</div>
+    <div class="opal-school-brand-text-fixed"><h3>{{ opal_school.name|default:"OPAL" }}</h3><span>School ERP</span></div>
+  </div>
+  <nav class="opal-menu">
+  {% if request.user.is_staff or request.user.is_superuser %}
+    <div class="opal-menu-section">الرئيسية</div>
+    <a href="{% url 'dashboard:home' %}" class="{% if request.resolver_match.namespace == 'dashboard' %}active{% endif %}"><i class="bi bi-grid-1x2-fill"></i><span>لوحة التحكم</span></a>
+
+    <div class="opal-menu-section">وحدات المدرسة</div>
+    <a href="{% url 'students:student_list' %}" class="{% if request.resolver_match.namespace == 'students' or request.resolver_match.namespace == 'parent_portal' or request.resolver_match.namespace == 'documents' %}active{% elif request.resolver_match.namespace == 'admissions' and request.path|slice:':21' != '/admissions/payments/' %}active{% endif %}"><i class="bi bi-people-fill"></i><span>إدارة الطلاب</span></a>
+    <a href="{% url 'academics:dashboard' %}" class="{% if request.resolver_match.namespace == 'academics' or request.resolver_match.namespace == 'curriculum' or request.resolver_match.namespace == 'attendance_v2' or request.resolver_match.namespace == 'exams' or request.resolver_match.namespace == 'teachers' or request.resolver_match.namespace == 'timetable' %}active{% endif %}"><i class="bi bi-mortarboard-fill"></i><span>الشؤون الأكاديمية</span></a>
+    <a href="{% url 'accounting:dashboard' %}" class="{% if request.resolver_match.namespace == 'accounting' or request.path|slice:':21' == '/admissions/payments/' %}active{% endif %}"><i class="bi bi-cash-stack"></i><span>الرسوم المدرسية</span></a>
+
+    <div class="opal-menu-section">التشغيل والإدارة</div>
+    <a href="{% url 'enterprise_ops:dashboard' %}" class="{% if request.resolver_match.namespace == 'enterprise_ops' %}active{% endif %}"><i class="bi bi-building-gear"></i><span>التشغيل المؤسسي</span></a>
+    {% if opal_openemis_enabled %}
+    <a href="{% url 'openemis:settings' %}" class="{% if request.resolver_match.namespace == 'openemis' %}active{% endif %}"><i class="bi bi-cloud-arrow-up-fill"></i><span>تكامل OpenEMIS</span></a>
+    {% endif %}
+    {% if opal_development_center_enabled %}
+    <a href="{% url 'development_center:dashboard' %}" class="{% if request.resolver_match.namespace == 'development_center' %}active{% endif %}"><i class="bi bi-tools"></i><span>مركز التطوير</span></a>
+    {% endif %}
+    <a href="{% url 'core:system_settings' %}" class="{% if request.resolver_match.namespace == 'core' %}active{% endif %}"><i class="bi bi-gear-fill"></i><span>إعدادات النظام</span></a>
+  {% elif request.user.teacher_profile %}
+    <a href="{% url 'teachers:portal_dashboard' %}" class="{% if request.resolver_match.namespace == 'teachers' or request.resolver_match.namespace == 'timetable' %}active{% endif %}"><i class="bi bi-house-door-fill"></i><span>بوابة المعلم</span></a>
+  {% else %}
+    <a href="{% url 'parent_portal:dashboard' %}" class="{% if request.resolver_match.namespace == 'parent_portal' %}active{% endif %}"><i class="bi bi-house-heart-fill"></i><span>بوابة ولي الأمر</span></a>
+  {% endif %}
+  </nav>
+  <form method="post" action="{% url 'accounts:logout' %}" class="opal-logout-form">{% csrf_token %}<button class="btn btn-outline-light w-100"><i class="bi bi-box-arrow-right"></i> تسجيل الخروج</button></form>
+</aside>

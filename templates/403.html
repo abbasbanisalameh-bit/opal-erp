@@ -1,0 +1,11 @@
+{% extends 'base/base.html' %}
+{% block title %}غير مصرح | OPAL ERP{% endblock %}
+{% block page_title %}غير مصرح بالدخول{% endblock %}
+{% block page_subtitle %}لا تملك الصلاحية للوصول إلى هذه الصفحة{% endblock %}
+{% block content %}
+<div class="opal-card text-center py-5">
+  <div class="display-4 fw-bold mb-3">403</div>
+  <p class="text-secondary mb-4">تحقق من حسابك أو تواصل مع مدير النظام للحصول على الصلاحية المناسبة.</p>
+  <a href="{% url 'dashboard:home' %}" class="btn primary-btn">العودة للرئيسية</a>
+</div>
+{% endblock %}

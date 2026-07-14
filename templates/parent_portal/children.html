@@ -1,0 +1,17 @@
+{% extends "base/base.html" %}
+{% block title %}الأبناء{% endblock %}
+{% block page_title %}الأبناء المرتبطون بالحساب{% endblock %}
+{% block page_subtitle %}يعرض ولي الأمر أبناءه فقط{% endblock %}
+{% block content %}
+<div class="stats-grid">
+{% for card in cards %}
+  <div class="stat-card border border-{{ card.status_class }}">
+    <span>🎓 {{ card.student.student_number }}</span>
+    <h2>{{ card.student.full_name }}</h2>
+    <p>الصف: {{ card.student.grade }} / {{ card.student.section|default:"-" }}</p>
+    <p>الهاتف: {{ card.student.phone|default:"-" }}</p>
+    <a class="btn btn-sm btn-primary" href="{% url 'parent_portal:student_detail' card.student.id %}">عرض التفاصيل</a>
+  </div>
+{% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,298 @@
+{% extends "base/base.html" %}
+
+{% block page_title %}لوحة دورة التطوير{% endblock %}
+{% block page_subtitle %}لوحة كانبان الخاصة بالسبرنت{% endblock %}
+
+{% block content %}
+
+<div class="opal-card p-4 mb-4 d-flex justify-content-between align-items-center">
+    <div>
+        <h3>🏃 {{ sprint.title }}</h3>
+        <p class="text-muted mb-0">{{ sprint.goal }}</p>
+    </div>
+
+    <a class="btn btn-outline-primary"
+       href="{% url 'development_center:sprint_detail' sprint.id %}">
+        لوحة دورة التطوير
+    </a>
+</div>
+
+<div class="opal-card p-3 mb-4">
+    <div class="d-flex justify-content-between mb-2">
+        <strong>تقدم السبرنت</strong>
+        <span id="sprint-progress-text">0%</span>
+    </div>
+    <div class="progress mb-3">
+        <div id="sprint-progress-bar" class="progress-bar" style="width:0%"></div>
+    </div>
+
+    <div class="row text-center mb-3">
+        <div class="col">📦 الإجمالي: <strong id="count-total">0</strong></div>
+        <div class="col">⏰ المتأخرة: <strong id="count-overdue">0</strong></div>
+        <div class="col">📈 الإنجاز: <strong id="metric-progress">0%</strong></div>
+    </div>
+
+    <div class="row text-center">
+        <div class="col">📋 Todo: <strong id="count-todo">0</strong></div>
+        <div class="col">🔥 Doing: <strong id="count-doing">0</strong></div>
+        <div class="col">🔍 Review: <strong id="count-review">0</strong></div>
+        <div class="col">✅ Done: <strong id="count-done">0</strong></div>
+    </div>
+</div>
+
+<div class="row">
+
+<div class="col-md-3">
+<div class="opal-card p-3 opal-kanban-column" data-status="todo">
+<h5>📋 لم يبدأ</h5>
+{% for t in todo %}
+<div class="card mb-2 opal-task-card" data-task-id="{{ t.id }}" data-due-date="{{ t.due_date|date:'Y-m-d' }}">
+<div class="card-body">
+<div class="d-flex justify-content-between align-items-start mb-2">
+    <strong>{{ t.title }}</strong>
+    <span class="badge bg-light text-dark">{{ t.get_status_display }}</span>
+</div>
+
+
+<span class="badge {% if t.priority == 1 %}bg-success{% elif t.priority == 2 %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+{% if t.priority == 1 %}
+منخفضة
+{% elif t.priority == 2 %}
+متوسطة
+{% else %}
+عالية
+{% endif %}
+</span>
+
+<br>
+<small>👤 {{ t.user|default:"غير محدد" }}</small><br>
+{% if t.due_date %}
+<small class="{% if t.due_date < today and t.status != 'done' %}text-danger fw-bold{% endif %}">
+📅 {{ t.due_date }}
+</small>
+{% else %}
+<small class="text-muted">📅 بدون تاريخ</small>
+{% endif %}<br>
+
+<small>📊 {{ t.progress }}%</small>
+
+<div class="progress mt-2" style="height:6px;">
+    <div class="progress-bar
+        {% if t.progress < 40 %}
+            bg-danger
+        {% elif t.progress < 80 %}
+            bg-warning
+        {% else %}
+            bg-success
+        {% endif %}"
+        role="progressbar"
+        style="width: {{ t.progress }}%;">
+    </div>
+</div>
+
+</div>
+</div>
+{% empty %}
+<p class="text-muted">لا توجد مهام</p>
+{% endfor %}
+</div>
+</div>
+
+<div class="col-md-3">
+<div class="opal-card p-3 opal-kanban-column" data-status="doing">
+<h5>⚙️ قيد التنفيذ</h5>
+{% for t in doing %}
+<div class="card mb-2 opal-task-card" data-task-id="{{ t.id }}" data-due-date="{{ t.due_date|date:'Y-m-d' }}">
+<div class="card-body">
+<strong>{{ t.title }}</strong><br>
+
+<span class="badge {% if t.priority == 1 %}bg-success{% elif t.priority == 2 %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+{% if t.priority == 1 %}
+منخفضة
+{% elif t.priority == 2 %}
+متوسطة
+{% else %}
+عالية
+{% endif %}
+</span>
+
+<br>
+<small class="d-block mb-1">التقدم: {{ t.progress }}%</small>
+
+{% if t.due_date %}
+<small class="d-block text-muted">📅 {{ t.due_date }}</small>
+{% endif %}
+
+{% if t.module %}
+<small class="d-block text-info">📦 {{ t.module.name }}</small>
+{% endif %}
+
+{% if t.release %}
+<small class="d-block text-warning">🚀 {{ t.release.version }}</small>
+{% endif %}
+
+</div>
+</div>
+{% empty %}
+<p class="text-muted">لا توجد مهام</p>
+{% endfor %}
+</div>
+</div>
+
+<div class="col-md-3">
+<div class="opal-card p-3 opal-kanban-column" data-status="review">
+<h5>🔍 قيد المراجعة</h5>
+{% for t in review %}
+<div class="card mb-2 opal-task-card" data-task-id="{{ t.id }}" data-due-date="{{ t.due_date|date:'Y-m-d' }}">
+<div class="card-body">
+<strong>{{ t.title }}</strong><br>
+
+<span class="badge {% if t.priority == 1 %}bg-success{% elif t.priority == 2 %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+{% if t.priority == 1 %}
+منخفضة
+{% elif t.priority == 2 %}
+متوسطة
+{% else %}
+عالية
+{% endif %}
+</span>
+
+<br>
+<small>{{ t.progress }}%</small>
+</div>
+</div>
+{% empty %}
+<p class="text-muted">لا توجد مهام</p>
+{% endfor %}
+</div>
+</div>
+
+<div class="col-md-3">
+<div class="opal-card p-3 opal-kanban-column" data-status="done">
+<h5>✅ مكتملة</h5>
+{% for t in done %}
+<div class="card mb-2 opal-task-card" data-task-id="{{ t.id }}" data-due-date="{{ t.due_date|date:'Y-m-d' }}">
+<div class="card-body">
+<strong>{{ t.title }}</strong><br>
+
+<span class="badge {% if t.priority == 1 %}bg-success{% elif t.priority == 2 %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+{% if t.priority == 1 %}
+منخفضة
+{% elif t.priority == 2 %}
+متوسطة
+{% else %}
+عالية
+{% endif %}
+</span>
+
+<br>
+<small>{{ t.progress }}%</small>
+</div>
+</div>
+{% empty %}
+<p class="text-muted">لا توجد مهام</p>
+{% endfor %}
+</div>
+</div>
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    function updateBoardStats() {
+        const todo = document.querySelectorAll('[data-status="todo"] .opal-task-card').length;
+        const doing = document.querySelectorAll('[data-status="doing"] .opal-task-card').length;
+        const review = document.querySelectorAll('[data-status="review"] .opal-task-card').length;
+        const done = document.querySelectorAll('[data-status="done"] .opal-task-card').length;
+
+        const cards = document.querySelectorAll(".opal-task-card");
+        let totalProgress = 0;
+
+        cards.forEach(card => {
+            const m = card.innerText.match(/(\d+)%/);
+            if (m) {
+                totalProgress += parseInt(m[1]);
+            }
+        });
+
+        const total = cards.length;
+        const today = new Date().toISOString().slice(0, 10);
+        let overdue = 0;
+
+        cards.forEach(card => {
+            const dueDate = card.dataset.dueDate;
+            const isDone = card.closest('[data-status="done"]') !== null;
+            if (dueDate && dueDate < today && !isDone) {
+                overdue += 1;
+            }
+        });
+
+        const percent = total ? Math.round(totalProgress / total) : 0;
+
+        document.getElementById("count-total").textContent = total;
+        document.getElementById("count-overdue").textContent = overdue;
+        document.getElementById("metric-progress").textContent = percent + "%";
+
+        document.getElementById("count-todo").textContent = todo;
+        document.getElementById("count-doing").textContent = doing;
+        document.getElementById("count-review").textContent = review;
+        document.getElementById("count-done").textContent = done;
+
+        document.getElementById("sprint-progress-text").textContent = percent + "%";
+        document.getElementById("sprint-progress-bar").style.width = percent + "%";
+    }
+
+    const cards = document.querySelectorAll(".opal-task-card");
+    const columns = document.querySelectorAll(".opal-kanban-column");
+
+    cards.forEach(card => {
+        card.setAttribute("draggable", "true");
+
+        card.addEventListener("dragstart", function (e) {
+            e.dataTransfer.setData("taskId", card.dataset.taskId);
+        });
+    });
+
+    columns.forEach(column => {
+        column.addEventListener("dragover", function (e) {
+            e.preventDefault();
+        });
+
+        column.addEventListener("drop", function (e) {
+            e.preventDefault();
+
+            const taskId = e.dataTransfer.getData("taskId");
+            const status = column.dataset.status;
+            const card = document.querySelector(`[data-task-id="${taskId}"]`);
+            const oldParent = card ? card.parentElement : null;
+
+            fetch(`/development-center/tasks/${taskId}/status/`, {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": "{{ csrf_token }}",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                body: `status=${status}`
+            }).then(response => {
+                if (response.ok) {
+                    const card = document.querySelector(`[data-task-id="${taskId}"]`);
+                    if (card) {
+                        column.appendChild(card);
+                        updateBoardStats();
+                    }
+                } else {
+                    if (card && oldParent) oldParent.appendChild(card);
+                    alert("تعذر تحديث حالة المهمة");
+                }
+            });
+        });
+    });
+
+    updateBoardStats();
+});
+</script>
+{% endblock %}

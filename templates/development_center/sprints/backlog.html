@@ -1,0 +1,56 @@
+{% extends "base/base.html" %}
+{% load dev_labels %}
+
+{% block page_title %}قائمة الأعمال{% endblock %}
+{% block page_subtitle %}المهام غير المرتبطة بأي دورة تطوير{% endblock %}
+
+{% block content %}
+
+<div class="opal-card p-4 mb-4">
+  <h3>📦 قائمة الأعمال</h3>
+  <p class="text-muted mb-0">كل المهام التي لم يتم إدخالها بعد في أي دورة تطوير.</p>
+</div>
+
+<div class="opal-card p-4">
+  <div class="table-responsive">
+    <table class="opal-table">
+      <thead>
+        <tr>
+          <th>المهمة</th>
+          <th>الوحدة</th>
+          <th>الإصدار</th>
+          <th>الحالة</th>
+          <th>الإجراء</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for task in tasks %}
+        <tr>
+          <td>
+            <a href="{% url 'development_center:task_detail' task.id %}">
+              {{ task.title }}
+            </a>
+          </td>
+          <td>{{ task.module|default:"-" }}</td>
+          <td>{{ task.release|default:"-" }}</td>
+          <td>{{ task.status|ar_status }}</td>
+          <td>
+            <a class="btn btn-sm btn-warning"
+               href="{% url 'development_center:task_update' task.id %}">
+              ربط بـ دورة تطوير
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="text-center text-muted">
+            لا توجد مهام في قائمة الأعمال.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

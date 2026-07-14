@@ -1,0 +1,39 @@
+{% load static %}
+<div class="topbar">
+    <div class="top-left">
+        <input class="search-box" placeholder="ابحث هنا...">
+    </div>
+
+    <div class="top-right">
+        <a class="icon-btn position-relative text-decoration-none" href="{% url 'enterprise_ops:notification_list' %}" aria-label="الإشعارات">🔔
+            {% if opal_unread_notifications_count %}<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">{{ opal_unread_notifications_count }}</span>{% endif %}
+        </a>
+
+        <div class="profile">
+            <div class="opal-user-photo-frame">
+                {% if request.user.is_authenticated and request.user.profile.photo %}
+                    <img src="{{ request.user.profile.photo.url }}" alt="{{ request.user.profile.full_name|default:request.user.username }}">
+                {% else %}
+                    <i class="bi bi-person-fill"></i>
+                {% endif %}
+            </div>
+
+            <div>
+                <strong>
+                    {% if request.user.is_authenticated and request.user.profile.full_name %}
+                        {{ request.user.profile.full_name }}
+                    {% else %}
+                        {{ request.user.username }}
+                    {% endif %}
+                </strong><br>
+                <small>
+                    {% if request.user.is_authenticated and request.user.profile.role %}
+                        {{ request.user.profile.role.name }}
+                    {% else %}
+                        OPAL ERP
+                    {% endif %}
+                </small>
+            </div>
+        </div>
+    </div>
+</div>

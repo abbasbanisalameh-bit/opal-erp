@@ -1,0 +1,53 @@
+# قاعدة البيانات والبيانات
+db.sqlite3
+*.sqlite
+*.sqlite3
+*.db
+
+# ملفات المستخدمين
+media/
+uploads/
+
+# البيئة الافتراضية
+venv/
+.venv/
+env/
+
+# الأسرار
+.env
+.env.*
+!.env.example
+
+# الملفات المجمعة
+staticfiles/
+collected_static/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# السجلات والملفات المؤقتة
+*.log
+logs/
+tmp/
+temp/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+
+# النسخ والملفات المضغوطة
+backups/
+opal_backups/
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.bak
+
+# ملفات المحررات
+.idea/
+.vscode/
+.DS_Store

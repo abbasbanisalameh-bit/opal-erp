@@ -1,0 +1,61 @@
+{% extends "base/base.html" %}
+{% block content %}
+
+
+<style>
+.dev-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.dev-header h1{margin:0;font-size:28px}
+.dev-header p{color:#64748b;margin-top:6px}
+.dev-btn{background:#0f766e;color:white;padding:10px 16px;border-radius:12px;text-decoration:none;font-weight:bold}
+.dev-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+.dev-card{background:white;border-radius:18px;padding:16px;box-shadow:0 8px 20px rgba(0,0,0,.08);border:1px solid #e5e7eb}
+.dev-card h3{margin:0 0 8px;font-size:18px}
+.dev-meta{color:#64748b;font-size:13px;margin-bottom:12px}
+.dev-status{font-size:13px;font-weight:bold;margin-bottom:10px}
+.dev-progress{height:10px;background:#e5e7eb;border-radius:999px;overflow:hidden;margin:8px 0}
+.dev-progress span{display:block;height:100%;background:#0f766e}
+.dev-actions{display:flex;gap:8px;margin-top:14px}
+.dev-actions a{flex:1;text-align:center;padding:8px;border-radius:10px;text-decoration:none;font-size:13px}
+.edit{background:#2563eb;color:white}
+.delete{background:#ef4444;color:white}
+</style>
+
+<div class="dev-header">
+  <div>
+    <h1>وحدات تطوير OPAL ERP</h1>
+    <p>خارطة الطريق والوحدات الأساسية والمستقبلية للنظام</p>
+  </div>
+  <a href="{% url 'development_center:module_create' %}" class="dev-btn">+ إضافة وحدة</a>
+</div>
+
+<div class="dev-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;">
+{% for module in modules %}
+  <div class="dev-card" style="background:#13253f;color:white;border-radius:16px;padding:16px;box-shadow:0 8px 20px rgba(0,0,0,.18);">
+    <h3>{{ module.name }}</h3>
+    <div class="dev-meta" style="color:#cbd5e1;font-size:13px;margin:8px 0;">
+                {{ module.category|default:"بدون تصنيف" }}<br>
+                <strong>الإصدار:</strong>
+                {% if module.release_versions %}
+                    {{ module.release_versions|join:", " }}
+                {% else %}
+                    غير محدد
+                {% endif %}
+            </div>
+            <div class="dev-status">{{ module.get_status_display }}</div>
+
+    <div>الإنجاز: <strong>{{ module.progress }}%</strong></div>
+    <div class="dev-progress" style="height:10px;background:#334155;border-radius:999px;overflow:hidden;margin:8px 0;">
+      <span style="display:block;height:100%;width:{{ module.progress }}%;background:#22d3ee;"></span>
+    </div>
+
+    <div class="dev-actions">
+      <a class="edit" href="{% url 'development_center:module_update' module.id %}">تعديل</a>
+      <a class="delete" href="{% url 'development_center:module_delete' module.id %}" onclick="return confirm('هل أنت متأكد؟')">حذف</a>
+    </div>
+  </div>
+{% empty %}
+  <div class="dev-card" style="background:#13253f;color:white;border-radius:16px;padding:16px;box-shadow:0 8px 20px rgba(0,0,0,.18);">لا توجد وحدات.</div>
+{% endfor %}
+</div>
+
+{% endblock %}

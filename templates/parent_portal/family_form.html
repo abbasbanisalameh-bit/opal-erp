@@ -1,0 +1,16 @@
+{% extends "base/base.html" %}
+{% block title %}تعديل ولي الأمر | OPAL ERP{% endblock %}
+{% block page_title %}المصدر الرسمي لبيانات ولي الأمر{% endblock %}
+{% block page_subtitle %}يُحدّث حساب الأسرة ونسخ الاتصال لدى الأبناء من مكان واحد{% endblock %}
+{% block content %}
+<div class="opal-card">
+  <div class="alert alert-info">هذه هي الشاشة الوحيدة لتعديل هوية ولي الأمر. ربط أسرة جديدة يتم تلقائيًا عند التسجيل الرسمي للطالب.</div>
+  <form method="post">{% csrf_token %}
+    {{ form.non_field_errors }}
+    <div class="row g-3">
+      {% for field in form %}<div class="col-md-6"><label class="form-label fw-bold">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>{% endfor %}
+    </div>
+    <div class="mt-4 d-flex gap-2"><button class="btn btn-primary">حفظ ومزامنة</button><a class="btn btn-secondary" href="{% url 'parent_portal:family_detail' family.pk %}">رجوع</a></div>
+  </form>
+</div>
+{% endblock %}

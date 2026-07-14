@@ -1,0 +1,58 @@
+{% extends "base/base.html" %}
+{% block title %}الصفوف الدراسية | OPAL ERP{% endblock %}
+{% block page_title %}الصفوف الدراسية{% endblock %}
+{% block page_subtitle %}إدارة الصفوف الدراسية ضمن نظام OPAL ERP{% endblock %}
+
+{% block content %}
+<div class="opal-card mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+            <h3 class="fw-bold mb-1">الصفوف الدراسية</h3>
+            <p class="text-secondary mb-0">قائمة الصفوف المعتمدة في المدرسة</p>
+        </div>
+        <a href="{% url 'academics:academic_structure' %}" class="btn btn-primary">إدارة الهيكل الدراسي</a>
+    </div>
+</div>
+
+<div class="opal-card">
+    <div class="table-responsive">
+        <table class="opal-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>اسم الصف</th>
+                    <th>الترتيب</th>
+                    <th>النوع</th>
+                    <th>الحالة</th>
+                    <th>الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for grade in grades %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td class="fw-bold">{{ grade.name }}</td>
+                    <td>{{ grade.order|default:"-" }}</td>
+                    <td>{% if grade.is_kindergarten %}روضة{% else %}مدرسة{% endif %}</td>
+                    <td>
+                        {% if grade.is_active %}
+                            <span class="badge bg-success">فعال</span>
+                        {% else %}
+                            <span class="badge bg-secondary">غير فعال</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{% url 'academics:grade_update' grade.id %}" class="btn btn-sm btn-warning">تعديل</a>
+                        <form method="post" action="{% url 'academics:grade_delete' grade.id %}" class="d-inline">{% csrf_token %}<button class="btn btn-sm btn-danger" onclick="return confirm('سيتم حذف الصف فقط إن لم يكن مرتبطًا بأي بيانات. متابعة؟')">حذف</button></form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center text-secondary">لا توجد صفوف دراسية</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

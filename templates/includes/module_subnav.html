@@ -1,0 +1,116 @@
+{% with ns=request.resolver_match.namespace view=request.resolver_match.url_name %}
+
+{% if ns == "students" or ns == "documents" or ns == "parent_portal" or ns == "admissions" and "/payments/" not in request.path and view != "student_financial_record" %}
+<nav class="opal-module-subnav" aria-label="روابط إدارة الطلاب">
+  <div class="opal-module-subnav-head">
+    <span><i class="bi bi-people-fill"></i> إدارة الطلاب</span>
+  </div>
+  <div class="opal-module-subnav-scroll">
+    <a href="{% url 'students:student_list' %}" class="opal-subnav-btn {% if ns == 'students' %}active{% endif %}"><i class="bi bi-people"></i><span>الطلاب</span></a>
+    <a href="{% url 'admissions:direct_registration' %}" class="opal-subnav-btn {% if ns == 'admissions' and view == 'direct_registration' %}active{% endif %}"><i class="bi bi-person-plus"></i><span>تسجيل طالب</span></a>
+    <a href="{% url 'admissions:admission_list' %}" class="opal-subnav-btn {% if ns == 'admissions' and view != 'direct_registration' and view != 'registration_settings' %}active{% endif %}"><i class="bi bi-card-checklist"></i><span>سجل التسجيل</span></a>
+    <a href="{% url 'parent_portal:family_management' %}" class="opal-subnav-btn {% if ns == 'parent_portal' %}active{% endif %}"><i class="bi bi-person-heart"></i><span>الأسر وأولياء الأمور</span></a>
+    <a href="{% url 'documents:document_list' %}" class="opal-subnav-btn {% if ns == 'documents' %}active{% endif %}"><i class="bi bi-file-earmark-text"></i><span>وثائق الطلاب</span></a>
+    <a href="{% url 'admissions:registration_settings' %}" class="opal-subnav-btn {% if ns == 'admissions' and view == 'registration_settings' %}active{% endif %}"><i class="bi bi-sliders"></i><span>إعدادات التسجيل</span></a>
+  </div>
+</nav>
+
+{% elif ns == "academics" or ns == "curriculum" or ns == "attendance_v2" or ns == "exams" or ns == "teachers" or ns == "timetable" %}
+<nav class="opal-module-subnav" aria-label="روابط الشؤون الأكاديمية">
+  <div class="opal-module-subnav-head">
+    <span><i class="bi bi-mortarboard-fill"></i> الشؤون الأكاديمية</span>
+  </div>
+  <div class="opal-module-subnav-scroll">
+    <a href="{% url 'academics:dashboard' %}" class="opal-subnav-btn {% if ns == 'academics' and view == 'dashboard' %}active{% endif %}"><i class="bi bi-house-door"></i><span>الرئيسية</span></a>
+    <a href="{% url 'academics:academic_structure' %}" class="opal-subnav-btn {% if ns == 'academics' and view == 'academic_structure' %}active{% endif %}"><i class="bi bi-diagram-3-fill"></i><span>الهيكل الدراسي</span></a>
+    <a href="{% url 'academics:grade_list' %}" class="opal-subnav-btn {% if ns == 'academics' and view == 'grade_list' or view == 'grade_create' or view == 'grade_update' or view == 'grade_delete' %}active{% endif %}"><i class="bi bi-diagram-3"></i><span>الصفوف</span></a>
+    <a href="{% url 'academics:section_list' %}" class="opal-subnav-btn {% if ns == 'academics' and view == 'section_list' or view == 'section_create' or view == 'section_update' or view == 'section_delete' %}active{% endif %}"><i class="bi bi-collection"></i><span>الشعب</span></a>
+    <a href="{% url 'academics:academic_year_list' %}" class="opal-subnav-btn {% if ns == 'academics' and view == 'academic_year_list' or view == 'academic_year_create' or view == 'academic_year_update' %}active{% endif %}"><i class="bi bi-calendar-range"></i><span>الأعوام</span></a>
+    <a href="{% url 'academics:semester_list' %}" class="opal-subnav-btn {% if ns == 'academics' and view == 'semester_list' or view == 'semester_create' or view == 'semester_update' or view == 'semester_delete' %}active{% endif %}"><i class="bi bi-calendar2-event"></i><span>الفصول</span></a>
+    <a href="{% url 'academics:subject_list' %}" class="opal-subnav-btn {% if ns == 'academics' and view == 'subject_list' or view == 'subject_create' or view == 'subject_update' %}active{% endif %}"><i class="bi bi-book"></i><span>المواد</span></a>
+    <a href="{% url 'curriculum:curriculum_list' %}" class="opal-subnav-btn {% if ns == 'curriculum' %}active{% endif %}"><i class="bi bi-journal-check"></i><span>الخطة الدراسية</span></a>
+    <a href="{% url 'attendance_v2:dashboard' %}" class="opal-subnav-btn {% if ns == 'attendance_v2' and view == 'dashboard' %}active{% endif %}"><i class="bi bi-calendar-check"></i><span>الحضور</span></a>
+    <a href="{% url 'attendance_v2:take_attendance' %}" class="opal-subnav-btn {% if ns == 'attendance_v2' and view == 'take_attendance' or view == 'attendance_edit' %}active{% endif %}"><i class="bi bi-check2-square"></i><span>تسجيل الحضور</span></a>
+    <a href="{% url 'attendance_v2:report' %}" class="opal-subnav-btn {% if ns == 'attendance_v2' and view == 'report' %}active{% endif %}"><i class="bi bi-clipboard-data"></i><span>تقرير الحضور</span></a>
+    <a href="{% url 'exams:exam_list' %}" class="opal-subnav-btn {% if ns == 'exams' and view != 'exam_dashboard' and view != 'mark_list' and view != 'mark_create' %}active{% endif %}"><i class="bi bi-file-earmark-check"></i><span>الامتحانات</span></a>
+    <a href="{% url 'exams:exam_dashboard' %}" class="opal-subnav-btn {% if ns == 'exams' and view == 'exam_dashboard' %}active{% endif %}"><i class="bi bi-graph-up"></i><span>تحليل النتائج</span></a>
+    <a href="{% url 'exams:mark_list' %}" class="opal-subnav-btn {% if ns == 'exams' and view == 'mark_list' or view == 'mark_create' %}active{% endif %}"><i class="bi bi-list-ol"></i><span>العلامات</span></a>
+    <a href="{% url 'teachers:dashboard' %}" class="opal-subnav-btn {% if ns == 'teachers' %}active{% endif %}"><i class="bi bi-person-badge"></i><span>المعلمون</span></a>
+    <a href="{% url 'timetable:dashboard' %}" class="opal-subnav-btn {% if ns == 'timetable' %}active{% endif %}"><i class="bi bi-calendar3"></i><span>الجدول الدراسي</span></a>
+    <a href="{% url 'academics:lifecycle_list' %}" class="opal-subnav-btn {% if ns == 'academics' and view == 'lifecycle_list' or view == 'lifecycle_action' or view == 'promotion_batch' %}active{% endif %}"><i class="bi bi-arrow-repeat"></i><span>حركة الطلاب</span></a>
+  </div>
+</nav>
+
+{% elif ns == "accounting" or ns == "admissions" and "/payments/" in request.path or ns == "admissions" and view == "student_financial_record" %}
+<nav class="opal-module-subnav" aria-label="روابط الرسوم المدرسية">
+  <div class="opal-module-subnav-head">
+    <span><i class="bi bi-cash-stack"></i> الرسوم المدرسية</span>
+  </div>
+  <div class="opal-module-subnav-scroll">
+    <a href="{% url 'accounting:dashboard' %}" class="opal-subnav-btn {% if ns == 'accounting' and view == 'dashboard' %}active{% endif %}"><i class="bi bi-house-door"></i><span>الملخص</span></a>
+    <a href="{% url 'accounting:fee_category_list' %}" class="opal-subnav-btn {% if ns == 'accounting' and view == 'fee_category_list' or view == 'fee_category_update' %}active{% endif %}"><i class="bi bi-tags"></i><span>فئات الرسوم</span></a>
+    <a href="{% url 'accounting:invoice_list' %}" class="opal-subnav-btn {% if ns == 'accounting' and view == 'invoice_list' %}active{% endif %}"><i class="bi bi-receipt"></i><span>رسوم الطلاب</span></a>
+    <a href="{% url 'accounting:invoice_create' %}" class="opal-subnav-btn {% if ns == 'accounting' and view == 'invoice_create' %}active{% endif %}"><i class="bi bi-file-earmark-plus"></i><span>إضافة رسوم</span></a>
+    <a href="{% url 'accounting:payment_create' %}" class="opal-subnav-btn {% if ns == 'accounting' and view == 'payment_create' %}active{% endif %}"><i class="bi bi-cash-coin"></i><span>دفعة طالب</span></a>
+    <a href="{% url 'admissions:fee_payment_create' %}" class="opal-subnav-btn {% if ns == 'admissions' and view == 'fee_payment_create' %}active{% endif %}"><i class="bi bi-people"></i><span>دفعة جميع الإخوة</span></a>
+    <a href="{% url 'accounting:receipt_list' %}" class="opal-subnav-btn {% if ns == 'accounting' and view == 'receipt_list' or view == 'receipt_print' %}active{% endif %}"><i class="bi bi-receipt-cutoff"></i><span>الإيصالات</span></a>
+    <a href="{% url 'accounting:installment_list' %}" class="opal-subnav-btn {% if ns == 'accounting' and view == 'installment_list' or view == 'installment_create' %}active{% endif %}"><i class="bi bi-calendar2-week"></i><span>الأقساط</span></a>
+    <a href="{% url 'accounting:discount_list' %}" class="opal-subnav-btn {% if ns == 'accounting' and view == 'discount_list' or view == 'discount_create' or view == 'discount_decide' %}active{% endif %}"><i class="bi bi-percent"></i><span>الخصومات</span></a>
+    <a href="{% url 'admissions:fee_payment_archive' %}" class="opal-subnav-btn {% if ns == 'admissions' and view == 'fee_payment_archive' or view == 'fee_payment_receipt' %}active{% endif %}"><i class="bi bi-archive"></i><span>أرشيف الدفعات</span></a>
+  </div>
+</nav>
+
+{% elif ns == "enterprise_ops" %}
+<nav class="opal-module-subnav" aria-label="روابط التشغيل المؤسسي">
+  <div class="opal-module-subnav-head">
+    <span><i class="bi bi-building-gear"></i> التشغيل المؤسسي</span>
+  </div>
+  <div class="opal-module-subnav-scroll">
+    <a href="{% url 'enterprise_ops:dashboard' %}" class="opal-subnav-btn {% if view == 'dashboard' %}active{% endif %}"><i class="bi bi-house-door"></i><span>لوحة التشغيل</span></a>
+    <a href="{% url 'enterprise_ops:workflow_list' %}" class="opal-subnav-btn {% if view == 'workflow_list' or view == 'workflow_detail' or view == 'workflow_action' %}active{% endif %}"><i class="bi bi-diagram-3"></i><span>الموافقات المرتبطة</span></a>
+    <a href="{% url 'enterprise_ops:notification_list' %}" class="opal-subnav-btn {% if view == 'notification_list' or view == 'notification_read' or view == 'notification_read_all' %}active{% endif %}"><i class="bi bi-bell"></i><span>الإشعارات</span></a>
+    <a href="{% url 'enterprise_ops:report_center' %}" class="opal-subnav-btn {% if view == 'report_center' or view == 'report_export_csv' %}active{% endif %}"><i class="bi bi-bar-chart"></i><span>التقارير</span></a>
+    <a href="{% url 'enterprise_ops:audit_log' %}" class="opal-subnav-btn {% if view == 'audit_log' %}active{% endif %}"><i class="bi bi-shield-check"></i><span>سجل العمليات</span></a>
+    <a href="{% url 'enterprise_ops:permission_matrix' %}" class="opal-subnav-btn {% if view == 'permission_matrix' %}active{% endif %}"><i class="bi bi-person-lock"></i><span>الصلاحيات</span></a>
+  </div>
+</nav>
+
+{% elif ns == "openemis" %}
+<nav class="opal-module-subnav" aria-label="روابط OpenEMIS">
+  <div class="opal-module-subnav-head">
+    <span><i class="bi bi-cloud-arrow-up-fill"></i> تكامل OpenEMIS</span>
+  </div>
+  <div class="opal-module-subnav-scroll">
+    <a href="{% url 'openemis:settings' %}" class="opal-subnav-btn {% if view == 'settings' or view == 'test_connection' %}active{% endif %}"><i class="bi bi-sliders"></i><span>إعدادات الربط</span></a>
+    <a href="{% url 'openemis:logs' %}" class="opal-subnav-btn {% if view == 'logs' %}active{% endif %}"><i class="bi bi-clock-history"></i><span>سجل المزامنة</span></a>
+  </div>
+</nav>
+
+{% elif ns == "development_center" %}
+<nav class="opal-module-subnav" aria-label="روابط مركز التطوير">
+  <div class="opal-module-subnav-head">
+    <span><i class="bi bi-tools"></i> مركز التطوير</span>
+  </div>
+  <div class="opal-module-subnav-scroll">
+    <a href="{% url 'development_center:dashboard' %}" class="opal-subnav-btn {% if view == 'dashboard' %}active{% endif %}"><i class="bi bi-house-door"></i><span>الرئيسية</span></a>
+    <a href="{% url 'development_center:executive_dashboard' %}" class="opal-subnav-btn {% if view == 'executive_dashboard' %}active{% endif %}"><i class="bi bi-graph-up-arrow"></i><span>اللوحة التنفيذية</span></a>
+    <a href="{% url 'development_center:module_list' %}" class="opal-subnav-btn {% if view == 'module_list' or view == 'module_create' or view == 'module_update' or view == 'module_delete' %}active{% endif %}"><i class="bi bi-boxes"></i><span>الوحدات</span></a>
+    <a href="{% url 'development_center:task_list' %}" class="opal-subnav-btn {% if view == 'task_list' or view == 'task_detail' or view == 'task_create' or view == 'task_update' or view == 'task_delete' %}active{% endif %}"><i class="bi bi-list-task"></i><span>المهام</span></a>
+    <a href="{% url 'development_center:tasks_board' %}" class="opal-subnav-btn {% if view == 'tasks_board' %}active{% endif %}"><i class="bi bi-kanban"></i><span>لوحة المهام</span></a>
+    <a href="{% url 'development_center:roadmap' %}" class="opal-subnav-btn {% if view == 'roadmap' %}active{% endif %}"><i class="bi bi-signpost-split"></i><span>خارطة الطريق</span></a>
+    <a href="{% url 'development_center:release_list' %}" class="opal-subnav-btn {% if view == 'release_list' or view == 'release_create' or view == 'release_update' or view == 'release_delete' %}active{% endif %}"><i class="bi bi-box-arrow-up"></i><span>الإصدارات</span></a>
+    <a href="{% url 'development_center:bug_list' %}" class="opal-subnav-btn {% if view == 'bug_list' or view == 'bug_create' or view == 'bug_update' or view == 'bug_delete' %}active{% endif %}"><i class="bi bi-bug"></i><span>الأخطاء</span></a>
+    <a href="{% url 'development_center:milestone_list' %}" class="opal-subnav-btn {% if view == 'milestone_list' or view == 'milestone_create' or view == 'milestone_update' or view == 'milestone_delete' %}active{% endif %}"><i class="bi bi-flag"></i><span>المراحل</span></a>
+    <a href="{% url 'development_center:sprint_list' %}" class="opal-subnav-btn {% if view == 'sprint_list' or view == 'sprint_detail' or view == 'sprint_create' or view == 'sprint_update' or view == 'sprint_board' or view == 'sprint_burndown' or view == 'sprint_velocity' %}active{% endif %}"><i class="bi bi-lightning-charge"></i><span>الدورات</span></a>
+    <a href="{% url 'development_center:product_backlog' %}" class="opal-subnav-btn {% if view == 'product_backlog' %}active{% endif %}"><i class="bi bi-inboxes"></i><span>قائمة الانتظار</span></a>
+    <a href="{% url 'development_center:gantt_chart' %}" class="opal-subnav-btn {% if view == 'gantt_chart' %}active{% endif %}"><i class="bi bi-bar-chart-steps"></i><span>مخطط جانت</span></a>
+    <a href="{% url 'development_center:idea_list' %}" class="opal-subnav-btn {% if view == 'idea_list' or view == 'idea_create' or view == 'idea_update' or view == 'idea_delete' %}active{% endif %}"><i class="bi bi-lightbulb"></i><span>الأفكار</span></a>
+    <a href="{% url 'development_center:decision_list' %}" class="opal-subnav-btn {% if view == 'decision_list' or view == 'decision_create' or view == 'decision_update' or view == 'decision_delete' %}active{% endif %}"><i class="bi bi-check2-circle"></i><span>القرارات</span></a>
+    <a href="{% url 'development_center:activity_list' %}" class="opal-subnav-btn {% if view == 'activity_list' %}active{% endif %}"><i class="bi bi-activity"></i><span>النشاط</span></a>
+    <a href="{% url 'development_center:notification_list' %}" class="opal-subnav-btn {% if view == 'notification_list' %}active{% endif %}"><i class="bi bi-bell"></i><span>الإشعارات</span></a>
+    <a href="{% url 'development_center:project_print_report' %}" class="opal-subnav-btn {% if view == 'project_print_report' %}active{% endif %}"><i class="bi bi-printer"></i><span>تقرير المشروع</span></a>
+  </div>
+</nav>
+{% endif %}
+
+{% endwith %}

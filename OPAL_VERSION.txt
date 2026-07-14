@@ -1,0 +1,4 @@
+OPAL ERP DATA INTEGRITY CENTER UPDATE
+Release date: 2026-07-13
+Baseline: OPAL ERP SAFE DEMO DATA LAB UPDATE / V10.3
+Scope: persistent integrity audits, safe repairs, duplicate/conflict detection, website and console access

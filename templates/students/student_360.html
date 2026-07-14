@@ -1,0 +1,91 @@
+{% extends "base/base.html" %}
+{% block title %}Student 360 | {{ student.full_name }}{% endblock %}
+{% block page_title %}Student 360°{% endblock %}
+{% block page_subtitle %}مركز موحد لبيانات الطالب الأكاديمية والمالية والسلوكية والأسرية{% endblock %}
+{% block content %}
+<div class="opal-card mb-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+    <div class="d-flex align-items-center gap-3">
+      {% if student.photo %}<img src="{{ student.photo.url }}" alt="{{ student.full_name }}" class="rounded-circle border" style="width:92px;height:92px;object-fit:cover">{% else %}<div class="rounded-circle bg-light border d-flex align-items-center justify-content-center" style="width:92px;height:92px"><i class="bi bi-person fs-1 text-secondary"></i></div>{% endif %}
+      <div>
+        <h2 class="fw-bold mb-1">{{ student.full_name }}</h2>
+        <div class="text-muted">{{ student.student_number }} · {{ student.grade }}{% if student.section %} / {{ student.section }}{% endif %}</div>
+        <div class="mt-2 d-flex flex-wrap gap-1">
+          <span class="badge bg-{% if student.is_active %}success{% else %}secondary{% endif %}">{{ student.get_status_display }}</span>
+          <span class="badge bg-{{ finance.status_class }}">{{ finance.status_label }}</span>
+          <span class="badge bg-{{ risk.class }}">مستوى المتابعة: {{ risk.label }}</span>
+        </div>
+      </div>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      <a href="{% url 'students:student_update' student.pk %}" class="btn btn-warning"><i class="bi bi-pencil"></i> تعديل</a>
+      <a href="{% url 'admissions:fee_payment_create' %}?student={{ student.pk }}" class="btn btn-success"><i class="bi bi-cash-coin"></i> دفعة</a>
+      <a href="{% url 'students:student_360_print' student.pk %}" target="_blank" class="btn btn-outline-dark"><i class="bi bi-printer"></i> طباعة</a>
+      <a href="{% url 'students:student_list' %}" class="btn btn-secondary">رجوع</a>
+    </div>
+  </div>
+</div>
+
+{% if alerts %}
+<div class="row g-2 mb-4">
+  {% for alert in alerts %}<div class="col-12 col-lg-6"><div class="alert alert-{{ alert.level }} mb-0 d-flex align-items-center gap-2"><i class="bi bi-exclamation-circle"></i><span>{{ alert.text }}</span></div></div>{% endfor %}
+</div>
+{% endif %}
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-xl-2"><div class="opal-card h-100"><div class="text-muted small">إجمالي الرسوم</div><div class="fs-4 fw-bold">{{ finance.total|floatformat:2 }}</div></div></div>
+  <div class="col-6 col-xl-2"><div class="opal-card h-100"><div class="text-muted small">المدفوع</div><div class="fs-4 fw-bold text-success">{{ finance.paid|floatformat:2 }}</div></div></div>
+  <div class="col-6 col-xl-2"><div class="opal-card h-100"><div class="text-muted small">المتبقي</div><div class="fs-4 fw-bold text-danger">{{ finance.remaining|floatformat:2 }}</div></div></div>
+  <div class="col-6 col-xl-2"><div class="opal-card h-100"><div class="text-muted small">الحضور</div><div class="fs-4 fw-bold">{{ attendance_rate }}%</div></div></div>
+  <div class="col-6 col-xl-2"><div class="opal-card h-100"><div class="text-muted small">التحصيل</div><div class="fs-4 fw-bold">{{ percentage_average }}%</div></div></div>
+  <div class="col-6 col-xl-2"><div class="opal-card h-100"><div class="text-muted small">اكتمال البيانات</div><div class="fs-4 fw-bold">{{ data_completeness }}%</div></div></div>
+</div>
+
+<ul class="nav nav-pills mb-3 gap-2" id="student360Tabs" role="tablist">
+  <li class="nav-item"><button class="nav-link active" data-bs-toggle="pill" data-bs-target="#overview">الملخص</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#activity">سجل النشاط</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#academic">الأكاديمي</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#finance">المالية</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#attendance">الحضور</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#marks">العلامات</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#family">الأسرة</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#documents">الوثائق</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#timetable">الجدول</button></li>
+</ul>
+
+<div class="tab-content">
+  <div class="tab-pane fade show active" id="overview">
+    <div class="row g-3">
+      <div class="col-lg-7"><div class="opal-card h-100"><h4 class="fw-bold mb-3">البيانات الأساسية</h4><div class="row g-3">
+        <div class="col-md-6"><strong>الرقم الوطني:</strong> {{ student.national_id|default:"-" }}</div><div class="col-md-6"><strong>الجنس:</strong> {{ student.gender|default:"-" }}</div>
+        <div class="col-md-6"><strong>الهاتف:</strong> {{ student.phone|default:"-" }}</div><div class="col-md-6"><strong>فصيلة الدم:</strong> {{ student.blood_type|default:"-" }}</div>
+        <div class="col-md-6"><strong>تاريخ التسجيل:</strong> {{ student.enrollment_date|default:"-" }}</div><div class="col-md-6"><strong>رقم الوزارة:</strong> {{ student.ministry_student_id|default:"-" }}</div>
+        <div class="col-12"><strong>العنوان:</strong> {{ student.address|default:"-" }}</div><div class="col-12"><strong>ملاحظات صحية:</strong> {{ student.medical_notes|default:"لا توجد" }}</div>
+      </div></div></div>
+      <div class="col-lg-5"><div class="opal-card h-100"><h4 class="fw-bold mb-3">مؤشرات المتابعة</h4>
+        <div class="d-flex justify-content-between py-2 border-bottom"><span>التسجيل الحالي</span><strong>{% if current_enrollment %}{{ current_enrollment.grade }} / {{ current_enrollment.section|default:"-" }}{% else %}غير متوفر{% endif %}</strong></div>
+        <div class="d-flex justify-content-between py-2 border-bottom"><span>الغياب</span><strong class="text-danger">{{ absent_count }}</strong></div>
+        <div class="d-flex justify-content-between py-2 border-bottom"><span>التأخير</span><strong class="text-warning">{{ late_count }}</strong></div>
+        <div class="d-flex justify-content-between py-2 border-bottom"><span>الإخوة</span><strong>{{ siblings|length }}</strong></div>
+        <div class="d-flex justify-content-between py-2"><span>الوثائق</span><strong>{{ documents|length }}</strong></div>
+      </div></div>
+    </div>
+  </div>
+
+  <div class="tab-pane fade" id="activity"><div class="opal-card"><h4 class="fw-bold mb-3">السجل الزمني للطالب</h4>{% for item in activity_timeline %}<div class="d-flex gap-3 py-3 {% if not forloop.last %}border-bottom{% endif %}"><div class="rounded-circle bg-light d-flex align-items-center justify-content-center flex-shrink-0" style="width:42px;height:42px"><i class="bi bi-{{ item.icon }}"></i></div><div class="flex-grow-1"><div class="d-flex flex-wrap justify-content-between gap-2"><strong>{{ item.label }}</strong><small class="text-muted">{{ item.at|date:"Y-m-d H:i" }}</small></div><div class="text-muted mt-1">{{ item.description }}</div></div></div>{% empty %}<p class="text-muted mb-0">لا توجد أنشطة مسجلة حتى الآن.</p>{% endfor %}</div></div>
+
+  <div class="tab-pane fade" id="academic"><div class="opal-card"><h4 class="fw-bold mb-3">السجل الأكاديمي</h4><div class="table-responsive"><table class="table align-middle"><thead><tr><th>العام</th><th>الصف</th><th>الشعبة</th><th>الحالة</th><th>تاريخ الالتحاق</th></tr></thead><tbody>{% for row in enrollments %}<tr><td>{{ row.academic_year }}</td><td>{{ row.grade|default:"-" }}</td><td>{{ row.section|default:"-" }}</td><td>{{ row.get_status_display }}</td><td>{{ row.joined_at|default:"-" }}</td></tr>{% empty %}<tr><td colspan="5" class="text-center text-muted">لا يوجد سجل أكاديمي.</td></tr>{% endfor %}</tbody></table></div></div></div>
+
+  <div class="tab-pane fade" id="finance"><div class="opal-card mb-3"><div class="d-flex flex-wrap justify-content-between gap-2 mb-3"><h4 class="fw-bold mb-0">الفواتير</h4><span class="badge bg-{{ finance.status_class }}">نسبة السداد {{ finance.payment_rate }}%</span></div><div class="progress mb-3" style="height:8px"><div class="progress-bar" role="progressbar" style="width:{{ finance.payment_rate }}%"></div></div><div class="table-responsive"><table class="table"><thead><tr><th>البند</th><th>القيمة</th><th>المدفوع</th><th>المتبقي</th><th>الاستحقاق</th></tr></thead><tbody>{% for inv in invoices %}<tr><td>{{ inv.fee_category.name }}</td><td>{{ inv.amount|floatformat:2 }}</td><td>{{ inv.total_paid|floatformat:2 }}</td><td>{{ inv.remaining|floatformat:2 }}</td><td>{{ inv.due_date }}</td></tr>{% empty %}<tr><td colspan="5" class="text-center text-muted">لا توجد فواتير.</td></tr>{% endfor %}</tbody></table></div></div><div class="opal-card"><h4 class="fw-bold mb-3">آخر الدفعات</h4><div class="table-responsive"><table class="table"><thead><tr><th>الإيصال</th><th>التاريخ</th><th>المبلغ</th><th>قبل</th><th>بعد</th></tr></thead><tbody>{% for row in allocations %}<tr><td><a href="{% url 'admissions:fee_payment_receipt' row.fee_payment.pk %}">{{ row.fee_payment.receipt_number }}</a></td><td>{{ row.created_at|date:"Y-m-d" }}</td><td>{{ row.amount|floatformat:2 }}</td><td>{{ row.remaining_before|floatformat:2 }}</td><td>{{ row.remaining_after|floatformat:2 }}</td></tr>{% empty %}<tr><td colspan="5" class="text-center text-muted">لا توجد دفعات.</td></tr>{% endfor %}</tbody></table></div></div></div>
+
+  <div class="tab-pane fade" id="attendance"><div class="opal-card"><h4 class="fw-bold mb-3">سجل الحضور</h4><div class="d-flex flex-wrap gap-2 mb-3"><span class="badge bg-success">حاضر: {{ attendance_counts.present|default:0 }}</span><span class="badge bg-danger">غائب: {{ attendance_counts.absent|default:0 }}</span><span class="badge bg-warning text-dark">متأخر: {{ attendance_counts.late|default:0 }}</span><span class="badge bg-info text-dark">بعذر: {{ attendance_counts.excused|default:0 }}</span></div><div class="table-responsive"><table class="table"><thead><tr><th>التاريخ</th><th>الحالة</th><th>الملاحظات</th></tr></thead><tbody>{% for row in attendance_recent %}<tr><td>{{ row.date }}</td><td>{{ row.get_status_display }}</td><td>{{ row.notes|default:"-" }}</td></tr>{% empty %}<tr><td colspan="3" class="text-center text-muted">لا توجد سجلات.</td></tr>{% endfor %}</tbody></table></div></div></div>
+
+  <div class="tab-pane fade" id="marks"><div class="opal-card"><div class="d-flex justify-content-between mb-3"><h4 class="fw-bold mb-0">العلامات والنتائج</h4><span class="badge bg-primary">المتوسط {{ percentage_average }}%</span></div><div class="table-responsive"><table class="table"><thead><tr><th>الامتحان</th><th>المادة</th><th>العلامة</th><th>النسبة</th><th>التقدير</th></tr></thead><tbody>{% for row in marks %}<tr><td>{{ row.exam.name }}</td><td>{{ row.exam.subject }}</td><td>{{ row.mark }} / {{ row.exam.max_mark }}</td><td>{{ row.percentage }}%</td><td>{{ row.grade_letter }}</td></tr>{% empty %}<tr><td colspan="5" class="text-center text-muted">لا توجد علامات.</td></tr>{% endfor %}</tbody></table></div></div></div>
+
+  <div class="tab-pane fade" id="family"><div class="row g-3"><div class="col-lg-6"><div class="opal-card h-100"><h4 class="fw-bold mb-3">حساب الأسرة</h4>{% if family %}<p><strong>ولي الأمر:</strong> {{ family.guardian_name|default:"-" }}</p><p><strong>الهاتف:</strong> {{ family.phone|default:"-" }}</p><p><strong>رمز الأسرة:</strong> {{ family.family_code|default:"-" }}</p><p><strong>اسم المستخدم:</strong> {% if family.user %}{{ family.user.username }}{% else %}-{% endif %}</p><a href="{% url 'parent_portal:family_detail' family.pk %}" class="btn btn-primary">فتح ملف الأسرة</a>{% else %}<div class="alert alert-warning">الطالب غير مرتبط بأسرة رسمية.</div>{% endif %}<hr><h6 class="fw-bold">أولياء الأمور المرتبطون</h6>{% for link in guardian_links %}<div class="d-flex justify-content-between border-bottom py-2"><span>{{ link.guardian.full_name }}</span>{% if link.is_primary %}<span class="badge bg-primary">رئيسي</span>{% endif %}</div>{% empty %}<p class="text-muted">لا توجد روابط أولياء أمور.</p>{% endfor %}</div></div><div class="col-lg-6"><div class="opal-card h-100"><h4 class="fw-bold mb-3">الإخوة</h4>{% for sibling in siblings %}<a href="{% url 'students:student_360' sibling.pk %}" class="d-flex justify-content-between border-bottom py-2 text-decoration-none"><span>{{ sibling.full_name }}</span><span>{{ sibling.grade }}</span></a>{% empty %}<p class="text-muted">لا يوجد إخوة مرتبطون.</p>{% endfor %}</div></div></div></div>
+
+  <div class="tab-pane fade" id="documents"><div class="opal-card"><div class="d-flex justify-content-between align-items-center mb-3"><h4 class="fw-bold mb-0">الوثائق الصادرة</h4><div class="d-flex gap-2"><a href="{% url 'exams:student_report_card' student.id %}" class="btn btn-sm btn-success">كشف علامات</a><a href="{% url 'documents:issue_student_certificate' student.id %}" class="btn btn-sm btn-primary">إثبات طالب</a></div></div><div class="table-responsive"><table class="table"><thead><tr><th>رقم الوثيقة</th><th>العنوان</th><th>التاريخ</th></tr></thead><tbody>{% for row in documents %}<tr><td><a href="{% url 'documents:document_detail' row.issued_document.id %}">{{ row.issued_document.document_number }}</a></td><td>{{ row.issued_document.title }}</td><td>{{ row.created_at|date:"Y-m-d" }}</td></tr>{% empty %}<tr><td colspan="3" class="text-center text-muted">لا توجد وثائق.</td></tr>{% endfor %}</tbody></table></div></div></div>
+
+  <div class="tab-pane fade" id="timetable"><div class="opal-card"><h4 class="fw-bold mb-3">الجدول الحالي</h4><div class="table-responsive"><table class="table"><thead><tr><th>اليوم</th><th>الحصة</th><th>المادة</th><th>المعلم</th><th>القاعة</th></tr></thead><tbody>{% for row in timetable %}<tr><td>{{ row.get_day_display }}</td><td>{{ row.time_slot }}</td><td>{{ row.subject }}</td><td>{{ row.teacher|default:"-" }}</td><td>{{ row.room|default:"-" }}</td></tr>{% empty %}<tr><td colspan="5" class="text-center text-muted">لا يوجد جدول مطابق للتسجيل الحالي.</td></tr>{% endfor %}</tbody></table></div></div></div>
+</div>
+{% endblock %}

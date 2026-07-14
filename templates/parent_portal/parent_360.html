@@ -1,0 +1,80 @@
+{% extends "base/base.html" %}
+{% block title %}Parent 360° | OPAL ERP{% endblock %}
+{% block page_title %}Parent 360°{% endblock %}
+{% block page_subtitle %}ملف موحد للأسرة: الأبناء، المالية، الحضور، التحصيل والوثائق{% endblock %}
+{% block content %}
+
+<div class="opal-card mb-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+    <div>
+      <div class="text-muted small">ملف الأسرة</div>
+      <h2 class="fw-bold mb-1">{{ family.guardian_name|default:"ولي أمر" }}</h2>
+      <div class="text-muted">{{ family.family_code|default:"بدون رمز عائلة" }} · {{ family.phone|default:"بدون هاتف" }}</div>
+      <div class="mt-2">
+        {% if family.user %}<span class="badge bg-success">الحساب مفعل: {{ family.user.username }}</span>
+        {% else %}<span class="badge bg-danger">لا يوجد حساب دخول</span>{% endif %}
+      </div>
+    </div>
+    <div style="min-width:220px">
+      <div class="d-flex justify-content-between mb-1"><span>اكتمال ملف الأسرة</span><strong>{{ profile_completeness360 }}%</strong></div>
+      <div class="progress" style="height:12px"><div class="progress-bar" role="progressbar" style="width:{{ profile_completeness360 }}%"></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="stats-grid mb-4">
+  <div class="stat-card"><span>عدد الأبناء</span><h2>{{ totals360.students_count }}</h2></div>
+  <div class="stat-card"><span>إجمالي الرسوم</span><h2>{{ totals360.fees|floatformat:2 }}</h2></div>
+  <div class="stat-card"><span>إجمالي المدفوع</span><h2 class="text-success">{{ totals360.paid|floatformat:2 }}</h2></div>
+  <div class="stat-card"><span>إجمالي المتبقي</span><h2 class="text-danger">{{ totals360.remaining|floatformat:2 }}</h2></div>
+  <div class="stat-card"><span>نسبة السداد</span><h2>{{ totals360.paid_percentage }}%</h2></div>
+  <div class="stat-card"><span>الغياب</span><h2 class="text-danger">{{ totals360.absent }}</h2></div>
+  <div class="stat-card"><span>التأخر</span><h2 class="text-warning">{{ totals360.late }}</h2></div>
+  <div class="stat-card"><span>الوثائق</span><h2>{{ totals360.documents }}</h2></div>
+</div>
+
+{% if alerts360 %}
+<div class="row g-3 mb-4">
+  {% for alert in alerts360 %}
+  <div class="col-md-6"><div class="alert alert-{{ alert.level }} h-100 mb-0"><strong>{{ alert.title }}</strong><div>{{ alert.text }}</div></div></div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="opal-card mb-4">
+  <h3 class="fw-bold mb-3">الأبناء — عرض 360°</h3>
+  <div class="row g-3">
+    {% for item in children360 %}
+    <div class="col-xl-6">
+      <div class="opal-card h-100 border border-{{ item.status_class }}">
+        <div class="d-flex justify-content-between gap-3 mb-3">
+          <div><h4 class="fw-bold mb-1">{{ item.student.full_name }}</h4><div class="text-muted">{{ item.student.grade }} · {{ item.student.section|default:"بدون شعبة" }}</div></div>
+          <span class="badge bg-{{ item.status_class }} align-self-start">{{ item.status_label }}</span>
+        </div>
+        <div class="row g-2 mb-3">
+          <div class="col-4"><small class="text-muted">الرسوم</small><div class="fw-bold">{{ item.fees|floatformat:2 }}</div></div>
+          <div class="col-4"><small class="text-muted">المدفوع</small><div class="fw-bold text-success">{{ item.paid|floatformat:2 }}</div></div>
+          <div class="col-4"><small class="text-muted">المتبقي</small><div class="fw-bold text-danger">{{ item.remaining|floatformat:2 }}</div></div>
+        </div>
+        <div class="progress mb-3" style="height:10px"><div class="progress-bar" style="width:{{ item.paid_percentage }}%"></div></div>
+        <div class="row g-2 mb-3">
+          <div class="col-3 text-center"><small>حاضر</small><div class="fw-bold text-success">{{ item.attendance.present }}</div></div>
+          <div class="col-3 text-center"><small>غائب</small><div class="fw-bold text-danger">{{ item.attendance.absent }}</div></div>
+          <div class="col-3 text-center"><small>متأخر</small><div class="fw-bold text-warning">{{ item.attendance.late }}</div></div>
+          <div class="col-3 text-center"><small>المعدل</small><div class="fw-bold">{% if item.average != None %}{{ item.average }}%{% else %}-{% endif %}</div></div>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+          <a class="btn btn-sm btn-primary" href="{% url 'parent_portal:student_detail' item.student.pk %}">ملف الطالب</a>
+          <a class="btn btn-sm btn-outline-primary" href="{% url 'students:student_360' item.student.pk %}">Student 360°</a>
+        </div>
+      </div>
+    </div>
+    {% empty %}<div class="text-muted">لا يوجد أبناء مرتبطون بهذه الأسرة.</div>{% endfor %}
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-7"><div class="opal-card h-100"><h3 class="fw-bold mb-3">آخر الدفعات</h3><div class="table-responsive"><table class="opal-table"><thead><tr><th>الإيصال</th><th>المبلغ</th><th>المتبقي بعد الدفعة</th><th>التاريخ</th></tr></thead><tbody>{% for payment in recent_payments360 %}<tr><td>{{ payment.receipt_number }}</td><td>{{ payment.total_amount|floatformat:2 }}</td><td>{{ payment.total_due_after|floatformat:2 }}</td><td>{{ payment.created_at|date:"Y-m-d H:i" }}</td></tr>{% empty %}<tr><td colspan="4">لا توجد دفعات.</td></tr>{% endfor %}</tbody></table></div></div></div>
+  <div class="col-lg-5"><div class="opal-card h-100"><h3 class="fw-bold mb-3">آخر الوثائق</h3><ul class="mb-0">{% for doc in recent_documents360 %}<li class="mb-2"><strong>{{ doc.student.full_name }}</strong><br><small>{{ doc.issued_document.title }} · {{ doc.created_at|date:"Y-m-d" }}</small></li>{% empty %}<li>لا توجد وثائق صادرة.</li>{% endfor %}</ul></div></div>
+</div>
+{% endblock %}

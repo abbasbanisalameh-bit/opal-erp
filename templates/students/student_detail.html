@@ -1,0 +1,37 @@
+{% extends "base/base.html" %}
+{% block title %}ملف الطالب | OPAL ERP{% endblock %}
+{% block page_title %}ملف الطالب{% endblock %}
+{% block page_subtitle %}بيانات الطالب والربط المالي وOpenEMIS{% endblock %}
+{% block content %}
+<div class="opal-card mb-4">
+  <h2 class="fw-bold mb-3">{{ student.full_name }}</h2>
+  <div class="row g-3">
+    <div class="col-md-4"><strong>رقم الطالب:</strong> {{ student.student_number }}</div>
+    <div class="col-md-4"><strong>الرقم الوطني:</strong> {{ student.national_id|default:"غير مدخل" }}</div>
+    <div class="col-md-4"><strong>ولي الأمر:</strong> {{ student.guardian_name|default:"غير مدخل" }}</div>
+    <div class="col-md-4"><strong>الصف:</strong> {{ student.grade }}</div>
+    <div class="col-md-4"><strong>الشعبة:</strong> {{ student.section }}</div>
+    <div class="col-md-4"><strong>الحالة:</strong> {{ student.get_status_display }}</div>
+  </div>
+  <div class="mt-4 d-flex gap-2 flex-wrap">
+    <a href="{% url 'students:student_360' student.pk %}" class="btn btn-dark">Student 360°</a>
+    <a href="{% url 'students:student_update' student.pk %}" class="btn btn-warning">تعديل</a>
+    <a href="{% url 'admissions:student_financial_record' student.pk %}" class="btn btn-primary">السجل المالي</a>
+    <a href="{% url 'admissions:fee_payment_create' %}?student={{ student.pk }}" class="btn btn-success">تسجيل دفعة</a>
+    <a href="{% url 'students:student_list' %}" class="btn btn-secondary">رجوع</a>
+  </div>
+</div>
+
+{% if opal_openemis_enabled %}
+<div class="opal-card mt-4">
+    <h3 class="fw-bold mb-3">OpenEMIS</h3>
+    <p class="text-secondary mb-3">حالة المزامنة: {{ student.ministry_sync_status|default:"not_synced" }}{% if student.ministry_student_id %} - الرقم الوزاري: {{ student.ministry_student_id }}{% endif %}</p>
+    <a href="{% url 'openemis:student_push' student.id %}" class="btn btn-secondary">إضافة إلى طابور المزامنة</a>
+    <form method="post" action="{% url 'openemis:mark_synced' student.id %}" class="mt-3 d-flex gap-2 flex-wrap">
+        {% csrf_token %}
+        <input name="ministry_student_id" class="form-control" style="max-width:260px" placeholder="رقم الطالب في الوزارة" value="{{ student.ministry_student_id }}">
+        <button class="btn btn-primary">تحديث حالة المزامنة</button>
+    </form>
+</div>
+{% endif %}
+{% endblock %}

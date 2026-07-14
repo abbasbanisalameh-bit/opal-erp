@@ -1,0 +1,10 @@
+{% extends "base/base.html" %}
+{% block title %}حساب ولي الأمر{% endblock %}
+{% block page_title %}حساب ولي الأمر{% endblock %}
+{% block page_subtitle %}بيانات الحساب وتغيير كلمة المرور{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-5"><div class="opal-card h-100"><h3 class="fw-bold mb-3">👤 بيانات الحساب</h3><p><strong>اسم المستخدم:</strong> {{ request.user.username }}</p><p><strong>اسم ولي الأمر:</strong> {{ family.guardian_name|default:request.user.first_name|default:"-" }}</p><p><strong>الهاتف:</strong> {{ family.phone|default:"-" }}</p><p><strong>الرقم الوطني:</strong> {{ family.guardian_national_id|default:"-" }}</p></div></div>
+  <div class="col-lg-7"><div class="opal-card h-100"><h3 class="fw-bold mb-3">🔐 تغيير كلمة المرور</h3><form method="post">{% csrf_token %}{{ form.as_p }}<button class="btn btn-primary" type="submit">حفظ كلمة المرور</button></form></div></div>
+</div>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends "base/base.html" %}
+{% block title %}تسجيل الحضور{% endblock %}
+{% block page_title %}تسجيل الحضور اليومي{% endblock %}
+{% block page_subtitle %}اختيار العام والصف والشعبة وتسجيل حالة الطلاب{% endblock %}
+{% block content %}
+<div class="opal-card mb-4">
+  <form method="get" class="row g-3 align-items-end">
+    <div class="col-md-3"><label class="form-label">العام</label><select class="form-control" name="academic_year"><option value="">الكل</option>{% for item in academic_years %}<option value="{{ item.id }}" {% if selected_year == item.id|stringformat:'s' %}selected{% endif %}>{{ item.name }}</option>{% endfor %}</select></div>
+    <div class="col-md-3"><label class="form-label">الصف</label><select class="form-control" name="grade"><option value="">الكل</option>{% for item in grades %}<option value="{{ item.id }}" {% if selected_grade == item.id|stringformat:'s' %}selected{% endif %}>{{ item.name }}</option>{% endfor %}</select></div>
+    <div class="col-md-3"><label class="form-label">الشعبة</label><select class="form-control" name="section"><option value="">الكل</option>{% for item in sections %}<option value="{{ item.id }}" {% if selected_section == item.id|stringformat:'s' %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
+    <div class="col-md-2"><label class="form-label">التاريخ</label><input class="form-control" type="date" name="date" value="{{ date|date:'Y-m-d' }}"></div>
+    <div class="col-md-1"><button class="btn btn-primary w-100">عرض</button></div>
+  </form>
+</div>
+<div class="opal-card">
+  <form method="post">{% csrf_token %}
+    <input type="hidden" name="academic_year" value="{{ selected_year }}"><input type="hidden" name="grade" value="{{ selected_grade }}"><input type="hidden" name="section" value="{{ selected_section }}"><input type="hidden" name="date" value="{{ date|date:'Y-m-d' }}">
+    <div class="table-responsive"><table class="opal-table"><thead><tr><th>الطالب</th><th>الحالة</th><th>سبب العذر</th><th>ملاحظات</th></tr></thead><tbody>
+    {% for enrollment,record in rows %}<tr>
+      <td>{{ enrollment.student.full_name }}{% if record.is_locked %} <span class="badge bg-secondary">مقفل</span>{% endif %}</td>
+      <td><select class="form-control" name="status_{{ enrollment.student_id }}" {% if record.is_locked %}disabled{% endif %}><option value="present" {% if not record or record.status == 'present' %}selected{% endif %}>حاضر</option><option value="absent" {% if record.status == 'absent' %}selected{% endif %}>غائب</option><option value="late" {% if record.status == 'late' %}selected{% endif %}>متأخر</option><option value="excused" {% if record.status == 'excused' %}selected{% endif %}>بعذر</option></select></td>
+      <td><input class="form-control" name="excuse_{{ enrollment.student_id }}" value="{{ record.excuse_reason|default:'' }}" {% if record.is_locked %}disabled{% endif %}></td>
+      <td><input class="form-control" name="notes_{{ enrollment.student_id }}" value="{{ record.notes|default:'' }}" {% if record.is_locked %}disabled{% endif %}></td>
+    </tr>{% empty %}<tr><td colspan="4" class="text-center text-secondary">اختر صفًا أو شعبة لعرض الطلاب.</td></tr>{% endfor %}
+    </tbody></table></div>{% if rows %}<button class="btn btn-success mt-3">حفظ الحضور</button>{% endif %}
+  </form>
+</div>
+{% endblock %}

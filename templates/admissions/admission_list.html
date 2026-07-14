@@ -1,0 +1,64 @@
+
+{% extends "base/base.html" %}
+
+{% block title %}التسجيل المباشر | OPAL ERP{% endblock %}
+{% block page_title %}التسجيل المباشر{% endblock %}
+{% block page_subtitle %}تسجيل الطلاب الجدد وربطهم بالنظام المالي مباشرة{% endblock %}
+
+{% block content %}
+<div class="opal-card mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+            <h3 class="fw-bold mb-1">سجل تسجيل الطلاب</h3>
+            <p class="text-secondary mb-0">كل عملية تسجيل تنشئ الطالب، الفاتورة، الدفعة الأولى، والإيصال.</p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{% url 'admissions:direct_registration' %}" class="btn btn-primary">
+                <i class="bi bi-person-plus-fill"></i> تسجيل طالب جديد
+            </a>
+            <a href="{% url 'admissions:registration_settings' %}" class="btn btn-secondary">
+                <i class="bi bi-sliders"></i> إعدادات التسجيل
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="opal-card">
+    <div class="table-responsive">
+        <table class="opal-table">
+            <thead>
+                <tr>
+                    <th>رقم التسجيل</th>
+                    <th>الطالب</th>
+                    <th>الصف</th>
+                    <th>الخصم</th>
+                    <th>صافي الرسوم</th>
+                    <th>الدفعة الأولى</th>
+                    <th>المتبقي</th>
+                    <th>الإيصال</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in registrations %}
+                <tr>
+                    <td>{{ r.registration_number }}</td>
+                    <td>{{ r.full_name }}</td>
+                    <td>{{ r.grade }}</td>
+                    <td>{{ r.get_discount_type_display }}</td>
+                    <td>{{ r.net_total }}</td>
+                    <td>{{ r.first_payment }}</td>
+                    <td>{{ r.remaining_amount }}</td>
+                    <td>
+                        <a class="btn btn-sm btn-primary" href="{% url 'admissions:registration_receipt' r.pk %}">طباعة</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="text-center text-secondary">لا توجد عمليات تسجيل بعد.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

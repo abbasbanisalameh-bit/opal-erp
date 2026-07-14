@@ -1,0 +1,29 @@
+{% extends "base/base.html" %}
+{% block page_title %}الأخطاء{% endblock %}
+{% block page_subtitle %}متابعة أخطاء مشروع OPAL ERP{% endblock %}
+{% block content %}
+<div class="opal-card p-4 mb-4">
+  <h3>🐞 الأخطاء</h3>
+</div>
+<div class="opal-card p-4">
+<table class="opal-table">
+<thead><tr><th>#</th><th>العنوان</th><th>الوحدة</th><th>الحالة</th><th>الإجراء</th></tr></thead>
+<tbody>
+{% for item in items %}
+<tr>
+<td>{{ forloop.counter }}</td>
+<td>{{ item.title }}</td>
+<td>{{ item.module|default:"-" }}</td>
+<td>{{ item.get_status_display|default:item.status }}</td>
+<td>
+<a class="btn btn-sm btn-warning" href="{% url 'development_center:bug_update' item.id %}">تعديل</a>
+<a class="btn btn-sm btn-danger" href="{% url 'development_center:bug_delete' item.id %}">حذف</a>
+</td>
+</tr>
+{% empty %}
+<tr><td colspan="5" class="text-center text-muted">لا توجد أخطاء.</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+{% endblock %}

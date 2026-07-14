@@ -1,0 +1,89 @@
+{% extends "base/base.html" %}
+{% load dev_labels %}
+
+{% block page_title %}لوحة دورة التطوير{% endblock %}
+{% block page_subtitle %}لوحة متابعة السبرنت{% endblock %}
+
+{% block content %}
+
+<div class="opal-card p-4 mb-4">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div>
+      <h3>🏃 {{ sprint.title }}</h3>
+      <p class="text-muted mb-1">{{ sprint.goal|default:"لا يوجد هدف محدد." }}</p>
+      <small>من {{ sprint.start_date|default:"-" }} إلى {{ sprint.end_date|default:"-" }}</small>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <span class="badge bg-info align-self-center">{{ sprint.get_status_display }}</span>
+      <a href="{% url 'development_center:sprint_board' sprint.id %}" class="btn btn-primary">فتح لوحة دورة التطوير</a>
+      <a href="{% url 'development_center:sprint_burndown' sprint.id %}" class="btn btn-outline-warning">مخطط الاحتراق</a>
+      <a href="{% url 'development_center:sprint_update' sprint.id %}" class="btn btn-outline-light">تعديل</a>
+    </div>
+  </div>
+</div>
+
+<div class="opal-card p-4 mb-4">
+  <div class="d-flex justify-content-between mb-2">
+    <strong>نسبة إنجاز السبرنت</strong>
+    <strong>{{ progress }}%</strong>
+  </div>
+  <div class="progress" style="height:24px;">
+    <div class="progress-bar" style="width: {{ progress }}%;">{{ progress }}%</div>
+  </div>
+</div>
+
+<div class="stats-grid mb-4">
+  <div class="stat-card"><span>إجمالي المهام</span><h2>{{ total }}</h2></div>
+  <div class="stat-card"><span>لم يبدأ</span><h2>{{ todo }}</h2></div>
+  <div class="stat-card"><span>قيد التنفيذ</span><h2>{{ doing }}</h2></div>
+  <div class="stat-card"><span>قيد المراجعة</span><h2>{{ review }}</h2></div>
+  <div class="stat-card"><span>مكتملة</span><h2>{{ done }}</h2></div>
+  <div class="stat-card"><span>المتبقي</span><h2>{{ remaining }}</h2></div>
+</div>
+
+<div class="opal-card p-4 mb-4">
+  <h4>📅 الوقت</h4>
+  {% if days_left is not None %}
+    {% if days_left >= 0 %}
+      <p>الأيام المتبقية: <strong>{{ days_left }}</strong></p>
+    {% else %}
+      <p class="text-danger">السبرنت متأخر بـ <strong>{{ days_left|stringformat:"+d"|cut:"+" }}</strong> يوم.</p>
+    {% endif %}
+  {% else %}
+    <p class="text-muted">لم يتم تحديد تاريخ نهاية للسبرنت.</p>
+  {% endif %}
+</div>
+
+<div class="opal-card p-4 mb-4">
+  <h4>⚠️ المهام المتأخرة</h4>
+  <ul>
+    {% for task in overdue_tasks %}
+      <li><a href="{% url 'development_center:task_detail' task.id %}">{{ task.title }}</a> - {{ task.due_date }}</li>
+    {% empty %}
+      <li class="text-muted">لا توجد مهام متأخرة.</li>
+    {% endfor %}
+  </ul>
+</div>
+
+<div class="opal-card p-4">
+  <h4>📋 مهام السبرنت</h4>
+  <div class="table-responsive">
+    <table class="opal-table">
+      <thead><tr><th>المهمة</th><th>الحالة</th><th>الإنجاز</th><th>النهاية</th></tr></thead>
+      <tbody>
+        {% for task in tasks %}
+        <tr>
+          <td><a href="{% url 'development_center:task_detail' task.id %}">{{ task.title }}</a></td>
+          <td>{{ task.status|ar_status }}</td>
+          <td>{{ task.progress }}%</td>
+          <td>{{ task.due_date|default:"-" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" class="text-center text-muted">لا توجد مهام في هذا السبرنت.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

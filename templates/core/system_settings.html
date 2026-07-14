@@ -1,0 +1,68 @@
+{% extends "base/base.html" %}
+{% block title %}إعدادات النظام | OPAL ERP{% endblock %}
+{% block page_title %}إعدادات النظام{% endblock %}
+{% block page_subtitle %}إدارة بيانات المدرسة العامة وشعارها{% endblock %}
+{% block content %}
+
+{% if request.user.is_superuser %}
+<div class="opal-card mb-4" style="border:1px solid rgba(245,158,11,.35);background:linear-gradient(135deg,rgba(245,158,11,.08),rgba(239,68,68,.05));">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3"><div><h3 class="fw-bold mb-2"><i class="bi bi-shield-check"></i> مركز سلامة البيانات</h3><p class="text-secondary mb-0">كشف التكرارات والتعارضات وتتبع نتائج الفحوص، مع إصلاح تلقائي للحالات المؤكدة فقط.</p></div><a href="{% url 'core:integrity_center' %}" class="btn btn-warning btn-lg"><i class="bi bi-search"></i> فتح مركز السلامة</a></div>
+</div>
+<div class="opal-card mb-4" style="border:1px solid rgba(20,184,166,.35);background:linear-gradient(135deg,rgba(20,184,166,.09),rgba(59,130,246,.06));">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+    <div><h3 class="fw-bold mb-2"><i class="bi bi-database-gear"></i> مختبر البيانات التجريبية</h3><p class="text-secondary mb-0">ينشئ 100 طالب مع أولياء الأمور والرسوم والإيصالات والحضور والعلامات والوثائق، و20 معلمًا مع الرواتب والوثائق والتكليفات والجدول.</p></div>
+    <div class="d-flex flex-wrap gap-2">
+      <form method="post">{% csrf_token %}<input type="hidden" name="action" value="seed_demo"><button class="btn btn-success btn-lg" onclick="return confirm('إضافة أو استكمال البيانات التجريبية؟')"><i class="bi bi-stars"></i> إضافة بيانات تجريبية</button></form>
+      <form method="post" onsubmit="return confirm('سيتم حذف البيانات الموسومة كتجريبية فقط. هل أنت متأكد؟')">{% csrf_token %}<input type="hidden" name="action" value="reset_demo"><input type="hidden" name="confirmation" value="RESET-DEMO"><button class="btn btn-outline-danger btn-lg"><i class="bi bi-arrow-counterclockwise"></i> تصفير البيانات التجريبية</button></form>
+    </div>
+  </div>
+  <div class="small text-muted mt-3">الحذف لا يمس البيانات الحقيقية ولا إعدادات المدرسة والصفوف. يمكن تنفيذ العمليتين أيضًا من Bash Console.</div>
+</div>
+{% endif %}
+
+
+{% if opal_openemis_enabled %}
+<div class="opal-card mb-4">
+    <h3 class="fw-bold mb-3">تكامل OpenEMIS</h3>
+    <p class="text-secondary">إعداد الربط مع OpenEMIS، اختبار الاتصال، ومتابعة سجل المزامنة.</p>
+    <a href="{% url 'openemis:settings' %}" class="btn btn-secondary">
+        <i class="bi bi-cloud-arrow-up-fill"></i> فتح إعدادات OpenEMIS
+    </a>
+</div>
+
+{% if request.user.is_superuser %}<div class="opal-card mb-4"><h3 class="fw-bold mb-3">الأدوار والصلاحيات</h3><a href="{% url 'accounts:role_list' %}" class="btn btn-outline-primary">إدارة الأدوار</a></div>{% endif %}
+
+<div class="opal-card mb-4">
+    <h3 class="fw-bold mb-3">هيكل المدرسة</h3>
+    <p class="text-secondary">إدارة الفروع من واجهة OPAL الرسمية.</p>
+    <a href="{% url 'core:branch_list' %}" class="btn btn-outline-primary">إدارة الفروع</a>
+</div>
+{% endif %}
+
+<div class="opal-card mb-4">
+    <h3 class="fw-bold mb-3">إعدادات التسجيل والمالية</h3>
+    <p class="text-secondary">إدارة رسوم الصفوف، جولات المواصلات، الخصومات، والدفعة الأولى من وحدة التسجيل.</p>
+    <a href="{% url 'admissions:registration_settings' %}" class="btn btn-primary">
+        <i class="bi bi-sliders"></i> فتح إعدادات التسجيل والرسوم
+    </a>
+</div>
+
+<div class="opal-card">
+    <h3 class="fw-bold mb-4">بيانات المدرسة</h3>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="row g-3">
+            {% for field in form %}
+            <div class="col-md-6">
+                <label class="form-label fw-bold">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}<div class="text-danger small mt-1">{{ field.errors }}</div>{% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        <div class="mt-4">
+            <button class="btn btn-primary">حفظ إعدادات النظام</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

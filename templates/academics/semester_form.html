@@ -1,0 +1,29 @@
+{% extends "base/base.html" %}
+{% block title %}{{ title }} | OPAL ERP{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block page_subtitle %}إدارة بيانات الفصل الدراسي ضمن العام المحدد{% endblock %}
+
+{% block content %}
+<div class="opal-card">
+    <form method="post" novalidate>
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+        {% endif %}
+        <div class="row g-3">
+            {% for field in form %}
+            <div class="col-md-6">
+                <label class="form-label fw-bold">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+                {% for error in field.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+            </div>
+            {% endfor %}
+        </div>
+        <div class="mt-4 d-flex gap-2">
+            <button type="submit" class="btn btn-primary">حفظ</button>
+            <a href="{% url 'academics:semester_list' %}" class="btn btn-secondary">رجوع</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,158 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>تسجيل الدخول | OPAL ERP</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: Tahoma, Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background:
+                radial-gradient(circle at 75% 15%, rgba(20, 184, 166, 0.35), transparent 30%),
+                linear-gradient(135deg, #020617, #071427 55%, #0f172a);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 22px;
+            color: #fff;
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 430px;
+            background: rgba(15, 23, 42, 0.92);
+            border: 1px solid rgba(94, 234, 212, 0.18);
+            border-radius: 28px;
+            padding: 34px 28px;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+            text-align: center;
+        }
+
+        .login-logo {
+            width: 72px;
+            height: 72px;
+            margin: 0 auto 18px;
+            border-radius: 22px;
+            background: linear-gradient(135deg, #5eead4, #06b6d4);
+            color: #04111f;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+        }
+
+        h2 {
+            margin: 0;
+            font-size: 30px;
+            font-weight: 800;
+        }
+
+        p {
+            color: #94a3b8;
+            margin: 10px 0 26px;
+            font-size: 15px;
+        }
+
+        label {
+            display: block;
+            text-align: right;
+            margin: 14px 0 7px;
+            color: #cbd5e1;
+            font-size: 14px;
+        }
+
+        .form-control {
+            width: 100%;
+            height: 50px;
+            border-radius: 14px;
+            border: 1px solid #1e293b;
+            background: #ffffff;
+            padding: 0 14px;
+            font-size: 16px;
+            outline: none;
+        }
+
+        .form-control:focus {
+            border-color: #5eead4;
+            box-shadow: 0 0 0 4px rgba(94, 234, 212, 0.18);
+        }
+
+        .btn-login {
+            width: 100%;
+            height: 52px;
+            margin-top: 22px;
+            border: none;
+            border-radius: 16px;
+            background: linear-gradient(90deg, #5eead4, #22d3ee);
+            color: #04111f;
+            font-size: 17px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .btn-login:hover {
+            filter: brightness(1.05);
+        }
+
+        .alert {
+            background: #fecaca;
+            color: #7f1d1d;
+            padding: 12px;
+            border-radius: 14px;
+            margin-bottom: 18px;
+            font-size: 14px;
+        }
+
+        .footer {
+            margin-top: 22px;
+            font-size: 12px;
+            color: #64748b;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="login-card">
+        <div class="login-logo">🎓</div>
+
+        <h2>OPAL ERP</h2>
+        <p>تسجيل الدخول إلى نظام مدرسة أوبال الدولية</p>
+
+        {% if form.errors %}
+            <div class="alert">اسم المستخدم أو كلمة المرور غير صحيحة</div>
+        {% endif %}
+
+        <form method="post" action="{% url 'login' %}">
+            {% csrf_token %}
+
+            <label>اسم المستخدم</label>
+            <input type="text" name="username" class="form-control" required autofocus>
+
+            <label>كلمة المرور</label>
+            <input type="password" name="password" class="form-control" required>
+
+            <button type="submit" class="btn-login">دخول</button>
+        </form>
+
+        <div class="footer">OPAL Education Platform</div>
+    </div>
+<script>
+window.addEventListener("pageshow", function(event) {
+    if (event.persisted) {
+        window.location.reload();
+    }
+});
+</script>
+</body>
+</html>
