@@ -2,9 +2,9 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.shortcuts import render, redirect, get_object_or_404
 from students.models import Student
-from .forms import OpenEMISSettingsForm
+from .forms import OpenEMISImportForm, OpenEMISSettingsForm
 from .models import OpenEMISSyncLog
-from .services import active_school, get_openemis_settings, test_openemis_connection, queue_student_push, mark_student_synced
+from .services import active_school, get_openemis_settings, import_openemis_payload, test_openemis_connection, queue_student_push, mark_student_synced
 
 
 def can_manage_openemis(user):
@@ -65,3 +65,23 @@ def mark_synced_view(request, student_id):
     mark_student_synced(student, ministry_id, request.user, response={"manual": True})
     messages.success(request, "تم تحديث حالة مزامنة الطالب مع OpenEMIS داخل OPAL.")
     return redirect("students:student_detail", pk=student.pk)
+
+
+@login_required
+@user_passes_test(can_manage_openemis)
+def import_payload_view(request):
+    form = OpenEMISImportForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        try:
+            results = import_openemis_payload(form.cleaned_data["payload"], user=request.user)
+        except Exception as exc:
+            messages.error(request, f"تعذر الاستيراد: {exc}")
+        else:
+            messages.success(
+                request,
+                "تم الاستيراد إلى المصادر الرسمية: "
+                f"طلاب جدد {results['students_created']}، طلاب محدثون {results['students_updated']}، "
+                f"معلمون جدد {results['teachers_created']}، معلمون محدثون {results['teachers_updated']}.",
+            )
+            return redirect("openemis:logs")
+    return render(request, "openemis/import_payload.html", {"form": form})

@@ -1,4 +1,5 @@
-OPAL ERP DATA INTEGRITY CENTER UPDATE
-Release date: 2026-07-13
-Baseline: OPAL ERP SAFE DEMO DATA LAB UPDATE / V10.3
-Scope: persistent integrity audits, safe repairs, duplicate/conflict detection, website and console access
+OPAL ERP UNIFIED CORE - CURRENT MERGE READY
+Release date: 2026-07-15
+Base: OPAL_CURRENT_CLEAN_20260714_20260714_230557
+Reference only: opal_v61_temp_CODE_ONLY_20260714_062117
+Scope: canonical students, teachers, families, invoices, academic periods, exams, sibling payments, and OpenEMIS adapter

@@ -9,17 +9,24 @@ class FamilyIdentityForm(forms.ModelForm):
 
     class Meta:
         model = Family
-        fields = ["guardian_name", "phone", "guardian_national_id"]
+        fields = ["guardian_name", "relation", "identity_type", "identity_number", "phone", "secondary_phone", "email", "job_title", "address", "medical_notes"]
         labels = {
             "guardian_name": "اسم ولي الأمر",
             "phone": "رقم الهاتف",
-            "guardian_national_id": "الرقم الوطني لولي الأمر",
+            "relation": "صلة القرابة",
+            "identity_type": "نوع الهوية",
+            "identity_number": "رقم الهوية الوطنية أو الشخصية",
+            "secondary_phone": "رقم هاتف إضافي",
+            "email": "البريد الإلكتروني",
+            "job_title": "المهنة",
+            "address": "العنوان",
+            "medical_notes": "ملاحظات",
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
-            field.widget.attrs["class"] = "form-control"
+            field.widget.attrs["class"] = "form-select" if isinstance(field.widget, forms.Select) else "form-control"
         self.fields["guardian_name"].required = True
         self.fields["phone"].required = True
 

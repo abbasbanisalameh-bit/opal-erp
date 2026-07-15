@@ -3,7 +3,7 @@ from datetime import datetime, time
 from django.db.models import Avg, Count, Sum
 from django.utils import timezone
 
-from academics.models import Enrollment, StudentGuardian
+from academics.models import Enrollment
 from accounting.models import StudentInvoice, StudentPayment
 from admissions.financial_services import (
     find_sibling_students,
@@ -101,9 +101,9 @@ def build_student_360_context(student):
     family = family_link.family if family_link else None
     siblings = list(find_sibling_students(student).exclude(pk=student.pk))
     guardian_links = list(
-        StudentGuardian.objects.filter(student=student)
-        .select_related("guardian")
-        .order_by("-is_primary", "guardian__full_name")
+        FamilyStudent.objects.filter(student=student, is_active=True)
+        .select_related("family")
+        .order_by("family__guardian_name")
     )
 
     invoices = list(

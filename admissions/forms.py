@@ -1,5 +1,7 @@
 
 from django import forms
+
+from core.identifiers import normalize_identifier
 from .models import AdmissionApplication, GradeFee, TransportRoute, RegistrationSettings, StudentRegistration
 from academics.models import Grade, Section
 from students.models import Student
@@ -100,13 +102,13 @@ class DirectStudentRegistrationForm(forms.ModelForm):
         model = StudentRegistration
         fields = [
             "first_name", "father_name", "grandfather_name", "family_name", "national_id", "gender", "birth_date", "photo",
-            "guardian_name", "guardian_national_id", "mother_name", "phone", "address", "grade", "section",
+            "guardian_name", "guardian_identity_type", "guardian_identity_number", "mother_name", "phone", "address", "grade", "section",
             "transport_route", "transport_type", "discount_type", "admin_discount_value", "sibling_student", "first_payment", "notes",
         ]
         labels = {
             "first_name": "الاسم الأول", "father_name": "اسم الأب", "grandfather_name": "اسم الجد", "family_name": "اسم العائلة",
             "national_id": "الرقم الوطني", "gender": "الجنس", "birth_date": "تاريخ الميلاد", "photo": "صورة الطالب",
-            "guardian_name": "اسم ولي الأمر", "guardian_national_id": "الرقم الوطني لولي الأمر", "mother_name": "اسم الأم", "phone": "هاتف ولي الأمر", "address": "العنوان",
+            "guardian_name": "اسم ولي الأمر", "guardian_identity_type": "نوع هوية ولي الأمر", "guardian_identity_number": "الرقم الوطني أو الشخصي لولي الأمر", "mother_name": "اسم الأم", "phone": "هاتف ولي الأمر", "address": "العنوان",
             "grade": "الصف", "section": "الشعبة", "transport_route": "جولة المواصلات", "transport_type": "نوع المواصلات",
             "discount_type": "نوع الخصم", "admin_discount_value": "قيمة خصم الإدارة", "sibling_student": "الأخ المسجل", "first_payment": "الدفعة الأولى", "notes": "ملاحظات",
         }
@@ -190,7 +192,10 @@ class DirectStudentRegistrationForm(forms.ModelForm):
         return cleaned_data
 
     def clean_national_id(self):
-        value = (self.cleaned_data.get("national_id") or "").strip()
-        if value and Student.objects.filter(national_id__iexact=value).exists():
+        value = normalize_identifier(self.cleaned_data.get("national_id") or "")
+        if value and Student.objects.filter(national_id=value).exists():
             raise forms.ValidationError("هذا الرقم الوطني مسجل لطالب موجود. استخدم ملف الطالب الحالي.")
         return value
+
+    def clean_guardian_identity_number(self):
+        return normalize_identifier(self.cleaned_data.get("guardian_identity_number") or "")

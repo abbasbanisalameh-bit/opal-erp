@@ -3,9 +3,10 @@ from datetime import datetime
 from decimal import Decimal, ROUND_HALF_UP
 from django.db import transaction, models
 from django.utils import timezone
+from core.identifiers import normalize_identifier
 from core.models import Sequence, School, AcademicYear
 from students.models import Student
-from academics.models import Enrollment, Guardian, StudentGuardian
+from academics.models import Enrollment
 from accounting.models import FeeCategory, StudentInvoice, StudentPayment, Receipt
 from admissions.models import GradeFee, RegistrationSettings, StudentRegistration
 
@@ -95,31 +96,24 @@ def sibling_discount_already_used(sibling_student):
 
 
 
-def find_existing_siblings(*, phone="", father_name="", family_name="", mother_name="", guardian_name="", guardian_national_id="", national_id="", exclude_student_id=None):
-    qs = Student.objects.filter(is_active=True)
-    filters = models.Q()
-    if guardian_national_id:
-        from parent_portal.models import FamilyStudent
+def find_existing_siblings(*, phone="", father_name="", family_name="", mother_name="", guardian_name="", guardian_identity_type="national", guardian_identity_number="", national_id="", exclude_student_id=None):
+    """Return siblings linked through the single canonical Family record.
 
-        family_student_ids = FamilyStudent.objects.filter(
-            family__guardian_national_id__iexact=guardian_national_id.strip(),
-            is_active=True,
-        ).values_list("student_id", flat=True)
-        filters |= models.Q(pk__in=family_student_ids)
-    if phone:
-        filters |= models.Q(phone__iexact=phone.strip())
-    if father_name and family_name:
-        filters |= models.Q(father_name__icontains=father_name.strip(), full_name__icontains=family_name.strip())
-    if mother_name:
-        filters |= models.Q(mother_name__icontains=mother_name.strip())
-    if guardian_name:
-        filters |= models.Q(guardian_name__icontains=guardian_name.strip())
-    # الرقم الوطني هنا يساعد في كشف التكرار، وليس شرطًا وحيدًا للأخوة حتى لا نربط الطالب بنفسه بالخطأ.
-    if national_id:
-        filters |= models.Q(national_id__iexact=national_id.strip())
-    if not filters:
+    The guardian national/personal identifier is the authoritative family key.
+    We deliberately do not infer siblings from matching names or phone numbers,
+    because that can connect unrelated students.
+    """
+    from parent_portal.models import FamilyStudent
+
+    identity = normalize_identifier(guardian_identity_number)
+    if not identity:
         return Student.objects.none()
-    qs = qs.filter(filters).distinct()
+
+    qs = Student.objects.filter(
+        family_links__family__identity_number=identity,
+        family_links__is_active=True,
+        is_active=True,
+    ).distinct()
     if exclude_student_id:
         qs = qs.exclude(id=exclude_student_id)
     return qs
@@ -145,7 +139,8 @@ def resolve_sibling_discount_for_form(data, settings):
         family_name=data.get("family_name") or "",
         mother_name=data.get("mother_name") or "",
         guardian_name=data.get("guardian_name") or "",
-        guardian_national_id=data.get("guardian_national_id") or "",
+        guardian_identity_type=data.get("guardian_identity_type") or "national",
+        guardian_identity_number=normalize_identifier(data.get("guardian_identity_number") or ""),
         national_id=data.get("national_id") or "",
     )
 
@@ -216,8 +211,15 @@ def compose_full_name(first_name, father_name="", grandfather_name="", family_na
 @transaction.atomic
 def create_student_registration(form, user=None):
     data = form.cleaned_data
-    school = active_school()
-    academic_year = current_academic_year(school)
+    selected_grade = data.get("grade")
+    profile = getattr(user, "profile", None) if user else None
+    school = (
+        getattr(form, "school", None)
+        or getattr(selected_grade, "school", None)
+        or getattr(profile, "school", None)
+        or active_school()
+    )
+    academic_year = getattr(form, "academic_year", None) or current_academic_year(school)
     full_name = compose_full_name(data.get("first_name"), data.get("father_name"), data.get("grandfather_name"), data.get("family_name"))
     settings = get_registration_settings(school)
 
@@ -243,9 +245,14 @@ def create_student_registration(form, user=None):
         school=school,
         academic_year=academic_year,
     )
+    national_id = normalize_identifier(data.get("national_id") or "")
+    if national_id and Student.objects.filter(national_id=national_id).exists():
+        raise ValueError("الرقم الوطني مرتبط بطالب موجود. استخدم سجل الطالب الحالي.")
+
     student = Student.objects.create(
+        source="manual",
         student_number=generate_student_number(),
-        national_id=data.get("national_id") or "",
+        national_id=national_id,
         full_name=full_name,
         guardian_name=data.get("guardian_name") or "",
         father_name=data.get("father_name") or "",
@@ -266,18 +273,6 @@ def create_student_registration(form, user=None):
             academic_year=academic_year,
             defaults={"grade": data.get("grade"), "section": data.get("section"), "joined_at": timezone.localdate(), "status": "active"},
         )
-    if data.get("guardian_name") and data.get("phone"):
-        guardian = Guardian.objects.filter(school=school, phone=data.get("phone")).first()
-        if guardian is None:
-            guardian = Guardian.objects.create(
-                school=school,
-                phone=data.get("phone"),
-                full_name=data.get("guardian_name"),
-                relation="guardian",
-                national_id=data.get("guardian_national_id") or "",
-                address=data.get("address") or "",
-            )
-        StudentGuardian.objects.get_or_create(student=student, guardian=guardian, defaults={"is_primary": True})
 
     fee_category, _ = FeeCategory.objects.get_or_create(
         name="رسوم التسجيل المدرسية",
@@ -285,6 +280,7 @@ def create_student_registration(form, user=None):
     )
     invoice = StudentInvoice.objects.create(
         student=student,
+        academic_year=academic_year,
         fee_category=fee_category,
         amount=totals["net_total"],
         due_date=timezone.localdate(),
@@ -298,7 +294,7 @@ def create_student_registration(form, user=None):
 
     registration = StudentRegistration.objects.create(
         school=school,
-        branch=getattr(getattr(user, "profile", None), "branch", None),
+        branch=(getattr(data.get("section"), "branch", None) or getattr(profile, "branch", None)),
         academic_year=academic_year,
         registration_number=generate_registration_number(),
         student=student,
@@ -315,7 +311,8 @@ def create_student_registration(form, user=None):
         address=data.get("address") or "",
         phone=data.get("phone") or "",
         guardian_name=data.get("guardian_name") or "",
-        guardian_national_id=data.get("guardian_national_id") or "",
+        guardian_identity_type=data.get("guardian_identity_type") or "national",
+        guardian_identity_number=normalize_identifier(data.get("guardian_identity_number") or ""),
         mother_name=data.get("mother_name") or "",
         photo=data.get("photo"),
         transport_route=data.get("transport_route"),
@@ -338,8 +335,11 @@ def create_student_registration(form, user=None):
         guardian_name=data.get("guardian_name") or "",
         phone=data.get("phone") or "",
         school=school,
-        national_id=data.get("guardian_national_id") or "",
+        identity_type=data.get("guardian_identity_type") or "national",
+        identity_number=data.get("guardian_identity_number") or "",
+        relation="ولي أمر",
     )
+    # One-time credentials are transient and are never stored in the database.
     registration.parent_initial_username = family.user.username if family and family.user else ""
     registration.parent_initial_password = getattr(family, "initial_password", "")
 

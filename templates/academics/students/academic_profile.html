@@ -88,9 +88,9 @@
     <tbody>
       {% for g in guardians %}
       <tr>
-        <td>{{ g.guardian.full_name }}</td>
-        <td>{{ g.guardian.get_relation_display }}</td>
-        <td>{{ g.guardian.phone|default:"-" }}</td>
+        <td>{{ g.family.guardian_name }}</td>
+        <td>{{ g.relation }}</td>
+        <td>{{ g.family.phone|default:"-" }}</td>
         <td>{% if g.is_primary %}نعم{% else %}لا{% endif %}</td>
       </tr>
       {% empty %}

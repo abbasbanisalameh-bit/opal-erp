@@ -51,7 +51,7 @@ def student_academic_profile(request, pk):
         "academic_year", "grade", "section"
     ).all()
 
-    guardians = student.guardians.select_related("guardian").all()
+    guardians = student.family_links.filter(is_active=True).select_related("family").all()
     documents = student.documents.all()
 
     current_enrollment = enrollments.first()

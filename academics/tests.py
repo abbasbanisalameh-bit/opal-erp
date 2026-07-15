@@ -11,7 +11,9 @@ from students.models import Student
 from teachers.models import Teacher
 
 from .lifecycle import perform_lifecycle_action
-from .models import Enrollment, Grade, Guardian, Section, StudentDocument, StudentGuardian, StudentLifecycleEvent, Subject
+from parent_portal.models import Family, FamilyStudent
+
+from .models import Enrollment, Grade, Section, StudentDocument, StudentLifecycleEvent, Subject
 
 
 class AcademicsModelsTest(TestCase):
@@ -39,10 +41,10 @@ class AcademicsModelsTest(TestCase):
         self.assertEqual(self.section.available_seats, 29)
 
     def test_guardian_and_document_use_official_student(self):
-        guardian = Guardian.objects.create(school=self.school, full_name="ولي أمر اختبار", relation="father", phone="0790000000")
-        link = StudentGuardian.objects.create(student=self.student, guardian=guardian, is_primary=True)
+        family = Family.objects.create(school=self.school, guardian_name="ولي أمر اختبار", relation="الأب", phone="0790000000")
+        link = FamilyStudent.objects.create(student=self.student, family=family, relation="الأب", is_active=True)
         document = StudentDocument.objects.create(student=self.student, document_type="photo", title="صورة شخصية")
-        self.assertTrue(link.is_primary)
+        self.assertTrue(link.is_active)
         self.assertEqual(document.student, self.student)
 
     def test_promote_closes_old_enrollment_and_creates_event(self):

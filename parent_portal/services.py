@@ -6,19 +6,20 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 
 from accounts.models import Role, UserProfile
+from core.identifiers import normalize_identifier, normalize_phone
 from core.models import School
 
 from .models import Family, FamilyStudent
 
 
-def normalize_phone(phone):
-    return "".join(ch for ch in (phone or "") if ch.isdigit())
-
-
-def initial_parent_password(phone=""):
+def initial_parent_password(_seed=""):
     """Return a one-time random password; never derive credentials from identity data."""
     alphabet = string.ascii_letters + string.digits
-    value = [secrets.choice(string.ascii_uppercase), secrets.choice(string.ascii_lowercase), secrets.choice(string.digits)]
+    value = [
+        secrets.choice(string.ascii_uppercase),
+        secrets.choice(string.ascii_lowercase),
+        secrets.choice(string.digits),
+    ]
     value.extend(secrets.choice(alphabet) for _ in range(9))
     secrets.SystemRandom().shuffle(value)
     return "".join(value)
@@ -41,22 +42,33 @@ def _unique_username(base):
     return username
 
 
-def find_existing_family(*, school=None, guardian_name="", phone="", national_id=""):
-    """Find one authoritative family without falling back across schools."""
+def find_existing_family(
+    *,
+    school=None,
+    guardian_name="",
+    phone="",
+    national_id="",
+    identity_number="",
+):
+    """Find the authoritative family by identity first, then phone within one school."""
     digits = normalize_phone(phone)
-    qs = Family.objects.all()
+    identity = normalize_identifier(identity_number or national_id)
+    qs = Family.objects.filter(is_active=True)
     if school:
         qs = qs.filter(school=school)
-    if national_id:
-        found = qs.filter(guardian_national_id__iexact=national_id.strip()).first()
-        if found:
-            return found
-    if digits:
-        found = qs.filter(phone=digits).first() or qs.filter(phone__icontains=digits[-9:]).first()
-        if found:
-            return found
-    # Names are not identifiers. Falling back to a name can expose one family's
-    # children to an unrelated guardian who happens to have the same name.
+
+    identity_family = qs.filter(identity_number=identity).first() if identity else None
+    phone_family = qs.filter(phone=digits).first() if digits else None
+    if identity_family and phone_family and identity_family.pk != phone_family.pk:
+        raise ValidationError(
+            "بيانات ولي الأمر متعارضة: رقم الهوية والهاتف مرتبطان بأسرتين مختلفتين. "
+            "يجب مراجعة السجلين قبل المتابعة."
+        )
+    if identity_family:
+        return identity_family
+    if phone_family:
+        return phone_family
+    # Names are not identifiers and are deliberately never used to merge families.
     return None
 
 
@@ -94,20 +106,29 @@ def create_or_update_parent_family_for_student(
     phone="",
     school=None,
     national_id="",
+    identity_type="national",
+    identity_number="",
+    relation="ولي أمر",
+    source="manual",
+    openemis_data=None,
+    **extra_fields,
 ):
-    """Create or repair the single Family/FamilyStudent parent-account path."""
-    school = school or School.objects.filter(is_active=True).first()
+    """Create or repair the single canonical Family/FamilyStudent path."""
+    school = school or School.objects.filter(is_active=True).first() or School.objects.first()
     guardian_name = (guardian_name or student.guardian_name or "ولي أمر").strip()
     phone = normalize_phone(phone or student.phone or "")
-    national_id = (national_id or "").strip()
+    identity_number = normalize_identifier(identity_number or national_id)
+    identity_type = identity_type if identity_type in dict(Family.IDENTITY_TYPES) else "other"
+    relation = (relation or "ولي أمر").strip()
+
     family = find_existing_family(
         school=school,
         guardian_name=guardian_name,
         phone=phone,
-        national_id=national_id,
+        identity_number=identity_number,
     )
 
-    password = initial_parent_password(phone or national_id or str(student.pk))
+    password = initial_parent_password()
     created_user = False
     if family is None:
         username = _unique_username(_safe_username_from_phone(phone, guardian_name))
@@ -118,9 +139,18 @@ def create_or_update_parent_family_for_student(
         family = Family.objects.create(
             school=school,
             user=user,
+            source=source if source in dict(Family.SOURCE_CHOICES) else "manual",
             guardian_name=guardian_name,
+            relation=relation,
             phone=phone,
-            guardian_national_id=national_id,
+            identity_type=identity_type,
+            identity_number=identity_number,
+            openemis_data=openemis_data or {},
+            secondary_phone=extra_fields.get("secondary_phone", ""),
+            email=extra_fields.get("email", ""),
+            job_title=extra_fields.get("job_title", ""),
+            address=extra_fields.get("address", ""),
+            medical_notes=extra_fields.get("medical_notes", ""),
         )
     else:
         changed = []
@@ -131,24 +161,32 @@ def create_or_update_parent_family_for_student(
             family.user.save(update_fields=["first_name"])
             changed.append("user")
             created_user = True
-        if guardian_name and not family.guardian_name:
-            family.guardian_name = guardian_name
-            changed.append("guardian_name")
-        if phone and family.phone != phone:
-            family.phone = phone
-            changed.append("phone")
-        if national_id and not family.guardian_national_id:
-            family.guardian_national_id = national_id
-            changed.append("guardian_national_id")
+        values = {
+            "guardian_name": guardian_name,
+            "relation": relation,
+            "phone": phone,
+            "identity_type": identity_type,
+            "identity_number": identity_number,
+        }
+        if source == "openemis":
+            values["source"] = "openemis"
+        if openemis_data:
+            values["openemis_data"] = openemis_data
+        for field in ("secondary_phone", "email", "job_title", "address", "medical_notes"):
+            if field in extra_fields and extra_fields[field] not in (None, ""):
+                values[field] = extra_fields[field]
         if school and not family.school_id:
-            family.school = school
-            changed.append("school")
+            values["school"] = school
+        for field, value in values.items():
+            if value not in (None, "") and getattr(family, field) != value:
+                setattr(family, field, value)
+                changed.append(field)
         if changed:
-            family.save(update_fields=changed)
+            family.save(update_fields=list(dict.fromkeys(changed + ["updated_at"])))
 
     if not family.family_code:
         family.family_code = f"FAM-{family.pk:06d}"
-        family.save(update_fields=["family_code"])
+        family.save(update_fields=["family_code", "updated_at"])
 
     _ensure_user_profile(
         family.user,
@@ -156,16 +194,34 @@ def create_or_update_parent_family_for_student(
         guardian_name=guardian_name,
         phone=phone,
     )
-    # OPAL currently has one authoritative family account per student.
+
+    # Exactly one active family account per student.
     FamilyStudent.objects.filter(student=student, is_active=True).exclude(family=family).update(is_active=False)
     link, _ = FamilyStudent.objects.get_or_create(
         family=family,
         student=student,
-        defaults={"relation": "ولي أمر"},
+        defaults={"relation": relation, "is_active": True},
     )
+    link_changed = []
+    if link.relation != relation:
+        link.relation = relation
+        link_changed.append("relation")
     if not link.is_active:
         link.is_active = True
-        link.save(update_fields=["is_active"])
+        link_changed.append("is_active")
+    if link_changed:
+        link.save(update_fields=link_changed)
+
+    # Keep student contact snapshots synchronized for lists and legacy reports.
+    student_changed = []
+    if guardian_name and student.guardian_name != guardian_name:
+        student.guardian_name = guardian_name
+        student_changed.append("guardian_name")
+    if phone and student.phone != phone:
+        student.phone = phone
+        student_changed.append("phone")
+    if student_changed:
+        student.save(update_fields=student_changed + ["updated_at"])
 
     family.initial_username = family.user.username
     family.initial_password = password if created_user else ""
@@ -176,9 +232,7 @@ def create_or_update_parent_family_for_student(
 @transaction.atomic
 def ensure_family_account(family):
     """Create or repair the login account for an existing family."""
-    password = initial_parent_password(
-        family.phone or family.guardian_national_id or str(family.pk)
-    )
+    password = initial_parent_password()
     created = False
     if family.user_id:
         user = family.user
@@ -193,7 +247,7 @@ def ensure_family_account(family):
         user.first_name = family.guardian_name or "ولي أمر"
         user.save(update_fields=["first_name"])
         family.user = user
-        family.save(update_fields=["user"])
+        family.save(update_fields=["user", "updated_at"])
         created = True
 
     _ensure_user_profile(
@@ -208,9 +262,7 @@ def ensure_family_account(family):
 @transaction.atomic
 def reset_family_password(family):
     user, _, _ = ensure_family_account(family)
-    password = initial_parent_password(
-        family.phone or family.guardian_national_id or str(family.pk)
-    )
+    password = initial_parent_password()
     user.set_password(password)
     user.is_active = True
     user.save(update_fields=["password", "is_active"])
@@ -218,51 +270,48 @@ def reset_family_password(family):
 
 
 @transaction.atomic
-def update_family_identity(family, *, guardian_name, phone, national_id=""):
-    """Update the canonical parent identity and synchronize its read-only copies."""
+def update_family_identity(
+    family,
+    *,
+    guardian_name,
+    phone,
+    national_id="",
+    identity_type="national",
+    identity_number="",
+    relation=None,
+):
+    """Update the single canonical parent identity and its student snapshots."""
     guardian_name = (guardian_name or "").strip()
     phone = normalize_phone(phone)
-    national_id = (national_id or "").strip()
+    identity_number = normalize_identifier(identity_number or national_id)
+    identity_type = identity_type if identity_type in dict(Family.IDENTITY_TYPES) else "other"
     if not guardian_name or not phone:
         raise ValidationError("اسم ولي الأمر ورقم الهاتف مطلوبان.")
 
-    others = Family.objects.filter(school=family.school).exclude(pk=family.pk)
-    if national_id and others.filter(guardian_national_id__iexact=national_id).exists():
-        raise ValidationError("الرقم الوطني مرتبط بأسرة أخرى. استخدم أداة الدمج بدل إنشاء تعارض.")
+    others = Family.objects.filter(school=family.school, is_active=True).exclude(pk=family.pk)
+    if identity_number and others.filter(identity_number=identity_number).exists():
+        raise ValidationError("رقم الهوية مرتبط بأسرة أخرى. استخدم الأسرة الموجودة بدل إنشاء تعارض.")
     if phone and others.filter(phone=phone).exists():
-        raise ValidationError("رقم الهاتف مرتبط بأسرة أخرى. استخدم أداة الدمج بدل إنشاء تعارض.")
+        raise ValidationError("رقم الهاتف مرتبط بأسرة أخرى. استخدم الأسرة الموجودة أو أداة الدمج.")
 
     family.guardian_name = guardian_name
     family.phone = phone
-    family.guardian_national_id = national_id
-    family.save(update_fields=["guardian_name", "phone", "guardian_national_id"])
+    family.identity_type = identity_type
+    family.identity_number = identity_number
+    update_fields = ["guardian_name", "phone", "identity_type", "identity_number", "updated_at"]
+    if relation is not None:
+        family.relation = relation or "ولي أمر"
+        update_fields.append("relation")
+    family.save(update_fields=update_fields)
 
     if family.user_id:
         family.user.first_name = guardian_name[:150]
         family.user.save(update_fields=["first_name"])
         _ensure_user_profile(family.user, school=family.school, guardian_name=guardian_name, phone=phone)
 
-    from academics.models import Guardian, StudentGuardian
-
     for link in FamilyStudent.objects.filter(family=family, is_active=True).select_related("student"):
         student = link.student
         student.guardian_name = guardian_name
         student.phone = phone
         student.save(update_fields=["guardian_name", "phone", "updated_at"])
-        guardian_link = StudentGuardian.objects.filter(student=student, is_primary=True).select_related("guardian").first()
-        if guardian_link:
-            guardian = guardian_link.guardian
-            guardian.full_name = guardian_name
-            guardian.phone = phone
-            guardian.national_id = national_id
-            guardian.save(update_fields=["full_name", "phone", "national_id"])
-        elif family.school_id:
-            guardian = Guardian.objects.create(
-                school=family.school,
-                full_name=guardian_name,
-                relation="guardian",
-                phone=phone,
-                national_id=national_id,
-            )
-            StudentGuardian.objects.create(student=student, guardian=guardian, is_primary=True)
     return family

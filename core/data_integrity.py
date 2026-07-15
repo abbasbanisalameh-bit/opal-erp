@@ -119,7 +119,7 @@ def run_integrity_audit(*, fix_safe=False, user=None):
             if len(ids) > 1:
                 audit.issue(code, f"{label} {value} مرتبط بأكثر من أسرة.", severity="critical", model_name="parent_portal.Family", object_id=",".join(map(str, ids)))
     duplicate_family_values("phone", "FAMILY_DUPLICATE_PHONE", "الهاتف", normalize=True)
-    duplicate_family_values("guardian_national_id", "FAMILY_DUPLICATE_NATIONAL_ID", "الرقم الوطني")
+    duplicate_family_values("identity_number", "FAMILY_DUPLICATE_IDENTITY", "رقم الهوية")
     for family in Family.objects.all():
         if not family.children.filter(is_active=True).exists():
             audit.issue("FAMILY_WITHOUT_CHILDREN", f"الأسرة #{family.pk} لا تملك أبناء مرتبطين بنشاط.", model_name="parent_portal.Family", object_id=family.pk)

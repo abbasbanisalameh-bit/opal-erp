@@ -33,6 +33,10 @@ class OpenEMISSyncLog(models.Model):
         ("pull_student", "سحب طالب"),
         ("update_student", "تحديث طالب"),
         ("sync_guardian", "مزامنة ولي الأمر"),
+        ("sync_attendance", "مزامنة الحضور"),
+        ("sync_marks", "مزامنة العلامات"),
+        ("sync_teacher", "مزامنة معلم"),
+        ("full_import", "استيراد شامل"),
         ("test_connection", "اختبار اتصال"),
     ]
     STATUS_CHOICES = [

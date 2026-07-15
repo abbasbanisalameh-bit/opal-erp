@@ -25,13 +25,15 @@ def _structure():
     year = school.academic_years.filter(is_current=True).first() or school.academic_years.order_by("-start_date").first()
     if year is None:
         year = AcademicYear.objects.create(
-            school=school, name="2026/2027", start_date=date(2026, 9, 1), end_date=date(2027, 6, 30), is_current=True
+            school=school,
+            name="2026/2027",
+            start_date=date(2026, 9, 1),
+            midyear_break_start=date(2027, 1, 16),
+            midyear_break_end=date(2027, 1, 31),
+            end_date=date(2027, 6, 30),
+            is_current=True,
         )
-    Semester.objects.get_or_create(
-        academic_year=year,
-        name=f"{DEMO_PREFIX} الفصل الأول",
-        defaults={"start_date": year.start_date, "end_date": min(year.end_date, year.start_date + timedelta(days=150)), "is_current": True},
-    )
+    year.ensure_semesters()
 
     grade_names = ["الصف الأول", "الصف الثاني", "الصف الثالث", "الصف الرابع", "الصف الخامس"]
     subject_names = ["اللغة العربية", "الرياضيات", "العلوم", "اللغة الإنجليزية", "التربية الإسلامية"]
@@ -162,7 +164,7 @@ def seed_demo_school(*, student_count=100, teacher_count=20, user=None):
         cleaned = {
             "first_name": first, "father_name": "محمود", "grandfather_name": "أحمد", "family_name": family_name,
             "national_id": national_id, "gender": "male" if index % 2 else "female", "birth_date": date(2017, 1, 1),
-            "photo": None, "guardian_name": f"محمود {family_name}", "guardian_national_id": f"DEMO-P-NID-{family_index:04d}",
+            "photo": None, "guardian_name": f"محمود {family_name}", "guardian_identity_type": "national", "guardian_identity_number": f"DEMO-P-NID-{family_index:04d}",
             "mother_name": f"أم {first}", "phone": f"0798{family_index:06d}", "address": "عمان - عنوان تجريبي",
             "grade": section.grade, "section": section, "transport_route": None, "transport_type": "none",
             "discount_type": "none", "admin_discount_value": Decimal("0"), "sibling_student": None,
@@ -188,19 +190,33 @@ def seed_demo_school(*, student_count=100, teacher_count=20, user=None):
             ))
     Attendance.objects.bulk_create(attendance_rows, ignore_conflicts=True)
 
-    semester = year.semesters.first()
     for grade in grades:
         grade_students = [s for s in students if s.enrollments.filter(academic_year=year, grade=grade).exists()]
         for subject in subjects_by_grade[grade.pk]:
-            exam, _ = Exam.objects.get_or_create(
-                name=f"{DEMO_PREFIX} اختبار {subject.name} - {grade.name}", academic_year=year, grade=grade, subject=subject,
-                defaults={"exam_type": "monthly", "semester": semester, "max_mark": 100, "pass_percentage": 60,
-                          "weight": 20, "exam_date": today, "status": "published", "is_locked": True, "is_active": True},
-            )
-            StudentMark.objects.bulk_create([
-                StudentMark(exam=exam, student=student, mark=Decimal(55 + ((student.pk + subject.pk) % 46)), entered_by=user)
-                for student in grade_students
-            ], ignore_conflicts=True)
+            for semester in year.semesters.order_by("code"):
+                for exam_index, (exam_type, maximum) in enumerate(Exam.MAX_MARKS.items(), 1):
+                    exam, _ = Exam.objects.get_or_create(
+                        academic_year=year,
+                        semester=semester,
+                        grade=grade,
+                        subject=subject,
+                        exam_type=exam_type,
+                        defaults={
+                            "name": f"{DEMO_PREFIX} {dict(Exam.EXAM_TYPES)[exam_type]} - {subject.name}",
+                            "pass_percentage": 60,
+                            "exam_date": today,
+                            "status": "published",
+                            "is_locked": True,
+                            "is_active": True,
+                        },
+                    )
+                    marks = []
+                    max_int = int(maximum)
+                    for student in grade_students:
+                        score = Decimal(max(0, max_int - ((student.pk + subject.pk + exam_index) % max(2, max_int // 2))))
+                        marks.append(StudentMark(exam=exam, student=student, mark=score, entered_by=user))
+                    StudentMark.objects.bulk_create(marks, ignore_conflicts=True)
+
 
     template, _ = DocumentTemplate.objects.get_or_create(
         name=f"{DEMO_PREFIX} إثبات طالب", defaults={"document_type": "student_certificate", "title": "إثبات طالب تجريبي", "body": "وثيقة تجريبية", "is_active": True}
@@ -221,7 +237,6 @@ def seed_demo_school(*, student_count=100, teacher_count=20, user=None):
 @transaction.atomic
 def reset_demo_school():
     from accounting.models import Receipt, StudentInvoice, StudentPayment
-    from academics.models import Guardian
     from admissions.models import StudentRegistration
     from documents.models import IssuedDocument
     from exams.models import Exam
@@ -234,7 +249,6 @@ def reset_demo_school():
     student_ids = list(students.values_list("pk", flat=True))
     family_ids = list(FamilyStudent.objects.filter(student_id__in=student_ids).values_list("family_id", flat=True).distinct())
     family_user_ids = list(Family.objects.filter(pk__in=family_ids).exclude(user_id=None).values_list("user_id", flat=True))
-    guardian_ids = list(Guardian.objects.filter(students__student_id__in=student_ids).values_list("pk", flat=True).distinct())
     invoices = StudentInvoice.objects.filter(student_id__in=student_ids)
     payments = StudentPayment.objects.filter(invoice__in=invoices)
     Receipt.objects.filter(payment__in=payments).delete()
@@ -244,7 +258,6 @@ def reset_demo_school():
     invoices.delete()
     deleted_students = students.count()
     students.delete()
-    Guardian.objects.filter(pk__in=guardian_ids, students__isnull=True).delete()
     Family.objects.filter(pk__in=family_ids, children__isnull=True).delete()
 
     teachers = Teacher.objects.filter(is_demo=True)

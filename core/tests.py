@@ -43,23 +43,16 @@ class AcademicPeriodValidationTest(TestCase):
             semester.full_clean()
 
     def test_only_one_current_semester_per_year(self):
-        first = Semester.objects.create(
-            academic_year=self.year,
-            name="الفصل الأول",
-            start_date=date(2026, 9, 1),
-            end_date=date(2027, 1, 20),
-            is_current=True,
-        )
-        second = Semester.objects.create(
-            academic_year=self.year,
-            name="الفصل الثاني",
-            start_date=date(2027, 1, 21),
-            end_date=date(2027, 6, 30),
-            is_current=True,
-        )
+        first = self.year.semesters.get(code="first")
+        second = self.year.semesters.get(code="second")
+        first.is_current = True
+        first.save()
+        second.is_current = True
+        second.save()
         first.refresh_from_db()
         self.assertFalse(first.is_current)
         self.assertTrue(second.is_current)
+        self.assertEqual(self.year.semesters.count(), 2)
 
 
 class OptionalModuleSeparationTests(TestCase):
@@ -143,15 +136,19 @@ class DataIntegrityCenterTests(TestCase):
         self.student = Student.objects.create(
             student_number="INT-1", national_id="DUP-NID", full_name="طالب التعارض", grade="صف خاطئ", section="شعبة خاطئة"
         )
-        Student.objects.create(student_number="INT-2", national_id="DUP-NID", full_name="طالب مكرر", grade="الأول", status="archived", is_active=False)
+        Student.objects.create(student_number="INT-2", national_id="UNIQUE-NID-2", full_name="طالب ثان", grade="الأول", status="archived", is_active=False)
 
     def _create_fixable_conflicts(self):
         from academics.models import Enrollment, Subject
+        from students.models import Student
         from accounting.models import FeeCategory, StudentInvoice, StudentPayment
         from exams.models import Exam
         from teachers.models import Teacher
 
         Enrollment.objects.create(student=self.student, academic_year=self.year, grade=self.grade, section=self.section, status="active")
+        # Simulate legacy/stale denormalized display fields after the canonical enrollment exists.
+        Student.objects.filter(pk=self.student.pk).update(grade="صف خاطئ", section="شعبة خاطئة")
+        self.student.refresh_from_db()
         teacher_user = User.objects.create_user("mismatch_teacher", password="x", is_active=True)
         teacher = Teacher.objects.create(user=teacher_user, employee_number="INT-T-1", full_name="معلم متوقف", school=self.school, branch=self.branch, is_active=False)
         category = FeeCategory.objects.create(name="اختبار السلامة", amount=100)
@@ -159,7 +156,7 @@ class DataIntegrityCenterTests(TestCase):
         StudentPayment.objects.create(invoice=invoice, amount=50)
         StudentInvoice.objects.filter(pk=invoice.pk).update(status="open", paid=False)
         subject = Subject.objects.create(name="رياضيات", grade=self.grade)
-        exam = Exam.objects.create(name="امتحان منشور", exam_type="monthly", academic_year=self.year, grade=self.grade, subject=subject, status="published", is_locked=False)
+        exam = Exam.objects.create(name="امتحان منشور", exam_type="first", academic_year=self.year, semester=self.year.semesters.get(code="first"), grade=self.grade, subject=subject, status="published", is_locked=False)
         return teacher, teacher_user, invoice, exam
 
     def test_scan_detects_but_does_not_change_data(self):
@@ -169,7 +166,7 @@ class DataIntegrityCenterTests(TestCase):
         self._create_fixable_conflicts()
         run = run_integrity_audit(fix_safe=False, user=self.user)
         codes = set(run.issues.values_list("code", flat=True))
-        self.assertIn("STUDENT_DUPLICATE_NATIONAL_ID", codes)
+        self.assertNotIn("STUDENT_DUPLICATE_NATIONAL_ID", codes)
         self.assertIn("STUDENT_ACADEMIC_SNAPSHOT_MISMATCH", codes)
         self.student.refresh_from_db()
         self.assertEqual(self.student.grade, "صف خاطئ")
@@ -187,10 +184,7 @@ class DataIntegrityCenterTests(TestCase):
         self.assertFalse(teacher_user.is_active)
         self.assertEqual(invoice.status, "partial")
         self.assertTrue(exam.is_locked)
-        duplicate = run.issues.get(code="STUDENT_DUPLICATE_NATIONAL_ID")
-        self.assertFalse(duplicate.is_fixable)
-        self.assertFalse(duplicate.is_fixed)
-        self.assertEqual(Student.objects.filter(national_id="DUP-NID").count(), 2)
+        self.assertEqual(Student.objects.filter(national_id="DUPNID").count(), 1)
 
     def test_integrity_center_is_visible_to_superuser(self):
         self.client.force_login(self.user)

@@ -146,7 +146,8 @@ class StudentRegistration(models.Model):
     address = models.TextField("العنوان", blank=True)
     phone = models.CharField("هاتف ولي الأمر", max_length=30, blank=True)
     guardian_name = models.CharField("اسم ولي الأمر", max_length=200, blank=True)
-    guardian_national_id = models.CharField("الرقم الوطني لولي الأمر", max_length=50, blank=True)
+    guardian_identity_type = models.CharField("نوع هوية ولي الأمر", max_length=20, choices=[("national", "رقم وطني أردني"), ("personal", "رقم شخصي لغير الأردني"), ("other", "معرف آخر")], default="national")
+    guardian_identity_number = models.CharField("رقم هوية ولي الأمر", max_length=50, blank=True)
     mother_name = models.CharField("اسم الأم", max_length=200, blank=True)
     photo = models.ImageField("صورة الطالب", upload_to="students/photos/", blank=True, null=True)
 
@@ -174,6 +175,13 @@ class StudentRegistration(models.Model):
         ordering = ["-created_at"]
         verbose_name = "تسجيل طالب"
         verbose_name_plural = "تسجيل الطلاب"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["student", "academic_year"],
+                condition=models.Q(student__isnull=False, academic_year__isnull=False),
+                name="uniq_registration_per_student_year",
+            )
+        ]
 
     def __str__(self):
         return f"{self.registration_number} - {self.full_name}"

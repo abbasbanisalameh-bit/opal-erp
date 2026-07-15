@@ -3,6 +3,19 @@
 {% block page_title %}إعدادات النظام{% endblock %}
 {% block page_subtitle %}إدارة بيانات المدرسة العامة وشعارها{% endblock %}
 {% block content %}
+{# OPAL_SYSTEM_UPDATES_PAGE_V2 #}
+{% if request.user.is_superuser %}
+<div class="opal-card mb-4">
+    <h3 class="fw-bold mb-3"><i class="bi bi-arrow-repeat"></i> مركز تحديثات النظام</h3>
+    <p class="text-secondary">حفظ نسخة الكود الحالية، رفع تحديث، استعادة نسخة محفوظة، وإدارة نسخ GitHub.</p>
+    <a href="{% url 'core:system_updates' %}" class="btn btn-dark">
+        <i class="bi bi-gear-wide-connected"></i> فتح مركز تحديثات النظام
+    </a>
+</div>
+{% endif %}
+
+
+
 
 {% if request.user.is_superuser %}
 <div class="opal-card mb-4" style="border:1px solid rgba(245,158,11,.35);background:linear-gradient(135deg,rgba(245,158,11,.08),rgba(239,68,68,.05));">

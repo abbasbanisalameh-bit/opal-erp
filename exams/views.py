@@ -15,7 +15,7 @@ from students.models import Student
 
 from .forms import ExamForm, StudentMarkForm
 from .models import Exam, StudentMark
-from .services import dashboard_statistics, exam_statistics, student_academic_record
+from .services import annual_report, dashboard_statistics, exam_statistics, student_academic_record
 
 
 def _notify_parents_exam_published(exam):
@@ -257,7 +257,14 @@ def exam_delete(request, exam_id):
 @staff_member_required
 def student_report_card(request, student_id):
     student = get_object_or_404(Student, pk=student_id)
-    return render(request, "exams/student_report_card.html", {"student": student, "record": student_academic_record(student, published_only=True)})
+    year_id = request.GET.get("year")
+    if year_id:
+        academic_year = get_object_or_404(AcademicYear, pk=year_id)
+    else:
+        enrollment = student.enrollments.select_related("academic_year").order_by("-academic_year__start_date").first()
+        academic_year = enrollment.academic_year if enrollment else AcademicYear.objects.filter(is_current=True).first()
+    report = annual_report(student=student, academic_year=academic_year) if academic_year else None
+    return render(request, "exams/student_report_card.html", {"student": student, "report": report})
 
 
 @staff_member_required
@@ -265,12 +272,16 @@ def issue_student_report_card(request, student_id):
     from documents.models import DocumentTemplate, IssuedDocument, StudentIssuedDocument
     from documents.utils import generate_document_number
     student = get_object_or_404(Student, pk=student_id)
-    record = student_academic_record(student, published_only=True)
-    if not record["marks"]:
-        messages.error(request, "لا توجد نتائج منشورة لإصدار كشف علامات رسمي.")
+    enrollment = student.enrollments.select_related("academic_year").order_by("-academic_year__start_date").first()
+    if not enrollment:
+        messages.error(request, "لا يوجد قيد دراسي للطالب لإصدار الشهادة.")
+        return redirect("exams:student_report_card", student_id=student.id)
+    report = annual_report(student=student, academic_year=enrollment.academic_year)
+    if not report["complete"]:
+        messages.error(request, "لا يمكن إصدار الشهادة قبل اكتمال علامات الفصلين.")
         return redirect("exams:student_report_card", student_id=student.id)
     number = generate_document_number()
-    content = f"كشف علامات الطالب {student.full_name} - المعدل {record['overall_average']}% - التقدير {record['overall_grade']}"
+    content = f"شهادة الطالب {student.full_name} - المعدل السنوي {report['annual_average']}%"
     template = DocumentTemplate.objects.filter(document_type="report_card", is_active=True).first()
     issued = IssuedDocument.objects.create(template=template, student=student, applicant_name=student.full_name, document_number=number, title="كشف علامات أكاديمي", content=content, issued_by=request.user)
     StudentIssuedDocument.objects.get_or_create(student=student, issued_document=issued)

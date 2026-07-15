@@ -91,30 +91,16 @@ def student_payment_status(student):
 
 
 def find_sibling_students(student):
-    """Return the authoritative family children when available, then use legacy matching."""
+    """Return children of the one canonical Family record only.
+
+    National/personal guardian identity is resolved when Family is created. We
+    never infer siblings from similar names or shared phone numbers.
+    """
     family_link = student.family_links.filter(is_active=True).select_related("family").first()
-    if family_link:
-        linked_ids = family_link.family.children.filter(is_active=True).values_list("student_id", flat=True)
-        return Student.objects.filter(pk__in=linked_ids, is_active=True).order_by("full_name")
-
-    q = models.Q()
-    if student.phone:
-        q |= models.Q(phone__iexact=student.phone.strip())
-    if student.guardian_name:
-        q |= models.Q(guardian_name__iexact=student.guardian_name.strip())
-    if student.father_name and student.full_name:
-        family_part = student.full_name.split()[-1]
-        q |= models.Q(father_name__iexact=student.father_name.strip(), full_name__iendswith=family_part)
-    if student.mother_name:
-        q |= models.Q(mother_name__iexact=student.mother_name.strip())
-
-    if not q:
-        return Student.objects.filter(pk=student.pk)
-
-    qs = Student.objects.filter(is_active=True).filter(q).distinct()
-    if not qs.filter(pk=student.pk).exists():
-        qs = Student.objects.filter(pk=student.pk) | qs
-    return qs.distinct().order_by("full_name")
+    if not family_link:
+        return Student.objects.filter(pk=student.pk, is_active=True)
+    linked_ids = family_link.family.children.filter(is_active=True).values_list("student_id", flat=True)
+    return Student.objects.filter(pk__in=linked_ids, is_active=True).order_by("full_name")
 
 
 def search_students(query):
@@ -229,8 +215,10 @@ def ensure_balance_invoice(student, minimum_amount):
         name="رصيد رسوم مدرسية",
         defaults={"description": "رصيد رسوم مرحّل للطالب", "amount": invoice_amount, "active": True},
     )
+    enrollment = student.enrollments.filter(status="active").select_related("academic_year").order_by("-academic_year__start_date").first()
     return StudentInvoice.objects.create(
         student=student,
+        academic_year=enrollment.academic_year if enrollment else None,
         fee_category=category,
         amount=invoice_amount,
         due_date=timezone.localdate(),

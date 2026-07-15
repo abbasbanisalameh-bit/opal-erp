@@ -8,7 +8,7 @@ class ExamForm(forms.ModelForm):
         model = Exam
         fields = [
             "name", "exam_type", "academic_year", "semester", "grade", "subject",
-            "max_mark", "pass_percentage", "weight", "exam_date", "is_active",
+            "pass_percentage", "exam_date", "is_active",
         ]
         widgets = {"exam_date": forms.DateInput(attrs={"type": "date"})}
 

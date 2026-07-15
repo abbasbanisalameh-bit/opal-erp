@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 
 from core.models import AcademicYear, Branch, School
@@ -23,9 +24,7 @@ class Grade(models.Model):
 class Section(models.Model):
     academic_year = models.ForeignKey(
         AcademicYear,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
+        on_delete=models.CASCADE,
         related_name="sections",
     )
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name="sections")
@@ -74,8 +73,11 @@ class Section(models.Model):
         if self.homeroom_teacher_id and self.branch_id and self.homeroom_teacher.school_id != self.branch.school_id:
             errors["homeroom_teacher"] = "مربي الصف يجب أن يتبع المدرسة نفسها."
         if errors:
-            from django.core.exceptions import ValidationError
             raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
 
 
 class Enrollment(models.Model):
@@ -89,7 +91,7 @@ class Enrollment(models.Model):
 
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="enrollments")
     academic_year = models.ForeignKey(AcademicYear, on_delete=models.CASCADE, related_name="enrollments")
-    grade = models.ForeignKey(Grade, on_delete=models.SET_NULL, null=True)
+    grade = models.ForeignKey(Grade, on_delete=models.PROTECT, related_name="enrollments")
     section = models.ForeignKey(
         Section,
         on_delete=models.SET_NULL,
@@ -108,6 +110,34 @@ class Enrollment(models.Model):
 
     def __str__(self):
         return f"{self.student.full_name} - {self.academic_year.name}"
+
+    def clean(self):
+        super().clean()
+        errors = {}
+        if self.grade_id and self.academic_year_id and self.grade.school_id != self.academic_year.school_id:
+            errors["grade"] = "الصف يجب أن يتبع مدرسة العام الدراسي."
+        if self.section_id:
+            if self.section.academic_year_id != self.academic_year_id:
+                errors["section"] = "الشعبة يجب أن تتبع العام الدراسي نفسه."
+            if self.section.grade_id != self.grade_id:
+                errors["section"] = "الشعبة يجب أن تتبع الصف المحدد."
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        result = super().save(*args, **kwargs)
+        # grade/section on Student are display snapshots only; Enrollment is authoritative.
+        grade_name = self.grade.name if self.grade_id else ""
+        section_name = self.section.name if self.section_id else ""
+        updates = {}
+        if self.student.grade != grade_name:
+            updates["grade"] = grade_name
+        if self.student.section != section_name:
+            updates["section"] = section_name
+        if updates:
+            type(self.student).objects.filter(pk=self.student_id).update(**updates)
+        return result
 
 
 class StudentLifecycleEvent(models.Model):
@@ -154,47 +184,6 @@ class StudentLifecycleEvent(models.Model):
         return f"{self.student} - {self.get_action_display()}"
 
 
-class Guardian(models.Model):
-    RELATION_CHOICES = [
-        ("father", "الأب"),
-        ("mother", "الأم"),
-        ("guardian", "وصي"),
-        ("other", "آخر"),
-    ]
-
-    school = models.ForeignKey(School, on_delete=models.CASCADE, related_name="guardians")
-    full_name = models.CharField(max_length=200)
-    relation = models.CharField(max_length=20, choices=RELATION_CHOICES)
-    national_id = models.CharField(max_length=50, blank=True)
-    phone = models.CharField(max_length=30)
-    secondary_phone = models.CharField(max_length=30, blank=True)
-    email = models.EmailField(blank=True)
-    job_title = models.CharField(max_length=150, blank=True)
-    address = models.TextField(blank=True)
-    medical_notes = models.TextField(blank=True)
-    is_active = models.BooleanField(default=True)
-
-    class Meta:
-        ordering = ["full_name"]
-
-    def __str__(self):
-        return self.full_name
-
-
-class StudentGuardian(models.Model):
-    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="guardians")
-    guardian = models.ForeignKey(Guardian, on_delete=models.CASCADE, related_name="students")
-    is_primary = models.BooleanField(default=False)
-    can_receive_notifications = models.BooleanField(default=True)
-    can_pickup_student = models.BooleanField(default=True)
-
-    class Meta:
-        unique_together = ("student", "guardian")
-
-    def __str__(self):
-        return f"{self.student.full_name} - {self.guardian.full_name}"
-
-
 class StudentDocument(models.Model):
     DOCUMENT_TYPES = [
         ("birth_certificate", "شهادة ميلاد"),
@@ -220,9 +209,7 @@ class Subject(models.Model):
     code = models.CharField(max_length=30, blank=True)
     grade = models.ForeignKey(
         Grade,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
+        on_delete=models.CASCADE,
         related_name="subjects",
     )
     is_active = models.BooleanField(default=True)
@@ -231,8 +218,26 @@ class Subject(models.Model):
         verbose_name = "مادة دراسية"
         verbose_name_plural = "المواد الدراسية"
         ordering = ["grade__order", "name"]
+        constraints = [
+            models.UniqueConstraint(fields=["grade", "name"], name="uniq_subject_name_per_grade"),
+            models.UniqueConstraint(
+                fields=["grade", "code"],
+                condition=~models.Q(code=""),
+                name="uniq_subject_code_per_grade",
+            ),
+        ]
+
+    def clean(self):
+        super().clean()
+        if self.grade_id and not self.grade.is_active and self.is_active:
+            raise ValidationError({"grade": "لا يمكن تفعيل مادة لصف غير فعال."})
+
+    def save(self, *args, **kwargs):
+        self.name = (self.name or "").strip()
+        self.code = (self.code or "").strip().upper()
+        self.full_clean()
+        return super().save(*args, **kwargs)
 
     def __str__(self):
-        if self.grade:
-            return f"{self.name} - {self.grade}"
-        return self.name
+        return f"{self.name} - {self.grade}"
+

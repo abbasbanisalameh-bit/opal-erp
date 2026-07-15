@@ -118,4 +118,4 @@ class ParentFamilyConsolidationTests(TestCase):
         family.refresh_from_db()
         self.assertEqual(student.guardian_name, "الاسم الرسمي")
         self.assertEqual(student.phone, "0799999999")
-        self.assertEqual(family.guardian_national_id, "PARENT-1")
+        self.assertEqual(family.identity_number, "PARENT1")

@@ -12,17 +12,12 @@ from .models import Grade, Section, Subject
 
 AcademicYearForm = modelform_factory(
     AcademicYear,
-    fields=["school", "name", "start_date", "end_date", "is_current"],
+    fields=["school", "name", "start_date", "midyear_break_start", "midyear_break_end", "end_date", "is_current"],
 )
 SubjectForm = modelform_factory(
     Subject,
     fields=["name", "code", "grade", "is_active"],
 )
-SemesterForm = modelform_factory(
-    Semester,
-    fields=["academic_year", "name", "start_date", "end_date", "is_current"],
-)
-
 
 def _style_form(form):
     for field in form.fields.values():
@@ -222,28 +217,20 @@ def semester_list(request):
 
 @login_required
 def semester_create(request):
-    form = _style_form(SemesterForm(request.POST or None))
-    if form.is_valid():
-        form.save()
-        return redirect("academics:semester_list")
-    return render(request, "academics/semester_form.html", {"form": form, "title": "إضافة فصل دراسي"})
+    messages.info(request, "الفصلان الدراسيان يُنشآن تلقائيًا من العام الدراسي وعطلة منتصف العام.")
+    return redirect("academics:academic_structure")
 
 
 @login_required
 def semester_update(request, pk):
     semester = get_object_or_404(Semester, pk=pk)
-    form = _style_form(SemesterForm(request.POST or None, instance=semester))
-    if form.is_valid():
-        form.save()
-        return redirect("academics:semester_list")
-    return render(request, "academics/semester_form.html", {"form": form, "title": "تعديل فصل دراسي"})
+    messages.info(request, "تُعدل تواريخ الفصل من بيانات العام الدراسي وعطلة منتصف العام.")
+    return redirect(f"/academics/structure/?year={semester.academic_year_id}")
 
 
 @login_required
 def semester_delete(request, pk):
-    semester = get_object_or_404(Semester, pk=pk)
-    if request.method == "POST":
-        semester.delete()
+    messages.error(request, "لا يمكن حذف أحد الفصلين الدراسيين؛ العام الدراسي مقسوم دائمًا إلى فصلين.")
     return redirect("academics:semester_list")
 
 

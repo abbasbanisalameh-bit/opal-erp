@@ -1,0 +1,15 @@
+{% extends "base/base.html" %}
+{% block title %}استيراد OpenEMIS | OPAL ERP{% endblock %}
+{% block page_title %}استيراد بيانات OpenEMIS{% endblock %}
+{% block page_subtitle %}استيراد موحد إلى الطالب والمعلم والأسرة والتسجيل والحضور والعلامات الرسمية{% endblock %}
+{% block content %}
+<div class="opal-card">
+  <div class="alert alert-info">هذه أداة مرحلية لاختبار البيانات أو استقبال ناتج محول الوزارة. لا تنشئ نماذج بديلة؛ بل تحدّث المصادر الرسمية نفسها.</div>
+  <form method="post">{% csrf_token %}
+    <label class="form-label fw-bold">{{ form.payload.label }}</label>{{ form.payload }}
+    {% if form.payload.help_text %}<div class="form-text">{{ form.payload.help_text }}</div>{% endif %}
+    {% for error in form.payload.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+    <button class="btn btn-primary mt-3">استيراد وتوحيد البيانات</button>
+  </form>
+</div>
+{% endblock %}

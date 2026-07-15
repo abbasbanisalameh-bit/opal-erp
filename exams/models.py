@@ -7,12 +7,17 @@ from django.db import models
 
 class Exam(models.Model):
     EXAM_TYPES = [
-        ("monthly", "امتحان شهري"),
-        ("midterm", "نصف الفصل"),
-        ("final", "نهائي"),
-        ("quiz", "اختبار قصير"),
-        ("coursework", "أعمال سنة"),
+        ("first", "الامتحان الأول"),
+        ("second", "الامتحان الثاني"),
+        ("third", "الامتحان الثالث"),
+        ("final", "الامتحان النهائي"),
     ]
+    MAX_MARKS = {
+        "first": Decimal("20.00"),
+        "second": Decimal("20.00"),
+        "third": Decimal("20.00"),
+        "final": Decimal("40.00"),
+    }
     STATUS_CHOICES = [
         ("draft", "مسودة"),
         ("open", "مفتوح لإدخال العلامات"),
@@ -21,15 +26,17 @@ class Exam(models.Model):
         ("closed", "مغلق"),
     ]
 
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=200, blank=True)
     exam_type = models.CharField(max_length=30, choices=EXAM_TYPES)
-    academic_year = models.ForeignKey("core.AcademicYear", on_delete=models.CASCADE)
-    semester = models.ForeignKey("core.Semester", on_delete=models.SET_NULL, null=True, blank=True, related_name="exams")
-    grade = models.ForeignKey("academics.Grade", on_delete=models.CASCADE)
-    subject = models.ForeignKey("academics.Subject", on_delete=models.PROTECT)
-    max_mark = models.DecimalField(max_digits=6, decimal_places=2, default=100)
+    academic_year = models.ForeignKey("core.AcademicYear", on_delete=models.CASCADE, related_name="exams")
+    semester = models.ForeignKey("core.Semester", on_delete=models.CASCADE, related_name="exams")
+    grade = models.ForeignKey("academics.Grade", on_delete=models.CASCADE, related_name="exams")
+    subject = models.ForeignKey("academics.Subject", on_delete=models.PROTECT, related_name="exams")
+    max_mark = models.DecimalField(max_digits=6, decimal_places=2, default=20, editable=False)
     pass_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=60)
-    weight = models.DecimalField("وزن الامتحان", max_digits=5, decimal_places=2, default=100)
+    # Retained for compatibility with existing analytics; it mirrors the official
+    # share of the 100-mark semester total (20/20/20/40).
+    weight = models.DecimalField("وزن الامتحان", max_digits=5, decimal_places=2, default=20, editable=False)
     exam_date = models.DateField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="draft", db_index=True)
     is_locked = models.BooleanField(default=False)
@@ -45,8 +52,14 @@ class Exam(models.Model):
     published_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
-        ordering = ["-exam_date", "name"]
+        ordering = ["academic_year", "semester__code", "grade__order", "subject__name", "exam_type"]
         indexes = [models.Index(fields=["academic_year", "grade", "status"])]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["academic_year", "semester", "grade", "subject", "exam_type"],
+                name="uniq_four_assessments_per_subject_term",
+            )
+        ]
 
     @property
     def can_edit_marks(self):
@@ -55,21 +68,30 @@ class Exam(models.Model):
     def clean(self):
         super().clean()
         errors = {}
-        if self.max_mark is not None and self.max_mark <= 0:
-            errors["max_mark"] = "العلامة القصوى يجب أن تكون أكبر من صفر."
+        if self.exam_type not in self.MAX_MARKS:
+            errors["exam_type"] = "نوع الامتحان غير معتمد."
         if self.pass_percentage is not None and not (Decimal("0") <= self.pass_percentage <= Decimal("100")):
             errors["pass_percentage"] = "نسبة النجاح يجب أن تكون بين 0 و100."
-        if self.weight is not None and not (Decimal("0") < self.weight <= Decimal("100")):
-            errors["weight"] = "وزن الامتحان يجب أن يكون أكبر من صفر ولا يتجاوز 100."
-        if self.subject_id and self.subject.grade_id and self.subject.grade_id != self.grade_id:
+        if self.subject_id and self.subject.grade_id != self.grade_id:
             errors["subject"] = "المادة لا تتبع الصف المحدد."
         if self.semester_id and self.semester.academic_year_id != self.academic_year_id:
             errors["semester"] = "الفصل الدراسي لا يتبع العام المحدد."
+        if self.grade_id and self.academic_year_id and self.grade.school_id != self.academic_year.school_id:
+            errors["grade"] = "الصف لا يتبع مدرسة العام الدراسي."
         if errors:
             raise ValidationError(errors)
 
+    def save(self, *args, **kwargs):
+        official_mark = self.MAX_MARKS.get(self.exam_type, Decimal("20.00"))
+        self.max_mark = official_mark
+        self.weight = official_mark
+        if not self.name and self.exam_type and self.subject_id:
+            self.name = f"{self.get_exam_type_display()} - {self.subject.name}"
+        self.full_clean(exclude=["approved_by"])
+        return super().save(*args, **kwargs)
+
     def __str__(self):
-        return self.name
+        return self.name or self.get_exam_type_display()
 
 
 class StudentMark(models.Model):
@@ -95,19 +117,24 @@ class StudentMark(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        unique_together = ("exam", "student")
         ordering = ["student__full_name"]
+        constraints = [
+            models.UniqueConstraint(fields=["exam", "student"], name="uniq_student_mark_per_exam"),
+        ]
 
     def clean(self):
         super().clean()
         if self.mark is None:
             return
-        if self.mark < 0:
-            raise ValidationError({"mark": "لا يمكن أن تكون العلامة سالبة."})
-        if self.exam_id and self.mark > self.exam.max_mark:
-            raise ValidationError({"mark": f"العلامة لا يمكن أن تتجاوز {self.exam.max_mark}."})
+        if self.mark < 0 or (self.exam_id and self.mark > self.exam.max_mark):
+            maximum = self.exam.max_mark if self.exam_id else "الحد الأقصى"
+            raise ValidationError({"mark": f"العلامة يجب أن تكون بين 0 و{maximum}."})
         if self.exam_id and self.pk and not self.exam.can_edit_marks:
             raise ValidationError("الامتحان معتمد أو مقفل ولا يمكن تعديل علاماته.")
+
+    def save(self, *args, **kwargs):
+        self.full_clean(exclude=["entered_by", "updated_by"])
+        return super().save(*args, **kwargs)
 
     @property
     def percentage(self):
@@ -121,7 +148,9 @@ class StudentMark(models.Model):
 
     @property
     def weighted_percentage(self):
-        return (Decimal(str(self.percentage)) * self.exam.weight / Decimal("100")).quantize(Decimal("0.01"))
+        # Because the official marks already sum to 100, the weighted result is
+        # the raw mark itself (20/20/20/40).
+        return Decimal(self.mark).quantize(Decimal("0.01"))
 
     @property
     def grade_letter(self):

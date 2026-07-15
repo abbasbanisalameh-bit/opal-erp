@@ -89,3 +89,98 @@ def student_academic_record(student, published_only=False) -> dict:
     strengths = [s for s in subjects if s["average"] >= 80][:5]
     needs_support = [s for s in reversed(subjects) if s["average"] < 60][:5]
     return {"marks": list(reversed(marks)), "subjects": subjects, "years": years, "timeline": list(reversed(timeline)), "exam_count": len(marks), "overall_average": overall.quantize(Decimal("0.01")), "overall_grade": _grade_label(overall), "passed": passed, "failed": len(marks)-passed, "pass_rate": round((passed/len(marks))*100,2) if marks else 0, "strengths": strengths, "needs_support": needs_support}
+
+# ---------------------------------------------------------------------------
+# Official OPAL report calculations: four assessments per subject/semester.
+# ---------------------------------------------------------------------------
+TWOPLACES = Decimal("0.01")
+ASSESSMENT_ORDER = ("first", "second", "third", "final")
+
+
+def _two_places(value):
+    return Decimal(value or 0).quantize(TWOPLACES)
+
+
+def subject_semester_result(*, student, academic_year, semester, subject):
+    marks = {
+        row.exam.exam_type: row
+        for row in StudentMark.objects.filter(
+            student=student,
+            exam__academic_year=academic_year,
+            exam__semester=semester,
+            exam__subject=subject,
+            exam__is_active=True,
+        ).select_related("exam")
+    }
+    assessments = []
+    total = Decimal("0.00")
+    complete = True
+    for exam_type in ASSESSMENT_ORDER:
+        row = marks.get(exam_type)
+        maximum = Exam.MAX_MARKS[exam_type]
+        mark = _two_places(row.mark if row else 0)
+        if row is None:
+            complete = False
+        total += mark
+        assessments.append({
+            "exam_type": exam_type,
+            "label": dict(Exam.EXAM_TYPES)[exam_type],
+            "mark": mark,
+            "max_mark": maximum,
+        })
+    return {
+        "subject": subject,
+        "assessments": assessments,
+        "total": _two_places(total),
+        "max_total": Decimal("100.00"),
+        "complete": complete,
+    }
+
+
+def semester_report(*, student, academic_year, semester):
+    from academics.models import Subject
+
+    enrollment = student.enrollments.filter(academic_year=academic_year).select_related("grade").first()
+    if enrollment:
+        subjects = list(Subject.objects.filter(grade=enrollment.grade, is_active=True).order_by("name"))
+    else:
+        subjects = list(Subject.objects.filter(
+            exams__marks__student=student,
+            exams__academic_year=academic_year,
+            exams__semester=semester,
+        ).distinct().order_by("name"))
+    rows = [
+        subject_semester_result(
+            student=student,
+            academic_year=academic_year,
+            semester=semester,
+            subject=subject,
+        )
+        for subject in subjects
+    ]
+    average = _two_places(sum((row["total"] for row in rows), Decimal("0.00")) / len(rows)) if rows else Decimal("0.00")
+    return {
+        "semester": semester,
+        "rows": rows,
+        "subject_count": len(rows),
+        "average": average,
+        "complete": bool(rows) and all(row["complete"] for row in rows),
+    }
+
+
+def annual_report(*, student, academic_year):
+    academic_year.ensure_semesters()
+    first = academic_year.semesters.get(code="first")
+    second = academic_year.semesters.get(code="second")
+    first_report = semester_report(student=student, academic_year=academic_year, semester=first)
+    second_report = semester_report(student=student, academic_year=academic_year, semester=second)
+    annual_average = _two_places((first_report["average"] + second_report["average"]) / Decimal("2"))
+    return {
+        "student": student,
+        "academic_year": academic_year,
+        "first": first_report,
+        "second": second_report,
+        "terms": [first_report, second_report],
+        "annual_average": annual_average,
+        "complete": first_report["complete"] and second_report["complete"],
+    }

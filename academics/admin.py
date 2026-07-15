@@ -4,15 +4,8 @@ from .models import (
     Section,
     Subject,
     Enrollment,
-    Guardian,
-    StudentGuardian,
     StudentDocument,
 )
-
-
-class StudentGuardianInline(admin.TabularInline):
-    model = StudentGuardian
-    extra = 1
 
 
 class StudentDocumentInline(admin.TabularInline):
@@ -40,20 +33,6 @@ class EnrollmentAdmin(admin.ModelAdmin):
     list_display = ("student", "academic_year", "grade", "section", "status", "joined_at")
     search_fields = ("student__full_name", "student__student_number")
     list_filter = ("academic_year", "grade", "section", "status")
-
-
-@admin.register(Guardian)
-class GuardianAdmin(admin.ModelAdmin):
-    list_display = ("full_name", "relation", "phone", "secondary_phone", "email", "school", "is_active")
-    search_fields = ("full_name", "phone", "secondary_phone", "email", "national_id")
-    list_filter = ("school", "relation", "is_active")
-
-
-@admin.register(StudentGuardian)
-class StudentGuardianAdmin(admin.ModelAdmin):
-    list_display = ("student", "guardian", "is_primary", "can_receive_notifications", "can_pickup_student")
-    search_fields = ("student__full_name", "guardian__full_name", "guardian__phone")
-    list_filter = ("is_primary", "can_receive_notifications", "can_pickup_student")
 
 
 @admin.register(StudentDocument)

@@ -287,7 +287,9 @@ def family_update(request, pk):
                 family,
                 guardian_name=form.cleaned_data["guardian_name"],
                 phone=form.cleaned_data["phone"],
-                national_id=form.cleaned_data.get("guardian_national_id", ""),
+                identity_type=form.cleaned_data.get("identity_type", "national"),
+                identity_number=form.cleaned_data.get("identity_number", ""),
+                relation=form.cleaned_data.get("relation", "ولي أمر"),
             )
         except Exception as exc:
             message = getattr(exc, "messages", None)

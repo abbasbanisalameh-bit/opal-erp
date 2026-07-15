@@ -121,7 +121,7 @@ def build_parent360_context(family, students):
     completeness_fields = [
         bool(getattr(family, "guardian_name", "")),
         bool(getattr(family, "phone", "")),
-        bool(getattr(family, "guardian_national_id", "")),
+        bool(getattr(family, "identity_number", "")),
         bool(getattr(family, "family_code", "")),
         bool(getattr(family, "user_id", None)),
         bool(students),
