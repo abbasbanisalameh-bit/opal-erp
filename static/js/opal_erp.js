@@ -400,3 +400,36 @@ document.addEventListener("DOMContentLoaded", function () {
     var observer = new MutationObserver(scheduleRender);
     observer.observe(document.documentElement, {childList: true, subtree: true});
 })();
+
+
+// OPAL_TABLE_SCROLL_INIT_V4
+(function () {
+    "use strict";
+    function prepare(scope) {
+        var root = scope || document;
+        root.querySelectorAll(".opal-main table").forEach(function (table) {
+            if (table.closest("[data-opal-no-scroll-table]")) { return; }
+            var host = table.parentElement;
+            if (!host || !(host.classList.contains("table-responsive") || host.classList.contains("table-wrap") || host.classList.contains("opal-table-viewport"))) {
+                host = document.createElement("div");
+                host.className = "table-responsive opal-table-viewport opal-table-scroll";
+                table.parentNode.insertBefore(host, table);
+                host.appendChild(table);
+            } else {
+                host.classList.add("opal-table-viewport", "opal-table-scroll");
+            }
+            if (!host.hasAttribute("tabindex")) { host.setAttribute("tabindex", "0"); }
+            host.setAttribute("role", "region");
+            host.setAttribute("aria-label", "جدول قابل للتمرير مع رأس ثابت");
+        });
+    }
+    function start() { prepare(document); }
+    if (document.readyState === "loading") { document.addEventListener("DOMContentLoaded", start); } else { start(); }
+    new MutationObserver(function (mutations) {
+        mutations.forEach(function (mutation) {
+            mutation.addedNodes.forEach(function (node) {
+                if (node.nodeType === 1) { prepare(node.matches && node.matches("table") ? node.parentElement : node); }
+            });
+        });
+    }).observe(document.documentElement, {childList: true, subtree: true});
+})();

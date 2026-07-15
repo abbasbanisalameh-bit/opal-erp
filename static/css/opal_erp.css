@@ -1094,3 +1094,63 @@ aside .opal-brand h3,
         position: static !important;
     }
 }
+
+
+/* ===== OPAL Scrollable Tables V4 — sticky headers inside table viewport ===== */
+.opal-table-viewport,
+.table-responsive.opal-table-scroll,
+.table-wrap.opal-table-scroll {
+    position: relative !important;
+    display: block !important;
+    width: 100% !important;
+    max-height: min(64vh, 680px) !important;
+    overflow: auto !important;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-gutter: stable both-edges;
+}
+.opal-table-viewport > table,
+.table-responsive.opal-table-scroll > table,
+.table-wrap.opal-table-scroll > table {
+    margin-bottom: 0 !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+}
+.opal-table-viewport thead th,
+.table-responsive.opal-table-scroll thead th,
+.table-wrap.opal-table-scroll thead th {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 50 !important;
+    background: #13263f !important;
+    color: #f8fafc !important;
+    background-clip: padding-box !important;
+    box-shadow: inset 0 -1px 0 rgba(34,211,238,.35), 0 2px 6px rgba(0,0,0,.28) !important;
+    white-space: nowrap;
+}
+.opal-table-viewport thead th:first-child,
+.table-responsive.opal-table-scroll thead th:first-child,
+.table-wrap.opal-table-scroll thead th:first-child {
+    z-index: 51 !important;
+}
+.opal-backup-file-actions {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 7px !important;
+    min-width: 108px;
+}
+.opal-backup-file-actions form,
+.opal-backup-file-actions .btn { width: 100% !important; margin: 0 !important; }
+@media (max-width: 575px) {
+    .opal-table-viewport,
+    .table-responsive.opal-table-scroll,
+    .table-wrap.opal-table-scroll { max-height: 58vh !important; }
+}
+@media print {
+    .opal-table-viewport,
+    .table-responsive.opal-table-scroll,
+    .table-wrap.opal-table-scroll { max-height: none !important; overflow: visible !important; }
+    .opal-table-viewport thead th,
+    .table-responsive.opal-table-scroll thead th,
+    .table-wrap.opal-table-scroll thead th { position: static !important; }
+}
