@@ -3,6 +3,7 @@ from django.conf import settings
 from django.db import models
 from core.models import School, Branch, AcademicYear
 from academics.models import Grade, Section
+from core.choices import STUDENT_GENDER_CHOICES
 
 
 class AdmissionApplication(models.Model):
@@ -24,7 +25,7 @@ class AdmissionApplication(models.Model):
     student_full_name = models.CharField(max_length=200)
     father_name = models.CharField(max_length=200, blank=True)
     mother_name = models.CharField(max_length=200, blank=True)
-    gender = models.CharField(max_length=10, blank=True)
+    gender = models.CharField(max_length=10, choices=STUDENT_GENDER_CHOICES, blank=True)
     birth_date = models.DateField(null=True, blank=True)
     phone = models.CharField(max_length=30, blank=True)
     address = models.TextField(blank=True)
@@ -140,8 +141,8 @@ class StudentRegistration(models.Model):
     grandfather_name = models.CharField("اسم الجد", max_length=100, blank=True)
     family_name = models.CharField("اسم العائلة", max_length=100, blank=True)
     full_name = models.CharField("الاسم الكامل", max_length=250)
-    national_id = models.CharField("الرقم الوطني", max_length=50, blank=True)
-    gender = models.CharField("الجنس", max_length=20, blank=True)
+    national_id = models.CharField("الرقم الوطني للطالب (OpenEMIS)", max_length=50, blank=True)
+    gender = models.CharField("الجنس", max_length=20, choices=STUDENT_GENDER_CHOICES, blank=True)
     birth_date = models.DateField("تاريخ الميلاد", null=True, blank=True)
     address = models.TextField("العنوان", blank=True)
     phone = models.CharField("هاتف ولي الأمر", max_length=30, blank=True)

@@ -4,6 +4,7 @@ from core.models import AcademicYear, Branch
 from teachers.models import Teacher
 
 from .models import Grade, Section
+from .grade_names import grade_name_key, normalize_grade_display_name
 
 
 class GradeForm(forms.ModelForm):
@@ -24,9 +25,12 @@ class GradeForm(forms.ModelForm):
             field.widget.attrs["class"] = "form-check-input" if isinstance(field.widget, forms.CheckboxInput) else "form-control"
 
     def clean_name(self):
-        name = (self.cleaned_data.get("name") or "").strip()
-        if self.school and Grade.objects.filter(school=self.school, name__iexact=name).exclude(pk=self.instance.pk).exists():
-            raise forms.ValidationError("هذا الصف موجود مسبقًا في المدرسة.")
+        name = normalize_grade_display_name(self.cleaned_data.get("name"))
+        wanted_key = grade_name_key(name)
+        if self.school:
+            candidates = Grade.objects.filter(school=self.school).exclude(pk=self.instance.pk)
+            if any(grade_name_key(item.name) == wanted_key for item in candidates.only("name")):
+                raise forms.ValidationError("هذا الصف موجود مسبقًا في الهيكل الدراسي المعتمد.")
         return name
 
 
@@ -75,7 +79,14 @@ class AcademicStructureGradeForm(forms.Form):
         self.fields["homeroom_teacher"].widget.attrs["class"] = "form-select"
 
     def clean_name(self):
-        return (self.cleaned_data.get("name") or "").strip()
+        name = normalize_grade_display_name(self.cleaned_data.get("name"))
+        wanted_key = grade_name_key(name)
+        if self.school:
+            for item in Grade.objects.filter(school=self.school).only("name"):
+                if grade_name_key(item.name) == wanted_key:
+                    # إعادة الاسم المعتمد تجعل get_or_create يحدّث الصف نفسه بدل تكراره.
+                    return item.name
+        return name
 
 
 class AcademicStructureYearForm(forms.ModelForm):

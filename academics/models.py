@@ -4,6 +4,7 @@ from django.db import models
 
 from core.models import AcademicYear, Branch, School
 from students.models import Student
+from .grade_names import grade_name_key, normalize_grade_display_name
 
 
 class Grade(models.Model):
@@ -16,6 +17,21 @@ class Grade(models.Model):
     class Meta:
         ordering = ["order", "name"]
         unique_together = ("school", "name")
+
+    def clean(self):
+        super().clean()
+        self.name = normalize_grade_display_name(self.name)
+        wanted_key = grade_name_key(self.name)
+        if not wanted_key or not self.school_id:
+            return
+        candidates = type(self).objects.filter(school_id=self.school_id).exclude(pk=self.pk)
+        if any(grade_name_key(item.name) == wanted_key for item in candidates.only("name")):
+            raise ValidationError({"name": "هذا الصف موجود مسبقًا في الهيكل الدراسي المعتمد."})
+
+    def save(self, *args, **kwargs):
+        self.name = normalize_grade_display_name(self.name)
+        self.full_clean()
+        return super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name

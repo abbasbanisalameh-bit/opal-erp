@@ -11,6 +11,7 @@ class StudentForm(forms.ModelForm):
             "gender", "blood_type", "address", "medical_notes", "photo",
         ]
         widgets = {field: forms.TextInput(attrs={"class": "form-control"}) for field in fields}
+        widgets["gender"] = forms.Select(attrs={"class": "form-select"})
         widgets["address"] = forms.Textarea(attrs={"class": "form-control", "rows": 3})
         widgets["medical_notes"] = forms.Textarea(attrs={"class": "form-control", "rows": 3})
 

@@ -261,9 +261,8 @@ def subject_update(request, pk):
 
 @login_required
 def grade_list(request):
-    school = _school_for_academics()
-    grades = Grade.objects.select_related("school").filter(school=school) if school else Grade.objects.none()
-    return render(request, "academics/grades/grade_list.html", {"grades": grades})
+    messages.info(request, "تم اعتماد الهيكل الدراسي كنقطة الإدخال الوحيدة للصفوف.")
+    return redirect("academics:academic_structure")
 
 
 @login_required
@@ -278,7 +277,8 @@ def grade_update(request, pk):
     form = GradeForm(request.POST or None, instance=grade, school=grade.school)
     if form.is_valid():
         form.save()
-        return redirect("academics:grade_list")
+        messages.success(request, "تم تحديث الصف المعتمد دون إنشاء نسخة مكررة.")
+        return redirect("academics:academic_structure")
     return render(request, "academics/grades/grade_form.html", {"form": form, "title": "تعديل صف دراسي"})
 
 
@@ -297,7 +297,7 @@ def grade_delete(request, pk):
         else:
             grade.delete()
             messages.success(request, "تم حذف الصف غير المرتبط بأي بيانات.")
-    return redirect("academics:grade_list")
+    return redirect("academics:academic_structure")
 
 
 @login_required

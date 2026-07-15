@@ -19,6 +19,7 @@ from .financial_services import (
 from students.models import Student
 from parent_portal.models import Family
 from parent_portal.services import initial_parent_password, normalize_phone
+from core.identifiers import normalize_identifier
 
 
 def can_manage_registration(user):
@@ -75,7 +76,13 @@ def registration_receipt(request, pk):
     receiver_name, receiver_title = receiver_identity(registration.created_by)
     digits = normalize_phone(registration.phone)
     parent_family = None
-    if digits:
+    guardian_identity = normalize_identifier(registration.guardian_identity_number)
+    if guardian_identity:
+        parent_family = Family.objects.filter(
+            school=registration.school,
+            identity_number=guardian_identity,
+        ).select_related("user").first()
+    if parent_family is None and digits:
         parent_family = Family.objects.filter(phone__icontains=digits[-9:]).select_related("user").first()
     if parent_family is None and registration.guardian_name:
         parent_family = Family.objects.filter(guardian_name__iexact=registration.guardian_name).select_related("user").first()
@@ -165,7 +172,8 @@ def sibling_check_api(request):
         family_name=request.GET.get("family_name", "").strip(),
         mother_name=request.GET.get("mother_name", "").strip(),
         guardian_name=request.GET.get("guardian_name", "").strip(),
-        national_id=request.GET.get("national_id", "").strip(),
+        guardian_identity_type=request.GET.get("guardian_identity_type", "national").strip(),
+        guardian_identity_number=request.GET.get("guardian_identity_number", "").strip(),
     )
     if not siblings.exists():
         return JsonResponse({"has_sibling": False, "apply_discount": False, "message": "", "sibling_id": ""})

@@ -122,7 +122,7 @@ class AcademicStructureFlowTests(TestCase):
         self.client.post(reverse("academics:academic_structure"), {
             "action": "configure_grade",
             "academic_year": self.year.pk,
-            "grade-name": "الصف الثاني",
+            "grade-name": "  الصف   الثاني  ",
             "grade-order": 2,
             "grade-tuition_fee": "150.00",
             "grade-section_count": 3,
@@ -131,3 +131,24 @@ class AcademicStructureFlowTests(TestCase):
         self.assertEqual(GradeFee.objects.get(school=self.school, academic_year=self.year, grade=grade).tuition_fee, 150)
         self.assertEqual(Section.objects.filter(academic_year=self.year, grade=grade).count(), 1)
         self.assertTrue(Section.objects.filter(pk=section.pk).exists())
+
+
+class CanonicalGradeEntryTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username="grade_admin", password="safe-password")
+        self.school = School.objects.create(name="مدرسة الصفوف الموحدة", is_active=True)
+        self.client.force_login(self.user)
+
+    def test_grade_model_rejects_arabic_normalized_duplicate(self):
+        Grade.objects.create(school=self.school, name="الصف الأول", order=1)
+        duplicate = Grade(school=self.school, name="  الصف   الأوّل  ", order=2)
+        with self.assertRaises(ValidationError):
+            duplicate.save()
+
+    def test_legacy_grade_list_redirects_to_canonical_structure(self):
+        response = self.client.get(reverse("academics:grade_list"))
+        self.assertRedirects(
+            response,
+            reverse("academics:academic_structure"),
+            fetch_redirect_response=False,
+        )

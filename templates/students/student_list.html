@@ -14,7 +14,7 @@
     <div class="col-md-3"><button class="btn btn-info w-100">بحث</button></div>
   </form>
   <div class="table-responsive"><table class="opal-table"><thead><tr><th>#</th><th>رقم الطالب</th><th>الاسم</th><th>الصف</th><th>الشعبة</th><th>الحالة</th><th>إجراءات</th></tr></thead><tbody>
-  {% for student in students %}<tr><td>{{ forloop.counter }}</td><td>{{ student.student_number }}</td><td>{{ student.full_name }}</td><td>{{ student.grade }}</td><td>{{ student.section }}</td><td>{{ student.get_status_display }}</td><td><a href="{% url 'students:student_360' student.pk %}" class="btn btn-sm btn-dark">360°</a> <a href="{% url 'students:student_detail' student.pk %}" class="btn btn-sm btn-info">عرض</a> <a href="{% url 'students:student_update' student.pk %}" class="btn btn-sm btn-warning">تعديل</a> <a href="{% url 'students:student_archive' student.pk %}" class="btn btn-sm btn-secondary">أرشفة</a></td></tr>
+  {% for student in students %}<tr><td>{{ forloop.counter }}</td><td>{{ student.student_number }}</td><td>{{ student.full_name }}</td><td>{{ student.grade }}</td><td>{{ student.section }}</td><td>{{ student.get_status_display }}</td><td><a href="{% url 'students:student_360' student.pk %}" class="btn btn-sm btn-dark"><i class="bi bi-person-vcard"></i> ملف 360°</a> <a href="{% url 'students:student_update' student.pk %}" class="btn btn-sm btn-warning">تعديل</a> <a href="{% url 'students:student_archive' student.pk %}" class="btn btn-sm btn-secondary">أرشفة</a></td></tr>
   {% empty %}<tr><td colspan="7" class="text-center">لا يوجد طلاب</td></tr>{% endfor %}
   </tbody></table></div>
 </div>

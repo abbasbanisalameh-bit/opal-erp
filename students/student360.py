@@ -171,7 +171,7 @@ def build_student_360_context(student):
     }
 
     completeness_fields = [
-        student.national_id, student.phone, student.address, student.guardian_name,
+        student.phone, student.address, student.guardian_name,
         student.gender, student.blood_type, student.enrollment_date, current_enrollment, family,
     ]
     data_completeness = round((sum(bool(value) for value in completeness_fields) / len(completeness_fields)) * 100)
@@ -187,8 +187,8 @@ def build_student_360_context(student):
         alerts.append({"level": "danger", "text": f"نسبة الحضور منخفضة ({attendance_rate}%)."})
     if marks and percentage_average < 60:
         alerts.append({"level": "danger", "text": f"متوسط التحصيل أقل من 60% ({percentage_average}%)."})
-    if not student.national_id:
-        alerts.append({"level": "info", "text": "الرقم الوطني غير مسجل."})
+    if student.source == "openemis" and not student.national_id:
+        alerts.append({"level": "info", "text": "الرقم الوطني للطالب غير وارد من OpenEMIS."})
 
     risk_score = 0
     risk_score += 2 if not current_enrollment else 0

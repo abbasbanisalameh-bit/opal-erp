@@ -8,9 +8,6 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
-from django.conf import settings
-from pathlib import Path
-from django.utils import timezone
 
 from .forms import RoleForm, UserProfileForm
 from .models import Role, UserProfile
@@ -23,20 +20,6 @@ DEFAULT_AUTH_BACKEND = "django.contrib.auth.backends.ModelBackend"
 
 def can_manage_roles(user):
     return user.is_superuser
-
-
-def _audit_impersonation(action: str, actor, target) -> None:
-    """Write a minimal security audit outside the public project tree."""
-    try:
-        storage = Path(settings.BASE_DIR).resolve().parent / "opal_private_backups"
-        storage.mkdir(parents=True, exist_ok=True)
-        with (storage / "system_operations.log").open("a", encoding="utf-8") as log:
-            log.write(
-                f"{timezone.localtime().isoformat()}\t{getattr(actor, 'username', '')}"
-                f"\t{action}\ttarget={getattr(target, 'username', '')}\n"
-            )
-    except OSError:
-        pass
 
 
 def _style_password_form(form):
@@ -109,15 +92,13 @@ def impersonate_user(request, user_id):
     if not target_kind or target.is_staff or target.is_superuser:
         raise PermissionDenied("يسمح بالدخول فقط إلى حساب معلم أو ولي أمر فعال.")
 
-    original_user = request.user
-    original_user_id = original_user.pk
-    original_username = original_user.get_username()
+    original_user_id = request.user.pk
+    original_username = request.user.get_username()
     backend = request.session.get("_auth_user_backend", DEFAULT_AUTH_BACKEND)
     auth_login(request, target, backend=backend)
     request.session[IMPERSONATOR_SESSION_KEY] = original_user_id
     request.session[IMPERSONATED_SESSION_KEY] = target.pk
     request.session["opal_impersonator_username"] = original_username
-    _audit_impersonation("impersonation_started", original_user, target)
 
     messages.info(request, f"أنت الآن داخل حساب {target.get_username()}. استخدم زر العودة للرجوع إلى حساب المدير.")
     if target_kind == "teacher":
@@ -140,9 +121,7 @@ def stop_impersonation(request):
         is_superuser=True,
     )
     backend = request.session.get("_auth_user_backend", DEFAULT_AUTH_BACKEND)
-    impersonated_user = request.user
     auth_login(request, original_user, backend=backend)
-    _audit_impersonation("impersonation_stopped", original_user, impersonated_user)
     request.session.pop(IMPERSONATOR_SESSION_KEY, None)
     request.session.pop(IMPERSONATED_SESSION_KEY, None)
     request.session.pop("opal_impersonator_username", None)

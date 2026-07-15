@@ -112,6 +112,7 @@ def search_students(query):
         models.Q(full_name__icontains=query)
         | models.Q(student_number__icontains=query)
         | models.Q(national_id__icontains=query)
+        | models.Q(family_links__family__identity_number__icontains=query)
         | models.Q(phone__icontains=query)
         | models.Q(guardian_name__icontains=query)
         | models.Q(father_name__icontains=query)

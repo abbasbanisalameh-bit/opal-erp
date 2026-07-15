@@ -46,7 +46,7 @@ class CanonicalRegistrationIntegrationTests(TestCase):
                 "father_name": "محمد",
                 "grandfather_name": "علي",
                 "family_name": "الاختبار",
-                "national_id": "STUDENT-NID-1",
+                "gender": "male",
                 "guardian_name": "محمد علي",
                 "guardian_identity_type": "national",
                 "guardian_identity_number": "PARENT-NID-1",
@@ -69,6 +69,51 @@ class CanonicalRegistrationIntegrationTests(TestCase):
         self.assertTrue(FamilyStudent.objects.filter(student=registration.student, is_active=True).exists())
         self.assertTrue(registration.parent_initial_username)
         self.assertTrue(registration.parent_initial_password)
+        self.assertEqual(registration.student.national_id, "")
+        self.assertEqual(registration.guardian_identity_number, "PARENTNID1")
+        self.assertEqual(registration.first_payment, Decimal("200.00"))
+        self.assertEqual(registration.remaining_amount, Decimal("800.00"))
+
+    def test_manual_form_uses_guardian_identity_not_student_national_id(self):
+        form = DirectStudentRegistrationForm(school=self.school, academic_year=self.year)
+        self.assertNotIn("national_id", form.fields)
+        self.assertIn("guardian_identity_number", form.fields)
+        self.assertTrue(form.fields["guardian_identity_number"].required)
+        self.assertEqual(list(form.fields["gender"].choices), [("", "---------"), ("male", "ذكر"), ("female", "أنثى")])
+
+    def test_same_guardian_identity_links_siblings_to_one_family(self):
+        common = {
+            "father_name": "محمد",
+            "grandfather_name": "علي",
+            "family_name": "الاختبار",
+            "gender": "male",
+            "guardian_name": "محمد علي",
+            "guardian_identity_type": "national",
+            "guardian_identity_number": "PARENT-NID-SHARED",
+            "mother_name": "الأم",
+            "phone": "0791234567",
+            "address": "عمان",
+            "grade": self.grade.pk,
+            "section": self.section.pk,
+            "transport_type": "none",
+            "discount_type": "none",
+            "admin_discount_value": "0",
+        }
+        first_form = DirectStudentRegistrationForm(
+            data={**common, "first_name": "أحمد"}, school=self.school, academic_year=self.year
+        )
+        self.assertTrue(first_form.is_valid(), first_form.errors)
+        first = create_student_registration(first_form, self.user)
+
+        second_form = DirectStudentRegistrationForm(
+            data={**common, "first_name": "محمود"}, school=self.school, academic_year=self.year
+        )
+        self.assertTrue(second_form.is_valid(), second_form.errors)
+        second = create_student_registration(second_form, self.user)
+
+        first_family = FamilyStudent.objects.get(student=first.student, is_active=True).family
+        second_family = FamilyStudent.objects.get(student=second.student, is_active=True).family
+        self.assertEqual(first_family.pk, second_family.pk)
 
 
 class FamilyPaymentDistributionTests(SimpleTestCase):

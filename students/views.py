@@ -26,8 +26,9 @@ def student_list(request):
 
 @management_required
 def student_detail(request, pk):
-    student = get_object_or_404(Student, pk=pk)
-    return render(request, "students/student_detail.html", {"student": student})
+    # رابط متوافق مع الصفحات القديمة؛ ملف الطالب الموحد هو Student 360°.
+    get_object_or_404(Student, pk=pk)
+    return redirect("students:student_360", pk=pk)
 
 @management_required
 def student_create(request):
@@ -41,7 +42,7 @@ def student_update(request, pk):
         form = StudentForm(request.POST, request.FILES, instance=student)
         if form.is_valid():
             form.save()
-            return redirect("students:student_detail", pk=student.pk)
+            return redirect("students:student_360", pk=student.pk)
     else:
         form = StudentForm(instance=student)
     return render(request, "students/student_form.html", {"form": form, "title": "تعديل طالب"})

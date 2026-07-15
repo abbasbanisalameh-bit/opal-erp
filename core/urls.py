@@ -32,4 +32,3 @@ urlpatterns += [
         name="updates_delete_backup",
     ),
 ]
-

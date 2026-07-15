@@ -5,6 +5,7 @@ from django.db import models
 from django.db.models import Q
 
 from core.identifiers import normalize_identifier
+from core.choices import STUDENT_GENDER_CHOICES, normalize_student_gender
 
 
 class Student(models.Model):
@@ -27,7 +28,7 @@ class Student(models.Model):
     guardian_name = models.CharField("اسم ولي الأمر", max_length=200, blank=True)
     father_name = models.CharField("اسم الأب", max_length=200, blank=True)
     mother_name = models.CharField("اسم الأم", max_length=200, blank=True)
-    gender = models.CharField("الجنس", max_length=10, blank=True)
+    gender = models.CharField("الجنس", max_length=10, choices=STUDENT_GENDER_CHOICES, blank=True)
     blood_type = models.CharField("فصيلة الدم", max_length=10, blank=True)
 
     # These two fields are compatibility/display snapshots only. The authoritative
@@ -84,6 +85,7 @@ class Student(models.Model):
     def save(self, *args, **kwargs):
         self.national_id = normalize_identifier(self.national_id)
         self.ministry_student_id = normalize_identifier(self.ministry_student_id)
+        self.gender = normalize_student_gender(self.gender)
         return super().save(*args, **kwargs)
 
     @property

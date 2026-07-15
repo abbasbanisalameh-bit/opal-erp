@@ -12,6 +12,7 @@ from attendance_v2.models import Attendance
 from accounting.models import StudentInvoice, StudentPayment
 from core.identifiers import normalize_identifier, normalize_phone
 from core.models import AcademicYear, Branch, School
+from core.choices import normalize_student_gender
 from exams.models import Exam, StudentMark
 from parent_portal.services import create_or_update_parent_family_for_student
 from students.models import Student
@@ -375,7 +376,7 @@ def upsert_student_from_openemis(payload, user=None):
         "full_name": data.get("full_name") or data.get("name") or student.full_name or "طالب OpenEMIS",
         "father_name": data.get("father_name") or "",
         "mother_name": data.get("mother_name") or "",
-        "gender": data.get("gender") or "",
+        "gender": normalize_student_gender(data.get("gender")),
         "blood_type": data.get("blood_type") or "",
         "address": data.get("address") or "",
         "medical_notes": data.get("medical_notes") or "",

@@ -141,7 +141,7 @@ def resolve_sibling_discount_for_form(data, settings):
         guardian_name=data.get("guardian_name") or "",
         guardian_identity_type=data.get("guardian_identity_type") or "national",
         guardian_identity_number=normalize_identifier(data.get("guardian_identity_number") or ""),
-        national_id=data.get("national_id") or "",
+        national_id="",
     )
 
     if not siblings.exists():
@@ -189,8 +189,14 @@ def calculate_registration_totals(*, grade, transport_route=None, transport_type
     transport = transport_fee_amount(transport_route, transport_type)
     discount = discount_amount(tuition, discount_type, settings, admin_discount_value, sibling_student)
     net_total = money(tuition + transport - discount)
-    if first_payment in (None, ""):
-        first_payment = money(net_total * Decimal(settings.first_payment_percent or 0) / Decimal("100"))
+    default_first_payment = money(
+        net_total * Decimal(settings.first_payment_percent or 0) / Decimal("100")
+    )
+    # التسجيل اليدوي يعتمد الدفعة الافتراضية المحسوبة من الإعدادات.
+    # نبقي التوافق مع أي تكامل يرسل قيمة موجبة صراحة، لكن الصفر/الفراغ
+    # لا يعطلان الحساب التلقائي.
+    if first_payment in (None, "") or money(first_payment) <= 0:
+        first_payment = default_first_payment
     else:
         first_payment = min(money(first_payment), net_total)
     remaining = money(net_total - first_payment)
@@ -241,18 +247,19 @@ def create_student_registration(form, user=None):
         discount_type=selected_discount_type,
         admin_discount_value=data.get("admin_discount_value"),
         sibling_student=selected_sibling_student,
-        first_payment=data.get("first_payment"),
+        # الدفعة الأولى في التسجيل اليدوي تُحسب دائمًا من نسبة الإعدادات.
+        first_payment=None,
         school=school,
         academic_year=academic_year,
     )
-    national_id = normalize_identifier(data.get("national_id") or "")
-    if national_id and Student.objects.filter(national_id=national_id).exists():
-        raise ValueError("الرقم الوطني مرتبط بطالب موجود. استخدم سجل الطالب الحالي.")
+    # الرقم الوطني في التسجيل اليدوي هو رقم ولي الأمر فقط.
+    # يبقى Student.national_id متاحًا لتعبئته من OpenEMIS عند المزامنة.
+    student_national_id = ""
 
     student = Student.objects.create(
         source="manual",
         student_number=generate_student_number(),
-        national_id=national_id,
+        national_id=student_national_id,
         full_name=full_name,
         guardian_name=data.get("guardian_name") or "",
         father_name=data.get("father_name") or "",
@@ -305,7 +312,7 @@ def create_student_registration(form, user=None):
         grandfather_name=data.get("grandfather_name") or "",
         family_name=data.get("family_name") or "",
         full_name=full_name,
-        national_id=data.get("national_id") or "",
+        national_id=student_national_id,
         gender=data.get("gender") or "",
         birth_date=data.get("birth_date"),
         address=data.get("address") or "",

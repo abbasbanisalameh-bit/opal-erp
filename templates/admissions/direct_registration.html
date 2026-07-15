@@ -22,7 +22,6 @@
             <div class="col-md-3"><label class="form-label fw-bold">{{ form.father_name.label }}</label>{{ form.father_name }}</div>
             <div class="col-md-3"><label class="form-label fw-bold">{{ form.grandfather_name.label }}</label>{{ form.grandfather_name }}</div>
             <div class="col-md-3"><label class="form-label fw-bold">{{ form.family_name.label }}</label>{{ form.family_name }}</div>
-            <div class="col-md-3"><label class="form-label fw-bold">{{ form.national_id.label }}</label>{{ form.national_id }}</div>
             <div class="col-md-3"><label class="form-label fw-bold">{{ form.gender.label }}</label>{{ form.gender }}</div>
             <div class="col-md-3"><label class="form-label fw-bold">{{ form.birth_date.label }}</label>{{ form.birth_date }}</div>
             <div class="col-md-3"><label class="form-label fw-bold">{{ form.photo.label }}</label>{{ form.photo }}</div>
@@ -33,6 +32,8 @@
         <h3 class="fw-bold mb-3">بيانات ولي الأمر والدراسة</h3>
         <div class="row g-3">
             <div class="col-md-4"><label class="form-label fw-bold">{{ form.guardian_name.label }}</label>{{ form.guardian_name }}</div>
+            <div class="col-md-4"><label class="form-label fw-bold">{{ form.guardian_identity_type.label }}</label>{{ form.guardian_identity_type }}</div>
+            <div class="col-md-4"><label class="form-label fw-bold">{{ form.guardian_identity_number.label }}</label>{{ form.guardian_identity_number }}{% if form.guardian_identity_number.help_text %}<div class="form-text">{{ form.guardian_identity_number.help_text }}</div>{% endif %}</div>
             <div class="col-md-4"><label class="form-label fw-bold">{{ form.mother_name.label }}</label>{{ form.mother_name }}</div>
             <div class="col-md-4"><label class="form-label fw-bold">{{ form.phone.label }}</label>{{ form.phone }}</div>
             <div class="col-md-4"><label class="form-label fw-bold">{{ form.grade.label }}</label>{{ form.grade }}</div>
@@ -62,7 +63,7 @@
 
     <div class="opal-card mb-4">
         <div class="row g-3 align-items-end">
-            <div class="col-md-4"><label class="form-label fw-bold">{{ form.first_payment.label }}</label>{{ form.first_payment }}</div>
+            <div class="col-md-4"><label class="form-label fw-bold">{{ form.first_payment.label }} ({{ settings.first_payment_percent|floatformat:0 }}%)</label>{{ form.first_payment }}{% if form.first_payment.help_text %}<div class="form-text">{{ form.first_payment.help_text }}</div>{% endif %}</div>
             <div class="col-md-4"><label class="form-label fw-bold">المتبقي</label><input class="form-control" id="remainingAmount" readonly></div>
             <div class="col-md-4"><button class="btn btn-primary w-100 btn-lg"><i class="bi bi-save2"></i> حفظ وطباعة الإيصال</button></div>
         </div>
@@ -106,7 +107,7 @@ function calc(){
     else if(discountType === 'admin') discount = Math.min(adminDiscount, tuition);
     let net = Math.max((tuition + transport - discount), 0);
     const firstPaymentInput = el('first_payment');
-    if(firstPaymentInput && !firstPaymentInput.dataset.userEdited){
+    if(firstPaymentInput){
         firstPaymentInput.value = money(net * settings.firstPaymentPercent / 100);
     }
     let firstPayment = Number(firstPaymentInput?.value || 0);
@@ -117,7 +118,7 @@ function calc(){
     document.getElementById('netTotal').innerText = money(net);
     document.getElementById('remainingAmount').value = money(remaining);
 }
-document.querySelectorAll('#registrationForm select, #registrationForm input').forEach(item => item.addEventListener('input', function(){ if(this.name === 'first_payment') this.dataset.userEdited='1'; calc(); }));
+document.querySelectorAll('#registrationForm select, #registrationForm input').forEach(item => item.addEventListener('input', calc));
 
 let siblingTimer = null;
 
@@ -137,10 +138,11 @@ function checkSiblingSmart(){
             family_name: el('family_name')?.value || '',
             mother_name: el('mother_name')?.value || '',
             guardian_name: el('guardian_name')?.value || '',
-            national_id: el('national_id')?.value || '',
+            guardian_identity_type: el('guardian_identity_type')?.value || 'national',
+            guardian_identity_number: el('guardian_identity_number')?.value || '',
         });
 
-        if(!params.get('phone') && !params.get('father_name') && !params.get('mother_name') && !params.get('guardian_name') && !params.get('national_id')){
+        if(!params.get('guardian_identity_number')){
             setSiblingMessage('', true);
             return;
         }
@@ -166,7 +168,7 @@ function checkSiblingSmart(){
     }, 450);
 }
 
-['phone','father_name','family_name','mother_name','guardian_name','national_id'].forEach(function(name){
+['guardian_identity_type','guardian_identity_number'].forEach(function(name){
     const field = el(name);
     if(field){
         field.addEventListener('input', checkSiblingSmart);

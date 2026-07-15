@@ -15,7 +15,7 @@ class AdmissionApplicationForm(forms.ModelForm):
             "student_full_name": forms.TextInput(attrs={"class": "form-control"}),
             "father_name": forms.TextInput(attrs={"class": "form-control"}),
             "mother_name": forms.TextInput(attrs={"class": "form-control"}),
-            "gender": forms.TextInput(attrs={"class": "form-control"}),
+            "gender": forms.Select(attrs={"class": "form-select"}),
             "birth_date": forms.DateInput(attrs={"class": "form-control", "type": "date"}),
             "phone": forms.TextInput(attrs={"class": "form-control"}),
             "address": forms.Textarea(attrs={"class": "form-control", "rows": 3}),
@@ -101,22 +101,23 @@ class DirectStudentRegistrationForm(forms.ModelForm):
     class Meta:
         model = StudentRegistration
         fields = [
-            "first_name", "father_name", "grandfather_name", "family_name", "national_id", "gender", "birth_date", "photo",
+            "first_name", "father_name", "grandfather_name", "family_name", "gender", "birth_date", "photo",
             "guardian_name", "guardian_identity_type", "guardian_identity_number", "mother_name", "phone", "address", "grade", "section",
             "transport_route", "transport_type", "discount_type", "admin_discount_value", "sibling_student", "first_payment", "notes",
         ]
         labels = {
             "first_name": "الاسم الأول", "father_name": "اسم الأب", "grandfather_name": "اسم الجد", "family_name": "اسم العائلة",
-            "national_id": "الرقم الوطني", "gender": "الجنس", "birth_date": "تاريخ الميلاد", "photo": "صورة الطالب",
+            "gender": "الجنس", "birth_date": "تاريخ الميلاد", "photo": "صورة الطالب",
             "guardian_name": "اسم ولي الأمر", "guardian_identity_type": "نوع هوية ولي الأمر", "guardian_identity_number": "الرقم الوطني أو الشخصي لولي الأمر", "mother_name": "اسم الأم", "phone": "هاتف ولي الأمر", "address": "العنوان",
             "grade": "الصف", "section": "الشعبة", "transport_route": "جولة المواصلات", "transport_type": "نوع المواصلات",
             "discount_type": "نوع الخصم", "admin_discount_value": "قيمة خصم الإدارة", "sibling_student": "الأخ المسجل", "first_payment": "الدفعة الأولى", "notes": "ملاحظات",
         }
         widgets = {
+            "gender": forms.Select(),
             "birth_date": forms.DateInput(attrs={"type": "date"}),
             "address": forms.Textarea(attrs={"rows": 2}),
             "notes": forms.Textarea(attrs={"rows": 2}),
-            "first_payment": forms.NumberInput(attrs={"step": "0.01"}),
+            "first_payment": forms.NumberInput(attrs={"step": "0.01", "readonly": "readonly", "inputmode": "decimal"}),
             "admin_discount_value": forms.NumberInput(attrs={"step": "0.01"}),
         }
 
@@ -137,8 +138,15 @@ class DirectStudentRegistrationForm(forms.ModelForm):
         self.fields["section"].required = False
         self.fields["photo"].required = False
         self.fields["first_payment"].required = False
+        self.fields["first_payment"].help_text = "تُحسب تلقائيًا من صافي الرسوم وفق النسبة المحددة في إعدادات التسجيل."
+        if not self.is_bound:
+            self.fields["first_payment"].initial = None
         self.fields["admin_discount_value"].initial = 0
         self.fields["guardian_name"].required = True
+        self.fields["guardian_identity_type"].required = True
+        self.fields["guardian_identity_number"].required = True
+        self.fields["guardian_identity_number"].help_text = "المعرف العائلي الفريد الذي يربط جميع الإخوة بولي الأمر نفسه."
+        self.fields["gender"].required = True
         self.fields["phone"].required = True
         if school and academic_year:
             configured_grade_ids = GradeFee.objects.filter(
@@ -191,11 +199,8 @@ class DirectStudentRegistrationForm(forms.ModelForm):
             self.add_error("section", "أضف شعبة واحدة على الأقل للصف قبل تسجيل طالب.")
         return cleaned_data
 
-    def clean_national_id(self):
-        value = normalize_identifier(self.cleaned_data.get("national_id") or "")
-        if value and Student.objects.filter(national_id=value).exists():
-            raise forms.ValidationError("هذا الرقم الوطني مسجل لطالب موجود. استخدم ملف الطالب الحالي.")
-        return value
-
     def clean_guardian_identity_number(self):
-        return normalize_identifier(self.cleaned_data.get("guardian_identity_number") or "")
+        value = normalize_identifier(self.cleaned_data.get("guardian_identity_number") or "")
+        if not value:
+            raise forms.ValidationError("أدخل الرقم الوطني أو الشخصي لولي الأمر.")
+        return value
