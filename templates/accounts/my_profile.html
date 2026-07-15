@@ -1,24 +1,63 @@
 {% extends "base/base.html" %}
-{% block title %}المعلومات الشخصية | OPAL ERP{% endblock %}
-{% block page_title %}المعلومات الشخصية{% endblock %}
-{% block page_subtitle %}تحديث الاسم والصورة وبيانات الحساب{% endblock %}
+{% block title %}تعديل الملف الشخصي | OPAL ERP{% endblock %}
+{% block page_title %}تعديل الملف الشخصي{% endblock %}
+{% block page_subtitle %}تحديث بيانات الحساب والصورة وكلمة المرور{% endblock %}
 {% block content %}
-<div class="opal-card">
-    <h3 class="fw-bold mb-4">بيانات حسابي</h3>
-    <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-        <div class="row g-3">
-            {% for field in form %}
-            <div class="col-md-6">
-                <label class="form-label fw-bold">{{ field.label }}</label>
-                {{ field }}
-                {% if field.errors %}<div class="text-danger small mt-1">{{ field.errors }}</div>{% endif %}
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="opal-card h-100">
+            <div class="d-flex align-items-center gap-3 mb-4">
+                <div class="opal-profile-preview">
+                    {% if request.user.profile.photo %}
+                        <img src="{{ request.user.profile.photo.url }}" alt="{{ request.user.username }}">
+                    {% else %}
+                        <i class="bi bi-person-fill"></i>
+                    {% endif %}
+                </div>
+                <div>
+                    <h3 class="fw-bold mb-1">المعلومات الشخصية</h3>
+                    <p class="text-secondary mb-0">يمكن لجميع المستخدمين تعديل البيانات القابلة للتغيير ورفع صورة شخصية.</p>
+                </div>
             </div>
-            {% endfor %}
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="profile">
+                {% if profile_form.non_field_errors %}<div class="alert alert-danger">{{ profile_form.non_field_errors }}</div>{% endif %}
+                <div class="row g-3">
+                    {% for field in profile_form %}
+                    <div class="col-md-6 {% if field.name == 'photo' %}col-12{% endif %}">
+                        <label class="form-label fw-bold" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+                        {% if field.errors %}<div class="text-danger small mt-1">{{ field.errors }}</div>{% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                <button class="btn btn-primary mt-4" type="submit"><i class="bi bi-save"></i> حفظ المعلومات</button>
+            </form>
         </div>
-        <div class="mt-4">
-            <button class="btn btn-primary">حفظ المعلومات</button>
+    </div>
+    <div class="col-lg-5">
+        <div class="opal-card h-100">
+            <h3 class="fw-bold mb-1"><i class="bi bi-key-fill"></i> تغيير كلمة المرور</h3>
+            <p class="text-secondary mb-4">بعد الحفظ ستبقى داخل الحساب الحالي ولن يتم تسجيل خروجك.</p>
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="password">
+                {% if password_form.non_field_errors %}<div class="alert alert-danger">{{ password_form.non_field_errors }}</div>{% endif %}
+                <div class="d-grid gap-3">
+                    {% for field in password_form %}
+                    <div>
+                        <label class="form-label fw-bold" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.help_text %}<div class="form-text">{{ field.help_text|safe }}</div>{% endif %}
+                        {% if field.errors %}<div class="text-danger small mt-1">{{ field.errors }}</div>{% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                <button class="btn btn-warning mt-4" type="submit"><i class="bi bi-shield-lock"></i> تغيير كلمة المرور</button>
+            </form>
         </div>
-    </form>
+    </div>
 </div>
 {% endblock %}

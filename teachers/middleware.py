@@ -8,8 +8,7 @@ class TeacherPortalAccessMiddleware:
 
     ALLOWED_PREFIXES = (
         "/teachers/portal/",
-        "/accounts/login/",
-        "/accounts/logout/",
+        "/accounts/",
         "/logout/",
         "/static/",
         "/media/",

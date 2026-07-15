@@ -9,7 +9,7 @@
             {% if opal_unread_notifications_count %}<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">{{ opal_unread_notifications_count }}</span>{% endif %}
         </a>
 
-        <div class="profile">
+        <a class="profile opal-profile-link text-decoration-none" href="{% url 'accounts:my_profile' %}" title="تعديل الملف الشخصي">
             <div class="opal-user-photo-frame">
                 {% if request.user.is_authenticated and request.user.profile.photo %}
                     <img src="{{ request.user.profile.photo.url }}" alt="{{ request.user.profile.full_name|default:request.user.username }}">
@@ -30,10 +30,10 @@
                     {% if request.user.is_authenticated and request.user.profile.role %}
                         {{ request.user.profile.role.name }}
                     {% else %}
-                        OPAL ERP
+                        تعديل الملف الشخصي
                     {% endif %}
                 </small>
             </div>
-        </div>
+        </a>
     </div>
 </div>

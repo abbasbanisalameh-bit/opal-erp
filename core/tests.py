@@ -3,7 +3,7 @@ from datetime import date
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.conf import settings
-from django.urls import NoReverseMatch, reverse
+from django.urls import reverse
 from django.contrib.auth.models import User
 
 from .models import AcademicYear, Branch, School, Semester
@@ -55,14 +55,12 @@ class AcademicPeriodValidationTest(TestCase):
         self.assertEqual(self.year.semesters.count(), 2)
 
 
-class OptionalModuleSeparationTests(TestCase):
-    def test_optional_modules_are_hidden_in_school_settings(self):
-        self.assertFalse(settings.OPAL_ENABLE_OPENEMIS)
-        self.assertFalse(settings.OPAL_ENABLE_DEVELOPMENT_CENTER)
-        with self.assertRaises(NoReverseMatch):
-            reverse("openemis:settings")
-        with self.assertRaises(NoReverseMatch):
-            reverse("development_center:dashboard")
+class OptionalModuleVisibilityTests(TestCase):
+    def test_openemis_and_development_center_are_visible(self):
+        self.assertTrue(settings.OPAL_ENABLE_OPENEMIS)
+        self.assertTrue(settings.OPAL_ENABLE_DEVELOPMENT_CENTER)
+        self.assertEqual(reverse("openemis:settings"), "/openemis/settings/")
+        self.assertEqual(reverse("development_center:dashboard"), "/development/")
 
 
 class SiteOnlyDataEntryTests(TestCase):

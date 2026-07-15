@@ -27,6 +27,7 @@
   {% else %}
     <a href="{% url 'parent_portal:dashboard' %}" class="{% if request.resolver_match.namespace == 'parent_portal' %}active{% endif %}"><i class="bi bi-house-heart-fill"></i><span>بوابة ولي الأمر</span></a>
   {% endif %}
+    <a href="{% url 'accounts:my_profile' %}" class="{% if request.resolver_match.namespace == 'accounts' and request.resolver_match.url_name == 'my_profile' %}active{% endif %}"><i class="bi bi-person-circle"></i><span>تعديل الملف الشخصي</span></a>
   </nav>
   <form method="post" action="{% url 'accounts:logout' %}" class="opal-logout-form">{% csrf_token %}<button class="btn btn-outline-light w-100"><i class="bi bi-box-arrow-right"></i> تسجيل الخروج</button></form>
 </aside>

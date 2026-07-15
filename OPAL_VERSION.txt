@@ -1,5 +1,5 @@
-OPAL ERP UNIFIED CORE - CURRENT MERGE READY
-Release date: 2026-07-15
-Base: OPAL_CURRENT_CLEAN_20260714_20260714_230557
-Reference only: opal_v61_temp_CODE_ONLY_20260714_062117
-Scope: canonical students, teachers, families, invoices, academic periods, exams, sibling payments, and OpenEMIS adapter
+OPAL ERP RELIABLE TABLE AND BACKUP ACTIONS FIX
+Release: OPAL_TABLE_BACKUP_ACTIONS_FIX_20260715_V3
+Base: OPAL_UI_ADMIN_ACCESS_20260715_V1
+Date: 2026-07-15
+Scope: reliable backup actions through global assets and sticky scrollable tables

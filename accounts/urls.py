@@ -1,10 +1,12 @@
-from django.urls import path, include
+from django.urls import include, path
 from . import views
 
 app_name = "accounts"
 
 urlpatterns = [
     path("profile/", views.my_profile, name="my_profile"),
+    path("impersonate/<int:user_id>/", views.impersonate_user, name="impersonate_user"),
+    path("impersonation/stop/", views.stop_impersonation, name="stop_impersonation"),
     path("roles/", views.role_list, name="role_list"),
     path("roles/<int:pk>/edit/", views.role_update, name="role_update"),
     path("", include("django.contrib.auth.urls")),

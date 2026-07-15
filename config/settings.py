@@ -29,8 +29,8 @@ DEBUG = env_bool("OPAL_DEBUG", True)
 
 # Optional foundations stay outside the production school surface by default.
 # They can be enabled explicitly in a dedicated environment without deleting code.
-OPAL_ENABLE_OPENEMIS = env_bool("OPAL_ENABLE_OPENEMIS", False)
-OPAL_ENABLE_DEVELOPMENT_CENTER = env_bool("OPAL_ENABLE_DEVELOPMENT_CENTER", False)
+OPAL_ENABLE_OPENEMIS = env_bool("OPAL_ENABLE_OPENEMIS", True)
+OPAL_ENABLE_DEVELOPMENT_CENTER = env_bool("OPAL_ENABLE_DEVELOPMENT_CENTER", True)
 
 ALLOWED_HOSTS = [
     "Opalschool2016.pythonanywhere.com",
