@@ -49,7 +49,10 @@ def take_attendance(request):
     section_id = request.GET.get("section") or request.POST.get("section")
     selected_date = _parse_date(request.GET.get("date") or request.POST.get("date"))
 
-    enrollments = Enrollment.objects.filter(status="active").select_related("student", "academic_year", "grade", "section")
+    enrollments = Enrollment.objects.filter(
+        status="active",
+        academic_year__is_closed=False,
+    ).select_related("student", "academic_year", "grade", "section")
     if year_id:
         enrollments = enrollments.filter(academic_year_id=year_id)
     if grade_id:
@@ -72,6 +75,8 @@ def take_attendance(request):
             status = request.POST.get(f"status_{enrollment.student_id}", "present")
             notes = request.POST.get(f"notes_{enrollment.student_id}", "").strip()
             excuse_reason = request.POST.get(f"excuse_{enrollment.student_id}", "").strip()
+            if status == "excused" and not excuse_reason:
+                excuse_reason = notes or "عذر مثبت لدى الإدارة"
             record = existing.get(enrollment.student_id)
             if record and record.is_locked:
                 locked += 1
@@ -90,9 +95,6 @@ def take_attendance(request):
                     "updated_by": request.user,
                 },
             )
-            if status == "excused" and not excuse_reason:
-                record.excuse_reason = notes or "عذر مثبت لدى الإدارة"
-                record.save(update_fields=["excuse_reason"])
             notify_parent_for_attendance(record)
             saved += 1
         audit(request, "update", "attendance_v2.Attendance", description=f"تسجيل حضور {saved} طالب بتاريخ {selected_date}")
@@ -112,7 +114,7 @@ def take_attendance(request):
         request,
         "attendance_v2/take_attendance.html",
         {
-            "academic_years": AcademicYear.objects.order_by("-start_date"),
+            "academic_years": AcademicYear.objects.filter(is_closed=False).order_by("-start_date"),
             "grades": Grade.objects.filter(is_active=True),
             "sections": sections,
             "rows": rows,
@@ -167,7 +169,13 @@ def attendance_lock(request):
     qs = Attendance.objects.filter(date=selected_date)
     if section_id:
         qs = qs.filter(section_id=section_id)
+    skipped_closed = 0
+    if action != "lock":
+        skipped_closed = qs.filter(academic_year__is_closed=True).count()
+        qs = qs.exclude(academic_year__is_closed=True)
     count = qs.update(is_locked=(action == "lock"), updated_by=request.user)
     audit(request, "update", "attendance_v2.Attendance", description=f"{'قفل' if action == 'lock' else 'فتح'} {count} سجل حضور بتاريخ {selected_date}")
     messages.success(request, f"تم {'قفل' if action == 'lock' else 'فتح'} {count} سجل حضور.")
+    if skipped_closed:
+        messages.warning(request, f"بقي {skipped_closed} سجلًا مقفلًا لأنه يتبع عامًا دراسيًا مغلقًا.")
     return redirect("attendance_v2:report")

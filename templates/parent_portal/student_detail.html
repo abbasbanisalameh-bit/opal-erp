@@ -7,10 +7,11 @@
   <div class="stat-card"><span>إجمالي الرسوم</span><h2>💰 {{ total }}</h2></div>
   <div class="stat-card"><span>إجمالي المدفوع</span><h2>✅ {{ paid }}</h2></div>
   <div class="stat-card"><span>المتبقي</span><h2>⚠️ {{ remaining }}</h2></div>
+  <div class="stat-card"><span>ترتيب الطالب في الشعبة</span><h2>{% if rank.available %}{{ rank.rank }} من {{ rank.class_count }}{% else %}غير متاح{% endif %}</h2><small>مجموع العلامات المعتمدة: {{ rank.total }}</small></div>
 </div>
 
 <div class="opal-card mb-4">
-  <h3 class="fw-bold mb-3">👤 بيانات الطالب</h3>
+  <div class="d-flex justify-content-between align-items-center"><h3 class="fw-bold mb-3">👤 بيانات الطالب</h3><a class="btn btn-outline-primary" href="{% url 'parent_portal:student_personal_update' student.pk %}">تعديل الصورة والمعلومات الشخصية</a></div>
   <div class="row g-3">
     <div class="col-md-4"><strong>رقم الطالب:</strong> {{ student.student_number }}</div>
     <div class="col-md-4"><strong>الصف:</strong> {{ student.grade }}</div>
@@ -34,6 +35,11 @@
 <div class="opal-card mb-4">
   <h3 class="fw-bold mb-3">📊 النتائج</h3>
   <div class="table-responsive"><table class="opal-table"><thead><tr><th>الامتحان</th><th>المادة</th><th>العلامة</th><th>النسبة</th><th>التقدير</th></tr></thead><tbody>{% for m in marks %}<tr><td>{{ m.exam.name }}</td><td>{{ m.exam.subject }}</td><td>{{ m.mark }} / {{ m.exam.max_mark }}</td><td>{{ m.percentage }}%</td><td>{{ m.grade_letter }}</td></tr>{% empty %}<tr><td colspan="5">لا توجد علامات.</td></tr>{% endfor %}</tbody></table></div>
+</div>
+
+<div class="opal-card mb-4">
+  <h3 class="fw-bold mb-3">📝 الواجبات</h3>
+  <div class="table-responsive"><table class="opal-table"><thead><tr><th>المادة</th><th>الواجب</th><th>التسليم</th></tr></thead><tbody>{% for item in homework_items %}<tr><td>{{ item.assignment.subject }}</td><td>{{ item.title }}</td><td>{{ item.due_date }}</td></tr>{% empty %}<tr><td colspan="3">لا توجد واجبات.</td></tr>{% endfor %}</tbody></table></div>
 </div>
 
 <div class="opal-card">

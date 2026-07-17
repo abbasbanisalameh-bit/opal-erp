@@ -20,7 +20,7 @@ from students.models import Student
 
 from .forms import RolePermissionFormSet, WorkflowActionForm
 from .models import Notification, RolePermissionRule, WorkflowRequest
-from .permissions import is_management, management_required
+from .permissions import is_management, management_required, superuser_required
 from .services import audit, notify, transition_workflow
 
 
@@ -62,7 +62,7 @@ def _report_rows(code):
             [r["student__student_number"], r["student__full_name"], r["present"], r["absent"], r["late"], r["excused"]] for r in summary
         ]]
     if code == "academic":
-        summary = StudentMark.objects.filter(exam__status="published").values("student__student_number", "student__full_name").annotate(avg=Avg("mark"), exams=Count("id")).order_by("student__full_name")
+        summary = StudentMark.objects.filter(exam__status__in=["published", "closed"]).values("student__student_number", "student__full_name").annotate(avg=Avg("mark"), exams=Count("id")).order_by("student__full_name")
         return [["رقم الطالب", "الاسم", "عدد النتائج", "متوسط العلامات"], *[
             [r["student__student_number"], r["student__full_name"], r["exams"], round(float(r["avg"] or 0), 2)] for r in summary
         ]]
@@ -228,8 +228,7 @@ def report_export_csv(request, code):
     return response
 
 
-@login_required
-@management_required
+@superuser_required
 def permission_matrix(request):
     role_codes = [
         ("super_admin", "مدير النظام"), ("school_owner", "مالك المدرسة"),

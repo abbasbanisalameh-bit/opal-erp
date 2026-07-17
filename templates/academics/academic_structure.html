@@ -1,30 +1,170 @@
 {% extends "base/base.html" %}
 {% block title %}الهيكل الدراسي | OPAL ERP{% endblock %}
 {% block page_title %}الهيكل الدراسي{% endblock %}
-{% block page_subtitle %}العام الدراسي ثم الصفوف ورسومها والشعب ومربي الصف{% endblock %}
+{% block page_subtitle %}النافذة الوحيدة لإدارة الصفوف ورسومها والشعب ومربي الصف{% endblock %}
+
 {% block content %}
 <div class="opal-card mb-4">
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
-        <div><h3 class="fw-bold mb-1">إعداد العام الدراسي</h3><p class="text-secondary mb-0">تُضاف الصفوف إلى العام المحدد، وتُسحب رسومها تلقائيًا عند التسجيل.</p></div>
+        <div>
+            <h3 class="fw-bold mb-1">الهيكل الدراسي المعتمد</h3>
+            <p class="text-secondary mb-0">أي رابط قديم لإضافة أو تعديل صف أو شعبة يعيدك إلى هذه الصفحة.</p>
+        </div>
         <a href="{% url 'academics:academic_year_list' %}" class="btn btn-outline-primary">إدارة الأعوام الدراسية</a>
     </div>
-    {% if academic_year %}<form method="get" class="row g-3 align-items-end mt-1">
-        <div class="col-md-5"><label class="form-label fw-bold" for="academic_year">العام الدراسي</label><select class="form-select" id="academic_year" name="year" onchange="this.form.submit()">{% for year in years %}<option value="{{ year.id }}" {% if year.id == academic_year.id %}selected{% endif %}>{{ year.name }}{% if year.is_current %} — العام الحالي{% endif %}</option>{% endfor %}</select></div>
-        <div class="col-md-7 text-secondary small">المدرسة: {{ school.name }}. لا يتم تكرار الصف أو إنشاء طالب جديد من هذه الشاشة.</div>
-    </form>{% endif %}
+    {% if academic_year %}
+    <form method="get" class="row g-3 align-items-end mt-1">
+        <div class="col-md-5">
+            <label class="form-label fw-bold" for="academic_year">العام الدراسي</label>
+            <select class="form-select" id="academic_year" name="year" onchange="this.form.submit()">
+                {% for year in years %}
+                <option value="{{ year.id }}" {% if year.id == academic_year.id %}selected{% endif %}>
+                    {{ year.name }}{% if year.is_closed %} — مغلق{% elif year.is_current %} — العام الحالي{% endif %}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-7 text-secondary small">المدرسة: {{ school.name }}</div>
+    </form>
+    {% endif %}
 </div>
+
+{% if year_is_closed %}
+<div class="alert alert-dark">هذا العام مغلق. الهيكل معروض كسجل تاريخي ولا يقبل الإضافة أو التعديل.</div>
+{% endif %}
+
 {% if not academic_year %}
-<div class="opal-card mb-4"><h3 class="fw-bold mb-2">إضافة العام الدراسي</h3><p class="text-secondary">هذه هي نقطة البداية الوحيدة للهيكل الدراسي.</p><form method="post">{% csrf_token %}<input type="hidden" name="action" value="create_year"><div class="row g-3">{% for field in year_form %}<div class="col-md-4"><label class="form-label fw-bold">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}</div>{% endfor %}</div><button class="btn btn-primary mt-4">حفظ العام الدراسي</button></form></div>
-{% else %}
 <div class="opal-card mb-4">
-    <h3 class="fw-bold mb-2">إضافة صف إلى {{ academic_year.name }}</h3>
-    <p class="text-secondary">أدخل الرسوم يدويًا. اترك عدد الشعب 1 إذا كان الصف شعبة واحدة؛ وعند اختيار أكثر من شعبة يمكن تعيين مربي كل شعبة من جدول الشعب أدناه.</p>
-    <form method="post">{% csrf_token %}<input type="hidden" name="action" value="configure_grade"><input type="hidden" name="academic_year" value="{{ academic_year.id }}"><div class="row g-3">{% for field in form %}<div class="col-md-4"><label class="form-label fw-bold">{{ field.label }}</label>{{ field }}{% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}{% for error in field.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}</div>{% endfor %}</div>{% for error in form.non_field_errors %}<div class="alert alert-danger mt-3 mb-0">{{ error }}</div>{% endfor %}<button class="btn btn-primary mt-4" type="submit">حفظ الصف والرسوم والشعب</button></form>
+    <h3 class="fw-bold mb-2">إضافة العام الدراسي</h3>
+    <p class="text-secondary">أضف العام أولًا، ثم أنشئ صفوفه وشعبه من الشاشة نفسها.</p>
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="create_year">
+        <div class="row g-3">
+            {% for field in year_form %}
+            <div class="col-md-4">
+                <label class="form-label fw-bold">{{ field.label }}</label>
+                {{ field }}
+                {% for error in field.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+            </div>
+            {% endfor %}
+        </div>
+        <button class="btn btn-primary mt-4">حفظ العام الدراسي</button>
+    </form>
 </div>
-<div class="opal-card mb-4"><h3 class="fw-bold mb-2">إضافة شعبة لصف موجود</h3><form method="post">{% csrf_token %}<input type="hidden" name="action" value="add_section"><input type="hidden" name="academic_year" value="{{ academic_year.id }}"><div class="row g-3">{% for field in section_form %}<div class="col-md-3"><label class="form-label fw-bold">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}</div>{% endfor %}</div><button class="btn btn-outline-primary mt-3">إضافة الشعبة</button></form></div>
+{% else %}
+{% if not year_is_closed %}
+<div class="opal-card mb-4" id="grade-form">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+        <div>
+            <h3 class="fw-bold mb-1">{% if edit_grade %}تعديل الصف: {{ edit_grade.name }}{% else %}إضافة صف إلى {{ academic_year.name }}{% endif %}</h3>
+            <p class="text-secondary mb-0">الصف ورسومه وشعبه تُدار من هذا النموذج فقط.</p>
+        </div>
+        {% if edit_grade %}<a href="{% url 'academics:academic_structure' %}?year={{ academic_year.id }}" class="btn btn-outline-secondary">إلغاء التعديل</a>{% endif %}
+    </div>
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="configure_grade">
+        <input type="hidden" name="academic_year" value="{{ academic_year.id }}">
+        <div class="row g-3">
+            {% for field in form %}
+            {% if not field.is_hidden %}
+            <div class="col-md-4">
+                <label class="form-label fw-bold">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+                {% for error in field.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+            </div>
+            {% else %}{{ field }}{% endif %}
+            {% endfor %}
+        </div>
+        {% for error in form.non_field_errors %}<div class="alert alert-danger mt-3 mb-0">{{ error }}</div>{% endfor %}
+        <button class="btn btn-primary mt-4" type="submit">
+            {% if edit_grade %}حفظ تعديل الصف{% else %}حفظ الصف والرسوم والشعب{% endif %}
+        </button>
+    </form>
+</div>
+
+<div class="opal-card mb-4" id="section-form">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+        <div>
+            <h3 class="fw-bold mb-1">{% if edit_section %}تعديل الشعبة: {{ edit_section }}{% else %}إضافة شعبة لصف موجود{% endif %}</h3>
+            <p class="text-secondary mb-0">لا توجد صفحة مستقلة أخرى لإضافة أو تعديل الشعب.</p>
+        </div>
+        {% if edit_section %}<a href="{% url 'academics:academic_structure' %}?year={{ academic_year.id }}" class="btn btn-outline-secondary">إلغاء التعديل</a>{% endif %}
+    </div>
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="save_section">
+        <input type="hidden" name="academic_year" value="{{ academic_year.id }}">
+        <div class="row g-3">
+            {% for field in section_form %}
+            {% if not field.is_hidden %}
+            <div class="col-md-3">
+                <label class="form-label fw-bold">{{ field.label }}</label>
+                {{ field }}
+                {% for error in field.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+            </div>
+            {% else %}{{ field }}{% endif %}
+            {% endfor %}
+        </div>
+        {% for error in section_form.non_field_errors %}<div class="alert alert-danger mt-3 mb-0">{{ error }}</div>{% endfor %}
+        <button class="btn btn-outline-primary mt-3">
+            {% if edit_section %}حفظ تعديل الشعبة{% else %}إضافة الشعبة{% endif %}
+        </button>
+    </form>
+</div>
+{% endif %}
+
 <div class="opal-card">
-    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3"><div><h3 class="fw-bold mb-1">صفوف {{ academic_year.name }}</h3><p class="text-secondary mb-0">لكل شعبة مربي واحد اختياري؛ ويمكن تعيينه بعد إضافة المعلمين.</p></div></div>
-    <div class="table-responsive"><table class="opal-table"><thead><tr><th>الصف</th><th>النوع</th><th>الرسوم</th><th>الشعب</th><th>مربي الصف</th><th>إجراء</th></tr></thead><tbody>{% for row in structure_rows %}<tr><td class="fw-bold">{{ row.grade.name }}</td><td>{% if row.grade.is_kindergarten %}<span class="badge bg-info">روضة</span>{% else %}<span class="badge bg-secondary">مدرسة</span>{% endif %}</td><td>{% if row.fee %}{{ row.fee.tuition_fee }}{% else %}<span class="text-warning">لم تحدد</span>{% endif %}</td><td>{% for section in row.sections %}<div>{{ section.name }}{% if section.is_default %} <small class="text-secondary">(الأساسية)</small>{% endif %}</div>{% empty %}<span class="text-warning">لا توجد شعبة</span>{% endfor %}</td><td>{% for section in row.sections %}<div>{{ section.homeroom_teacher|default:"غير معيّن" }}</div>{% empty %}—{% endfor %}</td><td><div class="d-flex flex-wrap gap-1"><a class="btn btn-sm btn-warning" href="{% url 'academics:grade_update' row.grade.pk %}">تعديل الصف</a><a class="btn btn-sm btn-outline-primary" href="{% url 'academics:section_list' %}">إدارة الشعب</a></div></td></tr>{% empty %}<tr><td colspan="6" class="text-center text-secondary">لم تُضف صفوف لهذا العام بعد.</td></tr>{% endfor %}</tbody></table></div>
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+        <div>
+            <h3 class="fw-bold mb-1">صفوف {{ academic_year.name }}</h3>
+            <p class="text-secondary mb-0">التعديل يتم داخل النموذجين أعلاه دون فتح نافذة موازية.</p>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="opal-table">
+            <thead>
+                <tr>
+                    <th>الصف</th>
+                    <th>الحالة</th>
+                    <th>النوع</th>
+                    <th>الرسوم</th>
+                    <th>الشعب ومربو الصف</th>
+                    <th>الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in structure_rows %}
+                <tr>
+                    <td class="fw-bold">{{ row.grade.name }}</td>
+                    <td>{% if row.grade.is_active %}<span class="badge bg-success">فعال</span>{% else %}<span class="badge bg-secondary">متوقف</span>{% endif %}</td>
+                    <td>{% if row.grade.is_kindergarten %}<span class="badge bg-info">روضة</span>{% else %}<span class="badge bg-secondary">مدرسة</span>{% endif %}</td>
+                    <td>{% if row.fee %}{{ row.fee.tuition_fee }}{% else %}<span class="text-warning">لم تحدد</span>{% endif %}</td>
+                    <td>
+                        {% for section in row.sections %}
+                        <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
+                            <span>
+                                {{ section.name }}
+                                {% if section.is_default %}<small class="text-secondary">(الأساسية)</small>{% endif %}
+                                — {{ section.homeroom_teacher|default:"غير معيّن" }}
+                                {% if not section.is_active %}<span class="badge bg-secondary">متوقفة</span>{% endif %}
+                            </span>
+                            {% if not year_is_closed %}<a class="btn btn-sm btn-outline-primary" href="{% url 'academics:academic_structure' %}?year={{ academic_year.id }}&edit_section={{ section.pk }}#section-form">تعديل الشعبة</a>{% endif %}
+                        </div>
+                        {% empty %}<span class="text-warning">لا توجد شعبة</span>{% endfor %}
+                    </td>
+                    <td>
+                        {% if not year_is_closed %}<a class="btn btn-sm btn-warning" href="{% url 'academics:academic_structure' %}?year={{ academic_year.id }}&edit_grade={{ row.grade.pk }}#grade-form">تعديل الصف</a>{% else %}<span class="text-secondary">محفوظ</span>{% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="text-center text-secondary">لم تُضف صفوف لهذا العام بعد.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 {% endif %}
 {% endblock %}

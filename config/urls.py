@@ -2,8 +2,26 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.auth.views import LoginView
 from django.urls import include, path
+from django.views.decorators.cache import never_cache
+from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.generic import RedirectView
 from core import views as core_views
+
+
+handler400 = "core.security.bad_request"
+handler403 = "core.security.permission_denied"
+handler404 = "core.security.page_not_found"
+handler500 = "core.security.server_error"
+
+
+opal_login_view = never_cache(
+    ensure_csrf_cookie(
+        LoginView.as_view(
+            template_name='registration/login.html',
+            redirect_authenticated_user=True,
+        )
+    )
+)
 
 
 urlpatterns = [
@@ -11,10 +29,7 @@ urlpatterns = [
     path('parent/', include('parent_portal.urls')),
     path(
         'accounts/login/',
-        LoginView.as_view(
-            template_name='registration/login.html',
-            redirect_authenticated_user=True,
-        ),
+        opal_login_view,
         name='login',
     ),
     path('login/', RedirectView.as_view(pattern_name='login', permanent=False)),

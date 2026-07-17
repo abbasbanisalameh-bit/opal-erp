@@ -18,8 +18,8 @@ class BranchAdmin(admin.ModelAdmin):
 
 @admin.register(AcademicYear)
 class AcademicYearAdmin(admin.ModelAdmin):
-    list_display = ("name", "school", "start_date", "end_date", "is_current")
-    list_filter = ("is_current", "school")
+    list_display = ("name", "school", "start_date", "end_date", "is_current", "is_closed", "closed_at")
+    list_filter = ("is_current", "is_closed", "school")
     search_fields = ("name", "school__name")
 
 

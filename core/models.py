@@ -45,6 +45,17 @@ class AcademicYear(models.Model):
     midyear_break_start = models.DateField("بداية عطلة منتصف العام")
     midyear_break_end = models.DateField("نهاية عطلة منتصف العام")
     is_current = models.BooleanField(default=False)
+    is_closed = models.BooleanField("عام مغلق", default=False, db_index=True)
+    closed_at = models.DateTimeField("تاريخ الإغلاق", null=True, blank=True)
+    closed_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="closed_academic_years",
+        verbose_name="أغلقه",
+    )
+    closure_notes = models.TextField("ملاحظات الإغلاق", blank=True)
 
     class Meta:
         ordering = ["-start_date", "name"]
@@ -68,6 +79,8 @@ class AcademicYear(models.Model):
             errors["midyear_break_end"] = "نهاية عطلة منتصف العام يجب ألا تسبق بدايتها."
         if self.end_date and self.midyear_break_end and self.midyear_break_end >= self.end_date:
             errors["midyear_break_end"] = "عطلة منتصف العام يجب أن تنتهي قبل نهاية العام."
+        if self.is_closed and self.is_current:
+            errors["is_current"] = "لا يمكن أن يكون العام المغلق هو العام الدراسي الحالي."
         if errors:
             raise ValidationError(errors)
 
@@ -109,6 +122,14 @@ class AcademicYear(models.Model):
 
     def __str__(self):
         return self.name
+
+    @property
+    def operational_status(self):
+        if self.is_closed:
+            return "closed"
+        if self.is_current:
+            return "current"
+        return "open"
 
 
 class Semester(models.Model):

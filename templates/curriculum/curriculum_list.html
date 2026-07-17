@@ -20,7 +20,8 @@
             <thead>
                 <tr>
                     <th>#</th>
-                    <th>اسم الخطة</th>
+                    <th>المادة</th>
+                    <th>الحصص الأسبوعية</th>
                     <th>الصف</th>
                     <th>السنة الدراسية</th>
                     <th>الحالة</th>
@@ -28,10 +29,11 @@
                 </tr>
             </thead>
             <tbody>
-                {% for item in curriculums %}
+                {% for item in items %}
                 <tr>
                     <td>{{ forloop.counter }}</td>
-                    <td class="fw-bold">{{ item.name }}</td>
+                    <td class="fw-bold">{{ item.subject }}</td>
+                    <td>{{ item.weekly_periods }}</td>
                     <td>{{ item.grade|default:"-" }}</td>
                     <td>{{ item.academic_year|default:"-" }}</td>
                     <td>
@@ -42,14 +44,20 @@
                         {% endif %}
                     </td>
                     <td>
+                        {% if item.academic_year.is_closed %}
+                        <span class="text-secondary">محفوظ</span>
+                        {% else %}
                         <a href="{% url 'curriculum:curriculum_update' item.id %}" class="btn btn-sm btn-warning">تعديل</a>
-                        <a href="{% url 'curriculum:curriculum_delete' item.id %}" class="btn btn-sm btn-danger"
-                           onclick="return confirm('هل تريد حذف هذه الخطة؟');">حذف</a>
+                        <form method="post" action="{% url 'curriculum:curriculum_delete' item.id %}" class="d-inline">
+                            {% csrf_token %}
+                            <button class="btn btn-sm btn-danger" onclick="return confirm('هل تريد حذف هذه الخطة؟');">حذف</button>
+                        </form>
+                        {% endif %}
                     </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="6" class="text-center text-secondary">لا توجد خطط دراسية</td>
+                    <td colspan="7" class="text-center text-secondary">لا توجد خطط دراسية</td>
                 </tr>
                 {% endfor %}
             </tbody>

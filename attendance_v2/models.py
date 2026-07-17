@@ -72,6 +72,8 @@ class Attendance(models.Model):
 
     def clean(self):
         super().clean()
+        if self.academic_year_id and self.academic_year.is_closed:
+            raise ValidationError("العام الدراسي مغلق ولا يقبل تعديل سجلات الحضور.")
         if self.status == "excused" and not self.excuse_reason.strip():
             raise ValidationError({"excuse_reason": "يجب كتابة سبب العذر."})
         if self.arrival_time and self.departure_time and self.departure_time <= self.arrival_time:
@@ -79,3 +81,7 @@ class Attendance(models.Model):
 
     def __str__(self):
         return f"{self.student.full_name} - {self.date}"
+
+    def save(self, *args, **kwargs):
+        self.full_clean(exclude=["recorded_by", "updated_by"])
+        return super().save(*args, **kwargs)

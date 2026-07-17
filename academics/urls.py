@@ -28,6 +28,8 @@ urlpatterns = [
     path("academic-years/", academic_core_views.academic_year_list, name="academic_year_list"),
     path("academic-years/add/", academic_core_views.academic_year_create, name="academic_year_create"),
     path("academic-years/<int:pk>/edit/", academic_core_views.academic_year_update, name="academic_year_update"),
+    path("academic-years/<int:pk>/close/", academic_core_views.academic_year_close, name="academic_year_close"),
+    path("academic-years/<int:pk>/activate/", academic_core_views.academic_year_activate, name="academic_year_activate"),
 
     path("semesters/", academic_core_views.semester_list, name="semester_list"),
     path("semesters/add/", academic_core_views.semester_create, name="semester_create"),

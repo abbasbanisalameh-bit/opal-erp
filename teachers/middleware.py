@@ -8,6 +8,7 @@ class TeacherPortalAccessMiddleware:
 
     ALLOWED_PREFIXES = (
         "/teachers/portal/",
+        "/exams/",  # canonical marks entry; permissions remain enforced by the view
         "/accounts/",
         "/logout/",
         "/static/",

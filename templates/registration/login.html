@@ -133,8 +133,14 @@
             <div class="alert">اسم المستخدم أو كلمة المرور غير صحيحة</div>
         {% endif %}
 
-        <form method="post" action="{% url 'login' %}">
+        {% if request.GET.csrf_retry %}
+            <div class="alert">تم تحديث جلسة الدخول لحمايتك. أدخل بياناتك مرة أخرى.</div>
+        {% endif %}
+
+        <form method="post" action="{% url 'login' %}" id="opalLoginForm" autocomplete="on">
             {% csrf_token %}
+
+            {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
 
             <label>اسم المستخدم</label>
             <input type="text" name="username" class="form-control" required autofocus>
@@ -149,9 +155,19 @@
     </div>
 <script>
 window.addEventListener("pageshow", function(event) {
-    if (event.persisted) {
+    const entries = window.performance && performance.getEntriesByType
+        ? performance.getEntriesByType("navigation")
+        : [];
+    const returnedFromHistory = entries.length && entries[0].type === "back_forward";
+    if (event.persisted || returnedFromHistory) {
         window.location.reload();
     }
+});
+
+document.getElementById("opalLoginForm").addEventListener("submit", function() {
+    const button = this.querySelector("button[type='submit']");
+    button.disabled = true;
+    button.textContent = "جاري الدخول...";
 });
 </script>
 </body>

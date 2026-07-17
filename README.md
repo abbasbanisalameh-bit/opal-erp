@@ -31,8 +31,11 @@ python manage.py migrate --noinput
 python manage.py test
 python manage.py collectstatic --noinput
 python manage.py verify_core_readiness --allow-empty
+# بعد إعداد بيانات التشغيل الفعلية:
+python manage.py verify_core_readiness
 ```
 
-تعليمات التركيب الكاملة في `INSTALL_OPAL_SAFE_CONSOLIDATION_AR.md`، وسجل
-التغيير في `OPAL_SAFE_CONSOLIDATION_RELEASE_NOTES_AR.md`. الوثائق التاريخية
+تعليمات التركيب الحالية في
+`INSTALL_OPAL_FINAL_CORE_COMPLETION_PRODUCTION_READINESS_AR.md`، وسجل التغيير في
+`OPAL_FINAL_CORE_COMPLETION_PRODUCTION_READINESS_RELEASE_NOTES_AR.md`. الوثائق التاريخية
 محفوظة داخل `docs/archive/`.

@@ -11,6 +11,9 @@ from .services import notify_parent_for_attendance
 @staff_member_required
 def attendance_edit(request, pk):
     record = get_object_or_404(Attendance, pk=pk)
+    if record.academic_year_id and record.academic_year.is_closed:
+        messages.error(request, "العام الدراسي مغلق ولا يمكن تعديل سجل الحضور التاريخي.")
+        return redirect("attendance_v2:report")
     if record.is_locked and not request.user.is_superuser:
         messages.error(request, "السجل مقفل ولا يمكن تعديله إلا بواسطة مدير النظام.")
         return redirect("attendance_v2:report")

@@ -1,9 +1,11 @@
 from django.contrib import messages
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+from django.views.decorators.http import require_POST
 
-from .forms import TeacherAccountCreateForm, TeacherAssignmentForm, TeacherForm
-from .models import Teacher, TeacherAssignment
+from .forms import HomeworkForm, TeacherAccountCreateForm, TeacherAssignmentForm, TeacherForm
+from .models import Homework, Teacher, TeacherAssignment
 from .account_services import create_teacher_account, reset_teacher_password
 from enterprise_ops.permissions import management_required
 
@@ -107,6 +109,9 @@ def assignment_create(request, teacher_pk):
 @management_required
 def assignment_update(request, pk):
     assignment = get_object_or_404(TeacherAssignment.objects.select_related("teacher"), pk=pk)
+    if assignment.academic_year.is_closed:
+        messages.error(request, "العام الدراسي مغلق ولا يمكن تعديل تكليفاته التاريخية.")
+        return redirect("teachers:teacher_detail", pk=assignment.teacher_id)
     form = TeacherAssignmentForm(request.POST or None, instance=assignment, teacher=assignment.teacher)
     if form.is_valid():
         form.save()
@@ -120,8 +125,11 @@ def assignment_delete(request, pk):
     assignment = get_object_or_404(TeacherAssignment, pk=pk)
     teacher_id = assignment.teacher_id
     if request.method == "POST":
-        assignment.delete()
-        messages.success(request, "تم حذف التكليف التدريسي.")
+        if assignment.academic_year.is_closed:
+            messages.error(request, "العام الدراسي مغلق ولا يمكن حذف تكليفاته التاريخية.")
+        else:
+            assignment.delete()
+            messages.success(request, "تم حذف التكليف التدريسي.")
     return redirect("teachers:teacher_detail", pk=teacher_id)
 
 
@@ -163,7 +171,7 @@ from django import forms
 from django.utils import timezone
 from academics.models import Enrollment
 from attendance_v2.models import Attendance
-from exams.models import Exam, StudentMark
+from exams.models import Exam
 from timetable.models import TimetableEntry
 from .permissions import teacher_required
 
@@ -171,9 +179,25 @@ from .permissions import teacher_required
 @teacher_required
 def portal_dashboard(request):
     teacher = request.user.teacher_profile
-    assignments = teacher.assignments.filter(is_active=True).select_related("academic_year", "section", "section__grade", "subject")
-    timetable = TimetableEntry.objects.filter(teacher=teacher, is_active=True).select_related("section", "subject", "time_slot")
-    return render(request, "teachers/portal_dashboard.html", {"teacher": teacher, "assignments": assignments, "timetable": timetable})
+    assignments = teacher.assignments.filter(is_active=True).select_related(
+        "academic_year", "section", "section__grade", "subject"
+    )
+    timetable = TimetableEntry.objects.filter(teacher=teacher, is_active=True).select_related(
+        "section", "subject", "time_slot"
+    )
+    homeroom_sections = teacher.homeroom_sections.filter(is_active=True).select_related(
+        "academic_year", "grade"
+    )
+    latest_homework = Homework.objects.filter(
+        assignment__teacher=teacher, is_active=True
+    ).select_related("assignment__subject", "assignment__section")[:10]
+    return render(request, "teachers/portal_dashboard.html", {
+        "teacher": teacher,
+        "assignments": assignments,
+        "timetable": timetable,
+        "homeroom_sections": homeroom_sections,
+        "latest_homework": latest_homework,
+    })
 
 
 class AttendanceEntryForm(forms.Form):
@@ -184,42 +208,67 @@ class AttendanceEntryForm(forms.Form):
 
 @teacher_required
 def portal_attendance(request, assignment_pk):
+    """Compatibility route; attendance is allowed only to the homeroom teacher."""
     teacher = request.user.teacher_profile
-    assignment = get_object_or_404(teacher.assignments.select_related("section", "subject"), pk=assignment_pk, is_active=True)
+    assignment = get_object_or_404(
+        teacher.assignments.select_related("section", "section__grade", "subject", "academic_year"),
+        pk=assignment_pk,
+        is_active=True,
+    )
+    if assignment.section.homeroom_teacher_id != teacher.pk:
+        messages.error(request, "تسجيل الغياب متاح لمربي الشعبة فقط.")
+        return redirect("teachers:portal_dashboard")
+    return redirect("teachers:portal_attendance_section", section_pk=assignment.section_id)
+
+
+@teacher_required
+def portal_attendance_section(request, section_pk):
+    teacher = request.user.teacher_profile
+    section = get_object_or_404(
+        teacher.homeroom_sections.select_related("academic_year", "grade"),
+        pk=section_pk,
+        is_active=True,
+    )
     date = request.POST.get("date") or request.GET.get("date") or timezone.localdate().isoformat()
     students = [
-        e.student
-        for e in Enrollment.objects.filter(
-            section=assignment.section,
-            academic_year=assignment.academic_year,
-            status="active",
+        enrollment.student
+        for enrollment in Enrollment.objects.filter(
+            section=section, academic_year=section.academic_year, status="active"
         ).select_related("student")
     ]
     FormSet = formset_factory(AttendanceEntryForm, extra=0)
-    initial=[]
-    for st in students:
-        rec=Attendance.objects.filter(student=st,date=date).first()
-        initial.append({"student_id":st.id,"status":rec.status if rec else "present","notes":rec.notes if rec else ""})
-    formset=FormSet(request.POST or None, initial=initial)
+    initial = []
+    for student in students:
+        record = Attendance.objects.filter(student=student, date=date).first()
+        initial.append({
+            "student_id": student.id,
+            "status": record.status if record else "present",
+            "notes": record.notes if record else "",
+        })
+    formset = FormSet(request.POST or None, initial=initial)
     if request.method == "POST" and formset.is_valid():
-        allowed={student.id for student in students}
+        allowed = {student.id for student in students}
         saved = locked = 0
         for row in formset.cleaned_data:
-            sid=row.get("student_id")
-            if sid not in allowed:
+            student_id = row.get("student_id")
+            if student_id not in allowed:
                 continue
-            existing = Attendance.objects.filter(student_id=sid, date=date).first()
+            existing = Attendance.objects.filter(student_id=student_id, date=date).first()
             if existing and existing.is_locked:
                 locked += 1
                 continue
+            status = row["status"]
+            notes = row.get("notes", "")
             Attendance.objects.update_or_create(
-                student_id=sid, date=date,
+                student_id=student_id,
+                date=date,
                 defaults={
-                    "academic_year": assignment.academic_year,
-                    "grade": assignment.section.grade,
-                    "section": assignment.section,
-                    "status": row["status"],
-                    "notes": row.get("notes", ""),
+                    "academic_year": section.academic_year,
+                    "grade": section.grade,
+                    "section": section,
+                    "status": status,
+                    "notes": notes,
+                    "excuse_reason": notes or "عذر مثبت لدى الإدارة" if status == "excused" else "",
                     "recorded_by": existing.recorded_by if existing else request.user,
                     "updated_by": request.user,
                 },
@@ -229,63 +278,100 @@ def portal_attendance(request, assignment_pk):
         if locked:
             messages.warning(request, f"تم تجاوز {locked} سجلًا مقفلًا.")
         return redirect(f"{request.path}?date={date}")
-    rows=list(zip(students, formset.forms))
-    return render(request,"teachers/portal_attendance.html",{"assignment":assignment,"date":date,"rows":rows,"formset":formset})
+    rows = list(zip(students, formset.forms))
+    return render(request, "teachers/portal_attendance.html", {
+        "section": section,
+        "assignment": None,
+        "date": date,
+        "rows": rows,
+        "formset": formset,
+    })
 
 
-class MarkEntryForm(forms.Form):
-    student_id=forms.IntegerField(widget=forms.HiddenInput)
-    mark=forms.DecimalField(min_value=0, widget=forms.NumberInput(attrs={"class":"form-control","step":"0.01"}))
-    notes=forms.CharField(required=False,widget=forms.TextInput(attrs={"class":"form-control"}))
+@teacher_required
+def portal_students(request, assignment_pk):
+    teacher = request.user.teacher_profile
+    assignment = get_object_or_404(
+        teacher.assignments.select_related("academic_year", "section", "section__grade", "subject"),
+        pk=assignment_pk,
+        is_active=True,
+    )
+    enrollments = Enrollment.objects.filter(
+        academic_year=assignment.academic_year,
+        section=assignment.section,
+        status="active",
+    ).select_related("student").order_by("student__full_name")
+    return render(request, "teachers/portal_students.html", {"assignment": assignment, "enrollments": enrollments})
+
+
+@teacher_required
+def portal_homework(request, assignment_pk):
+    teacher = request.user.teacher_profile
+    assignment = get_object_or_404(
+        teacher.assignments.select_related("academic_year", "section", "section__grade", "subject"),
+        pk=assignment_pk,
+        is_active=True,
+    )
+    form = HomeworkForm(request.POST or None, request.FILES or None)
+    if request.method == "POST" and form.is_valid():
+        item = form.save(commit=False)
+        item.assignment = assignment
+        item.created_by = request.user
+        item.save()
+        messages.success(request, "تم نشر الواجب لطلاب الشعبة.")
+        return redirect("teachers:portal_homework", assignment_pk=assignment.pk)
+    items = assignment.homework_items.all()
+    return render(request, "teachers/portal_homework.html", {"assignment": assignment, "form": form, "items": items})
+
+
+@teacher_required
+def portal_homework_update(request, pk):
+    teacher = request.user.teacher_profile
+    item = get_object_or_404(
+        Homework.objects.select_related("assignment", "assignment__subject", "assignment__section"),
+        pk=pk,
+        assignment__teacher=teacher,
+    )
+    form = HomeworkForm(request.POST or None, request.FILES or None, instance=item)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "تم تحديث الواجب.")
+        return redirect("teachers:portal_homework", assignment_pk=item.assignment_id)
+    return render(request, "teachers/portal_homework_form.html", {"item": item, "form": form})
+
+
+@teacher_required
+@require_POST
+def portal_homework_delete(request, pk):
+    teacher = request.user.teacher_profile
+    item = get_object_or_404(Homework, pk=pk, assignment__teacher=teacher)
+    assignment_id = item.assignment_id
+    item.delete()
+    messages.success(request, "تم حذف الواجب.")
+    return redirect("teachers:portal_homework", assignment_pk=assignment_id)
 
 
 @teacher_required
 def portal_marks(request, assignment_pk):
-    teacher=request.user.teacher_profile
-    assignment=get_object_or_404(teacher.assignments.select_related("section","section__grade","subject","academic_year"),pk=assignment_pk,is_active=True)
-    exams=Exam.objects.filter(
+    """Compatibility entry point to the single canonical marks screen."""
+    teacher = request.user.teacher_profile
+    assignment = get_object_or_404(
+        teacher.assignments.select_related(
+            "section", "section__grade", "subject", "academic_year"
+        ),
+        pk=assignment_pk,
+        is_active=True,
+    )
+    exams = Exam.objects.filter(
         subject=assignment.subject,
         grade=assignment.section.grade,
         academic_year=assignment.academic_year,
         is_active=True,
-    )
-    exam_id=request.POST.get("exam") or request.GET.get("exam")
-    exam=get_object_or_404(exams,pk=exam_id) if exam_id else exams.first()
-    students=[
-        e.student
-        for e in Enrollment.objects.filter(
-            section=assignment.section,
-            academic_year=assignment.academic_year,
-            status="active",
-        ).select_related("student")
-    ]
-    FormSet=formset_factory(MarkEntryForm,extra=0)
-    initial=[]
-    if exam:
-        for st in students:
-            rec=StudentMark.objects.filter(student=st,exam=exam).first()
-            initial.append({"student_id":st.id,"mark":rec.mark if rec else 0,"notes":rec.notes if rec else ""})
-    formset=FormSet(request.POST or None,initial=initial)
-    if request.method=="POST" and exam and formset.is_valid():
-        if not exam.can_edit_marks:
-            messages.error(request, "الامتحان معتمد أو مقفل ولا يمكن تعديل علاماته.")
-            return redirect(f"{request.path}?exam={exam.id}")
-        allowed={student.id for student in students}
-        saved = 0
-        for row in formset.cleaned_data:
-            sid=row.get("student_id")
-            if sid in allowed and row["mark"] <= exam.max_mark:
-                mark, created = StudentMark.objects.get_or_create(
-                    student_id=sid, exam=exam,
-                    defaults={"mark": row["mark"], "notes": row.get("notes", ""), "entered_by": request.user, "updated_by": request.user},
-                )
-                if not created:
-                    mark.mark = row["mark"]
-                    mark.notes = row.get("notes", "")
-                    mark.updated_by = request.user
-                    mark.full_clean()
-                    mark.save()
-                saved += 1
-        messages.success(request, f"تم حفظ {saved} علامة بنجاح.")
-        return redirect(f"{request.path}?exam={exam.id}")
-    return render(request,"teachers/portal_marks.html",{"assignment":assignment,"exams":exams,"exam":exam,"rows":list(zip(students,formset.forms)),"formset":formset})
+    ).order_by("semester__code", "exam_type")
+    exam_id = request.POST.get("exam") or request.GET.get("exam")
+    exam = exams.filter(pk=exam_id).first() if exam_id else exams.first()
+    if exam is None:
+        messages.info(request, "لا توجد امتحانات متاحة لهذا التكليف حتى الآن.")
+        return redirect("teachers:portal_dashboard")
+    target = reverse("exams:exam_marks_bulk", args=[exam.pk])
+    return redirect(f"{target}?assignment={assignment.pk}")

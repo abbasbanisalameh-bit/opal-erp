@@ -17,9 +17,11 @@ urlpatterns = [
     path("fees/", views.fees, name="fees"),
     path("attendance/", views.attendance, name="attendance"),
     path("marks/", views.marks, name="marks"),
+    path("homework/", views.homework, name="homework"),
     path("timetable/", views.timetable, name="timetable"),
     path("documents/", views.documents, name="documents"),
     path("announcements/", views.announcements, name="announcements"),
     path("account/", views.account, name="account"),
     path("student/<int:student_id>/", views.student_detail, name="student_detail"),
+    path("student/<int:student_id>/personal/edit/", views.student_personal_update, name="student_personal_update"),
 ]

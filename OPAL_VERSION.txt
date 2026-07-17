@@ -1,5 +1,5 @@
-OPAL ERP REGISTRATION, GRADE AND STUDENT 360 REPAIR
-Release: OPAL_REGISTRATION_GRADE_360_REPAIR_20260715_V1
-Base: OPAL_TABLE_BACKUP_ACTIONS_FIX_20260715_V3
-Date: 2026-07-15
-Scope: guardian identity, gender, automatic first payment, canonical grades, Student 360 merge
+OPAL ERP LOGIN AND PERFORMANCE STABILITY
+Release: OPAL_LOGIN_PERFORMANCE_STABILITY_20260717_V1
+Base: OPAL_ROLE_PERMISSIONS_ACADEMIC_WORKFLOW_20260716_V1
+Date: 2026-07-17
+Scope: safe CSRF login recovery; optimized executive dashboard; local dashboard chart runtime

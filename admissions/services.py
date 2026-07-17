@@ -24,7 +24,7 @@ def active_school():
 
 def current_academic_year(school=None):
     school = school or active_school()
-    return AcademicYear.objects.filter(school=school, is_current=True).first() or AcademicYear.objects.filter(school=school).order_by("-start_date").first()
+    return AcademicYear.objects.filter(school=school, is_current=True, is_closed=False).first()
 
 
 def get_registration_settings(school=None):

@@ -8,6 +8,7 @@ from django.utils import timezone
 from django.utils.dateparse import parse_date
 
 from academics.models import Enrollment, Grade, Section, Subject
+from academics.canonical_services import resolve_grade, resolve_section
 from attendance_v2.models import Attendance
 from accounting.models import StudentInvoice, StudentPayment
 from core.identifiers import normalize_identifier, normalize_phone
@@ -248,15 +249,15 @@ def _resolve_enrollment(student, payload, school):
     if not data:
         return None
     year_name = str(data.get("academic_year") or "").strip()
-    year = AcademicYear.objects.filter(school=school, name=year_name).first() if year_name else None
-    year = year or AcademicYear.objects.filter(school=school, is_current=True).first()
+    year = AcademicYear.objects.filter(school=school, name=year_name, is_closed=False).first() if year_name else None
+    year = year or AcademicYear.objects.filter(school=school, is_current=True, is_closed=False).first()
     if not year:
         return None
 
     grade_name = str(data.get("grade") or "").strip()
     if not grade_name:
         return None
-    grade, _ = Grade.objects.get_or_create(school=school, name=grade_name)
+    grade, _ = resolve_grade(school=school, name=grade_name)
 
     section = None
     section_name = str(data.get("section") or "").strip()
@@ -265,7 +266,7 @@ def _resolve_enrollment(student, payload, school):
         branch, _ = Branch.objects.get_or_create(
             school=school, name=branch_name, defaults={"is_main": branch_name == "الرئيسي"}
         )
-        section, _ = Section.objects.get_or_create(
+        section, _ = resolve_section(
             academic_year=year, branch=branch, grade=grade, name=section_name
         )
 

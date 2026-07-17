@@ -55,7 +55,7 @@ def dashboard_statistics(exams: Iterable[Exam]) -> dict:
 def student_academic_record(student, published_only=False) -> dict:
     marks_qs = StudentMark.objects.filter(student=student)
     if published_only:
-        marks_qs = marks_qs.filter(exam__status="published")
+        marks_qs = marks_qs.filter(exam__status__in=["published", "closed"])
     marks = list(marks_qs.select_related("exam", "exam__subject", "exam__grade", "exam__academic_year").order_by("exam__exam_date", "exam__subject__name", "exam__name"))
     by_subject = defaultdict(lambda: {"marks": [], "total_percentage": Decimal("0")})
     by_year = defaultdict(lambda: {"marks": [], "total": Decimal("0")})

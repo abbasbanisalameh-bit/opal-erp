@@ -2,31 +2,9 @@
 from django import forms
 
 from core.identifiers import normalize_identifier
-from .models import AdmissionApplication, GradeFee, TransportRoute, RegistrationSettings, StudentRegistration
+from .models import GradeFee, TransportRoute, RegistrationSettings, StudentRegistration
 from academics.models import Grade, Section
 from students.models import Student
-
-
-class AdmissionApplicationForm(forms.ModelForm):
-    class Meta:
-        model = AdmissionApplication
-        exclude = ("school", "branch", "academic_year", "application_number", "status", "notes", "created_at")
-        widgets = {
-            "student_full_name": forms.TextInput(attrs={"class": "form-control"}),
-            "father_name": forms.TextInput(attrs={"class": "form-control"}),
-            "mother_name": forms.TextInput(attrs={"class": "form-control"}),
-            "gender": forms.Select(attrs={"class": "form-select"}),
-            "birth_date": forms.DateInput(attrs={"class": "form-control", "type": "date"}),
-            "phone": forms.TextInput(attrs={"class": "form-control"}),
-            "address": forms.Textarea(attrs={"class": "form-control", "rows": 3}),
-            "photo": forms.ClearableFileInput(attrs={"class": "form-control"}),
-            "guardian_name": forms.TextInput(attrs={"class": "form-control"}),
-            "guardian_phone": forms.TextInput(attrs={"class": "form-control"}),
-            "guardian_email": forms.EmailInput(attrs={"class": "form-control"}),
-            "guardian_job": forms.TextInput(attrs={"class": "form-control"}),
-            "grade": forms.Select(attrs={"class": "form-select"}),
-            "section": forms.Select(attrs={"class": "form-select"}),
-        }
 
 
 class GradeFeeForm(forms.ModelForm):
@@ -44,7 +22,7 @@ class GradeFeeForm(forms.ModelForm):
     def __init__(self, *args, school=None, academic_year=None, **kwargs):
         super().__init__(*args, **kwargs)
         if school:
-            self.fields["academic_year"].queryset = school.academic_years.all()
+            self.fields["academic_year"].queryset = school.academic_years.filter(is_closed=False)
             self.fields["grade"].queryset = Grade.objects.filter(school=school, is_active=True)
         if academic_year and not self.is_bound:
             self.fields["academic_year"].initial = academic_year
@@ -172,6 +150,8 @@ class DirectStudentRegistrationForm(forms.ModelForm):
         cleaned_data = super().clean()
         grade = cleaned_data.get("grade")
         section = cleaned_data.get("section")
+        if self.academic_year and self.academic_year.is_closed:
+            raise forms.ValidationError("العام الدراسي مغلق ولا يقبل تسجيل طلاب جدد.")
         if not grade or not self.school or not self.academic_year:
             return cleaned_data
         if not GradeFee.objects.filter(

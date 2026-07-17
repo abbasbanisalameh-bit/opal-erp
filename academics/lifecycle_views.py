@@ -51,8 +51,15 @@ def lifecycle_action(request, student_id):
 
 @management_required
 def promotion_batch(request):
-    form = BulkPromotionForm(request.POST or None, initial={"effective_date": timezone.localdate()})
+    form = BulkPromotionForm(
+        request.POST or None,
+        initial={
+            "effective_date": timezone.localdate(),
+            "source_year": request.GET.get("source_year") or None,
+        },
+    )
     enrollments = Enrollment.objects.none()
+    selected_operation = request.POST.get("operation", "promote")
     if request.method == "POST" and request.POST.get("load"):
         if form.is_valid():
             enrollments = Enrollment.objects.filter(
@@ -60,10 +67,16 @@ def promotion_batch(request):
                 grade=form.cleaned_data["source_grade"],
                 status="active",
             ).select_related("student", "section")
-    elif request.method == "POST" and request.POST.get("promote"):
+    elif request.method == "POST" and (request.POST.get("execute") or request.POST.get("promote")):
         if form.is_valid():
+            selected_operation = form.cleaned_data["operation"]
             ids = request.POST.getlist("students")
-            enrollments = Enrollment.objects.filter(pk__in=ids, status="active").select_related("student")
+            enrollments = Enrollment.objects.filter(
+                pk__in=ids,
+                academic_year=form.cleaned_data["source_year"],
+                grade=form.cleaned_data["source_grade"],
+                status="active",
+            ).select_related("student")
             completed = 0
             failures = []
             with transaction.atomic():
@@ -71,7 +84,7 @@ def promotion_batch(request):
                     try:
                         perform_lifecycle_action(
                             student=enrollment.student,
-                            action="promote",
+                            action=selected_operation,
                             effective_date=form.cleaned_data["effective_date"],
                             target_year=form.cleaned_data["target_year"],
                             target_grade=form.cleaned_data["target_grade"],
@@ -83,10 +96,15 @@ def promotion_batch(request):
                     except ValidationError as exc:
                         failures.append(f"{enrollment.student.full_name}: {exc.message}")
             if completed:
-                audit(request, "update", "academics.Enrollment", description=f"ترفيع جماعي لعدد {completed} طالب")
-                messages.success(request, f"تم ترفيع {completed} طالب بنجاح.")
+                action_label = "تخريج" if selected_operation == "graduate" else "ترفيع"
+                audit(request, "update", "academics.Enrollment", description=f"{action_label} جماعي لعدد {completed} طالب")
+                messages.success(request, f"تم {action_label} {completed} طالب بنجاح.")
             for failure in failures:
                 messages.error(request, failure)
             if not failures:
                 return redirect("academics:lifecycle_list")
-    return render(request, "academics/lifecycle/promotion_batch.html", {"form": form, "enrollments": enrollments})
+    return render(
+        request,
+        "academics/lifecycle/promotion_batch.html",
+        {"form": form, "enrollments": enrollments, "selected_operation": selected_operation},
+    )

@@ -27,6 +27,16 @@ def management_required(view_func):
     return wrapped
 
 
+def superuser_required(view_func):
+    @wraps(view_func)
+    def wrapped(request, *args, **kwargs):
+        if not request.user.is_authenticated or not request.user.is_superuser:
+            messages.error(request, "هذا الإجراء متاح لمدير النظام فقط.")
+            return redirect("dashboard:home")
+        return view_func(request, *args, **kwargs)
+    return wrapped
+
+
 def has_feature_permission(user, feature, action="view"):
     if not user.is_authenticated:
         return False

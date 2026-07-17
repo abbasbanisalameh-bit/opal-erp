@@ -59,6 +59,8 @@ class TimetableEntry(models.Model):
     def clean(self):
         super().clean()
         errors = {}
+        if self.academic_year_id and self.academic_year.is_closed:
+            errors["academic_year"] = "العام الدراسي مغلق ولا يقبل تعديل الجدول."
         if self.section_id and self.section.academic_year_id and self.academic_year_id != self.section.academic_year_id:
             errors["section"] = "الشعبة المختارة لا تتبع العام الدراسي المحدد."
         if self.section_id and self.subject_id and self.subject.grade_id and self.subject.grade_id != self.section.grade_id:

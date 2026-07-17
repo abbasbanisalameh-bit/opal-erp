@@ -80,7 +80,7 @@ class AcademicsModelsTest(TestCase):
 
 class AcademicStructureFlowTests(TestCase):
     def setUp(self):
-        self.user = User.objects.create_user(username="admin", password="safe-password")
+        self.user = User.objects.create_user(username="admin", password="safe-password", is_staff=True)
         self.school = School.objects.create(name="مدرسة الهيكل", is_active=True)
         self.branch = Branch.objects.create(school=self.school, name="الفرع الرئيسي", is_main=True)
         self.year = AcademicYear.objects.create(
@@ -135,7 +135,7 @@ class AcademicStructureFlowTests(TestCase):
 
 class CanonicalGradeEntryTests(TestCase):
     def setUp(self):
-        self.user = User.objects.create_user(username="grade_admin", password="safe-password")
+        self.user = User.objects.create_user(username="grade_admin", password="safe-password", is_staff=True)
         self.school = School.objects.create(name="مدرسة الصفوف الموحدة", is_active=True)
         self.client.force_login(self.user)
 
@@ -152,3 +152,63 @@ class CanonicalGradeEntryTests(TestCase):
             reverse("academics:academic_structure"),
             fetch_redirect_response=False,
         )
+
+
+class BulkGraduationFlowTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user("graduation_manager", password="pass", is_staff=True)
+        self.school = School.objects.create(name="مدرسة التخريج", is_active=True)
+        self.branch = Branch.objects.create(school=self.school, name="الرئيسي", is_main=True)
+        self.year = AcademicYear.objects.create(
+            school=self.school,
+            name="2026/2027",
+            start_date=date(2026, 9, 1),
+            end_date=date(2027, 6, 30),
+            is_current=True,
+        )
+        self.grade = Grade.objects.create(school=self.school, name="الصف الثاني عشر", order=12)
+        self.section = Section.objects.create(
+            academic_year=self.year,
+            branch=self.branch,
+            grade=self.grade,
+            name="أ",
+        )
+        self.enrollments = []
+        for index in range(2):
+            student = Student.objects.create(
+                student_number=f"GRAD-{index + 1}",
+                full_name=f"طالب خريج {index + 1}",
+                grade=self.grade.name,
+                section=self.section.name,
+            )
+            self.enrollments.append(
+                Enrollment.objects.create(
+                    student=student,
+                    academic_year=self.year,
+                    grade=self.grade,
+                    section=self.section,
+                    status="active",
+                )
+            )
+        self.client.force_login(self.user)
+
+    def test_bulk_graduation_finishes_selected_enrollments(self):
+        response = self.client.post(
+            reverse("academics:promotion_batch"),
+            {
+                "operation": "graduate",
+                "source_year": self.year.pk,
+                "source_grade": self.grade.pk,
+                "effective_date": "2027-06-30",
+                "reason": "إنهاء العام",
+                "students": [item.pk for item in self.enrollments],
+                "execute": "1",
+            },
+        )
+        self.assertRedirects(response, reverse("academics:lifecycle_list"))
+        self.assertEqual(
+            Enrollment.objects.filter(pk__in=[item.pk for item in self.enrollments], status="graduated").count(),
+            2,
+        )
+        self.assertEqual(StudentLifecycleEvent.objects.filter(action="graduate").count(), 2)
+        self.assertEqual(Student.objects.filter(student_number__startswith="GRAD-", status="graduated").count(), 2)

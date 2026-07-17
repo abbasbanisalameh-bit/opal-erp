@@ -1,5 +1,5 @@
 from django import forms
-from .models import Teacher, TeacherAssignment
+from .models import Homework, Teacher, TeacherAssignment
 
 
 class DateInput(forms.DateInput):
@@ -44,8 +44,11 @@ class TeacherAssignmentForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if self.teacher:
             school = self.teacher.school
-            self.fields["academic_year"].queryset = school.academic_years.all()
-            self.fields["section"].queryset = self.fields["section"].queryset.filter(branch__school=school)
+            self.fields["academic_year"].queryset = school.academic_years.filter(is_closed=False)
+            self.fields["section"].queryset = self.fields["section"].queryset.filter(
+                branch__school=school,
+                academic_year__is_closed=False,
+            )
             self.fields["subject"].queryset = self.fields["subject"].queryset.filter(grade__school=school)
         for field in self.fields.values():
             if isinstance(field.widget, forms.CheckboxInput):
@@ -81,3 +84,23 @@ class TeacherAccountCreateForm(forms.Form):
         help_text="اتركه فارغًا ليتم توليده من الرقم الوظيفي.",
         widget=forms.TextInput(attrs={"class": "form-control", "dir": "ltr", "autocomplete": "off"}),
     )
+
+
+class HomeworkForm(forms.ModelForm):
+    class Meta:
+        model = Homework
+        fields = ["title", "description", "assigned_date", "due_date", "attachment", "is_active"]
+        widgets = {
+            "assigned_date": forms.DateInput(attrs={"type": "date"}),
+            "due_date": forms.DateInput(attrs={"type": "date"}),
+            "description": forms.Textarea(attrs={"rows": 4}),
+            "attachment": forms.ClearableFileInput(attrs={"accept": ".pdf,.doc,.docx,.jpg,.jpeg,.png"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs.setdefault(
+                "class",
+                "form-check-input" if isinstance(field.widget, forms.CheckboxInput) else "form-control",
+            )

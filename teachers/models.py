@@ -1,5 +1,7 @@
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils import timezone
 from django.db.models import Q
 
 from academics.models import Section, Subject
@@ -107,6 +109,8 @@ class TeacherAssignment(models.Model):
     def clean(self):
         super().clean()
         errors = {}
+        if self.academic_year_id and self.academic_year.is_closed:
+            errors["academic_year"] = "العام الدراسي مغلق ولا يقبل تعديل التكليفات."
         if self.section_id and self.academic_year_id and self.section.academic_year_id != self.academic_year_id:
             errors["section"] = "الشعبة لا تتبع العام الدراسي المختار."
         if self.section_id and self.subject_id and self.subject.grade_id and self.section.grade_id != self.subject.grade_id:
@@ -122,6 +126,52 @@ class TeacherAssignment(models.Model):
 
     def __str__(self):
         return f"{self.teacher} - {self.subject} - {self.section}"
+
+
+class Homework(models.Model):
+    assignment = models.ForeignKey(
+        TeacherAssignment,
+        on_delete=models.CASCADE,
+        related_name="homework_items",
+        verbose_name="التكليف التدريسي",
+    )
+    title = models.CharField("عنوان الواجب", max_length=200)
+    description = models.TextField("تفاصيل الواجب")
+    assigned_date = models.DateField("تاريخ التكليف", default=timezone.localdate)
+    due_date = models.DateField("تاريخ التسليم")
+    attachment = models.FileField("مرفق", upload_to="homework/", blank=True)
+    is_active = models.BooleanField("فعال", default=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="created_homework_items",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-assigned_date", "-created_at"]
+        verbose_name = "واجب صفي"
+        verbose_name_plural = "الواجبات الصفية"
+        indexes = [
+            models.Index(fields=["assignment", "due_date", "is_active"]),
+        ]
+
+    def clean(self):
+        super().clean()
+        if self.assignment_id and self.assignment.academic_year.is_closed:
+            raise ValidationError("العام الدراسي مغلق ولا يقبل تعديل الواجبات.")
+        if self.due_date and self.assigned_date and self.due_date < self.assigned_date:
+            raise ValidationError({"due_date": "تاريخ التسليم لا يمكن أن يسبق تاريخ التكليف."})
+
+    def save(self, *args, **kwargs):
+        self.full_clean(exclude=["created_by"])
+        return super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.title} - {self.assignment.section}"
 
 
 class TeacherDocument(models.Model):

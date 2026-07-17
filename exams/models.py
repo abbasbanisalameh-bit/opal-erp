@@ -68,6 +68,8 @@ class Exam(models.Model):
     def clean(self):
         super().clean()
         errors = {}
+        if self.academic_year_id and self.academic_year.is_closed:
+            errors["academic_year"] = "العام الدراسي مغلق ولا يقبل تعديل الامتحانات."
         if self.exam_type not in self.MAX_MARKS:
             errors["exam_type"] = "نوع الامتحان غير معتمد."
         if self.pass_percentage is not None and not (Decimal("0") <= self.pass_percentage <= Decimal("100")):
@@ -124,6 +126,8 @@ class StudentMark(models.Model):
 
     def clean(self):
         super().clean()
+        if self.exam_id and self.exam.academic_year.is_closed:
+            raise ValidationError("العام الدراسي مغلق ولا يقبل تعديل العلامات.")
         if self.mark is None:
             return
         if self.mark < 0 or (self.exam_id and self.mark > self.exam.max_mark):

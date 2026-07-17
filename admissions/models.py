@@ -1,5 +1,6 @@
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 from core.models import School, Branch, AcademicYear
 from academics.models import Grade, Section
@@ -90,6 +91,22 @@ class GradeFee(models.Model):
 
     def __str__(self):
         return f"{self.grade} - {self.tuition_fee}"
+
+    def clean(self):
+        super().clean()
+        errors = {}
+        if self.academic_year_id and self.academic_year.is_closed:
+            errors["academic_year"] = "العام الدراسي مغلق ولا يقبل تعديل رسوم الصفوف."
+        if self.academic_year_id and self.school_id and self.academic_year.school_id != self.school_id:
+            errors["academic_year"] = "العام الدراسي لا يتبع المدرسة المحددة."
+        if self.grade_id and self.school_id and self.grade.school_id != self.school_id:
+            errors["grade"] = "الصف لا يتبع المدرسة المحددة."
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
 
 
 class TransportRoute(models.Model):

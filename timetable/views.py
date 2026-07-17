@@ -72,6 +72,9 @@ def entry_create(request):
 @staff_member_required
 def entry_update(request, pk):
     entry = get_object_or_404(TimetableEntry, pk=pk)
+    if entry.academic_year.is_closed:
+        messages.error(request, "العام الدراسي مغلق ولا يمكن تعديل جدوله التاريخي.")
+        return redirect("timetable:dashboard")
     form = TimetableEntryForm(request.POST or None, instance=entry)
     if form.is_valid():
         entry = form.save()
@@ -85,10 +88,13 @@ def entry_update(request, pk):
 def entry_delete(request, pk):
     entry = get_object_or_404(TimetableEntry, pk=pk)
     if request.method == "POST":
-        description = str(entry)
-        entry.delete()
-        audit(request, "delete", "timetable.TimetableEntry", pk, f"حذف حصة: {description}")
-        messages.success(request, "تم حذف الحصة.")
+        if entry.academic_year.is_closed:
+            messages.error(request, "العام الدراسي مغلق ولا يمكن حذف جدوله التاريخي.")
+        else:
+            description = str(entry)
+            entry.delete()
+            audit(request, "delete", "timetable.TimetableEntry", pk, f"حذف حصة: {description}")
+            messages.success(request, "تم حذف الحصة.")
     return redirect("timetable:dashboard")
 
 

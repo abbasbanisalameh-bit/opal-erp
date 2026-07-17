@@ -18,7 +18,7 @@
     <h2>🎓 {{ card.student.full_name }}</h2>
     <p class="mb-1">الحالة المالية: <strong>{{ card.status_label }}</strong></p>
     <p class="mb-1">المدفوع: {{ card.paid }} د.أ</p>
-    <p class="mb-2">المتبقي: {{ card.remaining }} د.أ</p>
+    <p class="mb-1">المتبقي: {{ card.remaining }} د.أ</p><p class="mb-1">الترتيب: {% if card.rank.available %}<strong>{{ card.rank.rank }} من {{ card.rank.class_count }}</strong>{% else %}غير متاح{% endif %}</p><p class="mb-2">الواجبات الحالية: {{ card.homework|length }}</p>
     <a class="btn btn-sm btn-primary" href="{% url 'parent_portal:student_detail' card.student.id %}">فتح ملف الطالب</a>
   </div>
   {% endfor %}

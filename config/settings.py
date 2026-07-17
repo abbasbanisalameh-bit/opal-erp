@@ -17,6 +17,13 @@ def env_bool(name, default=False):
     return os.environ.get(name, fallback).strip().lower() in {"1", "true", "yes", "on"}
 
 
+def env_list(name, default):
+    value = os.environ.get(name, "")
+    if not value.strip():
+        return list(default)
+    return [item.strip() for item in value.split(",") if item.strip()]
+
+
 # -------------------------
 # الأمان
 # -------------------------
@@ -25,19 +32,19 @@ SECRET_KEY = os.environ.get(
     "django-insecure-change-this-key-before-production",
 )
 
-DEBUG = env_bool("OPAL_DEBUG", True)
+DEBUG = env_bool("OPAL_DEBUG", False)
 
 # Optional foundations stay outside the production school surface by default.
 # They can be enabled explicitly in a dedicated environment without deleting code.
 OPAL_ENABLE_OPENEMIS = env_bool("OPAL_ENABLE_OPENEMIS", True)
 OPAL_ENABLE_DEVELOPMENT_CENTER = env_bool("OPAL_ENABLE_DEVELOPMENT_CENTER", True)
 
-ALLOWED_HOSTS = [
+ALLOWED_HOSTS = env_list("OPAL_ALLOWED_HOSTS", [
     "Opalschool2016.pythonanywhere.com",
     "opalschool2016.pythonanywhere.com",
     "localhost",
     "127.0.0.1",
-]
+])
 
 
 # -------------------------
@@ -188,9 +195,17 @@ LOGIN_URL = "/accounts/login/"
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/accounts/login/"
 
-CSRF_TRUSTED_ORIGINS = [
+CSRF_TRUSTED_ORIGINS = env_list("OPAL_CSRF_TRUSTED_ORIGINS", [
     "https://opalschool2016.pythonanywhere.com",
-]
+])
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SAMESITE = "Lax"
+
+# Keep CSRF protection enabled, but replace Django's technical failure page with
+# an OPAL-safe recovery flow.  In particular, a stale cached login form is
+# refreshed without retrying or exposing the submitted credentials.
+CSRF_FAILURE_VIEW = "core.security.csrf_failure"
 
 
 # Production hardening is enabled automatically when OPAL_DEBUG=False.

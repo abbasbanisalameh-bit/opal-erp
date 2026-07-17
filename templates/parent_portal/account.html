@@ -1,10 +1,3 @@
 {% extends "base/base.html" %}
-{% block title %}حساب ولي الأمر{% endblock %}
-{% block page_title %}حساب ولي الأمر{% endblock %}
-{% block page_subtitle %}بيانات الحساب وتغيير كلمة المرور{% endblock %}
-{% block content %}
-<div class="row g-4">
-  <div class="col-lg-5"><div class="opal-card h-100"><h3 class="fw-bold mb-3">👤 بيانات الحساب</h3><p><strong>اسم المستخدم:</strong> {{ request.user.username }}</p><p><strong>اسم ولي الأمر:</strong> {{ family.guardian_name|default:request.user.first_name|default:"-" }}</p><p><strong>الهاتف:</strong> {{ family.phone|default:"-" }}</p><p><strong>الرقم الوطني:</strong> {{ family.identity_number|default:"-" }}</p></div></div>
-  <div class="col-lg-7"><div class="opal-card h-100"><h3 class="fw-bold mb-3">🔐 تغيير كلمة المرور</h3><form method="post">{% csrf_token %}{{ form.as_p }}<button class="btn btn-primary" type="submit">حفظ كلمة المرور</button></form></div></div>
-</div>
-{% endblock %}
+{% block title %}حساب ولي الأمر{% endblock %}{% block page_title %}حساب ولي الأمر{% endblock %}{% block page_subtitle %}الصورة والمعلومات الشخصية وكلمة المرور{% endblock %}
+{% block content %}<div class="row g-4"><div class="col-lg-4"><div class="opal-card h-100"><h3>الصورة الشخصية</h3>{% if profile.photo %}<img src="{{ profile.photo.url }}" alt="الصورة" style="width:120px;height:120px;object-fit:cover;border-radius:50%;" class="mb-3">{% endif %}<form method="post" enctype="multipart/form-data">{% csrf_token %}<input type="hidden" name="action" value="photo">{{ photo_form.as_p }}<button class="btn btn-primary">حفظ الصورة</button></form></div></div><div class="col-lg-8"><div class="opal-card h-100"><h3>المعلومات الشخصية المسموح بتعديلها</h3><p class="text-secondary">لا يمكن تغيير هوية ولي الأمر أو بيانات الأبناء الرسمية من هذه الصفحة.</p><form method="post">{% csrf_token %}<input type="hidden" name="action" value="personal">{{ family_form.as_p }}<button class="btn btn-primary">حفظ المعلومات</button></form></div></div><div class="col-12"><div class="opal-card"><h3>تغيير كلمة المرور</h3><form method="post">{% csrf_token %}<input type="hidden" name="action" value="password">{{ password_form.as_p }}<button class="btn btn-warning">تغيير كلمة المرور</button></form></div></div></div>{% endblock %}

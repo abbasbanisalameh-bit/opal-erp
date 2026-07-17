@@ -82,6 +82,8 @@ class Section(models.Model):
     def clean(self):
         super().clean()
         errors = {}
+        if self.academic_year_id and self.academic_year.is_closed:
+            errors["academic_year"] = "العام الدراسي مغلق ولا يقبل تعديل الشعب."
         if self.academic_year_id and self.branch_id and self.academic_year.school_id != self.branch.school_id:
             errors["academic_year"] = "العام الدراسي يجب أن يتبع مدرسة الفرع المحدد."
         if self.grade_id and self.branch_id and self.grade.school_id != self.branch.school_id:
@@ -130,6 +132,8 @@ class Enrollment(models.Model):
     def clean(self):
         super().clean()
         errors = {}
+        if self.academic_year_id and self.academic_year.is_closed:
+            errors["academic_year"] = "العام الدراسي مغلق ولا يقبل تعديل القيود."
         if self.grade_id and self.academic_year_id and self.grade.school_id != self.academic_year.school_id:
             errors["grade"] = "الصف يجب أن يتبع مدرسة العام الدراسي."
         if self.section_id:
@@ -256,4 +260,3 @@ class Subject(models.Model):
 
     def __str__(self):
         return f"{self.name} - {self.grade}"
-

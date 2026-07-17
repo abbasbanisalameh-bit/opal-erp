@@ -1,0 +1,64 @@
+{% extends "base/base.html" %}
+{% block title %}إغلاق العام الدراسي | OPAL ERP{% endblock %}
+{% block page_title %}إغلاق العام الدراسي{% endblock %}
+{% block page_subtitle %}فحص إلزامي قبل تثبيت السجلات التاريخية{% endblock %}
+
+{% block content %}
+<div class="opal-card mb-4">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+        <div>
+            <h3 class="fw-bold mb-1">{{ year.name }}</h3>
+            <p class="text-secondary mb-0">{{ year.school.name }} — من {{ year.start_date }} إلى {{ year.end_date }}</p>
+        </div>
+        <a href="{% url 'academics:academic_year_list' %}" class="btn btn-outline-secondary">العودة للأعوام</a>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3"><div class="opal-card h-100"><div class="text-secondary">إجمالي القيود</div><div class="display-6 fw-bold">{{ report.metrics.enrollments }}</div></div></div>
+    <div class="col-md-3"><div class="opal-card h-100"><div class="text-secondary">قيود نشطة</div><div class="display-6 fw-bold">{{ report.metrics.active_enrollments }}</div></div></div>
+    <div class="col-md-3"><div class="opal-card h-100"><div class="text-secondary">الامتحانات</div><div class="display-6 fw-bold">{{ report.metrics.exams }}</div></div></div>
+    <div class="col-md-3"><div class="opal-card h-100"><div class="text-secondary">رسوم غير مكتملة</div><div class="display-6 fw-bold">{{ report.metrics.outstanding_invoices }}</div></div></div>
+</div>
+
+{% if report.blockers %}
+<div class="alert alert-danger">
+    <h5 class="fw-bold">لا يمكن إغلاق العام حاليًا</h5>
+    <ul class="mb-0">
+        {% for item in report.blockers %}<li>{{ item }}</li>{% endfor %}
+    </ul>
+</div>
+<div class="opal-card mb-4">
+    <p class="mb-3">أكمل الحركات الأكاديمية وأغلق الامتحانات، ثم أعد فحص هذه الصفحة.</p>
+    <div class="d-flex gap-2 flex-wrap">
+        <a href="{% url 'academics:promotion_batch' %}?source_year={{ year.id }}" class="btn btn-success">الترفيع أو التخريج الجماعي</a>
+        <a href="{% url 'exams:exam_list' %}" class="btn btn-outline-primary">مراجعة الامتحانات</a>
+    </div>
+</div>
+{% endif %}
+
+{% if report.warnings %}
+<div class="alert alert-warning">
+    <h5 class="fw-bold">تنبيهات لا تمنع الإغلاق</h5>
+    <ul class="mb-0">{% for item in report.warnings %}<li>{{ item }}</li>{% endfor %}</ul>
+</div>
+{% endif %}
+
+<div class="opal-card">
+    <h4 class="fw-bold">ما الذي سيحدث؟</h4>
+    <ul>
+        <li>قفل {{ report.metrics.attendance_to_lock }} سجل حضور غير مقفل.</li>
+        <li>إيقاف {{ report.metrics.assignments_to_deactivate }} تكليفًا تدريسيًا و{{ report.metrics.timetable_to_deactivate }} حصة فعالة.</li>
+        <li>حفظ الصفوف والشعب والعلامات كسجلات تاريخية للقراءة والتقارير.</li>
+        <li>الإبقاء على تحصيل الرسوم غير المسددة دون تغيير أرصدتها.</li>
+    </ul>
+    <form method="post" class="mt-4">
+        {% csrf_token %}
+        <label class="form-label fw-bold" for="closure_notes">ملاحظات الإغلاق</label>
+        <textarea class="form-control" id="closure_notes" name="closure_notes" rows="3" placeholder="قرار الإغلاق أو ملاحظاته"></textarea>
+        <button class="btn btn-dark mt-3" {% if report.blockers %}disabled{% endif %} onclick="return confirm('سيتم إغلاق العام وقفل بياناته التشغيلية. متابعة؟')">
+            تأكيد إغلاق العام
+        </button>
+    </form>
+</div>
+{% endblock %}

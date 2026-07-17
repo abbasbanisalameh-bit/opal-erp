@@ -9,12 +9,14 @@ import csv
 from .models import Family, FamilyStudent
 from .services import ensure_family_account, reset_family_password
 from .services import update_family_identity
-from .forms import FamilyIdentityForm
+from .forms import FamilyIdentityForm, ParentFamilyPersonalForm, ParentPhotoForm, ParentStudentPersonalForm
 from .permissions import parent_required
 from accounting.models import StudentInvoice
 from attendance_v2.models import Attendance
 from announcements.models import Announcement
 from exams.models import StudentMark
+from accounts.models import UserProfile
+from .academic_services import homework_for_student, homework_rows_for_students, student_class_rank
 from .parent360 import build_parent360_context
 from admissions.financial_services import (
     student_total_fees,
@@ -72,7 +74,9 @@ def _student_card(student):
         "status_label": "مسدد بالكامل" if remaining <= 0 else ("غير مسدد" if student_total_paid(student) <= 0 else "متبقٍ جزئي"),
         "status_class": "success" if remaining <= 0 else ("danger" if student_total_paid(student) <= 0 else "warning"),
         "attendance": Attendance.objects.filter(student=student).order_by("-date")[:5],
-        "marks": StudentMark.objects.filter(student=student).select_related("exam", "exam__subject")[:5],
+        "marks": StudentMark.objects.filter(student=student, exam__status__in=["published", "closed"]).select_related("exam", "exam__subject")[:5],
+        "rank": student_class_rank(student),
+        "homework": homework_for_student(student)[:5],
     }
 
 
@@ -139,7 +143,9 @@ def student_detail(request, student_id):
     invoices = StudentInvoice.objects.filter(student=student).select_related("fee_category").prefetch_related("payments")
     allocations = FeePaymentAllocation.objects.filter(student=student).select_related("fee_payment").order_by("-created_at")
     attendance = Attendance.objects.filter(student=student).order_by("-date")[:30]
-    marks = StudentMark.objects.filter(student=student, exam__status="published").select_related("exam", "exam__subject")
+    marks = StudentMark.objects.filter(student=student, exam__status__in=["published", "closed"]).select_related("exam", "exam__subject")
+    rank = student_class_rank(student)
+    homework_items = homework_for_student(student)
     docs = []
     if StudentIssuedDocument:
         docs = StudentIssuedDocument.objects.filter(student=student).select_related("issued_document")[:20]
@@ -149,6 +155,8 @@ def student_detail(request, student_id):
         "allocations": allocations,
         "attendance": attendance,
         "marks": marks,
+        "rank": rank,
+        "homework_items": homework_items,
         "documents": docs,
         "total": student_total_fees(student),
         "paid": student_total_paid(student),
@@ -180,8 +188,28 @@ def marks(request):
     students = _normalized_students_for_user(request.user)
     if not students:
         return render(request, "parent_portal/no_profile.html")
-    records = StudentMark.objects.filter(student__in=students, exam__status="published").select_related("student", "exam", "exam__subject").order_by("student__full_name", "-exam__exam_date")
-    return render(request, "parent_portal/marks.html", {"records": records})
+    records = StudentMark.objects.filter(student__in=students, exam__status__in=["published", "closed"]).select_related("student", "exam", "exam__subject").order_by("student__full_name", "-exam__exam_date")
+    ranks = {student.pk: student_class_rank(student) for student in students}
+    return render(request, "parent_portal/marks.html", {"records": records, "students": students, "ranks": ranks})
+
+
+@parent_required
+def homework(request):
+    students = _normalized_students_for_user(request.user)
+    if not students:
+        return render(request, "parent_portal/no_profile.html")
+    return render(request, "parent_portal/homework.html", {"rows": homework_rows_for_students(students)})
+
+
+@parent_required
+def student_personal_update(request, student_id):
+    student = _student_or_403(request.user, student_id)
+    form = ParentStudentPersonalForm(request.POST or None, request.FILES or None, instance=student)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "تم تحديث الصورة والمعلومات الشخصية المسموح بها للطالب.")
+        return redirect("parent_portal:student_detail", student_id=student.pk)
+    return render(request, "parent_portal/student_personal_form.html", {"student": student, "form": form})
 
 
 @parent_required
@@ -226,16 +254,45 @@ def announcements(request):
 @parent_required
 def account(request):
     family = _family_for_user(request.user)
-    if request.method == "POST":
-        form = PasswordChangeForm(request.user, request.POST)
-        if form.is_valid():
-            user = form.save()
-            update_session_auth_hash(request, user)
-            messages.success(request, "تم تغيير كلمة المرور بنجاح.")
-            return redirect("parent_portal:account")
-    else:
-        form = PasswordChangeForm(request.user)
-    return render(request, "parent_portal/account.html", {"family": family, "form": form})
+    profile, _ = UserProfile.objects.get_or_create(user=request.user)
+    action = request.POST.get("action", "") if request.method == "POST" else ""
+    family_form = ParentFamilyPersonalForm(
+        request.POST if action == "personal" else None, instance=family, prefix="family"
+    )
+    photo_form = ParentPhotoForm(
+        request.POST if action == "photo" else None,
+        request.FILES if action == "photo" else None,
+        instance=profile,
+        prefix="photo",
+    )
+    password_form = PasswordChangeForm(
+        request.user, request.POST if action == "password" else None, prefix="password"
+    )
+    for field in password_form.fields.values():
+        field.widget.attrs.setdefault("class", "form-control")
+
+    if request.method == "POST" and action == "personal" and family_form.is_valid():
+        family_form.save()
+        messages.success(request, "تم تحديث معلومات ولي الأمر الشخصية.")
+        return redirect("parent_portal:account")
+    if request.method == "POST" and action == "photo" and photo_form.is_valid():
+        photo_form.save()
+        messages.success(request, "تم تحديث الصورة الشخصية.")
+        return redirect("parent_portal:account")
+    if request.method == "POST" and action == "password" and password_form.is_valid():
+        user = password_form.save()
+        update_session_auth_hash(request, user)
+        messages.success(request, "تم تغيير كلمة المرور بنجاح.")
+        return redirect("parent_portal:account")
+
+    return render(request, "parent_portal/account.html", {
+        "family": family,
+        "profile": profile,
+        "family_form": family_form,
+        "photo_form": photo_form,
+        "password_form": password_form,
+        "form": password_form,
+    })
 
 @management_required
 def family_management(request):

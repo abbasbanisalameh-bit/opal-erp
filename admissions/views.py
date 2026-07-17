@@ -37,6 +37,8 @@ def admission_list(request):
 def direct_registration(request):
     school = active_school()
     academic_year = current_academic_year(school)
+    if academic_year is None:
+        messages.error(request, "لا يوجد عام دراسي مفتوح ومفعّل. فعّل العام من شاشة الأعوام قبل تسجيل الطلاب.")
     if request.method == "POST":
         form = DirectStudentRegistrationForm(request.POST, request.FILES, school=school, academic_year=academic_year)
         if form.is_valid():
@@ -116,6 +118,8 @@ def registration_settings(request):
     settings = get_registration_settings(school)
     settings_form = RegistrationSettingsForm(instance=settings, prefix="settings")
     current_year = current_academic_year(school)
+    if current_year is None:
+        messages.warning(request, "لا يوجد عام دراسي مفتوح ومفعّل حاليًا.")
     grade_fee_form = GradeFeeForm(prefix="grade_fee", school=school, academic_year=current_year)
     route_form = TransportRouteForm(prefix="route")
     if request.method == "POST":

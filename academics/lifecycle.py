@@ -8,6 +8,8 @@ from .models import Enrollment, StudentLifecycleEvent
 def _validate_target(target_year, target_grade, target_section):
     if not target_year or not target_grade:
         raise ValidationError("يجب تحديد العام والصف المستهدفين.")
+    if target_year.is_closed:
+        raise ValidationError("العام الدراسي المستهدف مغلق ولا يقبل قيودًا جديدة.")
     if target_section:
         if target_section.grade_id != target_grade.id:
             raise ValidationError("الشعبة المستهدفة لا تتبع الصف المحدد.")
@@ -37,6 +39,9 @@ def perform_lifecycle_action(
         .first()
     )
     to_enrollment = None
+
+    if current and current.academic_year.is_closed:
+        raise ValidationError("قيد الطالب يتبع عامًا مغلقًا ولا يمكن تعديله.")
 
     if action in {"promote", "reenroll", "section_change"}:
         _validate_target(target_year, target_grade, target_section)

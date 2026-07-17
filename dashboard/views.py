@@ -4,8 +4,8 @@ from decimal import Decimal
 
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
-from django.db.models import Avg, Count, F, Q, Sum
-from django.db.models.functions import TruncMonth
+from django.db.models import Avg, Count, DecimalField, ExpressionWrapper, F, Q, Sum, Value
+from django.db.models.functions import Coalesce, TruncMonth
 from django.http import HttpResponse
 from django.shortcuts import render
 from django.utils import timezone
@@ -31,33 +31,63 @@ def _executive_snapshot():
     today = timezone.localdate()
     period_start = today - timedelta(days=29)
 
-    students_qs = Student.objects.all()
-    students_count = students_qs.count()
-    active_students = students_qs.filter(is_active=True).count()
+    student_stats = Student.objects.aggregate(
+        total=Count("id"),
+        active=Count("id", filter=Q(is_active=True)),
+    )
+    students_count = student_stats["total"]
+    active_students = student_stats["active"]
     inactive_students = max(students_count - active_students, 0)
 
     teachers_count = User.objects.filter(is_staff=True, is_active=True).count()
     sections_count = Section.objects.count()
     exams_count = Exam.objects.count()
 
-    today_attendance = Attendance.objects.filter(date=today)
-    present_today = today_attendance.filter(status="present").count()
-    absent_today = today_attendance.filter(status="absent").count()
-    late_today = today_attendance.filter(status="late").count()
-    excused_today = today_attendance.filter(status="excused").count()
-    attendance_total_today = today_attendance.count()
+    today_attendance = Attendance.objects.filter(date=today).aggregate(
+        total=Count("id"),
+        present=Count("id", filter=Q(status="present")),
+        absent=Count("id", filter=Q(status="absent")),
+        late=Count("id", filter=Q(status="late")),
+        excused=Count("id", filter=Q(status="excused")),
+    )
+    present_today = today_attendance["present"]
+    absent_today = today_attendance["absent"]
+    late_today = today_attendance["late"]
+    excused_today = today_attendance["excused"]
+    attendance_total_today = today_attendance["total"]
     attendance_percent = (
         round((present_today / attendance_total_today) * 100)
         if attendance_total_today
         else 0
     )
 
-    period_attendance = Attendance.objects.filter(date__gte=period_start, date__lte=today)
-    period_absences = period_attendance.filter(status="absent").count()
-    period_late = period_attendance.filter(status="late").count()
+    period_attendance = Attendance.objects.filter(
+        date__gte=period_start,
+        date__lte=today,
+    ).aggregate(
+        absent=Count("id", filter=Q(status="absent")),
+        late=Count("id", filter=Q(status="late")),
+    )
+    period_absences = period_attendance["absent"]
+    period_late = period_attendance["late"]
 
-    invoice_items = list(StudentInvoice.objects.exclude(status="cancelled").prefetch_related("payments"))
-    total_invoices = sum((item.net_amount for item in invoice_items), Decimal("0.00"))
+    net_invoice_amount = ExpressionWrapper(
+        F("amount") - F("discount_amount"),
+        output_field=DecimalField(max_digits=12, decimal_places=2),
+    )
+    invoice_stats = StudentInvoice.objects.aggregate(
+        total=Coalesce(
+            Sum(net_invoice_amount, filter=~Q(status="cancelled")),
+            Decimal("0.00"),
+        ),
+        paid_count=Count("id", filter=Q(status="paid")),
+        unpaid_count=Count("id", filter=~Q(status__in=["paid", "cancelled"])),
+        overdue_count=Count(
+            "id",
+            filter=Q(due_date__lt=today) & ~Q(status__in=["paid", "cancelled"]),
+        ),
+    )
+    total_invoices = invoice_stats["total"]
     paid_amount = _money(StudentPayment.objects.filter(status="posted").aggregate(total=Sum("amount"))["total"])
     outstanding = max(total_invoices - paid_amount, Decimal("0.00"))
     collection_rate = (
@@ -65,15 +95,20 @@ def _executive_snapshot():
         if total_invoices > 0
         else 0
     )
-    overdue_invoices = sum(1 for item in invoice_items if item.is_overdue)
+    overdue_invoices = invoice_stats["overdue_count"]
 
-    marks = StudentMark.objects.select_related("exam")
-    academic_average = marks.aggregate(avg=Avg("mark"))["avg"] or Decimal("0.00")
-    marks_count = marks.count()
-    passed_marks = 0
-    for item in marks.only("mark", "exam__max_mark"):
-        if item.exam.max_mark and (item.mark / item.exam.max_mark) * 100 >= item.exam.pass_percentage:
-            passed_marks += 1
+    passing_mark = ExpressionWrapper(
+        F("exam__max_mark") * F("exam__pass_percentage") / Value(100),
+        output_field=DecimalField(max_digits=10, decimal_places=4),
+    )
+    mark_stats = StudentMark.objects.annotate(passing_mark=passing_mark).aggregate(
+        average=Avg("mark"),
+        total=Count("id"),
+        passed=Count("id", filter=Q(mark__gte=F("passing_mark"))),
+    )
+    academic_average = mark_stats["average"] or Decimal("0.00")
+    marks_count = mark_stats["total"]
+    passed_marks = mark_stats["passed"]
     pass_rate = round((passed_marks / marks_count) * 100, 1) if marks_count else 0
 
     monthly_income = (
@@ -90,12 +125,24 @@ def _executive_snapshot():
         monthly_income_labels.append(month.strftime("%Y-%m") if month else "-")
         monthly_income_values.append(float(row.get("total") or 0))
 
+    trend_start = today - timedelta(days=6)
+    attendance_by_day = {
+        row["date"]: row
+        for row in (
+            Attendance.objects.filter(date__gte=trend_start, date__lte=today)
+            .values("date")
+            .annotate(
+                total=Count("id"),
+                present=Count("id", filter=Q(status="present")),
+            )
+        )
+    }
     attendance_trend = []
     for offset in range(6, -1, -1):
         day = today - timedelta(days=offset)
-        daily = Attendance.objects.filter(date=day)
-        total = daily.count()
-        present = daily.filter(status="present").count()
+        daily = attendance_by_day.get(day, {})
+        total = daily.get("total", 0)
+        present = daily.get("present", 0)
         attendance_trend.append({
             "date": day.strftime("%m-%d"),
             "percent": round((present / total) * 100) if total else 0,
@@ -145,6 +192,8 @@ def _executive_snapshot():
         "outstanding": outstanding,
         "collection_rate": collection_rate,
         "overdue_invoices": overdue_invoices,
+        "paid_invoices": invoice_stats["paid_count"],
+        "unpaid_invoices": invoice_stats["unpaid_count"],
         "academic_average": academic_average,
         "pass_rate": pass_rate,
         "marks_count": marks_count,
@@ -169,8 +218,6 @@ def home(request):
         "exams": snapshot["exams_count"],
         "total_income": snapshot["paid_amount"],
         "total_unpaid": snapshot["outstanding"],
-        "paid_invoices": StudentInvoice.objects.filter(status="paid").count(),
-        "unpaid_invoices": StudentInvoice.objects.exclude(status__in=["paid", "cancelled"]).count(),
         "latest_students": Student.objects.order_by("-created_at")[:8],
         "latest_announcements": Announcement.objects.order_by("-id")[:5],
         "latest_exams": Exam.objects.order_by("-id")[:5],

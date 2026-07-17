@@ -22,15 +22,20 @@ def _structure():
     if branch is None:
         branch = Branch.objects.create(school=school, name="الفرع الرئيسي", is_main=True)
 
-    year = school.academic_years.filter(is_current=True).first() or school.academic_years.order_by("-start_date").first()
+    year = school.academic_years.filter(is_current=True, is_closed=False).first() or school.academic_years.filter(
+        is_closed=False
+    ).order_by("-start_date").first()
     if year is None:
+        start_year = date.today().year
+        while school.academic_years.filter(name=f"{start_year}/{start_year + 1}").exists():
+            start_year += 1
         year = AcademicYear.objects.create(
             school=school,
-            name="2026/2027",
-            start_date=date(2026, 9, 1),
-            midyear_break_start=date(2027, 1, 16),
-            midyear_break_end=date(2027, 1, 31),
-            end_date=date(2027, 6, 30),
+            name=f"{start_year}/{start_year + 1}",
+            start_date=date(start_year, 9, 1),
+            midyear_break_start=date(start_year + 1, 1, 16),
+            midyear_break_end=date(start_year + 1, 1, 31),
+            end_date=date(start_year + 1, 6, 30),
             is_current=True,
         )
     year.ensure_semesters()
