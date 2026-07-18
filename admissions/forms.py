@@ -1,7 +1,10 @@
 
+import uuid
+
 from django import forms
 
 from core.identifiers import normalize_identifier
+from core.finance_constants import ACTIVE_PAYMENT_METHOD_CHOICES
 from .models import GradeFee, TransportRoute, RegistrationSettings, StudentRegistration
 from academics.models import Grade, Section
 from students.models import Student
@@ -62,7 +65,7 @@ class RegistrationSettingsForm(forms.ModelForm):
             "enable_sibling_discount": "تفعيل خصم الإخوة",
             "enable_quran_discount": "تفعيل خصم القرآن",
             "enable_admin_discount": "تفعيل خصم الإدارة",
-            "sibling_discount_once_per_family": "خصم الإخوة مرة واحدة للعائلة",
+            "sibling_discount_once_per_family": "خصم الإخوة مرة واحدة لكل ولي أمر",
         }
         widgets = {field: forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}) for field in [
             "first_payment_percent", "cash_discount_percent", "sibling_discount_percent", "quran_25_percent", "quran_50_percent", "quran_75_percent", "quran_100_percent"
@@ -76,15 +79,18 @@ class RegistrationSettingsForm(forms.ModelForm):
 
 
 class DirectStudentRegistrationForm(forms.ModelForm):
+    payment_method = forms.ChoiceField(label="طريقة الدفع", choices=ACTIVE_PAYMENT_METHOD_CHOICES, required=False, initial="cash")
+    registration_token = forms.UUIDField(required=False, widget=forms.HiddenInput(), initial=uuid.uuid4)
+
     class Meta:
         model = StudentRegistration
         fields = [
-            "first_name", "father_name", "grandfather_name", "family_name", "gender", "birth_date", "photo",
+            "registration_token", "first_name", "father_name", "grandfather_name", "family_name", "gender", "birth_date", "photo",
             "guardian_name", "guardian_identity_type", "guardian_identity_number", "mother_name", "phone", "address", "grade", "section",
-            "transport_route", "transport_type", "discount_type", "admin_discount_value", "sibling_student", "first_payment", "notes",
+            "transport_route", "transport_type", "discount_type", "admin_discount_value", "sibling_student", "first_payment", "payment_method", "notes",
         ]
         labels = {
-            "first_name": "الاسم الأول", "father_name": "اسم الأب", "grandfather_name": "اسم الجد", "family_name": "اسم العائلة",
+            "first_name": "الاسم الأول", "father_name": "اسم الأب", "grandfather_name": "اسم الجد", "family_name": "الاسم الأخير",
             "gender": "الجنس", "birth_date": "تاريخ الميلاد", "photo": "صورة الطالب",
             "guardian_name": "اسم ولي الأمر", "guardian_identity_type": "نوع هوية ولي الأمر", "guardian_identity_number": "الرقم الوطني أو الشخصي لولي الأمر", "mother_name": "اسم الأم", "phone": "هاتف ولي الأمر", "address": "العنوان",
             "grade": "الصف", "section": "الشعبة", "transport_route": "جولة المواصلات", "transport_type": "نوع المواصلات",
@@ -124,7 +130,7 @@ class DirectStudentRegistrationForm(forms.ModelForm):
         self.fields["guardian_name"].required = True
         self.fields["guardian_identity_type"].required = True
         self.fields["guardian_identity_number"].required = True
-        self.fields["guardian_identity_number"].help_text = "المعرف العائلي الفريد الذي يربط جميع الإخوة بولي الأمر نفسه."
+        self.fields["guardian_identity_number"].help_text = "معرف ولي الأمر الموحّد الذي يربط جميع الإخوة بولي الأمر نفسه."
         self.fields["gender"].required = True
         self.fields["phone"].required = True
         if school and academic_year:
@@ -149,6 +155,7 @@ class DirectStudentRegistrationForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
+        cleaned_data["payment_method"] = cleaned_data.get("payment_method") or "cash"
         grade = cleaned_data.get("grade")
         section = cleaned_data.get("section")
         if self.academic_year and self.academic_year.is_closed:

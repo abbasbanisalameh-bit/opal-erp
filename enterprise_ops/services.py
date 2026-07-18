@@ -23,10 +23,18 @@ def audit(request, action, model_name="", object_id="", description=""):
     )
 
 
-def notify(recipient, title, message="", level="info", link=""):
+def notify(recipient, title, message="", level="info", link="", event_key=""):
     if not recipient:
         return None
-    return Notification.objects.create(recipient=recipient, title=title, message=message, level=level, link=link)
+    values = {"title": title, "message": message, "level": level, "link": link}
+    if event_key:
+        item, created = Notification.objects.get_or_create(
+            recipient=recipient,
+            event_key=event_key,
+            defaults=values,
+        )
+        return item
+    return Notification.objects.create(recipient=recipient, **values)
 
 
 def notify_management(title, message="", level="info", link="", exclude_user=None):

@@ -118,7 +118,7 @@ def build_student_360_context(student):
         .order_by("-payment_date", "-id")[:100]
     )
     allocations = list(
-        FeePaymentAllocation.objects.filter(student=student)
+        FeePaymentAllocation.objects.filter(student=student, fee_payment__is_deleted=False)
         .select_related("fee_payment", "fee_payment__created_by")
         .order_by("-created_at")[:100]
     )
@@ -180,7 +180,7 @@ def build_student_360_context(student):
     if not current_enrollment:
         alerts.append({"level": "danger", "text": "لا يوجد تسجيل أكاديمي حالي للطالب."})
     if not family:
-        alerts.append({"level": "warning", "text": "الطالب غير مرتبط بحساب أسرة رسمي."})
+        alerts.append({"level": "warning", "text": "الطالب غير مرتبط بملف ولي أمر رسمي."})
     if remaining and remaining > 0:
         alerts.append({"level": "warning", "text": f"يوجد رصيد مالي متبقٍ بقيمة {remaining:.2f}."})
     if attendance_total >= 5 and attendance_rate < 80:

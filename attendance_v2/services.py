@@ -12,6 +12,13 @@ def notify_parent_for_attendance(record):
     title = f"تنبيه حضور: {record.student.full_name}"
     message = f"تم تسجيل حالة الطالب {label} بتاريخ {record.date}."
     return [
-        notify(user, title, message, "warning", "/parent/attendance/")
+        notify(
+            user,
+            title,
+            message,
+            "warning",
+            "/parent/attendance/",
+            event_key=f"attendance:{record.pk}:{record.status}:user:{user.pk}",
+        )
         for user in recipients.values()
     ]

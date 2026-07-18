@@ -3,8 +3,8 @@ from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
 
-from .models import ApprovalAction, RolePermissionRule, WorkflowRequest
-from .services import transition_workflow
+from .models import ApprovalAction, Notification, RolePermissionRule, WorkflowRequest
+from .services import notify, transition_workflow
 
 
 class EnterpriseWorkflowTests(TestCase):
@@ -38,3 +38,9 @@ class EnterpriseWorkflowTests(TestCase):
         response = self.client.get(reverse("enterprise_ops:permission_matrix"))
         self.assertEqual(response.status_code, 200)
         self.assertGreater(RolePermissionRule.objects.count(), 0)
+
+    def test_event_notification_is_not_duplicated(self):
+        first = notify(self.requester, "اختبار", "حدث واحد", event_key="payment:1")
+        second = notify(self.requester, "اختبار", "حدث واحد", event_key="payment:1")
+        self.assertEqual(first.pk, second.pk)
+        self.assertEqual(Notification.objects.filter(recipient=self.requester).count(), 1)

@@ -217,6 +217,11 @@ def compose_full_name(first_name, father_name="", grandfather_name="", family_na
 @transaction.atomic
 def create_student_registration(form, user=None):
     data = form.cleaned_data
+    operation_token = data.get("registration_token")
+    if operation_token:
+        existing = StudentRegistration.objects.filter(operation_token=operation_token).first()
+        if existing:
+            return existing
     selected_grade = data.get("grade")
     profile = getattr(user, "profile", None) if user else None
     school = (
@@ -296,7 +301,13 @@ def create_student_registration(form, user=None):
     payment = None
     receipt = None
     if totals["first_payment"] > 0:
-        payment = StudentPayment.objects.create(invoice=invoice, amount=totals["first_payment"], notes="دفعة تسجيل أولى")
+        payment = StudentPayment.objects.create(
+            invoice=invoice,
+            amount=totals["first_payment"],
+            payment_method=data.get("payment_method") or "unspecified",
+            created_by=user if getattr(user, "is_authenticated", False) else None,
+            notes="دفعة تسجيل أولى",
+        )
         receipt = Receipt.objects.create(payment=payment, receipt_number=generate_receipt_number())
 
     registration = StudentRegistration.objects.create(
@@ -304,6 +315,7 @@ def create_student_registration(form, user=None):
         branch=(getattr(data.get("section"), "branch", None) or getattr(profile, "branch", None)),
         academic_year=academic_year,
         registration_number=generate_registration_number(),
+        **({"operation_token": operation_token} if operation_token else {}),
         student=student,
         grade=data.get("grade"),
         section=data.get("section"),
@@ -330,6 +342,7 @@ def create_student_registration(form, user=None):
         invoice=invoice,
         payment=payment,
         receipt=receipt,
+        payment_method=data.get("payment_method") or "unspecified",
         created_by=user if getattr(user, "is_authenticated", False) else None,
         notes=((data.get("notes") or "") + ("\n" + sibling_message if sibling_message else "")),
         **totals,
@@ -356,4 +369,6 @@ def create_student_registration(form, user=None):
         queue_student_push(student, user, reason="registration")
     except Exception:
         pass
+    from parent_portal.notification_services import notify_guardian_for_registration
+    notify_guardian_for_registration(registration)
     return registration

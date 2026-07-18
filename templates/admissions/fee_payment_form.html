@@ -5,7 +5,7 @@
 
 {% block content %}
 <div class="opal-card mb-4">
-    <h3 class="fw-bold mb-3">البحث عن الطالب أو الأسرة</h3>
+    <h3 class="fw-bold mb-3">البحث عن الطالب أو ولي الأمر</h3>
     <label class="form-label" for="feeStudentSearch">اكتب أي حرف أو مقطع من الاسم، أو رقم الطالب/الهوية/الهاتف</label>
     <input id="feeStudentSearch" value="{{ query }}" class="form-control" autocomplete="off" placeholder="يبدأ البحث فورًا دون الضغط على زر">
     <div id="feeSearchStatus" class="form-text">اختر الطالب من النتائج الفورية.</div>
@@ -49,12 +49,14 @@
 
 <div class="opal-card mb-4">
     <form method="post" id="paymentForm" class="row g-3">
-        {% csrf_token %}<input type="hidden" name="student" value="{{ selected_student.id }}">
+        {% csrf_token %}<input type="hidden" name="student" value="{{ selected_student.id }}"><input type="hidden" name="operation_token" value="{{ operation_token }}">
         <div class="col-md-4"><label class="form-label fw-bold">مبلغ الدفعة</label>
             <input id="paymentAmount" name="amount" type="number" step="0.01" min="0.01" max="{{ family_total_remaining }}" class="form-control" required {% if not has_payable_siblings %}disabled{% endif %}>
             <div class="form-text">الحد الأعلى {{ family_total_remaining }} د.أ. لا يقبل النظام أي زيادة.</div>
         </div>
-        <div class="col-md-8"><label class="form-label fw-bold">ملاحظات</label><input name="notes" class="form-control" placeholder="اختياري"></div>
+        <div class="col-md-4"><label class="form-label fw-bold">طريقة الدفع</label><select name="payment_method" class="form-select" required>{% for value,label in payment_methods %}<option value="{{ value }}" {% if value == selected_payment_method %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+        <div class="col-md-4"><label class="form-label fw-bold">المستلم</label><input class="form-control" value="{{ request.user.profile.full_name|default:request.user.username }}" readonly><div class="form-text">يُسجل تلقائيًا من الحساب الحالي.</div></div>
+        <div class="col-12"><label class="form-label fw-bold">ملاحظات</label><input name="notes" class="form-control" placeholder="اختياري"></div>
         <div class="col-12"><div class="alert alert-info mb-0">التوزيع تلقائي فقط وبالتساوي بين الأبناء ذوي الرصيد، ثم يعاد توزيع حصة أي طالب يصل للصفر على البقية. الطالب المسدد لا يستقبل دفعة.</div></div>
         <div class="col-12"><button type="button" id="previewBtn" class="btn btn-outline-primary" {% if not has_payable_siblings %}disabled{% endif %}><i class="bi bi-eye"></i> معاينة التوزيع</button>
             <button id="submitBtn" class="btn btn-primary" disabled><i class="bi bi-cash-stack"></i> {% if has_unpaid_other_siblings %}دفعة عن جميع الإخوة{% else %}دفعة{% endif %}</button></div>
@@ -140,6 +142,7 @@
      submitBtn.disabled = !data.is_valid; card.classList.remove('d-none'); card.scrollIntoView({behavior:'smooth'});
    } catch (e) { alert(e.message); submitBtn.disabled = true; } finally { previewBtn.disabled = false; }
  });
+ document.getElementById('paymentForm')?.addEventListener('submit', () => { submitBtn.disabled = true; submitBtn.textContent = 'جاري الحفظ...'; });
 })();
 </script>{% endif %}
 {% endblock %}

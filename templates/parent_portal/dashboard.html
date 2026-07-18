@@ -1,6 +1,6 @@
 {% extends "base/base.html" %}
-{% block title %}بوابة ولي الأمر{% endblock %}
-{% block page_title %}بوابة ولي الأمر{% endblock %}
+{% block title %}حساب ولي الأمر {{ family.guardian_name|default:"" }}{% endblock %}
+{% block page_title %}حساب ولي الأمر {{ family.guardian_name|default:"" }}{% endblock %}
 {% block page_subtitle %}متابعة الأبناء والرسوم والحضور والنتائج والوثائق من مكان واحد{% endblock %}
 {% block content %}
 
@@ -24,24 +24,13 @@
   {% endfor %}
 </div>
 
+<div class="mb-4">
+  {% include "parent_portal/_guardian_receipt_history.html" %}
+</div>
+
 <div class="row g-4">
-  <div class="col-lg-7">
-    <div class="opal-card h-100">
-      <h3 class="fw-bold mb-3">💳 آخر إيصالات الدفعات</h3>
-      <div class="table-responsive">
-        <table class="opal-table">
-          <thead><tr><th>رقم الإيصال</th><th>النوع</th><th>المبلغ</th><th>المتبقي بعد الدفعة</th><th>التاريخ</th></tr></thead>
-          <tbody>
-          {% for p in payments %}
-          <tr><td>{{ p.receipt_number }}</td><td>{{ p.get_scope_display }}</td><td>{{ p.total_amount }}</td><td>{{ p.total_due_after }}</td><td>{{ p.created_at|date:"Y-m-d H:i" }}</td></tr>
-          {% empty %}<tr><td colspan="5">لا توجد دفعات بعد.</td></tr>{% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-  <div class="col-lg-5">
-    <div class="opal-card h-100">
+  <div class="col-12">
+    <div class="opal-card">
       <h3 class="fw-bold mb-3">🔔 الإعلانات</h3>
       <ul class="mb-0">
         {% for a in announcements %}<li><strong>{{ a.title }}</strong><br><small>{{ a.message|truncatechars:120 }}</small></li>{% empty %}<li>لا توجد إعلانات.</li>{% endfor %}

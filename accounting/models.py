@@ -6,6 +6,8 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 
+from core.finance_constants import PAYMENT_METHOD_CHOICES
+
 
 def new_invoice_number():
     return f"INV-{uuid.uuid4().hex[:12].upper()}"
@@ -105,18 +107,22 @@ class StudentInvoice(models.Model):
 
 
 class StudentPayment(models.Model):
-    STATUS_CHOICES = [("posted", "مرحلة"), ("reversed", "معكوسة")]
+    STATUS_CHOICES = [("posted", "معتمدة"), ("deleted", "محذوفة بأمان"), ("reversed", "سجل سابق ملغى")]
 
     invoice = models.ForeignKey(StudentInvoice, on_delete=models.PROTECT, related_name="payments")
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     payment_date = models.DateField(default=timezone.localdate)
     reference = models.CharField(max_length=100, blank=True)
     notes = models.TextField(blank=True)
+    payment_method = models.CharField(max_length=30, choices=PAYMENT_METHOD_CHOICES, default="unspecified", db_index=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="posted", db_index=True)
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="created_payments")
     reversed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="reversed_payments")
     reversed_at = models.DateTimeField(null=True, blank=True)
     reversal_reason = models.TextField(blank=True)
+    deleted_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="deleted_payments")
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    deletion_reason = models.TextField(blank=True)
     created_at = models.DateTimeField(default=timezone.now, editable=False)
 
     class Meta:
@@ -155,6 +161,22 @@ class StudentPayment(models.Model):
         self.invoice.sync_status()
         return True
 
+    def safe_delete(self, user, reason):
+        """Remove a payment from balances without erasing its audit trail."""
+        if self.status == "deleted":
+            return False
+        if self.status != "posted":
+            raise ValidationError("لا يمكن حذف دفعة غير معتمدة.")
+        if not (reason or "").strip():
+            raise ValidationError("يجب كتابة سبب الحذف الآمن.")
+        self.status = "deleted"
+        self.deleted_by = user
+        self.deleted_at = timezone.now()
+        self.deletion_reason = reason.strip()
+        self.save(update_fields=["status", "deleted_by", "deleted_at", "deletion_reason"])
+        self.invoice.sync_status()
+        return True
+
     def __str__(self):
         return str(self.amount)
 
@@ -166,7 +188,11 @@ class Receipt(models.Model):
 
     @property
     def is_void(self):
-        return self.payment.status == "reversed"
+        return self.payment.status != "posted"
+
+    @property
+    def is_deleted(self):
+        return self.payment.status == "deleted"
 
     def __str__(self):
         return self.receipt_number
@@ -241,3 +267,80 @@ class DiscountRequest(models.Model):
 
     def __str__(self):
         return f"خصم {self.invoice} - {self.requested_amount}"
+
+
+class ExpenseEntry(models.Model):
+    school = models.ForeignKey("core.School", on_delete=models.CASCADE, related_name="expense_entries")
+    expense_number = models.CharField("رقم المصروف", max_length=50, unique=True)
+    expense_date = models.DateField("تاريخ المصروف", default=timezone.localdate, db_index=True)
+    title = models.CharField("البيان", max_length=200)
+    beneficiary = models.CharField("المستفيد", max_length=200, blank=True)
+    amount = models.DecimalField("المبلغ", max_digits=12, decimal_places=2)
+    payment_method = models.CharField("طريقة الدفع", max_length=30, choices=PAYMENT_METHOD_CHOICES)
+    reference = models.CharField("المرجع", max_length=100, blank=True)
+    notes = models.TextField("ملاحظات", blank=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="created_expenses")
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_deleted = models.BooleanField(default=False, db_index=True)
+    deleted_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="deleted_expenses")
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    deletion_reason = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["-expense_date", "-id"]
+
+    def clean(self):
+        super().clean()
+        if self.amount is None or self.amount <= 0:
+            raise ValidationError({"amount": "مبلغ المصروف يجب أن يكون أكبر من صفر."})
+
+    def __str__(self):
+        return f"{self.expense_number} - {self.title}"
+
+
+class MonthlyFinancialTarget(models.Model):
+    school = models.ForeignKey("core.School", on_delete=models.CASCADE, related_name="monthly_financial_targets")
+    period_end = models.DateField("نهاية الشهر المالي", db_index=True)
+    expected_amount = models.DecimalField("المبلغ المتوقع شهريًا", max_digits=12, decimal_places=2, default=0)
+    notes = models.TextField("ملاحظات", blank=True)
+    updated_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-period_end"]
+        constraints = [models.UniqueConstraint(fields=["school", "period_end"], name="uniq_monthly_target_school_period")]
+
+    def clean(self):
+        super().clean()
+        errors = {}
+        if self.period_end and self.period_end.day != 28:
+            errors["period_end"] = "يجب أن تنتهي الدورة المالية في يوم 28 من الشهر."
+        if self.expected_amount is not None and self.expected_amount < 0:
+            errors["expected_amount"] = "المبلغ المتوقع لا يمكن أن يكون سالبًا."
+        if errors:
+            raise ValidationError(errors)
+
+
+class FinancialYearClosure(models.Model):
+    school = models.ForeignKey("core.School", on_delete=models.CASCADE, related_name="financial_year_closures")
+    source_year = models.OneToOneField("core.AcademicYear", on_delete=models.PROTECT, related_name="financial_closure")
+    target_year = models.ForeignKey("core.AcademicYear", on_delete=models.PROTECT, related_name="incoming_financial_closures")
+    total_carried = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    notes = models.TextField(blank=True)
+    closed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    closed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-closed_at"]
+
+
+class FinancialCarryForward(models.Model):
+    closure = models.ForeignKey(FinancialYearClosure, on_delete=models.PROTECT, related_name="balances")
+    student = models.ForeignKey("students.Student", on_delete=models.PROTECT, related_name="financial_carry_forwards")
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    target_invoice = models.OneToOneField(StudentInvoice, on_delete=models.PROTECT, related_name="carry_forward_record")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["student__full_name"]
+        constraints = [models.UniqueConstraint(fields=["closure", "student"], name="uniq_closure_student_balance")]

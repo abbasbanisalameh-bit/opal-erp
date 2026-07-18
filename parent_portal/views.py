@@ -9,6 +9,8 @@ import csv
 from .models import Family, FamilyStudent
 from .services import ensure_family_account, reset_family_password
 from .services import update_family_identity
+from .receipt_services import build_guardian_receipt_history
+from .financial_services import build_guardian_annual_statement, guardian_financial_years
 from .forms import FamilyIdentityForm, ParentFamilyPersonalForm, ParentPhotoForm, ParentStudentPersonalForm
 from .permissions import parent_required
 from accounting.models import StudentInvoice
@@ -88,11 +90,7 @@ def dashboard(request):
 
     cards = [_student_card(student) for student in students]
     announcements = Announcement.objects.filter(is_active=True).order_by("-created_at")[:10]
-    payments = (
-        FeePayment.objects.filter(allocations__student__in=students)
-        .distinct()
-        .order_by("-created_at")[:10]
-    )
+    receipt_history = build_guardian_receipt_history(students)
     family = _family_for_user(request.user)
     totals = {
         "students_count": len(students),
@@ -108,7 +106,7 @@ def dashboard(request):
             "students": students,
             "cards": cards,
             "announcements": announcements,
-            "payments": payments,
+            "receipt_history": receipt_history,
             "totals": totals,
         },
     )
@@ -170,8 +168,27 @@ def fees(request):
     if not students:
         return render(request, "parent_portal/no_profile.html")
     cards = [_student_card(student) for student in students]
-    payments = FeePayment.objects.filter(allocations__student__in=students).distinct().order_by("-created_at")
-    return render(request, "parent_portal/fees.html", {"cards": cards, "payments": payments})
+    receipt_history = build_guardian_receipt_history(students)
+    statement_years = guardian_financial_years(students)
+    selected_year = None
+    requested_year = request.GET.get("year")
+    if requested_year:
+        selected_year = statement_years.filter(pk=requested_year).first()
+    if selected_year is None:
+        selected_year = statement_years.filter(is_current=True).first() or statement_years.first()
+    annual_statement = build_guardian_annual_statement(students, selected_year) if selected_year else None
+    return render(
+        request,
+        "parent_portal/fees.html",
+        {
+            "family": _family_for_user(request.user),
+            "cards": cards,
+            "receipt_history": receipt_history,
+            "statement_years": statement_years,
+            "selected_year": selected_year,
+            "annual_statement": annual_statement,
+        },
+    )
 
 
 @parent_required
@@ -325,7 +342,14 @@ def _family_finance_context(family):
         "paid": sum((card["paid"] for card in cards), 0),
         "remaining": sum((card["remaining"] for card in cards), 0),
     }
-    return {"family": family, "links": links, "cards": cards, "payments": payments, "totals": totals}
+    return {
+        "family": family,
+        "links": links,
+        "cards": cards,
+        "payments": payments,
+        "receipt_history": build_guardian_receipt_history([link.student for link in links]),
+        "totals": totals,
+    }
 
 
 @management_required
@@ -370,7 +394,7 @@ def family_account_create(request, pk):
         return redirect("parent_portal:family_detail", pk=family.pk)
     user, password, created = ensure_family_account(family)
     if not created:
-        messages.info(request, "الأسرة مرتبطة بحساب مستخدم بالفعل.")
+        messages.info(request, "ملف ولي الأمر مرتبط بحساب مستخدم بالفعل.")
         return redirect("parent_portal:family_detail", pk=family.pk)
     return render(request, "parent_portal/family_credentials.html", {"family": family, "username": user.username, "password": password, "created": True})
 
@@ -389,10 +413,10 @@ def family_statement_csv(request, pk):
     family = get_object_or_404(Family.objects.select_related("user", "school"), pk=pk)
     context = _family_finance_context(family)
     response = HttpResponse(content_type="text/csv; charset=utf-8")
-    response["Content-Disposition"] = f'attachment; filename="family-{family.pk}-statement.csv"'
+    response["Content-Disposition"] = f'attachment; filename="guardian-{family.pk}-statement.csv"'
     response.write("\ufeff")
     writer = csv.writer(response)
-    writer.writerow(["ولي الأمر", family.guardian_name, "الهاتف", family.phone, "رمز الأسرة", family.family_code])
+    writer.writerow(["ولي الأمر", family.guardian_name, "الهاتف", family.phone, "رقم ملف ولي الأمر", family.family_code])
     writer.writerow([])
     writer.writerow(["الطالب", "الصف", "إجمالي الرسوم", "المدفوع", "المتبقي", "الحالة"])
     for card in context["cards"]:

@@ -59,7 +59,7 @@ class Student360MergeTests(TestCase):
 
     def test_student_list_has_one_unified_profile_action(self):
         response = self.client.get(reverse("students:student_list"))
-        self.assertContains(response, "ملف 360°")
+        self.assertContains(response, "بطاقة الطالب")
         self.assertNotContains(response, ">عرض<")
 
     def test_gender_is_rendered_from_canonical_choices(self):

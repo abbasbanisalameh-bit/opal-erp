@@ -28,7 +28,14 @@ def _notify_parents_exam_published(exam):
             if link.family.user_id:
                 users[link.family.user_id] = link.family.user
         for user in users.values():
-            notify(user, "تم نشر نتيجة جديدة", f"تم نشر نتيجة {exam.name} للطالب {student.full_name}.", "success", "/parent/marks/")
+            notify(
+                user,
+                "تم نشر نتيجة جديدة",
+                f"تم نشر نتيجة {exam.name} للطالب {student.full_name}.",
+                "success",
+                "/parent/marks/",
+                event_key=f"exam:{exam.pk}:student:{student.pk}:user:{user.pk}",
+            )
             sent += 1
     return sent
 

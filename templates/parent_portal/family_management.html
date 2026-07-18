@@ -1,12 +1,12 @@
 {% extends "base/base.html" %}
-{% block title %}أولياء الأمور{% endblock %}
-{% block page_title %}أولياء الأمور{% endblock %}
-{% block page_subtitle %}إدارة حسابات الأسر والأبناء المرتبطين بها{% endblock %}
+{% block title %}ملفات أولياء الأمور{% endblock %}
+{% block page_title %}ملفات أولياء الأمور{% endblock %}
+{% block page_subtitle %}إدارة حساب كل ولي أمر والأبناء المرتبطين به{% endblock %}
 {% block content %}
 <div class="opal-card">
   <div class="d-flex justify-content-between align-items-center mb-3">
-    <h3 class="mb-0">قائمة الأسر</h3>
-    <span class="badge bg-primary">{{ families|length }} أسرة</span>
+    <h3 class="mb-0">قائمة ملفات أولياء الأمور</h3>
+    <span class="badge bg-primary">{{ families|length }} ملف</span>
   </div>
   <div class="table-responsive">
     <table class="table align-middle">
@@ -38,7 +38,7 @@
           </td>
         </tr>
       {% empty %}
-        <tr><td colspan="6" class="text-center text-muted py-4">لا توجد أسر مسجلة.</td></tr>
+        <tr><td colspan="6" class="text-center text-muted py-4">لا توجد ملفات أولياء أمور مسجلة.</td></tr>
       {% endfor %}
       </tbody>
     </table>

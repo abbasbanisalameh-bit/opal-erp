@@ -15,5 +15,5 @@ class Command(BaseCommand):
         result = reset_demo_school()
         self.stdout.write(self.style.SUCCESS(
             f"تم حذف البيانات التجريبية فقط: {result['students']} طالب، "
-            f"{result['families']} أسرة، {result['teachers']} معلم."
+            f"{result['families']} ملف ولي أمر، {result['teachers']} معلم."
         ))

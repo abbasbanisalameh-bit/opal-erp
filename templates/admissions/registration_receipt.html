@@ -35,6 +35,8 @@
             <div><strong>الصف:</strong> {{ registration.grade }}</div>
             <div><strong>الشعبة:</strong> {{ registration.section|default:"-" }}</div>
             <div><strong>هاتف ولي الأمر:</strong> {{ registration.phone|default:"-" }}</div>
+            <div><strong>طريقة الدفع:</strong> {{ registration.get_payment_method_display }}</div>
+            <div><strong>المستلم:</strong> {{ receiver_name }}</div>
         </div>
 
         <div class="paid-box">

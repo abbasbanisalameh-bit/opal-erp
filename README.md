@@ -9,9 +9,9 @@
 
 ## الوحدات الإنتاجية
 
-- الطلاب والأسرة والتسجيل.
+- الطلاب وملفات أولياء الأمور والتسجيل.
 - الأكاديميات والمعلمون والحضور والجدول والامتحانات.
-- الرسوم والدفعات والإيصالات والأقساط والخصومات.
+- الرسوم والتسديد الموحد والإيصالات والمصروفات والكشوف المالية الشهرية.
 - الوثائق والإعلانات وبوابة ولي الأمر.
 - اللوحة والتقارير والصلاحيات والسجل والإشعارات.
 
@@ -36,6 +36,6 @@ python manage.py verify_core_readiness
 ```
 
 تعليمات التركيب الحالية في
-`INSTALL_OPAL_FINAL_CORE_COMPLETION_PRODUCTION_READINESS_AR.md`، وسجل التغيير في
-`OPAL_FINAL_CORE_COMPLETION_PRODUCTION_READINESS_RELEASE_NOTES_AR.md`. الوثائق التاريخية
+`INSTALL_OPAL_FINANCIAL_CONTROL_GUARDIAN_ALERTS_V1_AR.md`، وسجل التغيير في
+`OPAL_FINANCIAL_CONTROL_GUARDIAN_ALERTS_V1_RELEASE_NOTES_AR.md`. الوثائق التاريخية
 محفوظة داخل `docs/archive/`.

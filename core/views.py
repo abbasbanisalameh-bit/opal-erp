@@ -24,7 +24,7 @@ def system_settings(request):
             from .demo_data import reset_demo_school, seed_demo_school
             if action == "seed_demo":
                 result = seed_demo_school(student_count=100, teacher_count=20, user=request.user)
-                messages.success(request, f"تم تجهيز {result['students']} طالب و{result['teachers']} معلم و{result['families']} أسرة تجريبية.")
+                messages.success(request, f"تم تجهيز {result['students']} طالب و{result['teachers']} معلم و{result['families']} ملف ولي أمر تجريبي.")
             elif request.POST.get("confirmation") == "RESET-DEMO":
                 result = reset_demo_school()
                 messages.success(request, f"تم حذف التجريبي فقط: {result['students']} طالب و{result['teachers']} معلم.")

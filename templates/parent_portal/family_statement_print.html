@@ -1,1 +1,52 @@
-<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>كشف حساب الأسرة</title><style>@page{size:A4 landscape;margin:10mm}body{font-family:Arial,sans-serif;color:#222}header{display:flex;justify-content:space-between;border-bottom:2px solid #222;padding-bottom:10px}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:15px 0}.box{border:1px solid #aaa;padding:10px;border-radius:6px}table{width:100%;border-collapse:collapse;margin:12px 0 22px}th,td{border:1px solid #aaa;padding:7px;text-align:right}th{background:#eee}.signatures{display:flex;justify-content:space-between;margin-top:35px}button{margin-bottom:10px}@media print{button{display:none}}</style></head><body><button onclick="window.print()">طباعة</button><header><div><h1>كشف حساب الأسرة</h1><h2>{{ family.guardian_name|default:"ولي أمر" }}</h2><div>{{ family.family_code|default:"-" }} · {{ family.phone|default:"-" }}</div></div><div>تاريخ الطباعة: {% now "Y-m-d H:i" %}</div></header><div class="stats"><div class="box">الأبناء<br><b>{{ totals.students_count }}</b></div><div class="box">إجمالي الرسوم<br><b>{{ totals.total|floatformat:2 }}</b></div><div class="box">المدفوع<br><b>{{ totals.paid|floatformat:2 }}</b></div><div class="box">المتبقي<br><b>{{ totals.remaining|floatformat:2 }}</b></div></div><h2>ملخص الأبناء</h2><table><tr><th>الطالب</th><th>الصف</th><th>الرسوم</th><th>المدفوع</th><th>المتبقي</th><th>الحالة</th></tr>{% for card in cards %}<tr><td>{{ card.student.full_name }}</td><td>{{ card.student.grade }} {{ card.student.section }}</td><td>{{ card.total|floatformat:2 }}</td><td>{{ card.paid|floatformat:2 }}</td><td>{{ card.remaining|floatformat:2 }}</td><td>{{ card.status_label }}</td></tr>{% endfor %}</table><h2>الإيصالات</h2><table><tr><th>الإيصال</th><th>التاريخ</th><th>النوع</th><th>المبلغ</th><th>المتبقي بعد العملية</th></tr>{% for p in payments %}<tr><td>{{ p.receipt_number }}</td><td>{{ p.created_at|date:"Y-m-d H:i" }}</td><td>{{ p.get_scope_display }}</td><td>{{ p.total_amount|floatformat:2 }}</td><td>{{ p.total_due_after|floatformat:2 }}</td></tr>{% empty %}<tr><td colspan="5">لا توجد إيصالات</td></tr>{% endfor %}</table><div class="signatures"><div>توقيع ولي الأمر: __________________</div><div>توقيع المحاسب: __________________</div><div>ختم المدرسة: __________________</div></div></body></html>
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <title>كشف حساب ولي الأمر</title>
+  <style>
+    @page{size:A4 landscape;margin:10mm}
+    body{font-family:Arial,sans-serif;color:#222}
+    header{display:flex;justify-content:space-between;border-bottom:2px solid #222;padding-bottom:10px}
+    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:15px 0}
+    .box{border:1px solid #aaa;padding:10px;border-radius:6px}
+    table{width:100%;border-collapse:collapse;margin:12px 0 22px}
+    th,td{border:1px solid #aaa;padding:7px;text-align:right}
+    th{background:#eee}
+    .signatures{display:flex;justify-content:space-between;margin-top:35px}
+    button{margin-bottom:10px}
+    @media print{button{display:none}}
+  </style>
+</head>
+<body>
+  <button onclick="window.print()">طباعة</button>
+  <header>
+    <div>
+      <h1>كشف حساب ولي الأمر</h1>
+      <h2>{{ family.guardian_name|default:"ولي أمر" }}</h2>
+      <div>رقم الملف: {{ family.family_code|default:"-" }} · {{ family.phone|default:"-" }}</div>
+    </div>
+    <div>تاريخ الطباعة: {% now "Y-m-d H:i" %}</div>
+  </header>
+  <div class="stats">
+    <div class="box">الأبناء<br><b>{{ totals.students_count }}</b></div>
+    <div class="box">إجمالي الرسوم<br><b>{{ totals.total|floatformat:2 }}</b></div>
+    <div class="box">المدفوع<br><b>{{ totals.paid|floatformat:2 }}</b></div>
+    <div class="box">المتبقي<br><b>{{ totals.remaining|floatformat:2 }}</b></div>
+  </div>
+  <h2>ملخص الأبناء</h2>
+  <table>
+    <tr><th>الطالب</th><th>الصف</th><th>الرسوم</th><th>المدفوع</th><th>المتبقي</th><th>الحالة</th></tr>
+    {% for card in cards %}
+    <tr><td>{{ card.student.full_name }}</td><td>{{ card.student.grade }} {{ card.student.section }}</td><td>{{ card.total|floatformat:2 }}</td><td>{{ card.paid|floatformat:2 }}</td><td>{{ card.remaining|floatformat:2 }}</td><td>{{ card.status_label }}</td></tr>
+    {% endfor %}
+  </table>
+  <h2>الإيصالات</h2>
+  <table>
+    <tr><th>الإيصال</th><th>التاريخ</th><th>النوع</th><th>المبلغ</th><th>المتبقي بعد العملية</th></tr>
+    {% for p in payments %}
+    <tr><td>{{ p.receipt_number }}</td><td>{{ p.created_at|date:"Y-m-d H:i" }}</td><td>{{ p.get_scope_display }}</td><td>{{ p.total_amount|floatformat:2 }}</td><td>{{ p.total_due_after|floatformat:2 }}</td></tr>
+    {% empty %}<tr><td colspan="5">لا توجد إيصالات</td></tr>{% endfor %}
+  </table>
+  <div class="signatures"><div>توقيع ولي الأمر: __________________</div><div>توقيع المحاسب: __________________</div><div>ختم المدرسة: __________________</div></div>
+</body>
+</html>

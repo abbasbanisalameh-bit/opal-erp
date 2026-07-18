@@ -61,7 +61,7 @@ def find_existing_family(
     phone_family = qs.filter(phone=digits).first() if digits else None
     if identity_family and phone_family and identity_family.pk != phone_family.pk:
         raise ValidationError(
-            "بيانات ولي الأمر متعارضة: رقم الهوية والهاتف مرتبطان بأسرتين مختلفتين. "
+            "بيانات ولي الأمر متعارضة: رقم الهوية والهاتف مرتبطان بملفين مختلفين لولي الأمر. "
             "يجب مراجعة السجلين قبل المتابعة."
         )
     if identity_family:
@@ -290,9 +290,9 @@ def update_family_identity(
 
     others = Family.objects.filter(school=family.school, is_active=True).exclude(pk=family.pk)
     if identity_number and others.filter(identity_number=identity_number).exists():
-        raise ValidationError("رقم الهوية مرتبط بأسرة أخرى. استخدم الأسرة الموجودة بدل إنشاء تعارض.")
+        raise ValidationError("رقم الهوية مرتبط بملف ولي أمر آخر. استخدم الملف الموجود بدل إنشاء تعارض.")
     if phone and others.filter(phone=phone).exists():
-        raise ValidationError("رقم الهاتف مرتبط بأسرة أخرى. استخدم الأسرة الموجودة أو أداة الدمج.")
+        raise ValidationError("رقم الهاتف مرتبط بملف ولي أمر آخر. استخدم الملف الموجود أو أداة الدمج.")
 
     family.guardian_name = guardian_name
     family.phone = phone

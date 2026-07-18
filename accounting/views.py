@@ -14,8 +14,17 @@ from enterprise_ops.models import WorkflowRequest
 from enterprise_ops.services import audit, transition_workflow
 from students.models import Student
 
-from .forms import DiscountRequestForm, FeeCategoryForm, InstallmentForm, StudentInvoiceForm, StudentPaymentForm
-from .models import DiscountRequest, FeeCategory, Installment, Receipt, StudentInvoice, StudentPayment
+from admissions.services import active_school
+
+from .forms import (
+    DiscountRequestForm, ExpenseEntryForm, FeeCategoryForm, FinancialYearClosureForm,
+    InstallmentForm, MonthlyFinancialTargetForm, StudentInvoiceForm, StudentPaymentForm,
+)
+from .financial_services import (
+    close_financial_year, collection_dashboard, monthly_financial_report,
+    next_expense_number, normalize_period_end,
+)
+from .models import DiscountRequest, ExpenseEntry, FeeCategory, FinancialYearClosure, Installment, MonthlyFinancialTarget, Receipt, StudentInvoice, StudentPayment
 from .services import create_discount_workflow, decide_discount
 from .services.pdf import receipt_pdf
 from .services.receipt import generate_receipt_number
@@ -24,20 +33,7 @@ from .services.receipt import generate_receipt_number
 @login_required
 @management_required
 def finance_dashboard(request):
-    invoices = StudentInvoice.objects.exclude(status="cancelled").prefetch_related("payments")
-    payments = StudentPayment.objects.filter(status="posted")
-    total_invoices = sum((item.net_amount for item in invoices), Decimal("0"))
-    total_payments = payments.aggregate(total=Sum("amount"))["total"] or Decimal("0")
-    remaining = max(total_invoices - total_payments, Decimal("0"))
-    overdue = sum(1 for item in invoices if item.is_overdue)
-    return render(request, "accounting/dashboard.html", {
-        "total_invoices": total_invoices,
-        "total_payments": total_payments,
-        "remaining": remaining,
-        "invoices_count": invoices.count(),
-        "payments_count": payments.count(),
-        "overdue_count": overdue,
-    })
+    return render(request, "accounting/dashboard.html", collection_dashboard(active_school()))
 
 
 @login_required
@@ -132,19 +128,115 @@ def payment_create(request):
 @management_required
 @require_POST
 def payment_reverse(request, payment_id):
-    payment = get_object_or_404(StudentPayment.objects.select_related("invoice", "invoice__student"), pk=payment_id)
+    messages.info(request, "تصحيح الإيصالات يتم من الأرشيف بواسطة الحذف الآمن.")
+    return redirect("admissions:fee_payment_archive")
+
+
+@login_required
+@management_required
+@require_POST
+def payment_safe_delete(request, payment_id):
+    payment = get_object_or_404(StudentPayment.objects.select_related("invoice__academic_year", "invoice__student"), pk=payment_id)
     reason = request.POST.get("reason", "").strip()
+    if payment.invoice.academic_year_id and FinancialYearClosure.objects.filter(source_year_id=payment.invoice.academic_year_id).exists():
+        messages.error(request, "لا يمكن حذف إيصال داخل عام مغلق ماليًا.")
+        return redirect("admissions:fee_payment_archive")
     try:
-        changed = payment.reverse(request.user, reason)
+        changed = payment.safe_delete(request.user, reason)
     except ValidationError as exc:
-        messages.error(request, exc.message)
+        messages.error(request, exc.messages[0])
     else:
         if changed:
-            audit(request, "update", "accounting.StudentPayment", payment.pk, f"عكس دفعة للطالب {payment.invoice.student.full_name}: {reason}")
-            messages.success(request, "تم عكس الدفعة وحفظ السبب في سجل العمليات.")
+            receipt_number = getattr(getattr(payment, "receipt", None), "receipt_number", payment.reference or payment.pk)
+            audit(request, "delete", "accounting.StudentPayment", payment.pk, f"حذف آمن للإيصال {receipt_number}: {reason}")
+            messages.success(request, "تم حذف الإيصال السابق بأمان وتحديث الرصيد.")
         else:
-            messages.info(request, "الدفعة معكوسة مسبقًا.")
-    return redirect("accounting:receipt_list")
+            messages.info(request, "الإيصال محذوف مسبقًا.")
+    return redirect("admissions:fee_payment_archive")
+
+
+@login_required
+@management_required
+def expense_list(request):
+    school = active_school()
+    form = ExpenseEntryForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        item = form.save(commit=False)
+        item.school = school
+        item.expense_number = next_expense_number()
+        item.created_by = request.user
+        item.save()
+        audit(request, "create", "accounting.ExpenseEntry", item.pk, f"تسجيل مصروف {item.expense_number}: {item.amount}")
+        messages.success(request, "تم تسجيل المصروف ضمن الكشف المالي المستقل.")
+        return redirect("accounting:expense_list")
+    items = ExpenseEntry.objects.filter(school=school, is_deleted=False).select_related("created_by")[:500]
+    return render(request, "accounting/expense_list.html", {"form": form, "items": items})
+
+
+@login_required
+@management_required
+@require_POST
+def expense_safe_delete(request, pk):
+    item = get_object_or_404(ExpenseEntry, pk=pk, school=active_school(), is_deleted=False)
+    reason = request.POST.get("reason", "").strip()
+    if not reason:
+        messages.error(request, "اكتب سبب الحذف الآمن.")
+    else:
+        item.is_deleted = True
+        item.deleted_by = request.user
+        item.deleted_at = timezone.now()
+        item.deletion_reason = reason
+        item.save(update_fields=["is_deleted", "deleted_by", "deleted_at", "deletion_reason"])
+        audit(request, "delete", "accounting.ExpenseEntry", item.pk, f"حذف آمن للمصروف {item.expense_number}: {reason}")
+        messages.success(request, "تم حذف المصروف بأمان مع بقاء سجل التدقيق.")
+    return redirect("accounting:expense_list")
+
+
+@login_required
+@management_required
+def monthly_report(request):
+    school = active_school()
+    try:
+        period_end = normalize_period_end(request.GET.get("period_end"))
+    except ValidationError as exc:
+        messages.error(request, exc.messages[0])
+        period_end = normalize_period_end()
+    target, _ = MonthlyFinancialTarget.objects.get_or_create(school=school, period_end=period_end)
+    target_form = MonthlyFinancialTargetForm(request.POST or None, instance=target)
+    if request.method == "POST" and target_form.is_valid():
+        item = target_form.save(commit=False)
+        item.updated_by = request.user
+        item.save()
+        audit(request, "update", "accounting.MonthlyFinancialTarget", item.pk, f"تحديث المتوقع الشهري لدورة {period_end}")
+        messages.success(request, "تم حفظ المبلغ المتوقع لهذا الشهر المالي.")
+        return redirect(f"/accounting/monthly-report/?period_end={period_end.isoformat()}")
+    context = monthly_financial_report(school, period_end)
+    context["target_form"] = target_form
+    return render(request, "accounting/monthly_report.html", context)
+
+
+@login_required
+@management_required
+def financial_year_close(request):
+    school = active_school()
+    form = FinancialYearClosureForm(request.POST or None, school=school)
+    if request.method == "POST" and form.is_valid():
+        try:
+            closure = close_financial_year(
+                school=school,
+                source_year=form.cleaned_data["source_year"],
+                target_year=form.cleaned_data["target_year"],
+                user=request.user,
+                notes=form.cleaned_data["notes"],
+            )
+        except ValidationError as exc:
+            form.add_error(None, exc)
+        else:
+            audit(request, "update", "accounting.FinancialYearClosure", closure.pk, f"إغلاق مالي وترحيل {closure.total_carried}")
+            messages.success(request, f"تم الإغلاق المالي وترحيل {closure.total_carried} د.أ بنجاح.")
+            return redirect("accounting:financial_year_close")
+    closures = FinancialYearClosure.objects.filter(school=school).select_related("source_year", "target_year", "closed_by")
+    return render(request, "accounting/financial_year_close.html", {"form": form, "closures": closures})
 
 
 @login_required
@@ -154,7 +246,7 @@ def invoice_cancel(request, invoice_id):
     invoice = get_object_or_404(StudentInvoice, pk=invoice_id)
     reason = request.POST.get("reason", "").strip()
     if invoice.payments.filter(status="posted").exists():
-        messages.error(request, "يجب عكس جميع الدفعات المرحلة قبل إلغاء الرسوم.")
+        messages.error(request, "يجب حذف جميع الدفعات المرتبطة بأمان قبل إلغاء الرسوم.")
     elif not reason:
         messages.error(request, "يجب كتابة سبب الإلغاء.")
     else:

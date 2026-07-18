@@ -23,7 +23,8 @@ class StudentPaymentAdmin(admin.ModelAdmin):
     list_display = ("invoice", "amount", "payment_date", "status", "created_by")
     list_filter = ("status", "payment_date")
     search_fields = ("invoice__invoice_number", "invoice__student__full_name", "reference")
-    readonly_fields = ("created_at", "reversed_at")
+    readonly_fields = ("created_at", "deleted_at")
+    exclude = ("reversed_by", "reversed_at", "reversal_reason")
 
 
 @admin.register(Receipt)

@@ -1,0 +1,41 @@
+<section class="opal-card opal-guardian-receipts" aria-labelledby="guardianReceiptHistoryTitle">
+  <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+    <div>
+      <h3 class="fw-bold mb-1" id="guardianReceiptHistoryTitle"><i class="bi bi-receipt"></i> سجل إيصالات ولي الأمر</h3>
+      <p class="text-secondary mb-0">عرض مختصر للقراءة فقط، مرتب من أحدث إيصال إلى الأقدم.</p>
+    </div>
+    <span class="badge bg-primary">{{ receipt_history|length }} إيصال</span>
+  </div>
+  {% if receipt_history %}
+  <div class="opal-receipt-history-scroll" tabindex="0" role="region" aria-label="سجل الإيصالات الأفقي">
+    {% for receipt in receipt_history %}
+    <article class="opal-receipt-summary-card">
+      <div class="d-flex justify-content-between align-items-start gap-2">
+        <div>
+          <div class="text-secondary small">رقم الإيصال</div>
+          <div class="fw-bold" dir="ltr">{{ receipt.receipt_number }}</div>
+        </div>
+        {% if receipt.status_label == "ملغى" %}<span class="badge bg-danger">ملغى</span>{% else %}<span class="badge bg-success">معتمد</span>{% endif %}
+      </div>
+      <div class="opal-receipt-amount">{{ receipt.amount|floatformat:2 }} <small>د.أ</small></div>
+      <dl class="opal-receipt-summary-list">
+        <div><dt>التاريخ</dt><dd>{{ receipt.created_at|date:"Y-m-d" }}</dd></div>
+        <div><dt>الوقت</dt><dd>{{ receipt.created_at|date:"H:i" }}</dd></div>
+        <div><dt>نوع العملية</dt><dd>{{ receipt.payment_type }}</dd></div>
+        <div><dt>طريقة الدفع</dt><dd>{{ receipt.payment_method }}</dd></div>
+        <div><dt>عن الأبناء</dt><dd>{{ receipt.children_names }}</dd></div>
+        <div><dt>المستلم</dt><dd>{{ receipt.receiver }}{% if receipt.receiver_title %} · {{ receipt.receiver_title }}{% endif %}</dd></div>
+      </dl>
+      <div class="opal-receipt-allocations">
+        <div class="text-secondary small mb-1">توزيع المبلغ</div>
+        {% for allocation in receipt.allocations %}
+          <span>{{ allocation.student_name }}: <strong>{{ allocation.amount|floatformat:2 }}</strong></span>
+        {% endfor %}
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="text-secondary">لا توجد إيصالات مسجلة للأبناء حتى الآن.</div>
+  {% endif %}
+</section>

@@ -9,7 +9,7 @@
     <a href="{% url 'students:student_list' %}" class="opal-subnav-btn {% if ns == 'students' %}active{% endif %}"><i class="bi bi-people"></i><span>الطلاب</span></a>
     <a href="{% url 'admissions:direct_registration' %}" class="opal-subnav-btn {% if ns == 'admissions' and view == 'direct_registration' %}active{% endif %}"><i class="bi bi-person-plus"></i><span>تسجيل طالب</span></a>
     <a href="{% url 'admissions:admission_list' %}" class="opal-subnav-btn {% if ns == 'admissions' and view != 'direct_registration' and view != 'registration_settings' %}active{% endif %}"><i class="bi bi-card-checklist"></i><span>سجل التسجيل</span></a>
-    <a href="{% url 'parent_portal:family_management' %}" class="opal-subnav-btn {% if ns == 'parent_portal' %}active{% endif %}"><i class="bi bi-person-heart"></i><span>الأسر وأولياء الأمور</span></a>
+    <a href="{% url 'parent_portal:family_management' %}" class="opal-subnav-btn {% if ns == 'parent_portal' %}active{% endif %}"><i class="bi bi-person-vcard"></i><span>ملفات أولياء الأمور</span></a>
     <a href="{% url 'documents:document_list' %}" class="opal-subnav-btn {% if ns == 'documents' %}active{% endif %}"><i class="bi bi-file-earmark-text"></i><span>وثائق الطلاب</span></a>
     <a href="{% url 'admissions:registration_settings' %}" class="opal-subnav-btn {% if ns == 'admissions' and view == 'registration_settings' %}active{% endif %}"><i class="bi bi-sliders"></i><span>إعدادات التسجيل</span></a>
   </div>
@@ -48,6 +48,9 @@
     <a href="{% url 'accounting:dashboard' %}" class="opal-subnav-btn {% if ns == 'accounting' and view == 'dashboard' %}active{% endif %}"><i class="bi bi-house-door"></i><span>الملخص</span></a>
     <a href="{% url 'admissions:fee_payment_create' %}" class="opal-subnav-btn {% if ns == 'admissions' and view == 'fee_payment_create' %}active{% endif %}"><i class="bi bi-cash-coin"></i><span>تسديد رسوم</span></a>
     <a href="{% url 'admissions:fee_payment_archive' %}" class="opal-subnav-btn {% if ns == 'admissions' and view == 'fee_payment_archive' or view == 'fee_payment_receipt' %}active{% endif %}"><i class="bi bi-archive"></i><span>أرشيف التسديد</span></a>
+    <a href="{% url 'accounting:expense_list' %}" class="opal-subnav-btn {% if view == 'expense_list' %}active{% endif %}"><i class="bi bi-receipt-cutoff"></i><span>المصروفات</span></a>
+    <a href="{% url 'accounting:monthly_report' %}" class="opal-subnav-btn {% if view == 'monthly_report' %}active{% endif %}"><i class="bi bi-calendar2-check"></i><span>كشف 28 الشهري</span></a>
+    <a href="{% url 'accounting:financial_year_close' %}" class="opal-subnav-btn {% if view == 'financial_year_close' %}active{% endif %}"><i class="bi bi-arrow-left-right"></i><span>الإغلاق المالي</span></a>
   </div>
 </nav>
 

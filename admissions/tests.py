@@ -6,6 +6,7 @@ from admissions.financial_services import distribute_amount
 
 
 from datetime import date
+import uuid
 from django.contrib.auth.models import User
 from django.test import TestCase
 
@@ -17,6 +18,8 @@ from students.models import Student
 from .forms import DirectStudentRegistrationForm
 from .models import GradeFee
 from .services import create_student_registration
+from .financial_services import create_siblings_fee_payment, safe_delete_fee_payment
+from accounting.models import FeeCategory, StudentInvoice
 
 
 class CanonicalRegistrationIntegrationTests(TestCase):
@@ -144,6 +147,48 @@ class CanonicalRegistrationIntegrationTests(TestCase):
         self.assertEqual(registration.first_payment, Decimal("350.00"))
         self.assertEqual(registration.payment.amount, Decimal("350.00"))
         self.assertEqual(registration.remaining_amount, Decimal("650.00"))
+
+    def test_registration_token_prevents_double_submission(self):
+        token = uuid.uuid4()
+        data = {
+            "registration_token": str(token), "first_name": "سارة", "father_name": "علي",
+            "family_name": "منع التكرار", "gender": "female", "guardian_name": "علي",
+            "guardian_identity_type": "national", "guardian_identity_number": "DUP-GUARDIAN",
+            "phone": "0793333333", "address": "عمان", "grade": self.grade.pk,
+            "section": self.section.pk, "transport_type": "none", "discount_type": "none",
+            "admin_discount_value": "0", "payment_method": "cash",
+        }
+        form = DirectStudentRegistrationForm(data=data, school=self.school, academic_year=self.year)
+        self.assertTrue(form.is_valid(), form.errors)
+        first = create_student_registration(form, self.user)
+        second = create_student_registration(form, self.user)
+        self.assertEqual(first.pk, second.pk)
+        self.assertEqual(Student.objects.count(), 1)
+
+    def test_fee_payment_token_and_safe_delete(self):
+        student = Student.objects.create(student_number="PAY-DUP", full_name="طالب دفع", grade="الأول")
+        category = FeeCategory.objects.create(name="اختبار منع التكرار", amount="500")
+        invoice = StudentInvoice.objects.create(
+            student=student, academic_year=self.year, fee_category=category,
+            amount="500", due_date=date.today(),
+        )
+        token = uuid.uuid4()
+        first = create_siblings_fee_payment(
+            main_student=student, amount="100", user=self.user,
+            payment_method="cash", operation_token=token,
+        )
+        second = create_siblings_fee_payment(
+            main_student=student, amount="100", user=self.user,
+            payment_method="cash", operation_token=token,
+        )
+        self.assertEqual(first.pk, second.pk)
+        self.assertEqual(invoice.payments.filter(status="posted").count(), 1)
+        safe_delete_fee_payment(fee_payment=first, user=self.user, reason="اختبار تصحيح")
+        invoice.refresh_from_db()
+        first.refresh_from_db()
+        self.assertTrue(first.is_deleted)
+        self.assertEqual(invoice.remaining, Decimal("500"))
+        self.assertEqual(first.receipt_number, second.receipt_number)
 
 
 class FamilyPaymentDistributionTests(SimpleTestCase):

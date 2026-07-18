@@ -5,7 +5,7 @@ from .models import Role, UserProfile
 class UserProfileForm(forms.ModelForm):
     email = forms.EmailField(label="البريد الإلكتروني", required=False)
     first_name = forms.CharField(label="الاسم الأول", required=False)
-    last_name = forms.CharField(label="اسم العائلة", required=False)
+    last_name = forms.CharField(label="الاسم الأخير", required=False)
 
     class Meta:
         model = UserProfile

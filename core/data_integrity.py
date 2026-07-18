@@ -104,9 +104,9 @@ def run_integrity_audit(*, fix_safe=False, user=None):
                 fix = lambda student=student: create_or_update_parent_family_for_student(
                     student, guardian_name=student.guardian_name, phone=student.phone, school=None
                 )
-            audit.issue("STUDENT_WITHOUT_ACTIVE_FAMILY", f"الطالب {student.full_name} غير مرتبط بأسرة نشطة.", model_name="students.Student", object_id=student.pk, fix=fix, resolution="تم إنشاء/استعادة رابط الأسرة من بيانات ولي الأمر الموجودة.")
+            audit.issue("STUDENT_WITHOUT_ACTIVE_FAMILY", f"الطالب {student.full_name} غير مرتبط بملف ولي أمر نشط.", model_name="students.Student", object_id=student.pk, fix=fix, resolution="تم إنشاء/استعادة رابط ولي الأمر من بياناته الموجودة.")
         elif len(links) > 1:
-            audit.issue("STUDENT_MULTIPLE_ACTIVE_FAMILIES", f"الطالب {student.full_name} مرتبط بأكثر من أسرة نشطة.", severity="critical", model_name="students.Student", object_id=student.pk)
+            audit.issue("STUDENT_MULTIPLE_ACTIVE_FAMILIES", f"الطالب {student.full_name} مرتبط بأكثر من ملف ولي أمر نشط.", severity="critical", model_name="students.Student", object_id=student.pk)
 
     def duplicate_family_values(field, code, label, normalize=False):
         groups = defaultdict(list)
@@ -117,14 +117,14 @@ def run_integrity_audit(*, fix_safe=False, user=None):
                 groups[key].append(family.pk)
         for value, ids in groups.items():
             if len(ids) > 1:
-                audit.issue(code, f"{label} {value} مرتبط بأكثر من أسرة.", severity="critical", model_name="parent_portal.Family", object_id=",".join(map(str, ids)))
+                audit.issue(code, f"{label} {value} مرتبط بأكثر من ملف ولي أمر.", severity="critical", model_name="parent_portal.Family", object_id=",".join(map(str, ids)))
     duplicate_family_values("phone", "FAMILY_DUPLICATE_PHONE", "الهاتف", normalize=True)
     duplicate_family_values("identity_number", "FAMILY_DUPLICATE_IDENTITY", "رقم الهوية")
     for family in Family.objects.all():
         if not family.children.filter(is_active=True).exists():
-            audit.issue("FAMILY_WITHOUT_CHILDREN", f"الأسرة #{family.pk} لا تملك أبناء مرتبطين بنشاط.", model_name="parent_portal.Family", object_id=family.pk)
+            audit.issue("FAMILY_WITHOUT_CHILDREN", f"ملف ولي الأمر #{family.pk} لا يملك أبناء مرتبطين بنشاط.", model_name="parent_portal.Family", object_id=family.pk)
         if not family.user_id:
-            audit.issue("FAMILY_WITHOUT_ACCOUNT", f"الأسرة #{family.pk} لا تملك حساب دخول.", model_name="parent_portal.Family", object_id=family.pk)
+            audit.issue("FAMILY_WITHOUT_ACCOUNT", f"ملف ولي الأمر #{family.pk} لا يملك حساب دخول.", model_name="parent_portal.Family", object_id=family.pk)
 
     duplicate_teachers = Teacher.objects.exclude(national_id="").values("national_id").annotate(total=Count("id")).filter(total__gt=1)
     for row in duplicate_teachers:

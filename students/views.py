@@ -26,7 +26,7 @@ def student_list(request):
 
 @management_required
 def student_detail(request, pk):
-    # رابط متوافق مع الصفحات القديمة؛ ملف الطالب الموحد هو Student 360°.
+    # رابط متوافق مع الصفحات القديمة؛ بطاقة الطالب هي الملف الموحد.
     get_object_or_404(Student, pk=pk)
     return redirect("students:student_360", pk=pk)
 

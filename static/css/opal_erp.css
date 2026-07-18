@@ -12,6 +12,63 @@
     --opal-success: #22c55e;
 }
 
+/* ===== OPAL Guardian Receipt History V1 ===== */
+.opal-receipt-history-scroll {
+    display: flex;
+    gap: 14px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 4px 2px 12px;
+    scroll-snap-type: x proximity;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(34, 211, 238, .45) transparent;
+}
+
+.opal-receipt-history-scroll::-webkit-scrollbar { height: 7px; }
+.opal-receipt-history-scroll::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: rgba(34, 211, 238, .38);
+}
+
+.opal-receipt-summary-card {
+    flex: 0 0 min(360px, 86vw);
+    scroll-snap-align: start;
+    padding: 18px;
+    border: 1px solid rgba(34, 211, 238, .16);
+    border-radius: 18px;
+    background: linear-gradient(145deg, rgba(11, 31, 51, .98), rgba(8, 24, 41, .98));
+    box-shadow: 0 10px 24px rgba(0, 0, 0, .22);
+}
+
+.opal-receipt-amount {
+    margin: 15px 0;
+    color: #67e8f9;
+    font-size: 30px;
+    font-weight: 900;
+}
+
+.opal-receipt-amount small { font-size: 13px; }
+.opal-receipt-summary-list { margin: 0; }
+.opal-receipt-summary-list > div {
+    display: grid;
+    grid-template-columns: 105px minmax(0, 1fr);
+    gap: 8px;
+    padding: 7px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, .07);
+}
+.opal-receipt-summary-list dt { color: #94a3b8; font-size: 12px; }
+.opal-receipt-summary-list dd { margin: 0; color: #f8fafc; font-weight: 700; }
+.opal-receipt-allocations { margin-top: 13px; }
+.opal-receipt-allocations span {
+    display: inline-flex;
+    margin: 3px 0 3px 4px;
+    padding: 5px 9px;
+    border-radius: 999px;
+    color: #dffcff;
+    background: rgba(20, 184, 166, .15);
+    font-size: 12px;
+}
+
 * { box-sizing: border-box; }
 
 body {

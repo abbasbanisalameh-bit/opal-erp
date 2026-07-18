@@ -1,10 +1,13 @@
 
+import uuid
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 from core.models import School, Branch, AcademicYear
 from academics.models import Grade, Section
 from core.choices import STUDENT_GENDER_CHOICES
+from core.finance_constants import PAYMENT_METHOD_CHOICES
 
 
 class AdmissionApplication(models.Model):
@@ -65,7 +68,7 @@ class RegistrationSettings(models.Model):
     enable_sibling_discount = models.BooleanField("تفعيل خصم الإخوة", default=True)
     enable_quran_discount = models.BooleanField("تفعيل خصم القرآن", default=True)
     enable_admin_discount = models.BooleanField("تفعيل خصم الإدارة", default=True)
-    sibling_discount_once_per_family = models.BooleanField("خصم الإخوة مرة واحدة للعائلة", default=True)
+    sibling_discount_once_per_family = models.BooleanField("خصم الإخوة مرة واحدة لكل ولي أمر", default=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -148,6 +151,7 @@ class StudentRegistration(models.Model):
     branch = models.ForeignKey(Branch, on_delete=models.SET_NULL, null=True, blank=True)
     academic_year = models.ForeignKey(AcademicYear, on_delete=models.SET_NULL, null=True, blank=True)
     registration_number = models.CharField("رقم التسجيل", max_length=50, unique=True)
+    operation_token = models.UUIDField("معرف عملية التسجيل", unique=True, editable=False, default=uuid.uuid4)
 
     student = models.ForeignKey("students.Student", on_delete=models.SET_NULL, null=True, blank=True, related_name="registrations")
     grade = models.ForeignKey(Grade, on_delete=models.SET_NULL, null=True)
@@ -156,7 +160,7 @@ class StudentRegistration(models.Model):
     first_name = models.CharField("الاسم الأول", max_length=100)
     father_name = models.CharField("اسم الأب", max_length=100, blank=True)
     grandfather_name = models.CharField("اسم الجد", max_length=100, blank=True)
-    family_name = models.CharField("اسم العائلة", max_length=100, blank=True)
+    family_name = models.CharField("الاسم الأخير", max_length=100, blank=True)
     full_name = models.CharField("الاسم الكامل", max_length=250)
     national_id = models.CharField("الرقم الوطني للطالب (OpenEMIS)", max_length=50, blank=True)
     gender = models.CharField("الجنس", max_length=20, choices=STUDENT_GENDER_CHOICES, blank=True)
@@ -180,6 +184,7 @@ class StudentRegistration(models.Model):
     discount_value = models.DecimalField("قيمة الخصم", max_digits=10, decimal_places=2, default=0)
     net_total = models.DecimalField("صافي الرسوم", max_digits=10, decimal_places=2, default=0)
     first_payment = models.DecimalField("الدفعة الأولى", max_digits=10, decimal_places=2, default=0)
+    payment_method = models.CharField("طريقة الدفع", max_length=30, choices=PAYMENT_METHOD_CHOICES, default="unspecified")
     remaining_amount = models.DecimalField("المتبقي", max_digits=10, decimal_places=2, default=0)
 
     invoice = models.ForeignKey("accounting.StudentInvoice", on_delete=models.SET_NULL, null=True, blank=True)
@@ -214,6 +219,7 @@ class FeePayment(models.Model):
 
     school = models.ForeignKey(School, on_delete=models.CASCADE, related_name="fee_payments")
     receipt_number = models.CharField("رقم الإيصال", max_length=50, unique=True)
+    operation_token = models.UUIDField("معرف العملية", unique=True, editable=False, default=uuid.uuid4)
     scope = models.CharField("نوع الدفعة", max_length=30, choices=PAYMENT_SCOPE_CHOICES, default="single")
     main_student = models.ForeignKey("students.Student", on_delete=models.SET_NULL, null=True, blank=True, related_name="main_fee_payments")
     guardian_name = models.CharField("اسم ولي الأمر", max_length=200, blank=True)
@@ -221,9 +227,14 @@ class FeePayment(models.Model):
     total_amount = models.DecimalField("مبلغ الدفعة", max_digits=10, decimal_places=2, default=0)
     total_due_before = models.DecimalField("إجمالي المتبقي قبل الدفعة", max_digits=10, decimal_places=2, default=0)
     total_due_after = models.DecimalField("إجمالي المتبقي بعد الدفعة", max_digits=10, decimal_places=2, default=0)
+    payment_method = models.CharField("طريقة الدفع", max_length=30, choices=PAYMENT_METHOD_CHOICES, default="unspecified")
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
     notes = models.TextField("ملاحظات", blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    is_deleted = models.BooleanField("محذوف بأمان", default=False, db_index=True)
+    deleted_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="deleted_fee_payments")
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    deletion_reason = models.TextField("سبب الحذف", blank=True)
 
     class Meta:
         ordering = ["-created_at"]

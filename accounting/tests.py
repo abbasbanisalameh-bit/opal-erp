@@ -3,12 +3,17 @@ from decimal import Decimal
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
-from django.test import TestCase
+from django.test import SimpleTestCase, TestCase
 from django.utils import timezone
 
 from students.models import Student
 
-from .models import DiscountRequest, FeeCategory, Installment, Receipt, StudentInvoice, StudentPayment
+from core.models import AcademicYear, School
+from admissions.models import FeePayment
+from admissions.financial_services import student_remaining
+
+from .financial_services import close_financial_year, financial_period, monthly_financial_report
+from .models import DiscountRequest, ExpenseEntry, FeeCategory, FinancialYearClosure, Installment, Receipt, StudentInvoice, StudentPayment
 from .services import decide_discount
 
 
@@ -77,3 +82,63 @@ class SchoolFinanceTest(TestCase):
         )
         self.assertEqual(self.student.fees_paid, Decimal("250.00"))
         self.assertEqual(self.student.fees_remaining, Decimal("750.00"))
+
+
+class FinancialPeriodTests(SimpleTestCase):
+    def test_cycle_is_29_through_28(self):
+        self.assertEqual(financial_period(date(2026, 7, 18)), (date(2026, 6, 29), date(2026, 7, 28)))
+        self.assertEqual(financial_period(date(2026, 7, 29)), (date(2026, 7, 29), date(2026, 8, 28)))
+
+
+class FinancialClosingTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user("closer", is_staff=True)
+        self.school = School.objects.create(name="مدرسة الإغلاق", is_active=True)
+        self.source = AcademicYear.objects.create(
+            school=self.school, name="2025/2026", start_date=date(2025, 9, 1),
+            end_date=date(2026, 6, 30), is_closed=True,
+        )
+        self.target = AcademicYear.objects.create(
+            school=self.school, name="2026/2027", start_date=date(2026, 9, 1),
+            end_date=date(2027, 6, 30), is_current=True,
+        )
+        self.student = Student.objects.create(student_number="CLOSE-1", full_name="طالب ترحيل", grade="الأول")
+        self.category = FeeCategory.objects.create(name="رسوم إغلاق", amount=Decimal("1000"))
+        self.invoice = StudentInvoice.objects.create(
+            student=self.student, academic_year=self.source, fee_category=self.category,
+            amount=Decimal("1000"), due_date=self.source.end_date,
+        )
+        StudentPayment.objects.create(invoice=self.invoice, amount=Decimal("250"), created_by=self.user)
+
+    def test_close_carries_balance_once(self):
+        closure = close_financial_year(
+            school=self.school, source_year=self.source, target_year=self.target,
+            user=self.user, notes="إغلاق اختباري",
+        )
+        self.assertEqual(closure.total_carried, Decimal("750"))
+        self.invoice.refresh_from_db()
+        self.assertEqual(self.invoice.status, "cancelled")
+        carried = StudentInvoice.objects.get(academic_year=self.target, student=self.student)
+        self.assertEqual(carried.amount, Decimal("750"))
+        self.assertEqual(student_remaining(self.student), Decimal("750.00"))
+        with self.assertRaises(ValidationError):
+            close_financial_year(
+                school=self.school, source_year=self.source, target_year=self.target,
+                user=self.user,
+            )
+
+    def test_monthly_report_combines_income_and_expense(self):
+        today = timezone.localdate()
+        FeePayment.objects.create(
+            school=self.school, receipt_number="PAY-MONTH-1", main_student=self.student,
+            guardian_name="ولي الطالب", total_amount="200", total_due_before="1000",
+            total_due_after="800", payment_method="cash", created_by=self.user,
+        )
+        ExpenseEntry.objects.create(
+            school=self.school, expense_number="EXP-MONTH-1", expense_date=today,
+            title="قرطاسية", amount="30", payment_method="cash", created_by=self.user,
+        )
+        report = monthly_financial_report(self.school)
+        self.assertEqual(report["income"], Decimal("200"))
+        self.assertEqual(report["expenses"], Decimal("30"))
+        self.assertEqual(report["net"], Decimal("170"))

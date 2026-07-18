@@ -20,6 +20,6 @@ class Command(BaseCommand):
                 raise CommandError("اسم المستخدم الإداري غير موجود.")
         result = seed_demo_school(student_count=options["students"], teacher_count=options["teachers"], user=user)
         self.stdout.write(self.style.SUCCESS(
-            f"تم تجهيز البيانات التجريبية: {result['students']} طالب، {result['families']} أسرة، "
+            f"تم تجهيز البيانات التجريبية: {result['students']} طالب، {result['families']} ملف ولي أمر، "
             f"{result['teachers']} معلم، {result['sections']} شعب."
         ))

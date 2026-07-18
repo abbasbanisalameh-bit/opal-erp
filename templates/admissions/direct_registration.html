@@ -7,7 +7,7 @@
 
 {% block content %}
 <form method="post" enctype="multipart/form-data" id="registrationForm">
-    {% csrf_token %}
+    {% csrf_token %}{{ form.registration_token }}
 
     {% if form.errors %}
     <div class="alert alert-danger mb-4" role="alert">
@@ -73,9 +73,11 @@
 
     <div class="opal-card mb-4">
         <div class="row g-3 align-items-end">
-            <div class="col-md-4"><label class="form-label fw-bold">{{ form.first_payment.label }} ({{ settings.first_payment_percent|floatformat:0 }}%)</label>{{ form.first_payment }}{% if form.first_payment.help_text %}<div class="form-text">{{ form.first_payment.help_text }}</div>{% endif %}</div>
-            <div class="col-md-4"><label class="form-label fw-bold">المتبقي</label><input class="form-control" id="remainingAmount" readonly></div>
-            <div class="col-md-4"><button type="submit" class="btn btn-primary w-100 btn-lg"><i class="bi bi-save2"></i> حفظ وطباعة الإيصال</button></div>
+            <div class="col-md-3"><label class="form-label fw-bold">{{ form.first_payment.label }} ({{ settings.first_payment_percent|floatformat:0 }}%)</label>{{ form.first_payment }}{% if form.first_payment.help_text %}<div class="form-text">{{ form.first_payment.help_text }}</div>{% endif %}</div>
+            <div class="col-md-3"><label class="form-label fw-bold">{{ form.payment_method.label }}</label>{{ form.payment_method }}</div>
+            <div class="col-md-3"><label class="form-label fw-bold">المستلم</label><input class="form-control" value="{{ request.user.profile.full_name|default:request.user.username }}" readonly></div>
+            <div class="col-md-3"><label class="form-label fw-bold">المتبقي</label><input class="form-control" id="remainingAmount" readonly></div>
+            <div class="col-12"><button type="submit" class="btn btn-primary w-100 btn-lg"><i class="bi bi-save2"></i> حفظ وطباعة الإيصال</button></div>
         </div>
     </div>
 </form>

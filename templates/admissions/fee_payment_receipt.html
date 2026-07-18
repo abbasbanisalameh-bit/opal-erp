@@ -28,6 +28,8 @@
             <div><strong>الهاتف:</strong> {{ fee_payment.phone|default:"-" }}</div>
             <div><strong>نوع الدفعة:</strong> {{ fee_payment.get_scope_display }}</div>
             <div><strong>الطالب المرجعي:</strong> {{ fee_payment.main_student.full_name|default:"-" }}</div>
+            <div><strong>طريقة الدفع:</strong> {{ fee_payment.get_payment_method_display }}</div>
+            <div><strong>المستلم:</strong> {{ receiver_name }}</div>
         </div>
 
         <div class="paid-box">{{ fee_payment.total_amount }} د.أ</div>

@@ -5,7 +5,7 @@
 {% block content %}
 <div class="opal-card mb-4">
   <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
-    <div><h3 class="fw-bold mb-2">تشغيل فحص جديد</h3><p class="text-secondary mb-0">لا يدمج المركز طالبين أو أسرتين تلقائيًا. الحالات الغامضة تبقى للمراجعة اليدوية.</p></div>
+    <div><h3 class="fw-bold mb-2">تشغيل فحص جديد</h3><p class="text-secondary mb-0">لا يدمج المركز طالبين أو ملفين لأولياء الأمور تلقائيًا. الحالات الغامضة تبقى للمراجعة اليدوية.</p></div>
     <div class="d-flex gap-2 flex-wrap"><form method="post">{% csrf_token %}<input type="hidden" name="action" value="scan"><button class="btn btn-primary btn-lg"><i class="bi bi-search"></i> فحص فقط</button></form><form method="post" onsubmit="return confirm('سيتم إصلاح الحالات المؤكدة فقط وتسجيل كل نتيجة. متابعة؟')">{% csrf_token %}<input type="hidden" name="action" value="fix_safe"><button class="btn btn-success btn-lg"><i class="bi bi-tools"></i> فحص وإصلاح آمن</button></form></div>
   </div>
 </div>

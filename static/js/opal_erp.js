@@ -187,6 +187,119 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 })();
 
+/* ===== OPAL PythonAnywhere Reload Center V1 ===== */
+(function () {
+    "use strict";
+
+    function getCookie(name) {
+        const cookies = document.cookie ? document.cookie.split(";") : [];
+        for (const item of cookies) {
+            const cookie = item.trim();
+            if (cookie.startsWith(name + "=")) {
+                return decodeURIComponent(cookie.slice(name.length + 1));
+            }
+        }
+        return "";
+    }
+
+    function replaceLegacyReloadInstructions() {
+        const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        const replacements = [
+            [
+                "بعد أي استعادة ناجحة اضغط Reload من صفحة Web في PythonAnywhere.",
+                "بعد أي استعادة ناجحة استخدم زر إعادة تحميل الموقع داخل هذا المركز."
+            ],
+            [
+                "اضغط Reload من صفحة Web.",
+                "استخدم زر إعادة تحميل الموقع داخل مركز التحديث."
+            ]
+        ];
+        let node;
+        while ((node = walker.nextNode())) {
+            let value = node.nodeValue;
+            replacements.forEach(function (item) {
+                value = value.replace(item[0], item[1]);
+            });
+            node.nodeValue = value;
+        }
+    }
+
+    function installReloadButton() {
+        if (!window.location.pathname.startsWith("/settings/updates/") || document.getElementById("opalWebappReloadButton")) {
+            return;
+        }
+        replaceLegacyReloadInstructions();
+        const currentCard = document.querySelector(".opal-card");
+        if (!currentCard) {
+            return;
+        }
+        const host = currentCard.querySelector(".col-lg-4") || currentCard;
+        const wrapper = document.createElement("div");
+        wrapper.className = "mt-3 d-flex flex-column align-items-lg-end gap-2";
+
+        const button = document.createElement("button");
+        button.type = "button";
+        button.id = "opalWebappReloadButton";
+        button.className = "btn btn-success";
+        button.innerHTML = '<i class="bi bi-arrow-repeat"></i> إعادة تحميل الموقع';
+
+        const status = document.createElement("div");
+        status.className = "small text-secondary";
+        status.setAttribute("role", "status");
+        status.setAttribute("aria-live", "polite");
+        status.textContent = "يعيد تشغيل موقع PythonAnywhere دون فتح صفحة Web.";
+
+        button.addEventListener("click", async function () {
+            if (!window.confirm("إعادة تحميل موقع OPAL الآن؟ قد ينقطع الاتصال لعدة ثوانٍ.")) {
+                return;
+            }
+            button.disabled = true;
+            button.innerHTML = '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span> جارٍ إرسال الطلب';
+            status.className = "small text-info";
+            status.textContent = "يتم إرسال أمر إعادة التحميل بأمان...";
+            try {
+                const response = await fetch("/settings/updates/reload/", {
+                    method: "POST",
+                    credentials: "same-origin",
+                    headers: {
+                        "X-CSRFToken": getCookie("csrftoken"),
+                        "X-Requested-With": "XMLHttpRequest"
+                    }
+                });
+                const payload = await response.json();
+                if (!response.ok || !payload.ok) {
+                    throw new Error(payload.message || "تعذر إعادة تحميل الموقع.");
+                }
+                status.className = "small text-success";
+                status.textContent = payload.message + " سيتم تحديث الصفحة تلقائيًا خلال 10 ثوانٍ.";
+                let seconds = 10;
+                const countdown = window.setInterval(function () {
+                    seconds -= 1;
+                    button.innerHTML = '<i class="bi bi-arrow-clockwise"></i> تحديث تلقائي خلال ' + seconds;
+                    if (seconds <= 0) {
+                        window.clearInterval(countdown);
+                        window.location.reload();
+                    }
+                }, 1000);
+            } catch (error) {
+                button.disabled = false;
+                button.innerHTML = '<i class="bi bi-arrow-repeat"></i> إعادة تحميل الموقع';
+                status.className = "small text-danger";
+                status.textContent = error.message || "تعذر إعادة تحميل الموقع.";
+            }
+        });
+
+        wrapper.append(button, status);
+        host.appendChild(wrapper);
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", installReloadButton, {once: true});
+    } else {
+        installReloadButton();
+    }
+})();
+
 // OPAL_TABLE_SCROLL_INIT_V4 — compatibility marker
 // OPAL_TABLE_SCROLL_LIGHT_V1
 (function () {

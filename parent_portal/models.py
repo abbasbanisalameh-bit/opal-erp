@@ -42,7 +42,7 @@ class Family(models.Model):
     job_title = models.CharField("المهنة", max_length=150, blank=True)
     address = models.TextField("العنوان", blank=True)
     medical_notes = models.TextField("ملاحظات", blank=True)
-    family_code = models.CharField("رمز العائلة", max_length=50, blank=True, db_index=True)
+    family_code = models.CharField("رقم ملف ولي الأمر", max_length=50, blank=True, db_index=True)
     openemis_data = models.JSONField("بيانات OpenEMIS الكاملة", default=dict, blank=True)
     is_active = models.BooleanField("نشطة", default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -50,8 +50,8 @@ class Family(models.Model):
 
     class Meta:
         ordering = ["guardian_name", "id"]
-        verbose_name = "أسرة"
-        verbose_name_plural = "الأسر"
+        verbose_name = "ملف ولي أمر"
+        verbose_name_plural = "ملفات أولياء الأمور"
         constraints = [
             models.UniqueConstraint(
                 fields=["school", "identity_number"],
@@ -92,12 +92,12 @@ class Family(models.Model):
         if self.school_id:
             scope = scope.filter(school_id=self.school_id)
         if identity_number and scope.filter(identity_number=identity_number).exists():
-            errors["identity_number"] = "رقم هوية ولي الأمر مرتبط بأسرة أخرى في المدرسة نفسها."
+            errors["identity_number"] = "رقم هوية ولي الأمر مرتبط بملف ولي أمر آخر في المدرسة نفسها."
         # Phone is a secondary matching key, not a hard DB uniqueness rule because
         # some families can share a contact number. We still reject an exact active
         # duplicate through the official form/service.
         if phone and scope.filter(phone=phone, is_active=True).exists():
-            errors["phone"] = "رقم الهاتف مرتبط بأسرة أخرى فعالة. استخدم الأسرة الموجودة أو أداة الدمج."
+            errors["phone"] = "رقم الهاتف مرتبط بملف ولي أمر آخر فعال. استخدم الملف الموجود أو أداة الدمج."
         if errors:
             raise ValidationError(errors)
 
@@ -108,7 +108,7 @@ class Family(models.Model):
         return super().save(*args, **kwargs)
 
     def __str__(self):
-        return self.guardian_name or self.phone or f"Family #{self.pk}"
+        return self.guardian_name or self.phone or f"Guardian #{self.pk}"
 
 
 class FamilyStudent(models.Model):
@@ -119,8 +119,8 @@ class FamilyStudent(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        verbose_name = "طالب ضمن أسرة"
-        verbose_name_plural = "طلاب الأسر"
+        verbose_name = "ربط طالب بولي أمر"
+        verbose_name_plural = "روابط الطلاب بأولياء الأمور"
         constraints = [
             models.UniqueConstraint(fields=["family", "student"], name="uniq_family_student_link"),
             models.UniqueConstraint(

@@ -4,6 +4,7 @@ from enterprise_ops.permissions import management_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 import json
+import uuid
 from .models import AdmissionApplication, StudentRegistration, GradeFee, TransportRoute, FeePayment
 from .forms import GradeFeeForm, TransportRouteForm, RegistrationSettingsForm, DirectStudentRegistrationForm
 from .services import (
@@ -14,12 +15,17 @@ from .services import (
 from .financial_services import (
     search_students, find_sibling_students, student_total_fees, student_total_paid,
     student_remaining, student_payment_status, create_siblings_fee_payment,
-    build_family_payment_preview,
+    build_family_payment_preview, safe_delete_fee_payment, safe_delete_registration_payment,
 )
+from core.finance_constants import ACTIVE_PAYMENT_METHOD_CHOICES
+from enterprise_ops.services import audit
+from django.core.exceptions import ValidationError
+from django.views.decorators.http import require_POST
 from students.models import Student
 from parent_portal.models import Family
 from parent_portal.services import initial_parent_password, normalize_phone
 from core.identifiers import normalize_identifier
+from accounting.models import Receipt
 
 
 def can_manage_registration(user):
@@ -72,9 +78,12 @@ def direct_registration(request):
 @management_required
 def registration_receipt(request, pk):
     registration = get_object_or_404(
-        StudentRegistration.objects.select_related("student", "receipt", "grade", "section", "school", "created_by"),
+        StudentRegistration.objects.select_related("student", "payment", "receipt", "grade", "section", "school", "created_by"),
         pk=pk
     )
+    if registration.payment_id and registration.payment.status != "posted":
+        messages.error(request, "دفعة هذا التسجيل محذوفة بأمان ولا يمكن طباعة إيصالها.")
+        return redirect("admissions:fee_payment_archive")
     receiver_name, receiver_title = receiver_identity(registration.created_by)
     digits = normalize_phone(registration.phone)
     parent_family = None
@@ -231,8 +240,17 @@ def fee_payment_create(request):
     if request.method == "POST" and selected_student:
         amount = request.POST.get("amount") or "0"
         notes = request.POST.get("notes") or ""
+        payment_method = request.POST.get("payment_method") or ""
+        operation_token = request.POST.get("operation_token") or str(uuid.uuid4())
         try:
-            fee_payment = create_siblings_fee_payment(main_student=selected_student, amount=amount, user=request.user, notes=notes)
+            fee_payment = create_siblings_fee_payment(
+                main_student=selected_student,
+                amount=amount,
+                user=request.user,
+                payment_method=payment_method,
+                operation_token=operation_token,
+                notes=notes,
+            )
             payment_label = "دفعة عن جميع الإخوة" if fee_payment.scope == "all_siblings" else "دفعة الطالب"
             messages.success(request, f"تم تسجيل {payment_label} وإصدار الإيصال بنجاح.")
             return redirect("admissions:fee_payment_receipt", pk=fee_payment.pk)
@@ -248,6 +266,9 @@ def fee_payment_create(request):
         "family_total_remaining": sum((row["remaining"] for row in siblings_data), 0),
         "has_payable_siblings": any(row["remaining"] > 0 for row in siblings_data),
         "has_unpaid_other_siblings": has_unpaid_other_siblings,
+        "payment_methods": ACTIVE_PAYMENT_METHOD_CHOICES,
+        "selected_payment_method": request.POST.get("payment_method", "cash"),
+        "operation_token": request.POST.get("operation_token") or str(uuid.uuid4()),
     })
 
 
@@ -311,6 +332,9 @@ def fee_payment_receipt(request, pk):
         FeePayment.objects.select_related("school", "main_student", "created_by").prefetch_related("allocations__student"),
         pk=pk,
     )
+    if fee_payment.is_deleted:
+        messages.error(request, "هذا الإيصال محذوف بأمان ولا يمكن طباعته.")
+        return redirect("admissions:fee_payment_archive")
     receiver_name, receiver_title = receiver_identity(fee_payment.created_by)
     return render(request, "admissions/fee_payment_receipt.html", {
         "fee_payment": fee_payment,
@@ -322,16 +346,63 @@ def fee_payment_receipt(request, pk):
 
 @login_required
 def fee_payment_archive(request):
-    payments = FeePayment.objects.select_related("main_student", "created_by").prefetch_related("allocations").all()
-    registrations = StudentRegistration.objects.select_related("student", "receipt", "created_by", "grade").all()
-    return render(request, "admissions/fee_payment_archive.html", {"payments": payments, "registrations": registrations})
+    show_deleted = request.GET.get("show_deleted") == "1"
+    payments = FeePayment.objects.select_related("main_student", "created_by", "deleted_by").prefetch_related("allocations")
+    registrations = StudentRegistration.objects.select_related("student", "receipt__payment", "created_by", "grade")
+    registration_receipt_ids = StudentRegistration.objects.exclude(receipt_id=None).values_list("receipt_id", flat=True)
+    legacy_receipts = Receipt.objects.exclude(pk__in=registration_receipt_ids).select_related(
+        "payment__invoice__student", "payment__created_by", "payment__deleted_by"
+    )
+    if not show_deleted:
+        payments = payments.filter(is_deleted=False)
+        registrations = registrations.filter(payment__status="posted")
+        legacy_receipts = legacy_receipts.filter(payment__status="posted")
+    return render(request, "admissions/fee_payment_archive.html", {"payments": payments, "registrations": registrations, "legacy_receipts": legacy_receipts, "show_deleted": show_deleted})
+
+
+@login_required
+@management_required
+@require_POST
+def fee_payment_safe_delete(request, pk):
+    payment = get_object_or_404(FeePayment, pk=pk)
+    reason = request.POST.get("reason", "").strip()
+    try:
+        changed = safe_delete_fee_payment(fee_payment=payment, user=request.user, reason=reason)
+    except ValidationError as exc:
+        messages.error(request, exc.messages[0])
+    else:
+        if changed:
+            audit(request, "delete", "admissions.FeePayment", payment.pk, f"حذف آمن للإيصال {payment.receipt_number}: {reason}")
+            messages.success(request, "تم حذف الإيصال بأمان وتحديث الأرصدة مع الاحتفاظ بسجل العملية.")
+        else:
+            messages.info(request, "الإيصال محذوف بأمان مسبقًا.")
+    return redirect("admissions:fee_payment_archive")
+
+
+@login_required
+@management_required
+@require_POST
+def registration_payment_safe_delete(request, pk):
+    registration = get_object_or_404(StudentRegistration, pk=pk)
+    reason = request.POST.get("reason", "").strip()
+    try:
+        changed = safe_delete_registration_payment(registration=registration, user=request.user, reason=reason)
+    except ValidationError as exc:
+        messages.error(request, exc.messages[0])
+    else:
+        if changed:
+            audit(request, "delete", "admissions.StudentRegistration", registration.pk, f"حذف آمن لدفعة التسجيل: {reason}")
+            messages.success(request, "تم حذف دفعة التسجيل بأمان وتحديث رصيد الطالب.")
+        else:
+            messages.info(request, "دفعة التسجيل محذوفة مسبقًا.")
+    return redirect("admissions:fee_payment_archive")
 
 
 @login_required
 def student_financial_record(request, student_id):
     student = get_object_or_404(Student, pk=student_id)
     invoices = student.invoices.select_related("fee_category").prefetch_related("payments").all()
-    allocations = student.fee_payment_allocations.select_related("fee_payment", "fee_payment__created_by").all()
+    allocations = student.fee_payment_allocations.filter(fee_payment__is_deleted=False).select_related("fee_payment", "fee_payment__created_by")
     registrations = student.registrations.select_related("receipt", "created_by").all()
     return render(request, "admissions/student_financial_record.html", {
         "student": student,

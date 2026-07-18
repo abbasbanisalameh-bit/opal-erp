@@ -49,6 +49,7 @@ def student_finance_snapshot(student):
     invoice_total = sum((invoice.net_amount for invoice in student.invoices.exclude(status="cancelled")), Decimal("0.00"))
     accounting_paid = (
         StudentPayment.objects.filter(invoice__student=student, status="posted")
+        .exclude(invoice__status="cancelled")
         .aggregate(total=models.Sum("amount"))["total"]
         or Decimal("0.00")
     )
@@ -227,7 +228,7 @@ def ensure_balance_invoice(student, minimum_amount):
     )
 
 
-def apply_student_payment(student, amount, receipt_number):
+def apply_student_payment(student, amount, receipt_number, *, user=None, payment_method="unspecified"):
     """Apply one allocation across open invoices without overpaying any invoice."""
     left = money(amount)
     first_invoice = None
@@ -243,6 +244,9 @@ def apply_student_payment(student, amount, receipt_number):
         payment = StudentPayment.objects.create(
             invoice=invoice,
             amount=give,
+            payment_method=payment_method,
+            reference=receipt_number,
+            created_by=user if getattr(user, "is_authenticated", False) else None,
             notes=f"دفعة عن جميع الإخوة - إيصال {receipt_number}",
         )
         first_invoice = first_invoice or invoice
@@ -257,6 +261,9 @@ def apply_student_payment(student, amount, receipt_number):
         payment = StudentPayment.objects.create(
             invoice=invoice,
             amount=left,
+            payment_method=payment_method,
+            reference=receipt_number,
+            created_by=user if getattr(user, "is_authenticated", False) else None,
             notes=f"دفعة عن جميع الإخوة - إيصال {receipt_number}",
         )
         first_invoice = first_invoice or invoice
@@ -267,10 +274,15 @@ def apply_student_payment(student, amount, receipt_number):
 
 
 @transaction.atomic
-def create_siblings_fee_payment(*, main_student, amount, user, notes=""):
+def create_siblings_fee_payment(*, main_student, amount, user, payment_method, operation_token, notes=""):
     amount = money(amount)
     if amount <= 0:
         raise ValidationError("يجب أن يكون مبلغ الدفعة أكبر من صفر.")
+    if payment_method not in {"cash", "card", "bank_transfer", "online", "cheque"}:
+        raise ValidationError("اختر طريقة دفع صحيحة.")
+    existing = FeePayment.objects.filter(operation_token=operation_token).first()
+    if existing:
+        return existing
 
     school = active_school()
     siblings = list(find_sibling_students(main_student).select_for_update())
@@ -278,9 +290,9 @@ def create_siblings_fee_payment(*, main_student, amount, user, notes=""):
     due_before = money(sum((row["remaining"] for row in allocations_data), Decimal("0.00")))
 
     if due_before <= 0:
-        raise ValidationError("جميع الطلاب المرتبطين بهذه الأسرة مسددون بالكامل.")
+        raise ValidationError("جميع أبناء ولي الأمر مسددون بالكامل.")
     if unused_amount > 0:
-        raise ValidationError(f"المبلغ أكبر من إجمالي المتبقي للأسرة بمقدار {unused_amount} د.أ.")
+        raise ValidationError(f"المبلغ أكبر من إجمالي المتبقي على أبناء ولي الأمر بمقدار {unused_amount} د.أ.")
 
     total_allocated = money(sum((row["allocated"] for row in allocations_data), Decimal("0.00")))
     due_after = money(due_before - total_allocated)
@@ -300,6 +312,8 @@ def create_siblings_fee_payment(*, main_student, amount, user, notes=""):
         total_amount=total_allocated,
         total_due_before=due_before,
         total_due_after=due_after,
+        payment_method=payment_method,
+        operation_token=operation_token,
         created_by=user if getattr(user, "is_authenticated", False) else None,
         notes=(notes or "").strip(),
     )
@@ -309,7 +323,7 @@ def create_siblings_fee_payment(*, main_student, amount, user, notes=""):
         allocated = money(item["allocated"])
         invoice = payment = None
         if allocated > 0:
-            invoice, payment = apply_student_payment(student, allocated, receipt_number)
+            invoice, payment = apply_student_payment(student, allocated, receipt_number, user=user, payment_method=payment_method)
 
         FeePaymentAllocation.objects.create(
             fee_payment=fee_payment,
@@ -323,4 +337,47 @@ def create_siblings_fee_payment(*, main_student, amount, user, notes=""):
             remaining_after=money(item["remaining"] - allocated),
         )
 
+    from parent_portal.notification_services import notify_guardians_for_fee_payment
+    notify_guardians_for_fee_payment(fee_payment)
     return fee_payment
+
+
+@transaction.atomic
+def safe_delete_fee_payment(*, fee_payment, user, reason):
+    fee_payment = FeePayment.objects.select_for_update().get(pk=fee_payment.pk)
+    if fee_payment.is_deleted:
+        return False
+    if not (reason or "").strip():
+        raise ValidationError("اكتب سبب الحذف الآمن.")
+    year_ids = fee_payment.allocations.values_list("invoice__academic_year_id", flat=True)
+    from accounting.models import FinancialYearClosure
+    if FinancialYearClosure.objects.filter(source_year_id__in=[pk for pk in year_ids if pk]).exists():
+        raise ValidationError("لا يمكن حذف إيصال داخل عام مغلق ماليًا.")
+    linked_ids = fee_payment.allocations.exclude(accounting_payment_id=None).values_list("accounting_payment_id", flat=True)
+    payments = StudentPayment.objects.select_for_update().filter(
+        models.Q(pk__in=linked_ids)
+        | models.Q(reference=fee_payment.receipt_number)
+        | models.Q(notes__icontains=fee_payment.receipt_number)
+    ).distinct()
+    for payment in payments:
+        if payment.status == "posted":
+            payment.safe_delete(user, reason)
+    fee_payment.is_deleted = True
+    fee_payment.deleted_by = user
+    fee_payment.deleted_at = timezone.now()
+    fee_payment.deletion_reason = reason.strip()
+    fee_payment.save(update_fields=["is_deleted", "deleted_by", "deleted_at", "deletion_reason"])
+    return True
+
+
+@transaction.atomic
+def safe_delete_registration_payment(*, registration, user, reason):
+    from .models import StudentRegistration
+    registration = StudentRegistration.objects.select_for_update().select_related("payment__invoice").get(pk=registration.pk)
+    if not registration.payment_id:
+        raise ValidationError("لا توجد دفعة مرتبطة بهذا التسجيل.")
+    if registration.payment.invoice.academic_year_id:
+        from accounting.models import FinancialYearClosure
+        if FinancialYearClosure.objects.filter(source_year_id=registration.payment.invoice.academic_year_id).exists():
+            raise ValidationError("لا يمكن حذف إيصال داخل عام مغلق ماليًا.")
+    return registration.payment.safe_delete(user, reason)

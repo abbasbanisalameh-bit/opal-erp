@@ -1,6 +1,6 @@
 {% extends "base/base.html" %}
-{% block title %}الرسوم والإيصالات{% endblock %}
-{% block page_title %}الرسوم والإيصالات{% endblock %}
+{% block title %}رسوم حساب ولي الأمر {{ family.guardian_name|default:"" }}{% endblock %}
+{% block page_title %}رسوم حساب ولي الأمر {{ family.guardian_name|default:"" }}{% endblock %}
 {% block page_subtitle %}كشف مالي مجمع لجميع الأبناء المرتبطين بحساب ولي الأمر{% endblock %}
 {% block content %}
 <div class="stats-grid mb-4">
@@ -14,8 +14,9 @@
   </div>
 {% endfor %}
 </div>
-<div class="opal-card">
-<h3 class="fw-bold mb-3">💳 الإيصالات</h3>
-<div class="table-responsive"><table class="opal-table"><thead><tr><th>رقم الإيصال</th><th>النوع</th><th>المبلغ</th><th>المتبقي بعد الدفعة</th><th>التاريخ</th></tr></thead><tbody>{% for p in payments %}<tr><td>{{ p.receipt_number }}</td><td>{{ p.get_scope_display }}</td><td>{{ p.total_amount }}</td><td>{{ p.total_due_after }}</td><td>{{ p.created_at|date:"Y-m-d H:i" }}</td></tr>{% empty %}<tr><td colspan="5">لا توجد إيصالات.</td></tr>{% endfor %}</tbody></table></div>
-</div>
+<section class="opal-card mb-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-3"><div><h3 class="fw-bold mb-1">كشف حساب ولي الأمر حسب العام</h3><p class="text-secondary mb-0">يشمل الرسوم والدفعات والأرصدة المرحلة لجميع الأبناء.</p></div><form method="get"><label class="form-label">العام الدراسي</label><select name="year" class="form-select" onchange="this.form.submit()">{% for year in statement_years %}<option value="{{ year.pk }}" {% if selected_year.pk == year.pk %}selected{% endif %}>{{ year.name }}</option>{% endfor %}</select></form></div>
+  {% if annual_statement %}<div class="stats-grid mb-3"><div class="stat-card"><span>رسوم العام</span><h2>{{ annual_statement.issued|floatformat:2 }}</h2></div><div class="stat-card"><span>مدفوع العام</span><h2>{{ annual_statement.paid|floatformat:2 }}</h2></div><div class="stat-card"><span>متبقي العام</span><h2>{{ annual_statement.remaining|floatformat:2 }}</h2></div></div>{% for row in annual_statement.rows %}<details class="border rounded p-3 mb-2"><summary class="fw-bold">{{ row.student.full_name }} — الرسوم {{ row.issued|floatformat:2 }}، المدفوع {{ row.paid|floatformat:2 }}، المتبقي {{ row.remaining|floatformat:2 }}</summary><div class="table-responsive mt-3"><table class="opal-table"><thead><tr><th>التاريخ</th><th>النوع</th><th>البيان</th><th>مدين</th><th>دائن</th><th>الحالة</th></tr></thead><tbody>{% for tx in row.transactions %}<tr><td>{{ tx.date }}</td><td>{{ tx.type }}</td><td>{{ tx.description }}</td><td>{{ tx.debit|floatformat:2 }}</td><td>{{ tx.credit|floatformat:2 }}</td><td>{{ tx.status }}</td></tr>{% empty %}<tr><td colspan="6">لا توجد حركات.</td></tr>{% endfor %}</tbody></table></div></details>{% endfor %}{% else %}<p class="text-secondary">لا توجد سنة مالية مرتبطة بالأبناء.</p>{% endif %}
+</section>
+{% include "parent_portal/_guardian_receipt_history.html" %}
 {% endblock %}

@@ -1,2 +1,16 @@
-{% extends "base/base.html" %}{% block title %}الرسوم المدرسية{% endblock %}{% block page_title %}الرسوم المدرسية{% endblock %}{% block page_subtitle %}ملخص موحد للرسوم المحسوبة والتسديدات والأرصدة{% endblock %}
-{% block content %}<div class="stats-grid mb-4"><div class="stat-card"><span>صافي الرسوم</span><h2>{{ total_invoices }}</h2></div><div class="stat-card"><span>المقبوض</span><h2>{{ total_payments }}</h2></div><div class="stat-card"><span>المتبقي</span><h2>{{ remaining }}</h2></div><div class="stat-card"><span>الرسوم المتأخرة</span><h2>{{ overdue_count }}</h2></div></div><div class="opal-card"><div class="d-flex justify-content-between align-items-center flex-wrap gap-3"><p class="mb-0 text-secondary">أصبحت عمليات التحصيل من مسار واحد معتمد للطالب أو لجميع الإخوة.</p><a class="btn btn-primary" href="{% url 'admissions:fee_payment_create' %}">تسديد رسوم</a></div></div>{% endblock %}
+{% extends "base/base.html" %}
+{% block title %}لوحة متابعة التحصيل{% endblock %}
+{% block page_title %}لوحة متابعة التحصيل للإدارة{% endblock %}
+{% block page_subtitle %}الدورة الحالية من {{ period_start }} إلى {{ period_end }}{% endblock %}
+{% block content %}
+<div class="stats-grid mb-4">
+  <div class="stat-card"><span>المتوقع شهريًا</span><h2>{{ expected|floatformat:2 }}</h2></div>
+  <div class="stat-card"><span>الوارد في الدورة</span><h2 class="text-success">{{ income|floatformat:2 }}</h2><small>نسبة التحصيل {{ collection_rate|floatformat:1 }}%</small></div>
+  <div class="stat-card"><span>إجمالي الذمم</span><h2 class="text-danger">{{ receivables|floatformat:2 }}</h2><small>{{ debtors_count }} طالبًا برصيد</small></div>
+  <div class="stat-card"><span>المتأخر</span><h2>{{ overdue|floatformat:2 }}</h2></div>
+</div>
+<div class="row g-4">
+  <div class="col-lg-8"><div class="opal-card"><div class="d-flex justify-content-between mb-3"><h3 class="fw-bold">أعلى الأرصدة</h3><a class="btn btn-primary" href="{% url 'admissions:fee_payment_create' %}">تسديد رسوم</a></div><div class="table-responsive"><table class="opal-table"><thead><tr><th>الطالب</th><th>المتبقي</th><th></th></tr></thead><tbody>{% for row in debtors %}<tr><td>{{ row.student.full_name }}</td><td class="text-danger fw-bold">{{ row.remaining|floatformat:2 }}</td><td><a class="btn btn-sm btn-outline-primary" href="{% url 'admissions:fee_payment_create' %}?student={{ row.student.pk }}">تحصيل</a></td></tr>{% empty %}<tr><td colspan="3">لا توجد أرصدة مستحقة.</td></tr>{% endfor %}</tbody></table></div></div></div>
+  <div class="col-lg-4"><div class="opal-card"><h3 class="fw-bold mb-3">ملخص دورة 28</h3><p>المصروف: <strong>{{ expenses|floatformat:2 }}</strong></p><p>الصافي: <strong>{{ net|floatformat:2 }}</strong></p><p>الفرق عن المتوقع: <strong>{{ target_difference|floatformat:2 }}</strong></p><a class="btn btn-outline-primary w-100" href="{% url 'accounting:monthly_report' %}">فتح الكشف التفصيلي</a></div></div>
+</div>
+{% endblock %}

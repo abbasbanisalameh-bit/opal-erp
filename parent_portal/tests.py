@@ -41,7 +41,7 @@ class ParentPortalPermissionsTests(TestCase):
 
 class ParentFamilyConsolidationTests(TestCase):
     def setUp(self):
-        self.school = School.objects.create(name="مدرسة الأسرة", is_active=True)
+        self.school = School.objects.create(name="مدرسة أولياء الأمور", is_active=True)
 
     def test_existing_family_without_user_is_repaired_and_children_share_it(self):
         family = Family.objects.create(

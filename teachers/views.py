@@ -8,6 +8,7 @@ from .forms import HomeworkForm, TeacherAccountCreateForm, TeacherAssignmentForm
 from .models import Homework, Teacher, TeacherAssignment
 from .account_services import create_teacher_account, reset_teacher_password
 from enterprise_ops.permissions import management_required
+from parent_portal.notification_services import notify_guardian_for_student
 
 
 @management_required
@@ -317,6 +318,19 @@ def portal_homework(request, assignment_pk):
         item.assignment = assignment
         item.created_by = request.user
         item.save()
+        enrollments = Enrollment.objects.filter(
+            academic_year=assignment.academic_year,
+            section=assignment.section,
+            status="active",
+        ).select_related("student")
+        for enrollment in enrollments:
+            notify_guardian_for_student(
+                enrollment.student,
+                "واجب جديد",
+                f"تم نشر واجب {item.title} للطالب {enrollment.student.full_name}، والتسليم بتاريخ {item.due_date}.",
+                event_key=f"homework:{item.pk}:student:{enrollment.student_id}",
+                link="/parent/homework/",
+            )
         messages.success(request, "تم نشر الواجب لطلاب الشعبة.")
         return redirect("teachers:portal_homework", assignment_pk=assignment.pk)
     items = assignment.homework_items.all()

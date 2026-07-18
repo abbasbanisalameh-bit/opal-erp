@@ -14,6 +14,8 @@ urlpatterns = [
     path("payments/search/", views.fee_payment_search_api, name="fee_payment_search_api"),
     path("payments/preview/", views.fee_payment_preview_api, name="fee_payment_preview_api"),
     path("payments/<int:pk>/receipt/", views.fee_payment_receipt, name="fee_payment_receipt"),
+    path("payments/<int:pk>/safe-delete/", views.fee_payment_safe_delete, name="fee_payment_safe_delete"),
     path("payments/archive/", views.fee_payment_archive, name="fee_payment_archive"),
+    path("registration/<int:pk>/payment/safe-delete/", views.registration_payment_safe_delete, name="registration_payment_safe_delete"),
     path("student/<int:student_id>/financial-record/", views.student_financial_record, name="student_financial_record"),
 ]

@@ -102,6 +102,7 @@ class Notification(models.Model):
     message = models.TextField(blank=True)
     level = models.CharField(max_length=20, choices=LEVEL_CHOICES, default="info")
     link = models.CharField(max_length=500, blank=True)
+    event_key = models.CharField(max_length=180, blank=True, db_index=True)
     is_read = models.BooleanField(default=False, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     read_at = models.DateTimeField(null=True, blank=True)
@@ -109,6 +110,13 @@ class Notification(models.Model):
     class Meta:
         ordering = ["-created_at"]
         indexes = [models.Index(fields=["recipient", "is_read", "-created_at"], name="enterprise__recipie_dcb2f2_idx")]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["recipient", "event_key"],
+                condition=~models.Q(event_key=""),
+                name="uniq_notification_recipient_event",
+            )
+        ]
 
     def __str__(self):
         return self.title
