@@ -196,11 +196,27 @@ class AuditLog(models.Model):
     ]
 
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    school = models.ForeignKey(
+        School,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="audit_logs",
+    )
+    branch = models.ForeignKey(
+        Branch,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="audit_logs",
+    )
     action = models.CharField(max_length=30, choices=ACTION_CHOICES)
     model_name = models.CharField(max_length=100, blank=True)
     object_id = models.CharField(max_length=100, blank=True)
     description = models.TextField(blank=True)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
+    request_id = models.CharField(max_length=64, blank=True, default="", db_index=True)
+    result = models.CharField(max_length=30, default="success", db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -223,6 +239,13 @@ class Sequence(models.Model):
 
 class DataIntegrityRun(models.Model):
     MODE_CHOICES = [("scan", "فحص فقط"), ("fix_safe", "فحص وإصلاح آمن")]
+    school = models.ForeignKey(
+        School,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="integrity_runs",
+    )
     mode = models.CharField(max_length=20, choices=MODE_CHOICES, default="scan")
     started_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(null=True, blank=True)
