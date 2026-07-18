@@ -2,7 +2,7 @@ from enterprise_ops.services import notify
 
 
 def notify_parent_for_attendance(record):
-    if record.status not in {"absent", "late"}:
+    if record.status not in {"absent", "late", "departed"}:
         return []
     recipients = {}
     for link in record.student.family_links.select_related("family__user").filter(is_active=True):

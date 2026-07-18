@@ -115,6 +115,36 @@ class CanonicalRegistrationIntegrationTests(TestCase):
         second_family = FamilyStudent.objects.get(student=second.student, is_active=True).family
         self.assertEqual(first_family.pk, second_family.pk)
 
+    def test_edited_first_payment_is_saved_instead_of_forcing_default_percent(self):
+        form = DirectStudentRegistrationForm(
+            data={
+                "first_name": "ليان",
+                "father_name": "خالد",
+                "grandfather_name": "علي",
+                "family_name": "التجربة",
+                "gender": "female",
+                "guardian_name": "خالد علي",
+                "guardian_identity_type": "national",
+                "guardian_identity_number": "PARENT-EDITED-PAYMENT",
+                "mother_name": "الأم",
+                "phone": "0799999999",
+                "address": "عمان",
+                "grade": self.grade.pk,
+                "section": self.section.pk,
+                "transport_type": "none",
+                "discount_type": "none",
+                "admin_discount_value": "0",
+                "first_payment": "350.00",
+            },
+            school=self.school,
+            academic_year=self.year,
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+        registration = create_student_registration(form, self.user)
+        self.assertEqual(registration.first_payment, Decimal("350.00"))
+        self.assertEqual(registration.payment.amount, Decimal("350.00"))
+        self.assertEqual(registration.remaining_amount, Decimal("650.00"))
+
 
 class FamilyPaymentDistributionTests(SimpleTestCase):
     def test_skips_fully_paid_students_and_splits_evenly(self):

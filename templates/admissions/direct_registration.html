@@ -9,6 +9,16 @@
 <form method="post" enctype="multipart/form-data" id="registrationForm">
     {% csrf_token %}
 
+    {% if form.errors %}
+    <div class="alert alert-danger mb-4" role="alert">
+        <div class="fw-bold mb-2">تعذر الحفظ. صحح الحقول التالية:</div>
+        <ul class="mb-0">
+            {% for field in form %}{% for error in field.errors %}<li><strong>{{ field.label }}:</strong> {{ error }}</li>{% endfor %}{% endfor %}
+            {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
     <div class="opal-card mb-4">
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
             <div>
@@ -49,7 +59,7 @@
             <div class="col-md-3"><label class="form-label fw-bold">{{ form.transport_type.label }}</label>{{ form.transport_type }}</div>
             <div class="col-md-3"><label class="form-label fw-bold">{{ form.discount_type.label }}</label>{{ form.discount_type }}</div>
             <div class="col-md-3"><label class="form-label fw-bold">{{ form.admin_discount_value.label }}</label>{{ form.admin_discount_value }}</div>
-            <div class="col-md-6"><label class="form-label fw-bold">{{ form.sibling_student.label }}</label>{{ form.sibling_student }}<div id="siblingSmartMessage" class="mt-2 small fw-bold"></div></div>
+            <div class="col-md-6"><label class="form-label fw-bold">{{ form.sibling_student.label }}</label>{{ form.sibling_student }}<input id="siblingStudentDisplay" class="form-control" placeholder="يظهر تلقائيًا بعد إدخال معرف ولي الأمر" readonly><div id="siblingSmartMessage" class="mt-2 small fw-bold"></div></div>
             <div class="col-md-6"><label class="form-label fw-bold">{{ form.notes.label }}</label>{{ form.notes }}</div>
         </div>
     </div>
@@ -65,7 +75,7 @@
         <div class="row g-3 align-items-end">
             <div class="col-md-4"><label class="form-label fw-bold">{{ form.first_payment.label }} ({{ settings.first_payment_percent|floatformat:0 }}%)</label>{{ form.first_payment }}{% if form.first_payment.help_text %}<div class="form-text">{{ form.first_payment.help_text }}</div>{% endif %}</div>
             <div class="col-md-4"><label class="form-label fw-bold">المتبقي</label><input class="form-control" id="remainingAmount" readonly></div>
-            <div class="col-md-4"><button class="btn btn-primary w-100 btn-lg"><i class="bi bi-save2"></i> حفظ وطباعة الإيصال</button></div>
+            <div class="col-md-4"><button type="submit" class="btn btn-primary w-100 btn-lg"><i class="bi bi-save2"></i> حفظ وطباعة الإيصال</button></div>
         </div>
     </div>
 </form>
@@ -86,6 +96,7 @@ const settings = {
 };
 function money(v){ return (Number(v || 0)).toFixed(2); }
 function el(name){ return document.querySelector(`[name="${name}"]`); }
+let firstPaymentManuallyEdited = {{ form.is_bound|yesno:"true,false" }};
 function calc(){
     const gradeId = el('grade') ? el('grade').value : '';
     const routeId = el('transport_route') ? el('transport_route').value : '';
@@ -107,7 +118,7 @@ function calc(){
     else if(discountType === 'admin') discount = Math.min(adminDiscount, tuition);
     let net = Math.max((tuition + transport - discount), 0);
     const firstPaymentInput = el('first_payment');
-    if(firstPaymentInput){
+    if(firstPaymentInput && !firstPaymentManuallyEdited){
         firstPaymentInput.value = money(net * settings.firstPaymentPercent / 100);
     }
     let firstPayment = Number(firstPaymentInput?.value || 0);
@@ -118,7 +129,16 @@ function calc(){
     document.getElementById('netTotal').innerText = money(net);
     document.getElementById('remainingAmount').value = money(remaining);
 }
-document.querySelectorAll('#registrationForm select, #registrationForm input').forEach(item => item.addEventListener('input', calc));
+document.querySelectorAll('#registrationForm select, #registrationForm input').forEach(item => {
+    if(item.name !== 'first_payment') item.addEventListener('input', calc);
+});
+const firstPaymentField = el('first_payment');
+if(firstPaymentField){
+    firstPaymentField.addEventListener('input', function(){
+        firstPaymentManuallyEdited = true;
+        calc();
+    });
+}
 
 let siblingTimer = null;
 
@@ -143,6 +163,10 @@ function checkSiblingSmart(){
         });
 
         if(!params.get('guardian_identity_number')){
+            const sibling = el('sibling_student');
+            const siblingDisplay = document.getElementById('siblingStudentDisplay');
+            if(sibling){ sibling.value = ''; }
+            if(siblingDisplay){ siblingDisplay.value = ''; }
             setSiblingMessage('', true);
             return;
         }
@@ -151,9 +175,11 @@ function checkSiblingSmart(){
         const data = await res.json();
         const discount = el('discount_type');
         const sibling = el('sibling_student');
+        const siblingDisplay = document.getElementById('siblingStudentDisplay');
 
         if(data.has_sibling){
             if(sibling && data.sibling_id){ sibling.value = String(data.sibling_id); }
+            if(siblingDisplay){ siblingDisplay.value = data.sibling_name || ''; }
             if(data.apply_discount){
                 if(discount && (!discount.value || discount.value === 'none' || discount.value === 'sibling')){ discount.value = 'sibling'; }
                 setSiblingMessage(data.message, true);
@@ -163,6 +189,8 @@ function checkSiblingSmart(){
             }
             calc();
         } else {
+            if(sibling){ sibling.value = ''; }
+            if(siblingDisplay){ siblingDisplay.value = ''; }
             setSiblingMessage('', true);
         }
     }, 450);

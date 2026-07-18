@@ -25,7 +25,9 @@ from .services import audit, notify, transition_workflow
 
 
 def _workflow_scope(user):
-    qs = WorkflowRequest.objects.select_related("requester", "assignee", "school", "branch")
+    qs = WorkflowRequest.objects.select_related("requester", "assignee", "school", "branch").exclude(
+        related_app="accounting", related_model="DiscountRequest"
+    )
     if is_management(user):
         return qs
     return qs.filter(Q(requester=user) | Q(assignee=user))
@@ -56,10 +58,10 @@ def _report_rows(code):
             present=Count("id", filter=Q(status="present")),
             absent=Count("id", filter=Q(status="absent")),
             late=Count("id", filter=Q(status="late")),
-            excused=Count("id", filter=Q(status="excused")),
+            departed=Count("id", filter=Q(status="departed")),
         ).order_by("student__full_name")
-        return [["رقم الطالب", "الاسم", "حاضر", "غائب", "متأخر", "بعذر"], *[
-            [r["student__student_number"], r["student__full_name"], r["present"], r["absent"], r["late"], r["excused"]] for r in summary
+        return [["رقم الطالب", "الاسم", "حاضر", "غائب", "متأخر", "مغادر"], *[
+            [r["student__student_number"], r["student__full_name"], r["present"], r["absent"], r["late"], r["departed"]] for r in summary
         ]]
     if code == "academic":
         summary = StudentMark.objects.filter(exam__status__in=["published", "closed"]).values("student__student_number", "student__full_name").annotate(avg=Avg("mark"), exams=Count("id")).order_by("student__full_name")
@@ -74,7 +76,9 @@ def _report_rows(code):
     if code == "workflow":
         return [["رقم", "العنوان", "النوع", "الحالة", "الأولوية", "مقدم الطلب", "المسؤول", "التاريخ"], *[
             [w.pk, w.title, w.get_request_type_display(), w.get_status_display(), w.get_priority_display(), w.requester.username if w.requester else "-", w.assignee.username if w.assignee else "-", w.created_at.strftime("%Y-%m-%d %H:%M")]
-            for w in WorkflowRequest.objects.select_related("requester", "assignee")
+            for w in WorkflowRequest.objects.select_related("requester", "assignee").exclude(
+                related_app="accounting", related_model="DiscountRequest"
+            )
         ]]
     return [["لا توجد بيانات"]]
 
@@ -84,7 +88,9 @@ def _report_rows(code):
 def enterprise_dashboard(request):
     today = timezone.localdate()
     last_30 = today - timedelta(days=29)
-    workflow_qs = WorkflowRequest.objects.all()
+    workflow_qs = WorkflowRequest.objects.exclude(
+        related_app="accounting", related_model="DiscountRequest"
+    )
     audit_qs = AuditLog.objects.select_related("user")
     context = {
         "pending_count": workflow_qs.filter(status__in=["new", "review", "returned"]).count(),

@@ -9,6 +9,23 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
+    // إبقاء زر الوحدة الفعال في بؤرة شريط التمرير وإظهار الأزرار التالية له.
+    document.querySelectorAll(".opal-module-subnav-scroll").forEach(function (bar) {
+        const active = bar.querySelector(".opal-subnav-btn.active");
+        if (!active) {
+            return;
+        }
+        active.setAttribute("aria-current", "page");
+        window.requestAnimationFrame(function () {
+            active.scrollIntoView({behavior: "auto", block: "nearest", inline: "center"});
+        });
+        bar.querySelectorAll(".opal-subnav-btn").forEach(function (button) {
+            button.addEventListener("click", function () {
+                button.scrollIntoView({behavior: "smooth", block: "nearest", inline: "center"});
+            });
+        });
+    });
+
 });
 
 /* ===== OPAL System Update File Actions V20260715 ===== */

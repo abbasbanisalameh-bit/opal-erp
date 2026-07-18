@@ -37,8 +37,19 @@ def finance_dashboard(request):
         "invoices_count": invoices.count(),
         "payments_count": payments.count(),
         "overdue_count": overdue,
-        "pending_discounts": DiscountRequest.objects.filter(status="pending").count(),
     })
+
+
+@login_required
+def retired_finance_screen(request, *args, **kwargs):
+    messages.info(request, "تم توحيد هذه الوظيفة في شاشة تسديد الرسوم المعتمدة.")
+    return redirect("admissions:fee_payment_create")
+
+
+@login_required
+def retired_receipts_screen(request, *args, **kwargs):
+    messages.info(request, "تم توحيد الإيصالات في أرشيف تسديد الرسوم المعتمد.")
+    return redirect("admissions:fee_payment_archive")
 
 
 @login_required

@@ -32,11 +32,10 @@ class CurriculumOperationalTests(TestCase):
             weekly_periods=4,
         )
 
-    def test_list_uses_real_curriculum_fields(self):
+    def test_legacy_list_redirects_to_academic_structure(self):
         self.client.force_login(self.staff)
         response = self.client.get(reverse("curriculum:curriculum_list"))
-        self.assertContains(response, "العلوم")
-        self.assertContains(response, "4")
+        self.assertRedirects(response, reverse("academics:academic_structure"), fetch_redirect_response=False)
 
     def test_non_management_user_is_denied(self):
         self.client.force_login(self.plain)
@@ -53,10 +52,16 @@ class CurriculumOperationalTests(TestCase):
 
         self.client.force_login(self.staff)
         response = self.client.post(reverse("curriculum:curriculum_delete", args=[self.item.pk]))
-        self.assertRedirects(response, reverse("curriculum:curriculum_list"))
+        self.assertRedirects(response, reverse("academics:academic_structure"), fetch_redirect_response=False)
         self.assertTrue(Curriculum.objects.filter(pk=self.item.pk).exists())
 
-    def test_delete_requires_post(self):
+    def test_all_legacy_mutation_routes_are_retired_without_deleting_data(self):
         self.client.force_login(self.staff)
-        response = self.client.get(reverse("curriculum:curriculum_delete", args=[self.item.pk]))
-        self.assertEqual(response.status_code, 405)
+        for route in (
+            reverse("curriculum:curriculum_create"),
+            reverse("curriculum:curriculum_update", args=[self.item.pk]),
+            reverse("curriculum:curriculum_delete", args=[self.item.pk]),
+        ):
+            response = self.client.get(route)
+            self.assertRedirects(response, reverse("academics:academic_structure"), fetch_redirect_response=False)
+        self.assertTrue(Curriculum.objects.filter(pk=self.item.pk).exists())

@@ -12,12 +12,9 @@ class AttendanceModelTest(TestCase):
     def setUp(self):
         self.student = Student.objects.create(student_number="A-1", full_name="طالب حضور", grade="الأول")
 
-    def test_excused_requires_reason(self):
-        record = Attendance(student=self.student, date=date.today(), status="excused")
-        with self.assertRaises(ValidationError):
-            record.full_clean()
-        record.excuse_reason = "تقرير طبي"
-        record.full_clean()
+    def test_departed_records_departure_time_automatically(self):
+        record = Attendance.objects.create(student=self.student, date=date.today(), status="departed")
+        self.assertIsNotNone(record.departure_time)
 
     def test_departure_must_be_after_arrival(self):
         record = Attendance(

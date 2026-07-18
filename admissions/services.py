@@ -247,8 +247,8 @@ def create_student_registration(form, user=None):
         discount_type=selected_discount_type,
         admin_discount_value=data.get("admin_discount_value"),
         sibling_student=selected_sibling_student,
-        # الدفعة الأولى في التسجيل اليدوي تُحسب دائمًا من نسبة الإعدادات.
-        first_payment=None,
+        # تظهر النسبة الافتراضية للمستخدم، مع اعتماد أي قيمة موجبة يعدلها قبل الحفظ.
+        first_payment=data.get("first_payment"),
         school=school,
         academic_year=academic_year,
     )

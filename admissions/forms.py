@@ -95,7 +95,8 @@ class DirectStudentRegistrationForm(forms.ModelForm):
             "birth_date": forms.DateInput(attrs={"type": "date"}),
             "address": forms.Textarea(attrs={"rows": 2}),
             "notes": forms.Textarea(attrs={"rows": 2}),
-            "first_payment": forms.NumberInput(attrs={"step": "0.01", "readonly": "readonly", "inputmode": "decimal"}),
+            "sibling_student": forms.HiddenInput(),
+            "first_payment": forms.NumberInput(attrs={"step": "0.01", "min": "0", "inputmode": "decimal"}),
             "admin_discount_value": forms.NumberInput(attrs={"step": "0.01"}),
         }
 
@@ -116,7 +117,7 @@ class DirectStudentRegistrationForm(forms.ModelForm):
         self.fields["section"].required = False
         self.fields["photo"].required = False
         self.fields["first_payment"].required = False
-        self.fields["first_payment"].help_text = "تُحسب تلقائيًا من صافي الرسوم وفق النسبة المحددة في إعدادات التسجيل."
+        self.fields["first_payment"].help_text = "تُحسب تلقائيًا من صافي الرسوم وفق النسبة المحددة في إعدادات التسجيل، ويمكن تعديلها قبل الحفظ."
         if not self.is_bound:
             self.fields["first_payment"].initial = None
         self.fields["admin_discount_value"].initial = 0

@@ -192,6 +192,7 @@ def sibling_check_api(request):
             "has_sibling": True,
             "apply_discount": False,
             "sibling_id": first_sibling.id,
+            "sibling_name": first_sibling.full_name,
             "message": f"يوجد أخ مسجل: {first_sibling.full_name}. لكن الطالب {used_name} استفاد سابقًا من خصم الإخوة، لذلك تم إلغاء خصم الإخوة لهذا الطالب.",
         })
 
@@ -199,6 +200,7 @@ def sibling_check_api(request):
         "has_sibling": True,
         "apply_discount": True,
         "sibling_id": first_sibling.id,
+        "sibling_name": first_sibling.full_name,
         "message": f"تم التعرف على أخ مسجل: {first_sibling.full_name}. تم تفعيل خصم الإخوة تلقائيًا.",
     })
 
@@ -210,24 +212,29 @@ def fee_payment_create(request):
     selected_student = Student.objects.filter(pk=student_id).first() if student_id else None
     search_results = search_students(query) if query and not selected_student else []
     siblings_data = []
+    has_unpaid_other_siblings = False
 
     if selected_student:
         siblings = find_sibling_students(selected_student)
         for student in siblings:
-            siblings_data.append({
+            row = {
                 "student": student,
                 "total": student_total_fees(student),
                 "paid": student_total_paid(student),
                 "remaining": student_remaining(student),
                 "status": student_payment_status(student),
-            })
+            }
+            siblings_data.append(row)
+            if student.pk != selected_student.pk and row["remaining"] > 0:
+                has_unpaid_other_siblings = True
 
     if request.method == "POST" and selected_student:
         amount = request.POST.get("amount") or "0"
         notes = request.POST.get("notes") or ""
         try:
             fee_payment = create_siblings_fee_payment(main_student=selected_student, amount=amount, user=request.user, notes=notes)
-            messages.success(request, "تم تسجيل دفعة عن جميع الإخوة وإصدار الإيصال بنجاح.")
+            payment_label = "دفعة عن جميع الإخوة" if fee_payment.scope == "all_siblings" else "دفعة الطالب"
+            messages.success(request, f"تم تسجيل {payment_label} وإصدار الإيصال بنجاح.")
             return redirect("admissions:fee_payment_receipt", pk=fee_payment.pk)
         except Exception as exc:
             message = getattr(exc, "messages", None)
@@ -240,7 +247,29 @@ def fee_payment_create(request):
         "siblings_data": siblings_data,
         "family_total_remaining": sum((row["remaining"] for row in siblings_data), 0),
         "has_payable_siblings": any(row["remaining"] > 0 for row in siblings_data),
+        "has_unpaid_other_siblings": has_unpaid_other_siblings,
     })
+
+
+@login_required
+def fee_payment_search_api(request):
+    query = request.GET.get("q", "").strip()
+    results = search_students(query) if query else []
+    payload = []
+    for student in results:
+        family_link = student.family_links.filter(is_active=True).select_related("family").first()
+        family = family_link.family if family_link else None
+        payload.append({
+            "id": student.pk,
+            "student_number": student.student_number,
+            "full_name": student.full_name,
+            "guardian_name": student.guardian_name or getattr(family, "guardian_name", "") or "-",
+            "guardian_identity": getattr(family, "identity_number", "") or "-",
+            "national_id": student.national_id or "-",
+            "phone": student.phone or getattr(family, "phone", "") or "-",
+            "grade": student.grade or "-",
+        })
+    return JsonResponse({"results": payload})
 
 
 @login_required

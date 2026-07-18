@@ -36,6 +36,7 @@ def attendance_dashboard(request):
             "total_today": today_records.count(),
             "absent_today": counts.get("absent", 0),
             "late_today": counts.get("late", 0),
+            "departed_today": counts.get("departed", 0),
             "present_today": counts.get("present", 0),
             "stats": stats,
         },
@@ -44,86 +45,8 @@ def attendance_dashboard(request):
 
 @staff_member_required
 def take_attendance(request):
-    year_id = request.GET.get("academic_year") or request.POST.get("academic_year")
-    grade_id = request.GET.get("grade") or request.POST.get("grade")
-    section_id = request.GET.get("section") or request.POST.get("section")
-    selected_date = _parse_date(request.GET.get("date") or request.POST.get("date"))
-
-    enrollments = Enrollment.objects.filter(
-        status="active",
-        academic_year__is_closed=False,
-    ).select_related("student", "academic_year", "grade", "section")
-    if year_id:
-        enrollments = enrollments.filter(academic_year_id=year_id)
-    if grade_id:
-        enrollments = enrollments.filter(grade_id=grade_id)
-    if section_id:
-        enrollments = enrollments.filter(section_id=section_id)
-
-    existing = {
-        item.student_id: item
-        for item in Attendance.objects.filter(
-            student_id__in=enrollments.values_list("student_id", flat=True),
-            date=selected_date,
-        )
-    }
-
-    if request.method == "POST":
-        saved = 0
-        locked = 0
-        for enrollment in enrollments:
-            status = request.POST.get(f"status_{enrollment.student_id}", "present")
-            notes = request.POST.get(f"notes_{enrollment.student_id}", "").strip()
-            excuse_reason = request.POST.get(f"excuse_{enrollment.student_id}", "").strip()
-            if status == "excused" and not excuse_reason:
-                excuse_reason = notes or "عذر مثبت لدى الإدارة"
-            record = existing.get(enrollment.student_id)
-            if record and record.is_locked:
-                locked += 1
-                continue
-            record, _ = Attendance.objects.update_or_create(
-                student=enrollment.student,
-                date=selected_date,
-                defaults={
-                    "academic_year": enrollment.academic_year,
-                    "grade": enrollment.grade,
-                    "section": enrollment.section,
-                    "status": status,
-                    "notes": notes,
-                    "excuse_reason": excuse_reason,
-                    "recorded_by": record.recorded_by if record else request.user,
-                    "updated_by": request.user,
-                },
-            )
-            notify_parent_for_attendance(record)
-            saved += 1
-        audit(request, "update", "attendance_v2.Attendance", description=f"تسجيل حضور {saved} طالب بتاريخ {selected_date}")
-        messages.success(request, f"تم حفظ حضور {saved} طالب.")
-        if locked:
-            messages.warning(request, f"تم تجاوز {locked} سجلًا مقفلًا.")
-        query = f"?academic_year={year_id or ''}&grade={grade_id or ''}&section={section_id or ''}&date={selected_date}"
-        return redirect(f"/attendance/take/{query}")
-
-    rows = [(enrollment, existing.get(enrollment.student_id)) for enrollment in enrollments]
-    sections = Section.objects.select_related("grade", "academic_year").filter(is_active=True)
-    if year_id:
-        sections = sections.filter(Q(academic_year_id=year_id) | Q(academic_year__isnull=True))
-    if grade_id:
-        sections = sections.filter(grade_id=grade_id)
-    return render(
-        request,
-        "attendance_v2/take_attendance.html",
-        {
-            "academic_years": AcademicYear.objects.filter(is_closed=False).order_by("-start_date"),
-            "grades": Grade.objects.filter(is_active=True),
-            "sections": sections,
-            "rows": rows,
-            "selected_year": str(year_id or ""),
-            "selected_grade": str(grade_id or ""),
-            "selected_section": str(section_id or ""),
-            "date": selected_date,
-        },
-    )
+    messages.info(request, "تسجيل الغياب اليومي متاح من بوابة مربي الصف فقط. هذه الشاشة مخصصة للتقرير والمتابعة الإدارية.")
+    return redirect("attendance_v2:report")
 
 
 @staff_member_required

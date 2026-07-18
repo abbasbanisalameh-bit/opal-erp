@@ -203,7 +203,6 @@ def portal_dashboard(request):
 class AttendanceEntryForm(forms.Form):
     student_id = forms.IntegerField(widget=forms.HiddenInput)
     status = forms.ChoiceField(choices=Attendance.STATUS, widget=forms.Select(attrs={"class": "form-select"}))
-    notes = forms.CharField(required=False, widget=forms.TextInput(attrs={"class": "form-control"}))
 
 
 @teacher_required
@@ -243,7 +242,6 @@ def portal_attendance_section(request, section_pk):
         initial.append({
             "student_id": student.id,
             "status": record.status if record else "present",
-            "notes": record.notes if record else "",
         })
     formset = FormSet(request.POST or None, initial=initial)
     if request.method == "POST" and formset.is_valid():
@@ -258,8 +256,7 @@ def portal_attendance_section(request, section_pk):
                 locked += 1
                 continue
             status = row["status"]
-            notes = row.get("notes", "")
-            Attendance.objects.update_or_create(
+            record, _ = Attendance.objects.update_or_create(
                 student_id=student_id,
                 date=date,
                 defaults={
@@ -267,12 +264,14 @@ def portal_attendance_section(request, section_pk):
                     "grade": section.grade,
                     "section": section,
                     "status": status,
-                    "notes": notes,
-                    "excuse_reason": notes or "عذر مثبت لدى الإدارة" if status == "excused" else "",
+                    "notes": "",
+                    "excuse_reason": "",
+                    "departure_time": existing.departure_time if existing and status == "departed" else None,
                     "recorded_by": existing.recorded_by if existing else request.user,
                     "updated_by": request.user,
                 },
             )
+            notify_parent_for_attendance(record)
             saved += 1
         messages.success(request, f"تم حفظ حضور {saved} طالب.")
         if locked:

@@ -1,28 +1,26 @@
 {% extends "base/base.html" %}
-{% block title %}دفعة عن جميع الإخوة | OPAL ERP{% endblock %}
-{% block page_title %}دفعة عن جميع الإخوة{% endblock %}
-{% block page_subtitle %}توزيع تلقائي كامل على الأرصدة المستحقة فقط مع معاينة قبل الحفظ{% endblock %}
+{% block title %}تسديد رسوم | OPAL ERP{% endblock %}
+{% block page_title %}تسديد رسوم{% endblock %}
+{% block page_subtitle %}بحث فوري عن الطالب أو ولي الأمر، ثم تسديد الطالب أو جميع الإخوة المستحقين{% endblock %}
 
 {% block content %}
 <div class="opal-card mb-4">
     <h3 class="fw-bold mb-3">البحث عن الطالب أو الأسرة</h3>
-    <form method="get" class="row g-3">
-        <div class="col-md-9">
-            <input name="q" value="{{ query }}" class="form-control" placeholder="الاسم، رقم الطالب، رقم ولي الأمر الوطني/الشخصي، الهاتف أو الاسم">
-        </div>
-        <div class="col-md-3"><button class="btn btn-primary w-100"><i class="bi bi-search"></i> بحث</button></div>
-    </form>
+    <label class="form-label" for="feeStudentSearch">اكتب أي حرف أو مقطع من الاسم، أو رقم الطالب/الهوية/الهاتف</label>
+    <input id="feeStudentSearch" value="{{ query }}" class="form-control" autocomplete="off" placeholder="يبدأ البحث فورًا دون الضغط على زر">
+    <div id="feeSearchStatus" class="form-text">اختر الطالب من النتائج الفورية.</div>
+    <div id="feeSearchResults" class="mt-3"></div>
 </div>
 
 {% if search_results %}
-<div class="opal-card mb-4">
+<div class="opal-card mb-4" id="serverSearchResults">
     <h4 class="fw-bold mb-3">نتائج البحث</h4>
     <div class="table-responsive"><table class="opal-table">
         <thead><tr><th>رقم الطالب</th><th>الاسم</th><th>ولي الأمر</th><th>الهاتف</th><th>الصف</th><th></th></tr></thead>
         <tbody>{% for student in search_results %}<tr>
             <td>{{ student.student_number }}</td><td>{{ student.full_name }}</td><td>{{ student.guardian_name|default:"-" }}</td>
             <td>{{ student.phone|default:"-" }}</td><td>{{ student.grade }}</td>
-            <td><a class="btn btn-sm btn-primary" href="?student={{ student.id }}">اختيار الأسرة</a></td>
+            <td><a class="btn btn-sm btn-primary" href="?student={{ student.id }}">اختيار الطالب</a></td>
         </tr>{% endfor %}</tbody>
     </table></div>
 </div>
@@ -37,7 +35,7 @@
 
 <div class="opal-card mb-4">
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
-        <div><h3 class="fw-bold mb-1">حالة أبناء الأسرة</h3><p class="text-secondary mb-0">الأخضر مسدد، الأصفر جزئي، الأحمر غير مسدد.</p></div>
+        <div><h3 class="fw-bold mb-1">حالة الطالب وإخوته</h3><p class="text-secondary mb-0">الأخضر مسدد، الأصفر جزئي، الأحمر غير مسدد.</p></div>
         <a href="{% url 'admissions:fee_payment_create' %}" class="btn btn-secondary">بحث جديد</a>
     </div>
     <div class="table-responsive"><table class="opal-table" id="familyRows">
@@ -59,7 +57,7 @@
         <div class="col-md-8"><label class="form-label fw-bold">ملاحظات</label><input name="notes" class="form-control" placeholder="اختياري"></div>
         <div class="col-12"><div class="alert alert-info mb-0">التوزيع تلقائي فقط وبالتساوي بين الأبناء ذوي الرصيد، ثم يعاد توزيع حصة أي طالب يصل للصفر على البقية. الطالب المسدد لا يستقبل دفعة.</div></div>
         <div class="col-12"><button type="button" id="previewBtn" class="btn btn-outline-primary" {% if not has_payable_siblings %}disabled{% endif %}><i class="bi bi-eye"></i> معاينة التوزيع</button>
-            <button id="submitBtn" class="btn btn-primary" disabled><i class="bi bi-cash-stack"></i> اعتماد الدفعة وطباعة الإيصال</button></div>
+            <button id="submitBtn" class="btn btn-primary" disabled><i class="bi bi-cash-stack"></i> {% if has_unpaid_other_siblings %}دفعة عن جميع الإخوة{% else %}دفعة{% endif %}</button></div>
     </form>
 </div>
 
@@ -76,6 +74,54 @@
 {% endblock %}
 
 {% block extra_js %}
+<script>
+(() => {
+ const input = document.getElementById('feeStudentSearch');
+ const results = document.getElementById('feeSearchResults');
+ const status = document.getElementById('feeSearchStatus');
+ const serverResults = document.getElementById('serverSearchResults');
+ let timer = null, requestNumber = 0;
+
+ function textCell(value){
+   const cell = document.createElement('td');
+   cell.textContent = value || '-';
+   return cell;
+ }
+ function render(items){
+   results.replaceChildren();
+   if(!items.length){ status.textContent = 'لا توجد نتائج مطابقة.'; return; }
+   status.textContent = `تم العثور على ${items.length} نتيجة. اختر الطالب للمتابعة.`;
+   const wrap = document.createElement('div'); wrap.className = 'table-responsive';
+   const table = document.createElement('table'); table.className = 'opal-table';
+   const head = document.createElement('thead');
+   head.innerHTML = '<tr><th>رقم الطالب</th><th>الاسم</th><th>ولي الأمر</th><th>معرف ولي الأمر</th><th>الهاتف</th><th>الصف</th><th></th></tr>';
+   const body = document.createElement('tbody');
+   items.forEach(item => {
+     const row = document.createElement('tr');
+     row.append(textCell(item.student_number), textCell(item.full_name), textCell(item.guardian_name), textCell(item.guardian_identity), textCell(item.phone), textCell(item.grade));
+     const action = document.createElement('td'); const link = document.createElement('a');
+     link.className = 'btn btn-sm btn-primary'; link.textContent = 'اختيار الطالب'; link.href = `?student=${encodeURIComponent(item.id)}`;
+     action.appendChild(link); row.appendChild(action); body.appendChild(row);
+   });
+   table.append(head, body); wrap.appendChild(table); results.appendChild(wrap);
+ }
+ async function search(){
+   const query = input.value.trim(); const current = ++requestNumber;
+   if(serverResults) serverResults.classList.add('d-none');
+   if(!query){ results.replaceChildren(); status.textContent = 'اختر الطالب من النتائج الفورية.'; return; }
+   status.textContent = 'جاري البحث...';
+   try {
+     const response = await fetch(`{% url 'admissions:fee_payment_search_api' %}?q=${encodeURIComponent(query)}`, {headers:{'X-Requested-With':'XMLHttpRequest'}});
+     const data = await response.json();
+     if(current !== requestNumber) return;
+     if(!response.ok) throw new Error('تعذر البحث الآن.');
+     render(data.results || []);
+   } catch(error){ if(current === requestNumber) status.textContent = error.message; }
+ }
+ input?.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(search, 220); });
+ if(input?.value.trim()) search();
+})();
+</script>
 {% if selected_student %}<script>
 (() => {
  const amount = document.getElementById('paymentAmount'), previewBtn = document.getElementById('previewBtn'), submitBtn = document.getElementById('submitBtn');

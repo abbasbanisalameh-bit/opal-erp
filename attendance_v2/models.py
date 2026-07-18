@@ -9,7 +9,7 @@ class Attendance(models.Model):
         ("present", "حاضر"),
         ("absent", "غائب"),
         ("late", "متأخر"),
-        ("excused", "بعذر"),
+        ("departed", "مغادر"),
     ]
 
     student = models.ForeignKey(
@@ -74,8 +74,6 @@ class Attendance(models.Model):
         super().clean()
         if self.academic_year_id and self.academic_year.is_closed:
             raise ValidationError("العام الدراسي مغلق ولا يقبل تعديل سجلات الحضور.")
-        if self.status == "excused" and not self.excuse_reason.strip():
-            raise ValidationError({"excuse_reason": "يجب كتابة سبب العذر."})
         if self.arrival_time and self.departure_time and self.departure_time <= self.arrival_time:
             raise ValidationError({"departure_time": "وقت المغادرة يجب أن يكون بعد وقت الحضور."})
 
@@ -83,5 +81,9 @@ class Attendance(models.Model):
         return f"{self.student.full_name} - {self.date}"
 
     def save(self, *args, **kwargs):
+        if self.status == "departed" and not self.departure_time:
+            self.departure_time = timezone.localtime().time().replace(microsecond=0)
+        elif self.status != "departed":
+            self.departure_time = None
         self.full_clean(exclude=["recorded_by", "updated_by"])
         return super().save(*args, **kwargs)

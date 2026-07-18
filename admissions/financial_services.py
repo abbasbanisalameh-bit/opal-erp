@@ -286,10 +286,14 @@ def create_siblings_fee_payment(*, main_student, amount, user, notes=""):
     due_after = money(due_before - total_allocated)
     receipt_number = generate_fee_payment_receipt_number()
 
+    has_unpaid_other_siblings = any(
+        row["student"].pk != main_student.pk and row["remaining"] > 0
+        for row in allocations_data
+    )
     fee_payment = FeePayment.objects.create(
         school=school,
         receipt_number=receipt_number,
-        scope="all_siblings" if len(siblings) > 1 else "single",
+        scope="all_siblings" if has_unpaid_other_siblings else "single",
         main_student=main_student,
         guardian_name=main_student.guardian_name,
         phone=main_student.phone,

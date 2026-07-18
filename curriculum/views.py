@@ -8,6 +8,12 @@ from .forms import CurriculumForm
 
 
 @management_required
+def curriculum_retired(request, *args, **kwargs):
+    messages.info(request, "تم إيقاف شاشة الخطة الدراسية، وتبقى المواد والصفوف ضمن الهيكل الدراسي المعتمد.")
+    return redirect("academics:academic_structure")
+
+
+@management_required
 def curriculum_list(request):
     items = Curriculum.objects.select_related("academic_year", "grade", "subject").all()
     return render(request, "curriculum/curriculum_list.html", {"items": items})
