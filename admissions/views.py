@@ -3,14 +3,15 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from enterprise_ops.permissions import management_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
+from django.db import models
 import json
 import uuid
 from .models import AdmissionApplication, StudentRegistration, GradeFee, TransportRoute, FeePayment
-from .forms import GradeFeeForm, TransportRouteForm, RegistrationSettingsForm, DirectStudentRegistrationForm
+from .forms import CandidateApplicationForm, GradeFeeForm, TransportRouteForm, RegistrationSettingsForm, DirectStudentRegistrationForm
 from .services import (
     active_school, get_registration_settings, calculate_registration_totals,
     create_student_registration, current_academic_year,
-    find_existing_siblings, sibling_discount_used_registration,
+    find_existing_siblings, sibling_discount_used_registration, generate_application_number,
 )
 from .financial_services import (
     search_students, find_sibling_students, student_total_fees, student_total_paid,
@@ -37,6 +38,62 @@ def admission_list(request):
     registrations = StudentRegistration.objects.select_related("student", "grade", "section", "receipt").all()
     applications = AdmissionApplication.objects.all()[:20]
     return render(request, "admissions/admission_list.html", {"registrations": registrations, "applications": applications})
+
+
+@management_required
+def candidate_list(request):
+    query = request.GET.get("q", "").strip()
+    candidates = AdmissionApplication.objects.filter(status="candidate").select_related("school", "academic_year", "grade", "section")
+    if query:
+        candidates = candidates.filter(
+            models.Q(student_full_name__icontains=query)
+            | models.Q(guardian_name__icontains=query)
+            | models.Q(guardian_phone__icontains=query)
+            | models.Q(application_number__icontains=query)
+        )
+    return render(request, "admissions/candidate_list.html", {"candidates": candidates, "query": query})
+
+
+@management_required
+def candidate_create(request):
+    school = active_school()
+    academic_year = current_academic_year(school)
+    form = CandidateApplicationForm(request.POST or None, request.FILES or None, school=school, academic_year=academic_year)
+    if request.method == "POST" and form.is_valid():
+        candidate = form.save(commit=False)
+        candidate.school = school
+        candidate.academic_year = academic_year
+        candidate.application_number = generate_application_number()
+        candidate.status = "candidate"
+        candidate.save()
+        audit(request, "create", "admissions.AdmissionApplication", candidate.pk, f"إضافة مرشح للقبول {candidate.student_full_name}")
+        messages.success(request, "تم حفظ المرشح دون إنشاء طالب أو تسجيل دراسي فعلي.")
+        return redirect("admissions:candidate_detail", pk=candidate.pk)
+    return render(request, "admissions/candidate_form.html", {"form": form, "title": "إضافة طالب مرشح للقبول"})
+
+
+@management_required
+def candidate_update(request, pk):
+    candidate = get_object_or_404(AdmissionApplication, pk=pk, status="candidate")
+    form = CandidateApplicationForm(request.POST or None, request.FILES or None, instance=candidate, school=candidate.school, academic_year=candidate.academic_year)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        audit(request, "update", "admissions.AdmissionApplication", candidate.pk, f"تحديث مرشح للقبول {candidate.student_full_name}")
+        messages.success(request, "تم تحديث بيانات المرشح.")
+        return redirect("admissions:candidate_detail", pk=candidate.pk)
+    return render(request, "admissions/candidate_form.html", {"form": form, "title": "تعديل بيانات المرشح", "candidate": candidate})
+
+
+@management_required
+def candidate_detail(request, pk):
+    candidate = get_object_or_404(
+        AdmissionApplication.objects.select_related("school", "academic_year", "grade", "section"),
+        pk=pk, status="candidate",
+    )
+    return render(request, "admissions/candidate_detail.html", {
+        "candidate": candidate,
+        "documents": candidate.issued_documents.select_related("template").all(),
+    })
 
 
 @management_required

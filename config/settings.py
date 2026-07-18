@@ -116,6 +116,7 @@ TEMPLATES = [
                 'announcements.context_processors.active_announcement',
                 'core.context_processors.opal_identity',
                 'enterprise_ops.context_processors.enterprise_notifications',
+                'timetable.context_processors.live_schedule',
             ],
         },
     },

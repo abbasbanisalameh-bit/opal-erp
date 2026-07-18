@@ -10,6 +10,7 @@
       <a href="{% url 'parent_portal:family_update' family.pk %}" class="btn btn-primary"><i class="bi bi-pencil"></i> تعديل بيانات ولي الأمر</a>
       <a href="{% url 'parent_portal:family_statement_print' family.pk %}" target="_blank" class="btn btn-outline-dark"><i class="bi bi-printer"></i> كشف مطبوع</a>
       <a href="{% url 'parent_portal:family_statement_csv' family.pk %}" class="btn btn-outline-success"><i class="bi bi-file-earmark-spreadsheet"></i> Excel/CSV</a>
+      <a href="{% url 'documents:issue_guardian' family.pk %}?template=guardian-statement" class="btn btn-outline-primary"><i class="bi bi-file-earmark-text"></i> إصدار كشف حساب رسمي</a>
       {% if family.user %}<form method="post" action="{% url 'parent_portal:family_account_reset' family.pk %}">{% csrf_token %}<button class="btn btn-warning" onclick="return confirm('إعادة تعيين كلمة المرور؟')">إعادة كلمة المرور</button></form>{% else %}<form method="post" action="{% url 'parent_portal:family_account_create' family.pk %}">{% csrf_token %}<button class="btn btn-success">إنشاء حساب ولي الأمر</button></form>{% endif %}
       <a href="{% url 'parent_portal:family_management' %}" class="btn btn-secondary">رجوع</a>
     </div>

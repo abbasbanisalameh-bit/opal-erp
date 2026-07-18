@@ -43,6 +43,13 @@
 
         {% include "includes/topbar.html" %}
 
+        {% if opal_live_schedule %}
+        <div class="alert {% if opal_live_schedule.ends_soon %}alert-warning{% elif opal_live_schedule.state == 'weekend' %}alert-success{% else %}alert-primary{% endif %} mx-3 mb-2 d-flex justify-content-between flex-wrap gap-2" id="opal-live-event">
+            <div><i class="bi bi-clock-history"></i> <strong>{{ opal_live_schedule.teacher_message|default:opal_live_schedule.message }}</strong>{% if opal_live_schedule.teacher_next_message %}<span class="ms-3">{{ opal_live_schedule.teacher_next_message }}</span>{% elif opal_live_schedule.next %}<span class="ms-3">التالي: {{ opal_live_schedule.next.name }} — {{ opal_live_schedule.next.start }}</span>{% endif %}</div>
+            {% if opal_live_schedule.seconds_remaining != None %}<div>المتبقي: <strong id="opal-event-countdown" data-seconds="{{ opal_live_schedule.seconds_remaining }}">--:--</strong></div>{% endif %}
+        </div>
+        {% endif %}
+
         <div class="page-heading">
             <h1>{% block page_title %}لوحة التحكم{% endblock %}</h1>
             <p>{% block page_subtitle %}نظام إدارة مدرسة أوبال الدولية{% endblock %}</p>
@@ -73,6 +80,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="{% static 'js/opal_erp.js' %}?v=20260718-guardian-v1"></script>
+<script>(function(){const el=document.getElementById('opal-event-countdown');if(!el)return;let s=parseInt(el.dataset.seconds||'0',10);function draw(){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),x=s%60;el.textContent=(h?h+':':'')+String(m).padStart(2,'0')+':'+String(x).padStart(2,'0');if(s>0)s--;else window.location.reload();}draw();setInterval(draw,1000);})();</script>
 {% block extra_js %}{% endblock %}
 
 

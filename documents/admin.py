@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import DocumentTemplate, IssuedDocument, StudentIssuedDocument
+from .models import DocumentSettings, DocumentTemplate, IssuedDocument, StudentIssuedDocument
 
 
 @admin.register(DocumentTemplate)
@@ -22,3 +22,6 @@ class IssuedDocumentAdmin(admin.ModelAdmin):
 class StudentIssuedDocumentAdmin(admin.ModelAdmin):
     list_display = ("student", "issued_document", "created_at")
     search_fields = ("student__full_name", "issued_document__document_number")
+
+
+admin.site.register(DocumentSettings)

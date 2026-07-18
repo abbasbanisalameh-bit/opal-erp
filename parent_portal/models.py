@@ -31,6 +31,14 @@ class Family(models.Model):
         blank=True,
         related_name="family_account",
     )
+    merged_into = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="merged_records",
+        verbose_name="مُدمج في ملف ولي الأمر",
+    )
     source = models.CharField("مصدر السجل", max_length=20, choices=SOURCE_CHOICES, default="manual")
     guardian_name = models.CharField("اسم ولي الأمر", max_length=200)
     relation = models.CharField("صلة القرابة", max_length=50, default="ولي أمر")

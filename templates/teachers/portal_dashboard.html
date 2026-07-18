@@ -3,6 +3,7 @@
 {% block page_title %}بوابة المعلم{% endblock %}
 {% block page_subtitle %}الطلاب والعلامات والواجبات والغياب بحسب التكليف الرسمي{% endblock %}
 {% block content %}
+{% if live_status %}<div class="opal-card mb-4 border-primary"><h4>{{ live_status.message }}</h4><p>{{ live_status.teacher_message }} — {{ live_status.teacher_next_message }}</p>{% if live_status.current_class %}<strong>{{ live_status.current_class.subject }} مع {{ live_status.current_class.section }}</strong>{% endif %}</div>{% endif %}
 <div class="opal-module-grid mb-4">
   <a class="opal-module-card" href="#teacher-assignments"><i class="bi bi-journal-bookmark-fill"></i><div><h3>التكليفات</h3><p>طلاب المادة والعلامات والواجبات.</p></div></a>
   <a class="opal-module-card" href="#homeroom-sections"><i class="bi bi-person-check-fill"></i><div><h3>مربي الصف</h3><p>تسجيل الغياب للشعبة التي أنت مربيها فقط.</p></div></a>

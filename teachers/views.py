@@ -9,6 +9,7 @@ from .models import Homework, Teacher, TeacherAssignment
 from .account_services import create_teacher_account, reset_teacher_password
 from enterprise_ops.permissions import management_required
 from parent_portal.notification_services import notify_guardian_for_student
+from timetable.live_services import teacher_live_status
 
 
 @management_required
@@ -78,6 +79,7 @@ def teacher_detail(request, pk):
     return render(request, "teachers/teacher_detail.html", {
         "teacher": teacher, "assignments": assignments, "timetable_entries": timetable_entries,
         "teacher_documents": teacher.documents.all(),
+        "issued_documents": teacher.issued_documents.select_related("template").all(),
     })
 
 
@@ -198,6 +200,7 @@ def portal_dashboard(request):
         "timetable": timetable,
         "homeroom_sections": homeroom_sections,
         "latest_homework": latest_homework,
+        "live_status": teacher_live_status(teacher),
     })
 
 

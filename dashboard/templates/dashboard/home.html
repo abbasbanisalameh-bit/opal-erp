@@ -20,6 +20,7 @@
     <div class="dashboard-card"><span>المستحقات</span><h2>{{ outstanding }}</h2><small>فواتير متأخرة: {{ overdue_invoices }}</small></div>
     <div class="dashboard-card"><span>نسبة النجاح</span><h2>{{ pass_rate }}%</h2><small>عدد العلامات: {{ marks_count }}</small></div>
     <div class="dashboard-card"><span>الوثائق المصدرة</span><h2>{{ issued_documents }}</h2><small>وثائق رسمية محفوظة</small></div>
+    <a class="dashboard-card text-decoration-none" href="{% url 'admissions:candidate_list' %}"><span>طلبة مرشحون للقبول</span><h2>{{ candidate_students }}</h2><small>لا يعدّون طلابًا مسجلين</small></a>
     <div class="dashboard-card"><span>امتحانات النظام</span><h2>{{ exams_count }}</h2><small>متوسط العلامات: {{ academic_average|floatformat:1 }}</small></div>
 </section>
 

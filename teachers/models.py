@@ -41,6 +41,8 @@ class Teacher(models.Model):
     specialization = models.CharField(max_length=150, blank=True)
     qualification = models.CharField(max_length=150, blank=True)
     hire_date = models.DateField(null=True, blank=True)
+    end_date = models.DateField("تاريخ انفكاك المعلم", null=True, blank=True)
+    end_reason = models.CharField("سبب الانفكاك", max_length=200, blank=True)
     school = models.ForeignKey(School, on_delete=models.CASCADE, related_name="teachers")
     branch = models.ForeignKey(Branch, on_delete=models.SET_NULL, null=True, blank=True, related_name="teachers")
     photo = models.ImageField(upload_to="teachers/", blank=True, null=True)
@@ -97,6 +99,7 @@ class TeacherAssignment(models.Model):
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
     is_primary = models.BooleanField(default=True)
     is_active = models.BooleanField(default=True)
+    weekly_periods = models.PositiveSmallIntegerField("عدد الحصص أسبوعيًا", default=1)
 
     class Meta:
         unique_together = (
@@ -117,6 +120,8 @@ class TeacherAssignment(models.Model):
             errors["subject"] = "المادة لا تتبع صف الشعبة."
         if self.teacher_id and self.section_id and self.teacher.school_id != self.section.branch.school_id:
             errors["teacher"] = "المعلم لا يتبع مدرسة الشعبة."
+        if self.weekly_periods < 1 or self.weekly_periods > 20:
+            errors["weekly_periods"] = "عدد الحصص الأسبوعية يجب أن يكون بين 1 و20."
         if errors:
             raise ValidationError(errors)
 

@@ -6,6 +6,11 @@ app_name = "timetable"
 
 urlpatterns = [
     path("", views.dashboard, name="dashboard"),
+    path("smart-builder/", views.smart_builder, name="smart_builder"),
+    path("schedule-settings/", views.schedule_settings, name="schedule_settings"),
+    path("events/<int:pk>/delete/", views.event_delete, name="event_delete"),
+    path("absences/", views.absence_center, name="absence_center"),
+    path("coverage/<int:pk>/assign/", views.coverage_assign, name="coverage_assign"),
     path("entries/add/", views.entry_create, name="entry_create"),
     path("entries/<int:pk>/edit/", views.entry_update, name="entry_update"),
     path("entries/<int:pk>/delete/", views.entry_delete, name="entry_delete"),

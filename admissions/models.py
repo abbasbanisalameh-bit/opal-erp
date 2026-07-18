@@ -12,6 +12,7 @@ from core.finance_constants import PAYMENT_METHOD_CHOICES
 
 class AdmissionApplication(models.Model):
     STATUS_CHOICES = [
+        ("candidate", "مرشح للقبول"),
         ("draft", "مسودة"),
         ("submitted", "مقدم"),
         ("under_review", "قيد المراجعة"),

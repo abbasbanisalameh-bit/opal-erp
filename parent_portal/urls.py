@@ -5,6 +5,8 @@ app_name = "parent_portal"
 
 urlpatterns = [
     path("manage/", views.family_management, name="family_management"),
+    path("manage/duplicates/", views.guardian_duplicates, name="guardian_duplicates"),
+    path("manage/duplicates/merge/", views.guardian_duplicate_merge, name="guardian_duplicate_merge"),
     path("manage/<int:pk>/", views.family_detail, name="family_detail"),
     path("manage/<int:pk>/edit/", views.family_update, name="family_update"),
     path("manage/<int:pk>/statement/", views.family_statement_print, name="family_statement_print"),

@@ -8,9 +8,10 @@
   <div class="opal-module-subnav-scroll">
     <a href="{% url 'students:student_list' %}" class="opal-subnav-btn {% if ns == 'students' %}active{% endif %}"><i class="bi bi-people"></i><span>الطلاب</span></a>
     <a href="{% url 'admissions:direct_registration' %}" class="opal-subnav-btn {% if ns == 'admissions' and view == 'direct_registration' %}active{% endif %}"><i class="bi bi-person-plus"></i><span>تسجيل طالب</span></a>
+    <a href="{% url 'admissions:candidate_list' %}" class="opal-subnav-btn {% if ns == 'admissions' and 'candidate' in view %}active{% endif %}"><i class="bi bi-person-lines-fill"></i><span>مرشحون للقبول</span></a>
     <a href="{% url 'admissions:admission_list' %}" class="opal-subnav-btn {% if ns == 'admissions' and view != 'direct_registration' and view != 'registration_settings' %}active{% endif %}"><i class="bi bi-card-checklist"></i><span>سجل التسجيل</span></a>
     <a href="{% url 'parent_portal:family_management' %}" class="opal-subnav-btn {% if ns == 'parent_portal' %}active{% endif %}"><i class="bi bi-person-vcard"></i><span>ملفات أولياء الأمور</span></a>
-    <a href="{% url 'documents:document_list' %}" class="opal-subnav-btn {% if ns == 'documents' %}active{% endif %}"><i class="bi bi-file-earmark-text"></i><span>وثائق الطلاب</span></a>
+    <a href="{% url 'documents:document_list' %}" class="opal-subnav-btn {% if ns == 'documents' %}active{% endif %}"><i class="bi bi-file-earmark-text"></i><span>مركز الوثائق</span></a>
     <a href="{% url 'admissions:registration_settings' %}" class="opal-subnav-btn {% if ns == 'admissions' and view == 'registration_settings' %}active{% endif %}"><i class="bi bi-sliders"></i><span>إعدادات التسجيل</span></a>
   </div>
 </nav>

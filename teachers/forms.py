@@ -12,10 +12,10 @@ class TeacherForm(forms.ModelForm):
         fields = [
             "employee_number", "full_name", "national_id", "gender", "birth_date",
             "phone", "email", "address", "specialization", "qualification",
-            "hire_date", "school", "branch", "monthly_salary", "photo", "is_active",
+            "hire_date", "end_date", "end_reason", "school", "branch", "monthly_salary", "photo", "is_active",
         ]
         widgets = {
-            "birth_date": DateInput(), "hire_date": DateInput(),
+            "birth_date": DateInput(), "hire_date": DateInput(), "end_date": DateInput(),
             "address": forms.Textarea(attrs={"rows": 3}),
         }
 
@@ -37,7 +37,7 @@ class TeacherForm(forms.ModelForm):
 class TeacherAssignmentForm(forms.ModelForm):
     class Meta:
         model = TeacherAssignment
-        fields = ["academic_year", "section", "subject", "is_primary", "is_active"]
+        fields = ["academic_year", "section", "subject", "weekly_periods", "is_primary", "is_active"]
 
     def __init__(self, *args, teacher=None, **kwargs):
         self.teacher = teacher or getattr(kwargs.get("instance"), "teacher", None)
@@ -53,6 +53,8 @@ class TeacherAssignmentForm(forms.ModelForm):
         for field in self.fields.values():
             if isinstance(field.widget, forms.CheckboxInput):
                 field.widget.attrs["class"] = "form-check-input"
+            elif field.widget.input_type == "number":
+                field.widget.attrs["class"] = "form-control"
             else:
                 field.widget.attrs["class"] = "form-select"
 

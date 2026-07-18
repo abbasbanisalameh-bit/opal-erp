@@ -1,0 +1,20 @@
+{% extends "base/base.html" %}
+{% block title %}إصدار وثيقة{% endblock %}
+{% block page_title %}إصدار وثيقة: {{ target }}{% endblock %}
+{% block page_subtitle %}اختر القالب، راجع النص المعبأ تلقائيًا، وعدّله لهذه الوثيقة إن لزم{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-4"><div class="opal-card"><h4>الوثائق المتاحة</h4><div class="list-group">
+    {% for item in templates %}<a class="list-group-item list-group-item-action {% if selected.pk == item.pk %}active{% endif %}" href="?template={{ item.code }}"><strong>{{ item.name }}</strong><br><small>{{ item.get_document_type_display }}</small></a>{% empty %}<div class="alert alert-warning">لا توجد قوالب فعالة لهذه الفئة. أضفها من إدارة القوالب.</div>{% endfor %}
+  </div></div></div>
+  <div class="col-lg-8"><div class="opal-card">
+    {% if selected %}<form method="post">{% csrf_token %}
+      <div class="mb-3">{{ form.template.label_tag }}{{ form.template }}{{ form.template.errors }}</div>
+      <div class="mb-3">{{ form.title.label_tag }}{{ form.title }}{{ form.title.errors }}</div>
+      {% if selected.document_type == 'transfer_letter' %}<div class="row"><div class="col-md-6 mb-3">{{ form.target_school.label_tag }}{{ form.target_school }}</div><div class="col-md-6 mb-3">{{ form.target_grade.label_tag }}{{ form.target_grade }}</div></div>{% endif %}
+      <div class="mb-3">{{ form.content.label_tag }}{{ form.content }}{{ form.content.errors }}<small class="text-muted">تعديل هذا النص يخص الإصدار الحالي فقط؛ تعديل النص الافتراضي يتم من إدارة القوالب.</small></div>
+      <button class="btn btn-primary">حفظ وإصدار الوثيقة</button> <a class="btn btn-outline-secondary" href="{{ back_url }}">رجوع</a>
+    </form>{% endif %}
+  </div></div>
+</div>
+{% endblock %}

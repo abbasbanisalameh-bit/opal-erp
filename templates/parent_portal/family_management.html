@@ -6,7 +6,7 @@
 <div class="opal-card">
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h3 class="mb-0">قائمة ملفات أولياء الأمور</h3>
-    <span class="badge bg-primary">{{ families|length }} ملف</span>
+    <div><a href="{% url 'parent_portal:guardian_duplicates' %}" class="btn btn-outline-warning">فحص الملفات المكررة</a> <span class="badge bg-primary">{{ families|length }} ملف</span></div>
   </div>
   <div class="table-responsive">
     <table class="table align-middle">

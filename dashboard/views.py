@@ -15,6 +15,7 @@ from accounting.models import StudentInvoice, StudentPayment
 from announcements.models import Announcement
 from attendance_v2.models import Attendance
 from documents.models import IssuedDocument
+from admissions.models import AdmissionApplication
 from exams.models import Exam, StudentMark
 from students.models import Student
 
@@ -221,6 +222,7 @@ def home(request):
         "latest_students": Student.objects.order_by("-created_at")[:8],
         "latest_announcements": Announcement.objects.order_by("-id")[:5],
         "latest_exams": Exam.objects.order_by("-id")[:5],
+        "candidate_students": AdmissionApplication.objects.filter(status="candidate").count(),
     })
     return render(request, "dashboard/home.html", snapshot)
 

@@ -28,6 +28,11 @@ from admissions.financial_services import (
 )
 from admissions.models import FeePaymentAllocation, FeePayment
 from enterprise_ops.permissions import management_required
+from enterprise_ops.services import audit
+from django.views.decorators.http import require_POST
+from django.core.exceptions import ValidationError
+from .duplicate_services import guardian_duplicate_groups, merge_guardian_group
+from timetable.live_services import student_live_status
 
 try:
     from documents.models import StudentIssuedDocument
@@ -79,6 +84,7 @@ def _student_card(student):
         "marks": StudentMark.objects.filter(student=student, exam__status__in=["published", "closed"]).select_related("exam", "exam__subject")[:5],
         "rank": student_class_rank(student),
         "homework": homework_for_student(student)[:5],
+        "schedule": student_live_status(student),
     }
 
 
@@ -314,11 +320,34 @@ def account(request):
 @management_required
 def family_management(request):
     families = (
-        Family.objects.select_related("user", "school")
+        Family.objects.filter(is_active=True, merged_into__isnull=True).select_related("user", "school")
         .prefetch_related("children__student")
         .order_by("guardian_name", "phone", "id")
     )
     return render(request, "parent_portal/family_management.html", {"families": families})
+
+
+@management_required
+def guardian_duplicates(request):
+    return render(request, "parent_portal/guardian_duplicates.html", {"groups": guardian_duplicate_groups()})
+
+
+@management_required
+@require_POST
+def guardian_duplicate_merge(request):
+    ids = [value for value in request.POST.get("family_ids", "").split(",") if value.strip().isdigit()]
+    try:
+        canonical, count = merge_guardian_group(
+            family_ids=ids,
+            canonical_id=int(request.POST.get("canonical_id", "0")),
+            user=request.user,
+        )
+    except (ValidationError, ValueError) as exc:
+        messages.error(request, getattr(exc, "messages", [str(exc)])[0])
+    else:
+        audit(request, "update", "parent_portal.Family", canonical.pk, f"دمج {count} ملفات مكررة في ملف ولي الأمر {canonical.pk}")
+        messages.success(request, f"تم دمج {count} ملفات في الملف الأساسي مع نقل روابط الأبناء وإيقاف الحسابات المكررة.")
+    return redirect("parent_portal:guardian_duplicates")
 
 
 def _family_finance_context(family):
