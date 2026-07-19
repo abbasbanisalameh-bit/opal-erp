@@ -5,6 +5,7 @@ from django.test import TestCase
 from django.conf import settings
 from django.urls import reverse
 from django.contrib.auth.models import User
+from django.db import models
 
 from .models import AcademicYear, Branch, School, Semester
 
@@ -85,37 +86,70 @@ class SiteOnlyDataEntryTests(TestCase):
         self.assertTrue(Branch.objects.filter(school=self.school, name="فرع الموقع", is_main=True).exists())
 
 
-class DemoDataSafetyTests(TestCase):
+class SystemDataCenterTests(TestCase):
     def setUp(self):
-        self.user = User.objects.create_superuser("demo_owner", "owner@example.test", "x")
+        self.user = User.objects.create_superuser("data_owner", "owner@example.test", "x")
         self.school = School.objects.create(name="مدرسة المختبر", is_active=True)
 
-    def test_superuser_sees_demo_lab_buttons(self):
+    def test_superuser_sees_data_center_buttons_without_old_label(self):
         self.client.force_login(self.user)
         response = self.client.get(reverse("core:system_settings"))
-        self.assertContains(response, "إضافة بيانات تجريبية")
-        self.assertContains(response, "تصفير البيانات التجريبية")
+        self.assertContains(response, "إدخال البيانات")
+        self.assertContains(response, "تصفير جميع البيانات")
+        self.assertNotContains(response, "مختبر البيانات التجريبية")
 
-    def test_seed_and_reset_only_touch_demo_people(self):
-        from core.demo_data import reset_demo_school, seed_demo_school
+    def test_seed_is_comprehensive_and_reset_removes_all_operational_data(self):
+        from core.system_data import reset_all_operational_data, seed_system_data
         from students.models import Student
         from teachers.models import Teacher, TeacherDocument
         from accounting.models import Receipt
         from parent_portal.models import Family
+        from parent_portal.models import FamilyStudent
+        from academics.models import Grade, Section
+        from admissions.models import AdmissionApplication, FeePayment
+        from documents.models import IssuedDocument
+        from exams.models import StudentMark
+        from timetable.models import TimetableEntry
 
-        real = Student.objects.create(student_number="REAL-WITNESS", full_name="طالب حقيقي", grade="الأول")
-        result = seed_demo_school(student_count=4, teacher_count=2, user=self.user)
-        self.assertEqual(result["students"], 4)
-        self.assertEqual(Student.objects.filter(is_demo=True).count(), 4)
-        self.assertEqual(Teacher.objects.filter(is_demo=True).count(), 2)
-        self.assertEqual(TeacherDocument.objects.filter(teacher__is_demo=True).count(), 4)
-        self.assertEqual(Receipt.objects.filter(payment__invoice__student__is_demo=True).count(), 4)
-        self.assertEqual(Family.objects.count(), 2)
+        Student.objects.create(student_number="OLD-WITNESS", full_name="سجل قديم", grade="الأول")
+        result = seed_system_data(user=self.user)
+        self.assertEqual(result["students"], 500)
+        self.assertEqual(result["teachers"], 50)
+        self.assertEqual(result["families"], 300)
+        self.assertEqual(Student.objects.filter(is_demo=True).count(), 0)
+        self.assertEqual(Teacher.objects.filter(is_demo=True).count(), 0)
+        self.assertEqual(TeacherDocument.objects.count(), 100)
+        self.assertGreater(Receipt.objects.count(), 0)
+        self.assertEqual(Family.objects.count(), 300)
+        self.assertEqual(Grade.objects.count(), 12)
+        self.assertEqual(Section.objects.count(), 24)
+        self.assertEqual(StudentMark.objects.count(), 24000)
+        self.assertEqual(IssuedDocument.objects.count(), 850)
+        self.assertEqual(Receipt.objects.count() + FeePayment.objects.count(), 800)
+        self.assertEqual(AdmissionApplication.objects.filter(status="candidate").count(), 30)
+        self.assertGreaterEqual(TimetableEntry.objects.count(), 250)
+        relations = set(FamilyStudent.objects.values_list("relation", flat=True))
+        self.assertTrue({"والد", "والدة", "عم ووصي", "الأخ الأكبر", "جد وولي"}.issubset(relations))
+        mixed_family = Family.objects.filter(children__relation="والد").filter(children__relation="عم ووصي").distinct()
+        self.assertTrue(mixed_family.exists())
+        child_counts = sorted(
+            Family.objects.annotate(total=models.Count("children")).values_list("total", flat=True)
+        )
+        self.assertEqual(child_counts.count(1), 150)
+        self.assertEqual(child_counts.count(2), 100)
+        self.assertEqual(child_counts.count(3), 50)
+        self.assertEqual(Student.objects.exclude(national_id="").count(), 500)
+        self.assertEqual(Teacher.objects.exclude(national_id="").count(), 50)
+        self.assertEqual(Student.objects.values("full_name").distinct().count(), 500)
+        self.assertEqual(Teacher.objects.values("full_name").distinct().count(), 50)
+        self.assertEqual(Family.objects.values("guardian_name").distinct().count(), 300)
+        self.assertFalse(Student.objects.filter(student_number="OLD-WITNESS").exists())
 
-        reset_demo_school()
-        self.assertFalse(Student.objects.filter(is_demo=True).exists())
-        self.assertFalse(Teacher.objects.filter(is_demo=True).exists())
-        self.assertTrue(Student.objects.filter(pk=real.pk, student_number="REAL-WITNESS").exists())
+        reset_all_operational_data(keep_user=self.user)
+        self.assertFalse(Student.objects.exists())
+        self.assertFalse(Teacher.objects.exists())
+        self.assertFalse(Family.objects.exists())
+        self.assertTrue(User.objects.filter(pk=self.user.pk, is_superuser=True).exists())
 
 
 class DataIntegrityCenterTests(TestCase):

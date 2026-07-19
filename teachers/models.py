@@ -48,7 +48,7 @@ class Teacher(models.Model):
     photo = models.ImageField(upload_to="teachers/", blank=True, null=True)
     is_active = models.BooleanField(default=True)
     monthly_salary = models.DecimalField("الراتب الشهري", max_digits=10, decimal_places=2, default=0)
-    is_demo = models.BooleanField("بيانات تجريبية", default=False, db_index=True, editable=False)
+    is_demo = models.BooleanField("بيانات مُدخلة آليًا (توافق سابق)", default=False, db_index=True, editable=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

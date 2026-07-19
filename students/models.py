@@ -48,7 +48,7 @@ class Student(models.Model):
     last_ministry_sync_at = models.DateTimeField("آخر مزامنة مع الوزارة", null=True, blank=True)
     archived_at = models.DateTimeField("تاريخ الأرشفة", null=True, blank=True)
     is_active = models.BooleanField("نشط", default=True)
-    is_demo = models.BooleanField("بيانات تجريبية", default=False, db_index=True, editable=False)
+    is_demo = models.BooleanField("بيانات مُدخلة آليًا (توافق سابق)", default=False, db_index=True, editable=False)
 
     photo = models.ImageField("صورة الطالب", upload_to="students/photos/", null=True, blank=True)
 

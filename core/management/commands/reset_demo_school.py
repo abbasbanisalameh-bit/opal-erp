@@ -1,19 +1,19 @@
 from django.core.management.base import BaseCommand, CommandError
 
-from core.demo_data import reset_demo_school
+from core.system_data import reset_all_operational_data
 
 
 class Command(BaseCommand):
-    help = "حذف البيانات التجريبية الموسومة فقط، دون لمس البيانات الحقيقية أو إعدادات المدرسة."
+    help = "تصفير جميع البيانات التشغيلية مع إبقاء حسابات المدير الأعلى وإعدادات النظام."
 
     def add_arguments(self, parser):
-        parser.add_argument("--yes", action="store_true", help="تأكيد حذف البيانات التجريبية.")
+        parser.add_argument("--yes", action="store_true", help="تأكيد تصفير جميع البيانات التشغيلية.")
 
     def handle(self, *args, **options):
         if not options["yes"]:
             raise CommandError("أضف --yes للتأكيد. لن تُحذف أي بيانات دون التأكيد.")
-        result = reset_demo_school()
+        result = reset_all_operational_data()
         self.stdout.write(self.style.SUCCESS(
-            f"تم حذف البيانات التجريبية فقط: {result['students']} طالب، "
+            f"تم تصفير البيانات التشغيلية: {result['students']} طالب، "
             f"{result['families']} ملف ولي أمر، {result['teachers']} معلم."
         ))

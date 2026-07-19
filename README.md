@@ -36,6 +36,6 @@ python manage.py verify_core_readiness
 ```
 
 تعليمات التركيب الحالية في
-`INSTALL_OPAL_FINANCIAL_CONTROL_GUARDIAN_ALERTS_V1_AR.md`، وسجل التغيير في
-`OPAL_FINANCIAL_CONTROL_GUARDIAN_ALERTS_V1_RELEASE_NOTES_AR.md`. الوثائق التاريخية
+`INSTALL_OPAL_COMPREHENSIVE_DATA_CENTER_V1_AR.md`، وسجل التغيير في
+`OPAL_COMPREHENSIVE_DATA_CENTER_V1_RELEASE_NOTES_AR.md`. الوثائق التاريخية
 محفوظة داخل `docs/archive/`.

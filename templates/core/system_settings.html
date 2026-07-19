@@ -25,13 +25,13 @@
 </div>
 <div class="opal-card mb-4" style="border:1px solid rgba(20,184,166,.35);background:linear-gradient(135deg,rgba(20,184,166,.09),rgba(59,130,246,.06));">
   <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
-    <div><h3 class="fw-bold mb-2"><i class="bi bi-database-gear"></i> مختبر البيانات التجريبية</h3><p class="text-secondary mb-0">ينشئ 100 طالب مع أولياء الأمور والرسوم والإيصالات والحضور والعلامات والوثائق، و20 معلمًا مع الرواتب والوثائق والتكليفات والجدول.</p></div>
+    <div><h3 class="fw-bold mb-2"><i class="bi bi-database-gear"></i> مركز إدخال وتصفير البيانات</h3><p class="text-secondary mb-0">يدخل منظومة مترابطة تشمل 500 طالب و50 معلمًا و300 ولي أمر، مع العام والفصلين والصفوف والشعب والرسوم والإيصالات والحضور والعلامات والوثائق والمرشحين والجدول.</p></div>
     <div class="d-flex flex-wrap gap-2">
-      <form method="post">{% csrf_token %}<input type="hidden" name="action" value="seed_demo"><button class="btn btn-success btn-lg" onclick="return confirm('إضافة أو استكمال البيانات التجريبية؟')"><i class="bi bi-stars"></i> إضافة بيانات تجريبية</button></form>
-      <form method="post" onsubmit="return confirm('سيتم حذف البيانات الموسومة كتجريبية فقط. هل أنت متأكد؟')">{% csrf_token %}<input type="hidden" name="action" value="reset_demo"><input type="hidden" name="confirmation" value="RESET-DEMO"><button class="btn btn-outline-danger btn-lg"><i class="bi bi-arrow-counterclockwise"></i> تصفير البيانات التجريبية</button></form>
+      <form method="post">{% csrf_token %}<input type="hidden" name="action" value="seed_system"><button class="btn btn-success btn-lg" onclick="return confirm('سيتم استبدال البيانات التشغيلية الحالية ثم إدخال بيانات شاملة جديدة. متابعة؟')"><i class="bi bi-stars"></i> إدخال البيانات</button></form>
+      <form method="post" onsubmit="return confirm('سيتم حذف جميع الطلاب والمعلمين وأولياء الأمور والأعوام والعلامات والوثائق والإيصالات وبقية البيانات التشغيلية نهائيًا. متابعة؟')">{% csrf_token %}<input type="hidden" name="action" value="reset_all"><input class="form-control mb-2" name="confirmation" required placeholder="اكتب: تصفير شامل"><button class="btn btn-outline-danger btn-lg w-100"><i class="bi bi-arrow-counterclockwise"></i> تصفير جميع البيانات</button></form>
     </div>
   </div>
-  <div class="small text-muted mt-3">الحذف لا يمس البيانات الحقيقية ولا إعدادات المدرسة والصفوف. يمكن تنفيذ العمليتين أيضًا من Bash Console.</div>
+  <div class="small text-muted mt-3">يبقى حساب المدير الأعلى والصلاحيات وإعدادات المدرسة الأساسية فقط. كلمة المرور الموحدة لحسابات المعلمين وأولياء الأمور التي ينشئها الإدخال: <strong>Opal@12345</strong>، ويجب تغييرها قبل التشغيل الفعلي.</div>
 </div>
 {% endif %}
 

@@ -17,19 +17,28 @@ def system_settings(request):
     school = School.objects.filter(is_active=True).first() or School.objects.create(name="OPAL School")
     if request.method == "POST":
         action = request.POST.get("action", "settings")
-        if action in {"seed_demo", "reset_demo"}:
+        if action in {"seed_system", "reset_all"}:
             if not request.user.is_superuser:
-                messages.error(request, "إدارة البيانات التجريبية متاحة لمدير النظام الأعلى فقط.")
+                messages.error(request, "إدخال البيانات الشاملة وتصفيرها متاحان لمدير النظام الأعلى فقط.")
                 return redirect("core:system_settings")
-            from .demo_data import reset_demo_school, seed_demo_school
-            if action == "seed_demo":
-                result = seed_demo_school(student_count=100, teacher_count=20, user=request.user)
-                messages.success(request, f"تم تجهيز {result['students']} طالب و{result['teachers']} معلم و{result['families']} ملف ولي أمر تجريبي.")
-            elif request.POST.get("confirmation") == "RESET-DEMO":
-                result = reset_demo_school()
-                messages.success(request, f"تم حذف التجريبي فقط: {result['students']} طالب و{result['teachers']} معلم.")
+            from .system_data import reset_all_operational_data, seed_system_data
+            if action == "seed_system":
+                result = seed_system_data(user=request.user)
+                messages.success(
+                    request,
+                    f"تم إدخال بيانات شاملة: {result['students']} طالب، {result['teachers']} معلم، "
+                    f"{result['families']} ولي أمر، {result['marks']} علامة، {result['documents']} وثيقة، "
+                    f"و{result['receipts']} إيصال. كلمة مرور الحسابات المنشأة: {result['password']}",
+                )
+            elif request.POST.get("confirmation", "").strip() == "تصفير شامل":
+                result = reset_all_operational_data(keep_user=request.user)
+                messages.success(
+                    request,
+                    f"تم تصفير جميع البيانات التشغيلية: {result['students']} طالب، {result['teachers']} معلم، "
+                    f"{result['families']} ولي أمر، {result['documents']} وثيقة، و{result['receipts']} إيصال.",
+                )
             else:
-                messages.error(request, "تعذر التصفير: تأكيد العملية غير صحيح.")
+                messages.error(request, "تعذر التصفير: اكتب عبارة «تصفير شامل» كما هي.")
             return redirect("core:system_settings")
         form = SchoolSettingsForm(request.POST, request.FILES, instance=school)
         if form.is_valid():

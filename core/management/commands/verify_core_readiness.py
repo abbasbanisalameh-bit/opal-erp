@@ -225,7 +225,7 @@ class Command(BaseCommand):
 
         demo_students = Student.objects.filter(is_demo=True).count()
         if demo_students:
-            add(warnings, "DATA_DEMO_STUDENTS", f"توجد بيانات تجريبية لعدد {demo_students} طالب.")
+            add(warnings, "DATA_GENERATED_STUDENTS", f"توجد سجلات مولدة آليًا وفق الحقل التاريخي لعدد {demo_students} طالب.")
 
         report = {
             "ready": not errors and (not warnings or not options["strict_warnings"]),
