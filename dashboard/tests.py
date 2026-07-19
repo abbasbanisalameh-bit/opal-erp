@@ -13,6 +13,7 @@ from accounting.models import FeeCategory, StudentInvoice, StudentPayment
 from attendance_v2.models import Attendance
 from core.models import AcademicYear, School
 from exams.models import Exam, StudentMark
+from enterprise_ops.models import FeedbackTicket
 from students.models import Student
 
 from .views import _executive_snapshot
@@ -50,7 +51,42 @@ class DashboardPerformanceTests(TestCase):
             response = self.client.get(reverse("dashboard:home"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertLessEqual(len(queries), 25)
+        self.assertLessEqual(len(queries), 26)
+
+
+    def test_dashboard_exposes_professional_satisfaction_analytics(self):
+        FeedbackTicket.objects.create(
+            sender=self.admin,
+            kind="suggestion",
+            title="تقييم أول",
+            message="ملاحظات",
+            teaching_quality_rating=5,
+            electronic_services_rating=4,
+        )
+        FeedbackTicket.objects.create(
+            sender=self.admin,
+            kind="complaint",
+            title="تقييم ثان",
+            message="ملاحظات",
+            teaching_quality_rating=3,
+            electronic_services_rating=2,
+        )
+
+        snapshot = _executive_snapshot()
+        self.assertEqual(snapshot["feedback_total"], 2)
+        self.assertEqual(snapshot["teaching_rating_average"], 4.0)
+        self.assertEqual(snapshot["electronic_rating_average"], 3.0)
+        self.assertEqual(snapshot["teaching_satisfaction_percent"], 80.0)
+        self.assertEqual(snapshot["electronic_satisfaction_percent"], 60.0)
+        self.assertEqual(snapshot["teaching_rating_distribution"], [0, 0, 1, 0, 1])
+        self.assertEqual(snapshot["electronic_rating_distribution"], [0, 1, 0, 1, 0])
+
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse("dashboard:home"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "مؤشر رضا المستخدمين")
+        self.assertContains(response, "ratingDistributionChart")
+        self.assertContains(response, "توزيع التقييمات")
 
     def test_optimized_snapshot_preserves_finance_marks_and_attendance_metrics(self):
         school = School.objects.create(name="مدرسة المؤشرات")

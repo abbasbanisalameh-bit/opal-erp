@@ -1,5 +1,5 @@
 {% extends "base/base.html" %}
-{% load static %}
+{% load static l10n %}
 
 {% block title %}لوحة الإدارة التنفيذية | OPAL ERP{% endblock %}
 {% block nav_dashboard %}active{% endblock %}
@@ -22,6 +22,79 @@
     <div class="dashboard-card"><span>الوثائق المصدرة</span><h2>{{ issued_documents }}</h2><small>وثائق رسمية محفوظة</small></div>
     <a class="dashboard-card text-decoration-none" href="{% url 'admissions:candidate_list' %}"><span>طلبة مرشحون للقبول</span><h2>{{ candidate_students }}</h2><small>لا يعدّون طلابًا مسجلين</small></a>
     <div class="dashboard-card"><span>امتحانات النظام</span><h2>{{ exams_count }}</h2><small>متوسط العلامات: {{ academic_average|floatformat:1 }}</small></div>
+</section>
+
+<section class="opal-satisfaction-board" aria-labelledby="opal-satisfaction-title">
+    <div class="opal-satisfaction-head">
+        <div>
+            <span class="opal-section-eyebrow"><i class="bi bi-emoji-smile-fill"></i> صوت المستخدمين</span>
+            <h2 id="opal-satisfaction-title">مؤشر رضا المستخدمين</h2>
+            <p>قراءة مباشرة لتقييمات جودة التدريس والخدمات الإلكترونية من الشكاوى والاقتراحات المرسلة.</p>
+        </div>
+        <a class="btn btn-outline-info" href="{% url 'enterprise_ops:feedback_list' %}"><i class="bi bi-chat-square-heart-fill"></i> عرض التقييمات والتفاصيل</a>
+    </div>
+
+    <div class="opal-satisfaction-summary">
+        <article class="opal-satisfaction-score teaching" style="--opal-score: {{ teaching_satisfaction_percent|default:0|unlocalize }}%;">
+            <div class="opal-score-ring">
+                <div><strong>{{ teaching_rating_average|floatformat:1 }}</strong><span>من 5</span></div>
+            </div>
+            <div class="opal-score-copy">
+                <div class="opal-score-icon"><i class="bi bi-mortarboard-fill"></i></div>
+                <span>جودة التدريس</span>
+                <h3>{{ teaching_satisfaction_percent|floatformat:1 }}% رضا</h3>
+                <p>{{ teaching_positive_percent|floatformat:1 }}% من التقييمات إيجابية (4 أو 5 نجوم).</p>
+            </div>
+        </article>
+
+        <article class="opal-satisfaction-score electronic" style="--opal-score: {{ electronic_satisfaction_percent|default:0|unlocalize }}%;">
+            <div class="opal-score-ring">
+                <div><strong>{{ electronic_rating_average|floatformat:1 }}</strong><span>من 5</span></div>
+            </div>
+            <div class="opal-score-copy">
+                <div class="opal-score-icon"><i class="bi bi-laptop-fill"></i></div>
+                <span>الخدمات الإلكترونية</span>
+                <h3>{{ electronic_satisfaction_percent|floatformat:1 }}% رضا</h3>
+                <p>{{ electronic_positive_percent|floatformat:1 }}% من التقييمات إيجابية (4 أو 5 نجوم).</p>
+            </div>
+        </article>
+
+        <article class="opal-satisfaction-overview is-{{ feedback_satisfaction_level }}">
+            <div class="opal-overall-top">
+                <div class="opal-score-icon"><i class="bi bi-heart-pulse-fill"></i></div>
+                <div><span>الرضا العام</span><h3>{{ feedback_satisfaction_label }}</h3></div>
+                <strong>{{ overall_satisfaction_percent|floatformat:1 }}%</strong>
+            </div>
+            <div class="opal-overview-meter"><span style="width: {{ overall_satisfaction_percent|default:0|unlocalize }}%;"></span></div>
+            <div class="opal-overview-stats">
+                <div><strong>{{ feedback_total }}</strong><span>إجمالي المشاركات</span></div>
+                <div><strong>{{ feedback_recent_total }}</strong><span>آخر 30 يومًا</span></div>
+                <div><strong>{{ both_positive_percent|floatformat:1 }}%</strong><span>راضون عن الجانبين</span></div>
+            </div>
+            <div class="opal-satisfaction-trend {% if feedback_trend_delta > 0 %}up{% elif feedback_trend_delta < 0 %}down{% else %}steady{% endif %}">
+                {% if feedback_trend_delta > 0 %}<i class="bi bi-graph-up-arrow"></i> تحسن بمقدار {{ feedback_trend_delta|floatformat:1 }} نقطة
+                {% elif feedback_trend_delta < 0 %}<i class="bi bi-graph-down-arrow"></i> انخفاض بمقدار {{ feedback_trend_abs|floatformat:1 }} نقطة
+                {% else %}<i class="bi bi-dash-circle"></i> لا يوجد تغير قابل للمقارنة حاليًا{% endif %}
+            </div>
+        </article>
+    </div>
+
+    <div class="opal-satisfaction-details">
+        <div class="opal-rating-chart-card">
+            <div class="opal-chart-title">
+                <div><i class="bi bi-bar-chart-fill"></i><span>توزيع التقييمات</span></div>
+                <small>عدد المشاركات لكل درجة من 1 إلى 5</small>
+            </div>
+            <div class="chart-box opal-rating-chart-box"><canvas id="ratingDistributionChart"></canvas></div>
+        </div>
+        <div class="opal-audience-card">
+            <div class="opal-chart-title"><div><i class="bi bi-people-fill"></i><span>مصادر التقييم</span></div></div>
+            <div class="opal-audience-row"><span><i class="bi bi-person-workspace"></i> المعلمون</span><strong>{{ feedback_teacher_responses }}</strong></div>
+            <div class="opal-audience-row"><span><i class="bi bi-people"></i> أولياء الأمور</span><strong>{{ feedback_parent_responses }}</strong></div>
+            <div class="opal-audience-row"><span><i class="bi bi-calendar3"></i> بداية فترة الاتجاه</span><strong>{{ feedback_period_start }}</strong></div>
+            <a href="{% url 'enterprise_ops:report_export_csv' 'feedback' %}" class="btn btn-success w-100 mt-3"><i class="bi bi-file-earmark-spreadsheet-fill"></i> تصدير تقرير التقييمات</a>
+        </div>
+    </div>
 </section>
 
 <section class="dashboard-layout">
@@ -82,6 +155,8 @@
 {{ monthly_income_labels|json_script:"income-labels" }}
 {{ monthly_income_values|json_script:"income-values" }}
 {{ attendance_trend|json_script:"attendance-trend" }}
+{{ teaching_rating_distribution|json_script:"teaching-rating-distribution" }}
+{{ electronic_rating_distribution|json_script:"electronic-rating-distribution" }}
 {% endblock %}
 
 {% block extra_js %}
@@ -91,10 +166,33 @@ if (typeof Chart !== "undefined") {
 const incomeLabels = JSON.parse(document.getElementById("income-labels")?.textContent || "[]");
 const incomeValues = JSON.parse(document.getElementById("income-values")?.textContent || "[]");
 const attendanceTrend = JSON.parse(document.getElementById("attendance-trend")?.textContent || "[]");
+const teachingRatingDistribution = JSON.parse(document.getElementById("teaching-rating-distribution")?.textContent || "[]");
+const electronicRatingDistribution = JSON.parse(document.getElementById("electronic-rating-distribution")?.textContent || "[]");
 
 new Chart(document.getElementById("incomeChart"), {type:"bar",data:{labels:incomeLabels.length?incomeLabels:["لا توجد بيانات"],datasets:[{label:"الإيرادات",data:incomeValues.length?incomeValues:[0],backgroundColor:"rgba(20,184,166,.85)",borderRadius:10}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:"#dbeafe"}}},scales:{x:{ticks:{color:"#dbeafe"},grid:{color:"#1e334f"}},y:{ticks:{color:"#dbeafe"},grid:{color:"#1e334f"}}}}});
 new Chart(document.getElementById("attendanceChart"), {type:"doughnut",data:{labels:["حاضر","غائب","متأخر","بعذر"],datasets:[{data:[{{ present_today }},{{ absent_today }},{{ late_today }},{{ excused_today }}],backgroundColor:["#14b8a6","#fb7185","#f59e0b","#60a5fa"],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:"68%",plugins:{legend:{position:"bottom",labels:{color:"#dbeafe"}}}}});
 new Chart(document.getElementById("attendanceTrendChart"), {type:"line",data:{labels:attendanceTrend.map(x=>x.date),datasets:[{label:"نسبة الحضور %",data:attendanceTrend.map(x=>x.percent),tension:.35,fill:true,borderColor:"#60a5fa",backgroundColor:"rgba(96,165,250,.16)"}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:"#dbeafe"}}},scales:{x:{ticks:{color:"#dbeafe"},grid:{color:"#1e334f"}},y:{min:0,max:100,ticks:{color:"#dbeafe"},grid:{color:"#1e334f"}}}}});
+const ratingCanvas = document.getElementById("ratingDistributionChart");
+if (ratingCanvas) {
+    new Chart(ratingCanvas, {
+        type: "bar",
+        data: {
+            labels: ["1 نجمة", "2 نجمتان", "3 نجوم", "4 نجوم", "5 نجوم"],
+            datasets: [
+                {label: "جودة التدريس", data: teachingRatingDistribution, backgroundColor: "rgba(139,92,246,.82)", borderRadius: 9},
+                {label: "الخدمات الإلكترونية", data: electronicRatingDistribution, backgroundColor: "rgba(34,211,238,.82)", borderRadius: 9}
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {legend: {position: "bottom", labels: {color: "#dbeafe", usePointStyle: true}}},
+            scales: {
+                x: {ticks: {color: "#dbeafe"}, grid: {display: false}},
+                y: {beginAtZero: true, ticks: {color: "#dbeafe", precision: 0}, grid: {color: "#1e334f"}}
+            }
+        }
+    });
+}
 }
 </script>
 {% endblock %}

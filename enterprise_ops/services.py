@@ -1,11 +1,133 @@
+from datetime import timedelta
+
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import DatabaseError, transaction
+from django.db.models import Avg, Count, Q
 from django.utils import timezone
 
 from core.models import AuditLog
 
-from .models import ApprovalAction, Notification
+from .models import ApprovalAction, FeedbackTicket, Notification
+
+
+def feedback_satisfaction_snapshot(queryset=None, today=None):
+    """Return one-query satisfaction analytics for management dashboards.
+
+    Ratings are stored on every feedback ticket from 1 to 5. The returned
+    percentages are safe for empty datasets and ready for charts/templates.
+    """
+    qs = queryset if queryset is not None else FeedbackTicket.objects.all()
+    today = today or timezone.localdate()
+    recent_start = today - timedelta(days=29)
+    previous_start = recent_start - timedelta(days=30)
+
+    metrics = {
+        "total": Count("id"),
+        "teaching_average": Avg("teaching_quality_rating"),
+        "electronic_average": Avg("electronic_services_rating"),
+        "teaching_positive": Count("id", filter=Q(teaching_quality_rating__gte=4)),
+        "electronic_positive": Count("id", filter=Q(electronic_services_rating__gte=4)),
+        "both_positive": Count(
+            "id",
+            filter=Q(teaching_quality_rating__gte=4, electronic_services_rating__gte=4),
+        ),
+        "recent_total": Count("id", filter=Q(created_at__date__gte=recent_start)),
+        "recent_teaching_average": Avg(
+            "teaching_quality_rating",
+            filter=Q(created_at__date__gte=recent_start),
+        ),
+        "recent_electronic_average": Avg(
+            "electronic_services_rating",
+            filter=Q(created_at__date__gte=recent_start),
+        ),
+        "previous_teaching_average": Avg(
+            "teaching_quality_rating",
+            filter=Q(created_at__date__gte=previous_start, created_at__date__lt=recent_start),
+        ),
+        "previous_electronic_average": Avg(
+            "electronic_services_rating",
+            filter=Q(created_at__date__gte=previous_start, created_at__date__lt=recent_start),
+        ),
+        "teacher_responses": Count("id", filter=Q(sender__teacher_profile__isnull=False)),
+        "parent_responses": Count("id", filter=Q(sender__family_account__isnull=False)),
+    }
+    for score in range(1, 6):
+        metrics[f"teaching_{score}"] = Count(
+            "id", filter=Q(teaching_quality_rating=score)
+        )
+        metrics[f"electronic_{score}"] = Count(
+            "id", filter=Q(electronic_services_rating=score)
+        )
+
+    raw = qs.aggregate(**metrics)
+    total = raw["total"] or 0
+
+    def score(value):
+        return round(float(value or 0), 2)
+
+    def percent_from_average(value):
+        return round((score(value) / 5) * 100, 1) if total else 0
+
+    def positive_percent(value):
+        return round(((value or 0) / total) * 100, 1) if total else 0
+
+    teaching_average = score(raw["teaching_average"])
+    electronic_average = score(raw["electronic_average"])
+    overall_average = round((teaching_average + electronic_average) / 2, 2) if total else 0
+    overall_percent = round((overall_average / 5) * 100, 1) if total else 0
+
+    recent_teaching = score(raw["recent_teaching_average"])
+    recent_electronic = score(raw["recent_electronic_average"])
+    previous_teaching = score(raw["previous_teaching_average"])
+    previous_electronic = score(raw["previous_electronic_average"])
+    recent_overall = round((recent_teaching + recent_electronic) / 2, 2) if raw["recent_total"] else 0
+    previous_overall = (
+        round((previous_teaching + previous_electronic) / 2, 2)
+        if raw["previous_teaching_average"] is not None or raw["previous_electronic_average"] is not None
+        else 0
+    )
+    trend_delta = round(recent_overall - previous_overall, 2) if recent_overall and previous_overall else 0
+
+    if not total:
+        satisfaction_label = "لا توجد تقييمات بعد"
+        satisfaction_level = "empty"
+    elif overall_percent >= 85:
+        satisfaction_label = "رضا ممتاز"
+        satisfaction_level = "excellent"
+    elif overall_percent >= 70:
+        satisfaction_label = "رضا جيد"
+        satisfaction_level = "good"
+    elif overall_percent >= 50:
+        satisfaction_label = "رضا متوسط"
+        satisfaction_level = "medium"
+    else:
+        satisfaction_label = "يحتاج إلى تحسين"
+        satisfaction_level = "low"
+
+    return {
+        "feedback_total": total,
+        "feedback_recent_total": raw["recent_total"] or 0,
+        "teaching_rating_average": teaching_average,
+        "electronic_rating_average": electronic_average,
+        "overall_rating_average": overall_average,
+        "teaching_satisfaction_percent": percent_from_average(raw["teaching_average"]),
+        "electronic_satisfaction_percent": percent_from_average(raw["electronic_average"]),
+        "overall_satisfaction_percent": overall_percent,
+        "teaching_positive_percent": positive_percent(raw["teaching_positive"]),
+        "electronic_positive_percent": positive_percent(raw["electronic_positive"]),
+        "both_positive_percent": positive_percent(raw["both_positive"]),
+        "teaching_rating_distribution": [raw[f"teaching_{score}"] or 0 for score in range(1, 6)],
+        "electronic_rating_distribution": [raw[f"electronic_{score}"] or 0 for score in range(1, 6)],
+        "feedback_teacher_responses": raw["teacher_responses"] or 0,
+        "feedback_parent_responses": raw["parent_responses"] or 0,
+        "feedback_recent_overall_average": recent_overall,
+        "feedback_trend_delta": trend_delta,
+        "feedback_trend_abs": abs(trend_delta),
+        "feedback_satisfaction_label": satisfaction_label,
+        "feedback_satisfaction_level": satisfaction_level,
+        "feedback_period_start": recent_start,
+    }
 
 
 def client_ip(request):

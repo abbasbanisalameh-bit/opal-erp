@@ -89,6 +89,27 @@ class CommunicationCenterTests(TestCase):
         self.assertTrue(Notification.objects.filter(recipient=self.teacher_user, title="تنبيه مباشر").exists())
         self.assertFalse(Notification.objects.filter(recipient=self.parent_user, title="تنبيه مباشر").exists())
 
+
+    def test_management_communication_dashboard_shows_satisfaction_summary(self):
+        FeedbackTicket.objects.create(
+            sender=self.parent_user,
+            school=self.school,
+            branch=self.branch,
+            kind="suggestion",
+            title="تجربة المنصة",
+            message="جيدة",
+            teaching_quality_rating=5,
+            electronic_services_rating=4,
+        )
+        self.client.force_login(self.manager)
+        response = self.client.get(reverse("enterprise_ops:dashboard"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "مؤشرات رضا المستخدمين")
+        self.assertEqual(response.context["overall_rating_average"], 4.5)
+        self.assertEqual(response.context["feedback_total"], 1)
+        self.assertEqual(response.context["feedback_parent_responses"], 1)
+        self.assertContains(response, 'style="width:100.0%"')
+
     def test_reports_audit_and_announcement_management_are_available(self):
         for user in (self.teacher_user, self.parent_user):
             self.client.force_login(user)

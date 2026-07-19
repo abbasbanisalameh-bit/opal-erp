@@ -409,3 +409,68 @@ document.addEventListener("DOMContentLoaded", function () {
     document.addEventListener("visibilitychange", function () { if (!document.hidden) poll(); });
     poll();
 })();
+
+/* ===== OPAL Professional Action Icons V1 ===== */
+(function () {
+    "use strict";
+
+    const iconRules = [
+        {pattern: /حذف|إزالة|إلغاء نهائي|مسح/, icon: "bi-trash3-fill"},
+        {pattern: /حفظ|تأكيد|اعتماد|تحديث/, icon: "bi-check2-circle"},
+        {pattern: /إضافة|إنشاء|جديد|تسجيل طالب/, icon: "bi-plus-circle-fill"},
+        {pattern: /تعديل|تحرير/, icon: "bi-pencil-square"},
+        {pattern: /بحث|ابحث/, icon: "bi-search"},
+        {pattern: /تصفية|فلتر/, icon: "bi-funnel-fill"},
+        {pattern: /تصدير|Excel|CSV/, icon: "bi-file-earmark-spreadsheet-fill"},
+        {pattern: /تنزيل|تحميل/, icon: "bi-download"},
+        {pattern: /طباعة/, icon: "bi-printer-fill"},
+        {pattern: /رجوع|عودة/, icon: "bi-arrow-return-right"},
+        {pattern: /إرسال|تعميم|تنبيه/, icon: "bi-send-fill"},
+        {pattern: /تشغيل|تفعيل/, icon: "bi-play-circle-fill"},
+        {pattern: /إيقاف|تعطيل/, icon: "bi-pause-circle-fill"},
+        {pattern: /عرض|فتح|تفاصيل/, icon: "bi-eye-fill"},
+        {pattern: /دخول/, icon: "bi-box-arrow-in-left"},
+        {pattern: /دفع|دفعة|تحصيل/, icon: "bi-cash-coin"},
+        {pattern: /إيصال/, icon: "bi-receipt-cutoff"},
+        {pattern: /رفع/, icon: "bi-cloud-arrow-up-fill"},
+        {pattern: /استعادة/, icon: "bi-arrow-counterclockwise"}
+    ];
+
+    function decorateButton(button) {
+        if (!(button instanceof Element) || button.dataset.opalNoAutoIcon === "1") return;
+        if (button.querySelector(":scope > .bi, :scope > .spinner-border, :scope > svg")) return;
+        const label = (button.textContent || button.value || "").replace(/\s+/g, " ").trim();
+        if (!label) return;
+        const rule = iconRules.find(function (item) { return item.pattern.test(label); });
+        if (!rule) return;
+        const icon = document.createElement("i");
+        icon.className = "bi " + rule.icon + " opal-auto-action-icon";
+        icon.setAttribute("aria-hidden", "true");
+        button.prepend(icon);
+        button.classList.add("opal-action-button");
+    }
+
+    function decorateWithin(root) {
+        if (!root || !(root instanceof Element || root instanceof Document)) return;
+        if (root instanceof Element && root.matches(".btn, .primary-btn")) decorateButton(root);
+        root.querySelectorAll(".btn, .primary-btn").forEach(decorateButton);
+    }
+
+    function initialize() {
+        decorateWithin(document);
+        const observer = new MutationObserver(function (mutations) {
+            mutations.forEach(function (mutation) {
+                mutation.addedNodes.forEach(function (node) {
+                    if (node.nodeType === Node.ELEMENT_NODE) decorateWithin(node);
+                });
+            });
+        });
+        observer.observe(document.body, {childList: true, subtree: true});
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initialize, {once: true});
+    } else {
+        initialize();
+    }
+})();

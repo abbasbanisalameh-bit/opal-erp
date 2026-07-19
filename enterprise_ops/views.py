@@ -32,7 +32,15 @@ from .forms import (
 )
 from .models import BroadcastMessage, FeedbackTicket, Notification, RolePermissionRule, WorkflowRequest
 from .permissions import feature_required, is_management, management_required, role_code, superuser_required
-from .services import audit, management_recipients, notify, notify_management, send_broadcast_notifications, transition_workflow
+from .services import (
+    audit,
+    feedback_satisfaction_snapshot,
+    management_recipients,
+    notify,
+    notify_management,
+    send_broadcast_notifications,
+    transition_workflow,
+)
 
 
 def _workflow_scope(user):
@@ -241,6 +249,7 @@ def enterprise_dashboard(request):
     today = timezone.localdate()
     feedback = FeedbackTicket.objects.select_related("sender", "assigned_to")
     context = {
+        **feedback_satisfaction_snapshot(feedback, today=today),
         "new_feedback_count": feedback.filter(status="new").count(),
         "review_feedback_count": feedback.filter(status="review").count(),
         "resolved_feedback_count": feedback.filter(status__in=["resolved", "closed"]).count(),

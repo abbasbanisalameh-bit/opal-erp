@@ -1,4 +1,5 @@
 {% extends "base/base.html" %}
+{% load l10n %}
 {% block title %}الإشعارات والشكاوى والتنبيهات | OPAL{% endblock %}
 {% block page_title %}الإشعارات والشكاوى والتنبيهات{% endblock %}
 {% block page_subtitle %}إدارة التواصل المدرسي، الشكاوى والاقتراحات، التعاميم، التنبيهات والإعلانات{% endblock %}
@@ -11,6 +12,21 @@
   <div class="opal-enterprise-kpi warning"><div class="kpi-icon"><i class="bi bi-bell-fill"></i></div><div class="kpi-label">إشعارات غير مقروءة</div><div class="kpi-value">{{ unread_notifications }}</div></div>
   <div class="opal-enterprise-kpi"><div class="kpi-icon"><i class="bi bi-activity"></i></div><div class="kpi-label">عمليات اليوم</div><div class="kpi-value">{{ audit_today }}</div></div>
 </div>
+
+<section class="opal-enterprise-section opal-satisfaction-mini mb-4">
+  <div class="section-head">
+    <div>
+      <h3 class="section-title"><i class="bi bi-emoji-smile-fill me-2"></i>مؤشرات رضا المستخدمين</h3>
+      <div class="text-secondary small">ملخص جميع تقييمات جودة التدريس والخدمات الإلكترونية.</div>
+    </div>
+    <a href="{% url 'dashboard:home' %}#opal-satisfaction-title" class="btn btn-sm btn-outline-info"><i class="bi bi-speedometer2"></i> العرض التحليلي</a>
+  </div>
+  <div class="opal-satisfaction-mini-grid">
+    <div class="opal-satisfaction-mini-card teaching"><i class="bi bi-mortarboard-fill"></i><div><span>جودة التدريس</span><strong>{{ teaching_rating_average|floatformat:1 }}/5</strong><small>{{ teaching_satisfaction_percent|floatformat:1 }}% رضا</small></div><div class="opal-mini-progress"><span style="width:{{ teaching_satisfaction_percent|default:0|unlocalize }}%"></span></div></div>
+    <div class="opal-satisfaction-mini-card electronic"><i class="bi bi-laptop-fill"></i><div><span>الخدمات الإلكترونية</span><strong>{{ electronic_rating_average|floatformat:1 }}/5</strong><small>{{ electronic_satisfaction_percent|floatformat:1 }}% رضا</small></div><div class="opal-mini-progress"><span style="width:{{ electronic_satisfaction_percent|default:0|unlocalize }}%"></span></div></div>
+    <div class="opal-satisfaction-mini-card overall is-{{ feedback_satisfaction_level }}"><i class="bi bi-heart-pulse-fill"></i><div><span>الرضا العام</span><strong>{{ overall_satisfaction_percent|floatformat:1 }}%</strong><small>{{ feedback_satisfaction_label }} · {{ feedback_total }} مشاركة</small></div><div class="opal-mini-progress"><span style="width:{{ overall_satisfaction_percent|default:0|unlocalize }}%"></span></div></div>
+  </div>
+</section>
 
 <div class="opal-module-grid mb-4">
   <a class="opal-module-card" href="{% url 'enterprise_ops:feedback_list' %}"><i class="bi bi-chat-square-text-fill"></i><div><h3>الشكاوى والاقتراحات</h3><p>استقبال الرسائل، مراجعتها والرد عليها مع تقييمين منفصلين.</p></div></a>

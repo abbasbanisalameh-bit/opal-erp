@@ -17,6 +17,7 @@ from attendance_v2.models import Attendance
 from documents.models import IssuedDocument
 from admissions.models import AdmissionApplication
 from exams.models import Exam, StudentMark
+from enterprise_ops.services import feedback_satisfaction_snapshot
 from students.models import Student
 
 
@@ -149,13 +150,6 @@ def _executive_snapshot():
             "percent": round((present / total) * 100) if total else 0,
         })
 
-    grade_performance = list(
-        StudentMark.objects
-        .values("exam__grade__name")
-        .annotate(avg=Avg("mark"), count=Count("id"))
-        .order_by("exam__grade__name")[:12]
-    )
-
     # A lightweight management watchlist: financial exposure + attendance risk.
     financial_watch = list(
         StudentInvoice.objects
@@ -172,7 +166,10 @@ def _executive_snapshot():
         .order_by("-risk_events")[:8]
     )
 
+    satisfaction = feedback_satisfaction_snapshot(today=today)
+
     return {
+        **satisfaction,
         "today": today,
         "period_start": period_start,
         "students_count": students_count,
@@ -202,7 +199,6 @@ def _executive_snapshot():
         "monthly_income_labels": monthly_income_labels,
         "monthly_income_values": monthly_income_values,
         "attendance_trend": attendance_trend,
-        "grade_performance": grade_performance,
         "financial_watch": financial_watch,
         "attendance_watch": attendance_watch,
     }
