@@ -272,6 +272,7 @@ def sibling_check_api(request):
 
 
 @login_required
+@management_required
 def fee_payment_create(request):
     query = request.GET.get("q", "").strip()
     student_id = request.GET.get("student") or request.POST.get("student")
@@ -330,6 +331,7 @@ def fee_payment_create(request):
 
 
 @login_required
+@management_required
 def fee_payment_search_api(request):
     query = request.GET.get("q", "").strip()
     results = search_students(query) if query else []
@@ -351,6 +353,7 @@ def fee_payment_search_api(request):
 
 
 @login_required
+@management_required
 def fee_payment_preview_api(request):
     student = get_object_or_404(Student, pk=request.GET.get("student"))
     amount = request.GET.get("amount") or "0"
@@ -384,6 +387,7 @@ def fee_payment_preview_api(request):
 
 
 @login_required
+@management_required
 def fee_payment_receipt(request, pk):
     fee_payment = get_object_or_404(
         FeePayment.objects.select_related("school", "main_student", "created_by").prefetch_related("allocations__student"),
@@ -402,6 +406,7 @@ def fee_payment_receipt(request, pk):
 
 
 @login_required
+@management_required
 def fee_payment_archive(request):
     show_deleted = request.GET.get("show_deleted") == "1"
     payments = FeePayment.objects.select_related("main_student", "created_by", "deleted_by").prefetch_related("allocations")
@@ -456,6 +461,7 @@ def registration_payment_safe_delete(request, pk):
 
 
 @login_required
+@management_required
 def student_financial_record(request, student_id):
     student = get_object_or_404(Student, pk=student_id)
     invoices = student.invoices.select_related("fee_category").prefetch_related("payments").all()

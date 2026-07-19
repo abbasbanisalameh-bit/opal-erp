@@ -1,3 +1,4 @@
+from django.db.models import Q
 from django.shortcuts import render, redirect, get_object_or_404
 from enterprise_ops.permissions import management_required
 from .models import Student
@@ -12,7 +13,7 @@ def student_list(request):
     students = Student.objects.all().order_by("full_name")
 
     if q:
-        students = students.filter(full_name__icontains=q) | Student.objects.filter(student_number__icontains=q)
+        students = students.filter(Q(full_name__icontains=q) | Q(student_number__icontains=q))
 
     if status_filter:
         students = students.filter(status=status_filter)
@@ -33,7 +34,7 @@ def student_detail(request, pk):
 @management_required
 def student_create(request):
     # تم اعتماد نموذج التسجيل الذكي كنموذج التسجيل الوحيد في النظام.
-    return redirect("/admissions/register/")
+    return redirect("admissions:direct_registration")
 
 @management_required
 def student_update(request, pk):

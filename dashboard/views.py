@@ -3,7 +3,6 @@ from datetime import timedelta
 from decimal import Decimal
 
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.contrib.auth.models import User
 from django.db.models import Avg, Count, DecimalField, ExpressionWrapper, F, Q, Sum, Value
 from django.db.models.functions import Coalesce, TruncMonth
 from django.http import HttpResponse
@@ -19,6 +18,7 @@ from admissions.models import AdmissionApplication
 from exams.models import Exam, StudentMark
 from enterprise_ops.services import feedback_satisfaction_snapshot
 from students.models import Student
+from teachers.models import Teacher
 
 
 def _is_management_user(user):
@@ -41,7 +41,7 @@ def _executive_snapshot():
     active_students = student_stats["active"]
     inactive_students = max(students_count - active_students, 0)
 
-    teachers_count = User.objects.filter(is_staff=True, is_active=True).count()
+    teachers_count = Teacher.objects.filter(is_active=True).count()
     sections_count = Section.objects.count()
     exams_count = Exam.objects.count()
 
@@ -50,12 +50,12 @@ def _executive_snapshot():
         present=Count("id", filter=Q(status="present")),
         absent=Count("id", filter=Q(status="absent")),
         late=Count("id", filter=Q(status="late")),
-        excused=Count("id", filter=Q(status="excused")),
+        departed=Count("id", filter=Q(status="departed")),
     )
     present_today = today_attendance["present"]
     absent_today = today_attendance["absent"]
     late_today = today_attendance["late"]
-    excused_today = today_attendance["excused"]
+    departed_today = today_attendance["departed"]
     attendance_total_today = today_attendance["total"]
     attendance_percent = (
         round((present_today / attendance_total_today) * 100)
@@ -181,7 +181,7 @@ def _executive_snapshot():
         "present_today": present_today,
         "absent_today": absent_today,
         "late_today": late_today,
-        "excused_today": excused_today,
+        "departed_today": departed_today,
         "attendance_percent": attendance_percent,
         "period_absences": period_absences,
         "period_late": period_late,

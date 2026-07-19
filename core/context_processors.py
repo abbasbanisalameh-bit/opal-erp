@@ -35,3 +35,30 @@ def opal_identity(request):
         "opal_is_impersonating": bool(impersonator_id),
         "opal_impersonator_name": impersonator_name,
     }
+
+
+def opal_operations(request):
+    """Expose the role-aware canonical operation catalogue on every authenticated page."""
+    if not request.user.is_authenticated:
+        return {
+            "opal_operation_catalog": [],
+            "opal_operation_groups": [],
+            "opal_current_operation": None,
+            "opal_is_management": False,
+        }
+
+    from enterprise_ops.permissions import is_management
+    from .workflow_catalog import get_operations_for_user, group_operations
+
+    operations = get_operations_for_user(request.user)
+    resolver = getattr(request, "resolver_match", None)
+    route_name = ""
+    if resolver and resolver.url_name:
+        route_name = f"{resolver.namespace}:{resolver.url_name}" if resolver.namespace else resolver.url_name
+    current = next((item for item in operations if item["route"] == route_name), None)
+    return {
+        "opal_operation_catalog": operations,
+        "opal_operation_groups": group_operations(operations),
+        "opal_current_operation": current,
+        "opal_is_management": is_management(request.user),
+    }

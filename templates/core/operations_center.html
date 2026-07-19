@@ -1,0 +1,125 @@
+{% extends "base/base.html" %}
+{% block title %}دليل العمليات الموحد | OPAL ERP{% endblock %}
+{% block page_title %}دليل العمليات الموحد{% endblock %}
+{% block page_subtitle %}كل إجراء له شاشة رسمية واحدة، مع خريطة تكامل وفحص لحالة الترابط بين الوحدات{% endblock %}
+{% block content %}
+<section class="opal-operations-hero mb-4">
+  <div>
+    <span class="opal-eyebrow"><i class="bi bi-signpost-split-fill"></i> المسار الرسمي للنظام</span>
+    <h2>ابحث عن العملية، ثم انتقل مباشرة إلى مكان تنفيذها الوحيد</h2>
+    <p>الروابط الأخرى داخل بطاقات الطلاب والمعلمين والأسرة هي اختصارات سياقية إلى الشاشة الرسمية نفسها، وليست وظائف مكررة.</p>
+  </div>
+  <div class="opal-operations-health is-{{ integration_health_class }}">
+    <div class="opal-health-ring" style="--opal-health:{{ integration_health_percent }}%"><span>{{ integration_health_percent }}%</span></div>
+    <div><strong>{{ integration_health_label }}</strong><small>{{ integration_passed_checks }} من {{ integration_total_checks }} فحصًا دون ملاحظات</small></div>
+  </div>
+</section>
+
+<div class="opal-operations-search-card mb-4">
+  <i class="bi bi-search"></i>
+  <input id="opal-operations-page-search" type="search" class="form-control" placeholder="ابحث: تسجيل طالب، تسديد رسوم، جدول، علامة، شكوى، تقرير..." autocomplete="off">
+  <span>{{ operation_count }} عملية رسمية</span>
+</div>
+
+<div id="opal-operations-groups">
+{% for group in operation_groups %}
+<section class="opal-operation-group" data-operation-group>
+  <header>
+    <div class="opal-operation-group-icon is-{{ group.color }}"><i class="bi bi-{{ group.icon }}"></i></div>
+    <div><h3>{{ group.label }}</h3><p>{{ group.operations|length }} مسارات رسمية</p></div>
+  </header>
+  <div class="opal-operation-grid">
+    {% for operation in group.operations %}
+    <a class="opal-operation-card is-{{ operation.module_color }}" href="{{ operation.url }}" data-operation-card data-search="{{ operation.search_text|lower }}">
+      <span class="opal-operation-icon"><i class="bi bi-{{ operation.icon }}"></i></span>
+      <span class="opal-operation-copy"><strong>{{ operation.label }}</strong><small>{{ operation.description }}</small></span>
+      <i class="bi bi-arrow-left-circle opal-operation-arrow"></i>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endfor %}
+<div id="opal-operations-empty" class="opal-empty-state d-none"><i class="bi bi-search"></i>لا توجد عملية مطابقة. جرّب اسمًا آخر أو كلمة مرتبطة بالمهمة.</div>
+</div>
+
+<section class="opal-flow-section mb-4">
+  <div class="section-head">
+    <div><h3 class="section-title"><i class="bi bi-arrow-left-right me-2"></i>سير العمليات من البداية إلى النهاية</h3><p class="text-secondary mb-0">اتبع الخطوات بالترتيب؛ كل خطوة تقود إلى الشاشة الرسمية الوحيدة للعملية.</p></div>
+  </div>
+  <div class="opal-flow-grid">
+    {% for flow in operation_flows %}
+    <article class="opal-flow-card">
+      <header><span><i class="bi bi-{{ flow.icon }}"></i></span><div><h4>{{ flow.title }}</h4><p>{{ flow.description }}</p></div></header>
+      <div class="opal-flow-steps">
+        {% for step in flow.steps %}
+        <a href="{{ step.url }}"><span>{{ forloop.counter }}</span>{{ step.label }}<i class="bi bi-arrow-left"></i></a>
+        {% endfor %}
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="opal-integration-board mb-4">
+  <div class="section-head">
+    <div><h3 class="section-title"><i class="bi bi-diagram-3-fill me-2"></i>فحص تكامل الوحدات</h3><p class="text-secondary mb-0">فحص قراءة فقط؛ لا يحذف ولا يعدل أي سجل.</p></div>
+    <a href="{% url 'core:integrity_center' %}" class="btn btn-outline-warning"><i class="bi bi-shield-check"></i> مركز سلامة البيانات</a>
+  </div>
+  <div class="opal-integration-summary">
+    <div><span>طلاب نشطون</span><strong>{{ integration_counts.students }}</strong></div>
+    <div><span>قيود نشطة</span><strong>{{ integration_counts.enrollments }}</strong></div>
+    <div><span>معلمون نشطون</span><strong>{{ integration_counts.teachers }}</strong></div>
+    <div><span>بنود الخطة</span><strong>{{ integration_counts.curriculum_items }}</strong></div>
+    <div><span>تكليفات</span><strong>{{ integration_counts.assignments }}</strong></div>
+    <div><span>حصص جدول</span><strong>{{ integration_counts.timetable_entries }}</strong></div>
+    <div class="{% if integration_open_issues %}is-warning{% else %}is-success{% endif %}"><span>حالات تحتاج مراجعة</span><strong>{{ integration_open_issues }}</strong></div>
+  </div>
+  <div class="table-responsive">
+    <table class="table align-middle opal-integration-table">
+      <thead><tr><th>الفحص</th><th>النتيجة</th><th>المعنى</th><th>مكان المعالجة</th></tr></thead>
+      <tbody>
+      {% for issue in integration_issues %}
+      <tr>
+        <td><strong>{{ issue.label }}</strong><div class="small text-secondary">{{ issue.code }}</div></td>
+        <td>{% if issue.count %}<span class="badge bg-{{ issue.severity }}">{{ issue.count }}</span>{% else %}<span class="badge bg-success"><i class="bi bi-check2"></i> سليم</span>{% endif %}</td>
+        <td>{{ issue.description }}</td>
+        <td>{% if issue.url %}<a class="btn btn-sm btn-outline-primary" href="{{ issue.url }}"><i class="bi bi-box-arrow-up-left"></i> فتح الشاشة الرسمية</a>{% else %}<span class="text-secondary">غير متاح</span>{% endif %}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<div class="row g-4">
+  <div class="col-xl-4">
+    <section class="opal-assessment-card is-strength h-100"><h3><i class="bi bi-trophy-fill"></i> نقاط القوة</h3><ul>{% for item in strengths %}<li>{{ item }}</li>{% endfor %}</ul></section>
+  </div>
+  <div class="col-xl-4">
+    <section class="opal-assessment-card is-weakness h-100"><h3><i class="bi bi-exclamation-triangle-fill"></i> نقاط الضعف الحالية</h3><ul>{% for item in weaknesses %}<li>{{ item }}</li>{% endfor %}</ul></section>
+  </div>
+  <div class="col-xl-4">
+    <section class="opal-assessment-card is-roadmap h-100"><h3><i class="bi bi-check2-square"></i> المطلوب للاكتمال</h3><ul>{% for item in completion_requirements %}<li>{{ item }}</li>{% endfor %}</ul></section>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+(function(){
+  const input=document.getElementById('opal-operations-page-search');
+  if(!input)return;
+  const cards=[...document.querySelectorAll('[data-operation-card]')];
+  const groups=[...document.querySelectorAll('[data-operation-group]')];
+  const empty=document.getElementById('opal-operations-empty');
+  function normalize(value){return (value||'').toLocaleLowerCase('ar').replace(/[أإآ]/g,'ا').replace(/ة/g,'ه').trim();}
+  function filter(){
+    const query=normalize(input.value);
+    let visible=0;
+    cards.forEach(card=>{const match=!query||normalize(card.dataset.search+' '+card.textContent).includes(query);card.classList.toggle('d-none',!match);if(match)visible++;});
+    groups.forEach(group=>group.classList.toggle('d-none',!group.querySelector('[data-operation-card]:not(.d-none)')));
+    empty.classList.toggle('d-none',visible!==0);
+  }
+  input.addEventListener('input',filter);
+})();
+</script>
+{% endblock %}

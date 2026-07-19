@@ -1,0 +1,29 @@
+{% extends "base/base.html" %}
+{% block title %}فئات الرسوم | OPAL ERP{% endblock %}
+{% block page_title %}فئات الرسوم{% endblock %}
+{% block page_subtitle %}المصدر الرسمي لتعريف أنواع الرسوم المدرسية وقيمها الأساسية{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-4">
+    <div class="opal-card h-100">
+      <h3 class="fw-bold mb-3">إضافة فئة رسوم</h3>
+      <form method="post" novalidate>{% csrf_token %}{{ form.as_p }}
+        <button class="btn btn-primary w-100" type="submit"><i class="bi bi-plus-circle"></i> إضافة الفئة</button>
+      </form>
+    </div>
+  </div>
+  <div class="col-lg-8">
+    <div class="opal-card">
+      <div class="table-responsive"><table class="opal-table">
+        <thead><tr><th>#</th><th>الفئة</th><th>القيمة</th><th>الوصف</th><th>الحالة</th><th>الإجراء</th></tr></thead>
+        <tbody>{% for item in items %}<tr>
+          <td>{{ forloop.counter }}</td><td class="fw-bold">{{ item.name }}</td><td>{{ item.amount|floatformat:2 }}</td>
+          <td>{{ item.description|default:"-"|truncatechars:70 }}</td>
+          <td>{% if item.active %}<span class="badge bg-success">فعالة</span>{% else %}<span class="badge bg-secondary">متوقفة</span>{% endif %}</td>
+          <td><a class="btn btn-sm btn-warning" href="{% url 'accounting:fee_category_update' item.pk %}"><i class="bi bi-pencil-square"></i> تعديل</a></td>
+        </tr>{% empty %}<tr><td colspan="6" class="text-center text-secondary py-4">لا توجد فئات رسوم.</td></tr>{% endfor %}</tbody>
+      </table></div>
+    </div>
+  </div>
+</div>
+{% endblock %}

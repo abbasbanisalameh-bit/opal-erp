@@ -7,6 +7,7 @@
   {% if request.user.is_staff or request.user.is_superuser %}
     <div class="opal-menu-section">الرئيسية</div>
     <a href="{% url 'dashboard:home' %}" class="{% if request.resolver_match.namespace == 'dashboard' %}active{% endif %}"><i class="bi bi-grid-1x2-fill"></i><span>لوحة التحكم</span></a>
+    <a href="{% url 'core:operations_center' %}" class="{% if request.resolver_match.url_name == 'operations_center' %}active{% endif %}"><i class="bi bi-signpost-split-fill"></i><span>دليل العمليات الموحد</span></a>
 
     <div class="opal-menu-section">وحدات المدرسة</div>
     <a href="{% url 'students:student_list' %}" class="{% if request.resolver_match.namespace == 'students' or request.resolver_match.namespace == 'parent_portal' or request.resolver_match.namespace == 'documents' %}active{% elif request.resolver_match.namespace == 'admissions' and request.path|slice:':21' != '/admissions/payments/' %}active{% endif %}"><i class="bi bi-people-fill"></i><span>إدارة الطلاب</span></a>

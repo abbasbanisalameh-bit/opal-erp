@@ -34,8 +34,8 @@ SECRET_KEY = os.environ.get(
 
 DEBUG = env_bool("OPAL_DEBUG", False)
 
-# Optional foundations stay outside the production school surface by default.
-# They can be enabled explicitly in a dedicated environment without deleting code.
+# Existing modules remain enabled by default so no feature is hidden or deleted.
+# An environment may disable an optional foundation explicitly without removing its code.
 OPAL_ENABLE_OPENEMIS = env_bool("OPAL_ENABLE_OPENEMIS", True)
 OPAL_ENABLE_DEVELOPMENT_CENTER = env_bool("OPAL_ENABLE_DEVELOPMENT_CENTER", True)
 
@@ -115,6 +115,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'announcements.context_processors.active_announcement',
                 'core.context_processors.opal_identity',
+                'core.context_processors.opal_operations',
                 'enterprise_ops.context_processors.enterprise_notifications',
                 'timetable.context_processors.live_schedule',
             ],

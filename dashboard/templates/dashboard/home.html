@@ -114,7 +114,7 @@
             <div class="chart-box"><canvas id="attendanceChart"></canvas></div>
             <div class="d-flex flex-wrap justify-content-between mt-3 text-secondary gap-2">
                 <span>حاضر: {{ present_today }}</span><span>غائب: {{ absent_today }}</span>
-                <span>متأخر: {{ late_today }}</span><span>بعذر: {{ excused_today }}</span>
+                <span>متأخر: {{ late_today }}</span><span>مغادر: {{ departed_today }}</span>
             </div>
         </div>
         <div class="dashboard-panel quick-list">
@@ -170,7 +170,7 @@ const teachingRatingDistribution = JSON.parse(document.getElementById("teaching-
 const electronicRatingDistribution = JSON.parse(document.getElementById("electronic-rating-distribution")?.textContent || "[]");
 
 new Chart(document.getElementById("incomeChart"), {type:"bar",data:{labels:incomeLabels.length?incomeLabels:["لا توجد بيانات"],datasets:[{label:"الإيرادات",data:incomeValues.length?incomeValues:[0],backgroundColor:"rgba(20,184,166,.85)",borderRadius:10}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:"#dbeafe"}}},scales:{x:{ticks:{color:"#dbeafe"},grid:{color:"#1e334f"}},y:{ticks:{color:"#dbeafe"},grid:{color:"#1e334f"}}}}});
-new Chart(document.getElementById("attendanceChart"), {type:"doughnut",data:{labels:["حاضر","غائب","متأخر","بعذر"],datasets:[{data:[{{ present_today }},{{ absent_today }},{{ late_today }},{{ excused_today }}],backgroundColor:["#14b8a6","#fb7185","#f59e0b","#60a5fa"],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:"68%",plugins:{legend:{position:"bottom",labels:{color:"#dbeafe"}}}}});
+new Chart(document.getElementById("attendanceChart"), {type:"doughnut",data:{labels:["حاضر","غائب","متأخر","مغادر"],datasets:[{data:[{{ present_today }},{{ absent_today }},{{ late_today }},{{ departed_today }}],backgroundColor:["#14b8a6","#fb7185","#f59e0b","#60a5fa"],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:"68%",plugins:{legend:{position:"bottom",labels:{color:"#dbeafe"}}}}});
 new Chart(document.getElementById("attendanceTrendChart"), {type:"line",data:{labels:attendanceTrend.map(x=>x.date),datasets:[{label:"نسبة الحضور %",data:attendanceTrend.map(x=>x.percent),tension:.35,fill:true,borderColor:"#60a5fa",backgroundColor:"rgba(96,165,250,.16)"}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:"#dbeafe"}}},scales:{x:{ticks:{color:"#dbeafe"},grid:{color:"#1e334f"}},y:{min:0,max:100,ticks:{color:"#dbeafe"},grid:{color:"#1e334f"}}}}});
 const ratingCanvas = document.getElementById("ratingDistributionChart");
 if (ratingCanvas) {

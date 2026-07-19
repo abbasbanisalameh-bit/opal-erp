@@ -29,6 +29,7 @@
     <a href="{% url 'academics:academic_year_list' %}" class="opal-subnav-btn {% if ns == 'academics' and view == 'academic_year_list' or view == 'academic_year_create' or view == 'academic_year_update' %}active{% endif %}"><i class="bi bi-calendar-range"></i><span>الأعوام</span></a>
     <a href="{% url 'academics:semester_list' %}" class="opal-subnav-btn {% if ns == 'academics' and view == 'semester_list' or view == 'semester_create' or view == 'semester_update' or view == 'semester_delete' %}active{% endif %}"><i class="bi bi-calendar2-event"></i><span>الفصول</span></a>
     <a href="{% url 'academics:subject_list' %}" class="opal-subnav-btn {% if ns == 'academics' and view == 'subject_list' or view == 'subject_create' or view == 'subject_update' %}active{% endif %}"><i class="bi bi-book"></i><span>المواد</span></a>
+    <a href="{% url 'curriculum:curriculum_list' %}" class="opal-subnav-btn {% if ns == 'curriculum' %}active{% endif %}"><i class="bi bi-journal-bookmark"></i><span>الخطة الدراسية</span></a>
     <a href="{% url 'attendance_v2:dashboard' %}" class="opal-subnav-btn {% if ns == 'attendance_v2' and view == 'dashboard' %}active{% endif %}"><i class="bi bi-calendar-check"></i><span>الحضور</span></a>
     <a href="{% url 'attendance_v2:report' %}" class="opal-subnav-btn {% if ns == 'attendance_v2' and view == 'report' %}active{% endif %}"><i class="bi bi-clipboard-data"></i><span>تقرير الحضور</span></a>
     <a href="{% url 'exams:exam_list' %}" class="opal-subnav-btn {% if ns == 'exams' and view != 'exam_dashboard' and view != 'mark_list' and view != 'mark_create' %}active{% endif %}"><i class="bi bi-file-earmark-check"></i><span>الامتحانات</span></a>
@@ -47,8 +48,12 @@
   </div>
   <div class="opal-module-subnav-scroll">
     <a href="{% url 'accounting:dashboard' %}" class="opal-subnav-btn {% if ns == 'accounting' and view == 'dashboard' %}active{% endif %}"><i class="bi bi-house-door"></i><span>الملخص</span></a>
+    <a href="{% url 'accounting:fee_category_list' %}" class="opal-subnav-btn {% if ns == 'accounting' and view == 'fee_category_list' or view == 'fee_category_update' %}active{% endif %}"><i class="bi bi-tags"></i><span>فئات الرسوم</span></a>
+    <a href="{% url 'accounting:invoice_list' %}" class="opal-subnav-btn {% if ns == 'accounting' and view == 'invoice_list' or view == 'invoice_create' %}active{% endif %}"><i class="bi bi-file-earmark-spreadsheet"></i><span>رسوم الطلاب</span></a>
     <a href="{% url 'admissions:fee_payment_create' %}" class="opal-subnav-btn {% if ns == 'admissions' and view == 'fee_payment_create' %}active{% endif %}"><i class="bi bi-cash-coin"></i><span>تسديد رسوم</span></a>
     <a href="{% url 'admissions:fee_payment_archive' %}" class="opal-subnav-btn {% if ns == 'admissions' and view == 'fee_payment_archive' or view == 'fee_payment_receipt' %}active{% endif %}"><i class="bi bi-archive"></i><span>أرشيف التسديد</span></a>
+    <a href="{% url 'accounting:installment_list' %}" class="opal-subnav-btn {% if ns == 'accounting' and view == 'installment_list' or view == 'installment_create' %}active{% endif %}"><i class="bi bi-calendar2-week"></i><span>الأقساط</span></a>
+    <a href="{% url 'accounting:discount_list' %}" class="opal-subnav-btn {% if ns == 'accounting' and view == 'discount_list' or view == 'discount_create' or view == 'discount_decide' %}active{% endif %}"><i class="bi bi-percent"></i><span>الخصومات</span></a>
     <a href="{% url 'accounting:expense_list' %}" class="opal-subnav-btn {% if view == 'expense_list' %}active{% endif %}"><i class="bi bi-receipt-cutoff"></i><span>المصروفات</span></a>
     <a href="{% url 'accounting:monthly_report' %}" class="opal-subnav-btn {% if view == 'monthly_report' %}active{% endif %}"><i class="bi bi-calendar2-check"></i><span>كشف 28 الشهري</span></a>
     <a href="{% url 'accounting:financial_year_close' %}" class="opal-subnav-btn {% if view == 'financial_year_close' %}active{% endif %}"><i class="bi bi-arrow-left-right"></i><span>الإغلاق المالي</span></a>

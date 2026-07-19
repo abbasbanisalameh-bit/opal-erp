@@ -474,3 +474,130 @@ document.addEventListener("DOMContentLoaded", function () {
         initialize();
     }
 })();
+
+/* ===== OPAL Canonical Operation Search V1 ===== */
+(function () {
+    "use strict";
+
+    function normalize(value) {
+        return String(value || "")
+            .toLocaleLowerCase("ar")
+            .replace(/[أإآ]/g, "ا")
+            .replace(/ة/g, "ه")
+            .replace(/ى/g, "ي")
+            .replace(/\s+/g, " ")
+            .trim();
+    }
+
+    function initializeOperationSearch() {
+        const input = document.getElementById("opal-global-operation-search");
+        const results = document.getElementById("opal-global-operation-results");
+        const dataNode = document.getElementById("opal-operation-catalog");
+        if (!input || !results || !dataNode) return;
+
+        let operations = [];
+        try {
+            operations = JSON.parse(dataNode.textContent || "[]");
+        } catch (_) {
+            operations = [];
+        }
+        if (!Array.isArray(operations)) operations = [];
+
+        let activeIndex = -1;
+        let rendered = [];
+
+        function closeResults() {
+            results.classList.add("d-none");
+            results.innerHTML = "";
+            rendered = [];
+            activeIndex = -1;
+            input.setAttribute("aria-expanded", "false");
+        }
+
+        function activate(index) {
+            const items = Array.from(results.querySelectorAll("a"));
+            if (!items.length) return;
+            activeIndex = Math.max(0, Math.min(index, items.length - 1));
+            items.forEach(function (item, itemIndex) {
+                item.classList.toggle("active", itemIndex === activeIndex);
+            });
+            items[activeIndex].scrollIntoView({block: "nearest"});
+        }
+
+        function draw() {
+            const query = normalize(input.value);
+            if (!query) {
+                closeResults();
+                return;
+            }
+            rendered = operations.filter(function (operation) {
+                return normalize(operation.search_text || operation.label || "").includes(query);
+            }).slice(0, 9);
+
+            results.innerHTML = "";
+            if (!rendered.length) {
+                const empty = document.createElement("div");
+                empty.className = "opal-global-operation-empty";
+                empty.textContent = "لم يتم العثور على عملية مطابقة.";
+                results.appendChild(empty);
+            } else {
+                rendered.forEach(function (operation) {
+                    const link = document.createElement("a");
+                    link.href = operation.url;
+                    link.setAttribute("role", "option");
+
+                    const icon = document.createElement("i");
+                    icon.className = "bi bi-" + (operation.icon || "arrow-left-circle");
+                    const copy = document.createElement("span");
+                    const title = document.createElement("strong");
+                    title.textContent = operation.label;
+                    const meta = document.createElement("small");
+                    meta.textContent = operation.module_label + " — " + operation.description;
+                    copy.append(title, meta);
+                    const arrow = document.createElement("i");
+                    arrow.className = "bi bi-arrow-left-short opal-search-arrow";
+                    link.append(icon, copy, arrow);
+                    results.appendChild(link);
+                });
+            }
+            results.classList.remove("d-none");
+            input.setAttribute("aria-expanded", "true");
+            activeIndex = -1;
+        }
+
+        input.addEventListener("input", draw);
+        input.addEventListener("keydown", function (event) {
+            if (event.key === "ArrowDown") {
+                event.preventDefault();
+                activate(activeIndex + 1);
+            } else if (event.key === "ArrowUp") {
+                event.preventDefault();
+                activate(activeIndex <= 0 ? rendered.length - 1 : activeIndex - 1);
+            } else if (event.key === "Enter" && rendered.length) {
+                event.preventDefault();
+                const target = rendered[activeIndex >= 0 ? activeIndex : 0];
+                window.location.assign(target.url);
+            } else if (event.key === "Escape") {
+                closeResults();
+                input.blur();
+            }
+        });
+
+        document.addEventListener("keydown", function (event) {
+            if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+                event.preventDefault();
+                input.focus();
+                input.select();
+            }
+        });
+        document.addEventListener("click", function (event) {
+            if (!event.target.closest(".opal-global-search-wrap")) closeResults();
+        });
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initializeOperationSearch, {once: true});
+    } else {
+        initializeOperationSearch();
+    }
+})();

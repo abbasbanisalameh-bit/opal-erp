@@ -6,6 +6,7 @@ from django.core.exceptions import ValidationError
 from django.db.models import Q, Sum
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
@@ -209,7 +210,7 @@ def monthly_report(request):
         item.save()
         audit(request, "update", "accounting.MonthlyFinancialTarget", item.pk, f"تحديث المتوقع الشهري لدورة {period_end}")
         messages.success(request, "تم حفظ المبلغ المتوقع لهذا الشهر المالي.")
-        return redirect(f"/accounting/monthly-report/?period_end={period_end.isoformat()}")
+        return redirect(f"{reverse('accounting:monthly_report')}?period_end={period_end.isoformat()}")
     context = monthly_financial_report(school, period_end)
     context["target_form"] = target_form
     return render(request, "accounting/monthly_report.html", context)

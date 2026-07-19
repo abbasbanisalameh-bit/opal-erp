@@ -72,11 +72,9 @@ def teacher_update(request, pk):
 def teacher_detail(request, pk):
     teacher = get_object_or_404(Teacher.objects.select_related("school", "branch"), pk=pk)
     assignments = teacher.assignments.select_related("academic_year", "section", "section__grade", "subject")
-    timetable_entries = []
-    try:
-        timetable_entries = teacher.timetableentry_set.select_related("academic_year", "section", "subject", "time_slot").filter(is_active=True)
-    except Exception:
-        pass
+    timetable_entries = teacher.timetable_entries.select_related(
+        "academic_year", "section", "section__grade", "subject", "time_slot"
+    ).filter(is_active=True)
     return render(request, "teachers/teacher_detail.html", {
         "teacher": teacher, "assignments": assignments, "timetable_entries": timetable_entries,
         "teacher_documents": teacher.documents.all(),

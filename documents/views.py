@@ -40,7 +40,7 @@ def _qr_data_uri(text):
     return "data:image/png;base64," + base64.b64encode(stream.getvalue()).decode("ascii")
 
 
-@login_required
+@management_required
 def document_list(request):
     documents = IssuedDocument.objects.select_related(
         "student", "teacher", "guardian", "candidate", "issued_by", "template"
@@ -192,7 +192,7 @@ def issue_guardian(request, guardian_id):
     return _issue_target(request, audience="guardian", target=guardian, back_url=reverse("parent_portal:family_detail", args=[guardian.pk]))
 
 
-@login_required
+@management_required
 def document_detail(request, document_id):
     document = get_object_or_404(
         IssuedDocument.objects.select_related(

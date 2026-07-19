@@ -1,8 +1,16 @@
 {% load static %}
 <div class="topbar">
-    <div class="top-left"><input class="search-box" placeholder="ابحث هنا..."></div>
+    <div class="top-left opal-global-search-wrap">
+        <div class="opal-global-search-box">
+            <i class="bi bi-search"></i>
+            <input id="opal-global-operation-search" class="search-box" placeholder="ابحث عن عملية في النظام..." autocomplete="off" aria-label="البحث عن عملية">
+            <kbd>Ctrl K</kbd>
+        </div>
+        <div id="opal-global-operation-results" class="opal-global-operation-results d-none" role="listbox" aria-label="نتائج العمليات"></div>
+    </div>
     <div class="top-right">
-        <a id="opal-notification-bell" class="icon-btn position-relative text-decoration-none" href="{% url 'enterprise_ops:notification_list' %}" aria-label="الإشعارات" data-status-url="{% url 'enterprise_ops:notification_status' %}" data-latest-id="{{ opal_latest_unread_notification_id|default:'' }}">🔔
+        {% if opal_is_management %}<a class="icon-btn text-decoration-none" href="{% url 'core:operations_center' %}" title="دليل العمليات الموحد" aria-label="دليل العمليات الموحد"><i class="bi bi-signpost-split-fill"></i></a>{% endif %}
+        <a id="opal-notification-bell" class="icon-btn position-relative text-decoration-none" href="{% url 'enterprise_ops:notification_list' %}" aria-label="الإشعارات" data-status-url="{% url 'enterprise_ops:notification_status' %}" data-latest-id="{{ opal_latest_unread_notification_id|default:'' }}"><i class="bi bi-bell-fill"></i>
             <span id="opal-notification-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger {% if not opal_unread_notifications_count %}d-none{% endif %}">{{ opal_unread_notifications_count|default:0 }}</span>
         </a>
         <a class="profile opal-profile-link text-decoration-none" href="{% url 'accounts:my_profile' %}" title="تعديل الملف الشخصي">
@@ -11,3 +19,4 @@
         </a>
     </div>
 </div>
+{{ opal_operation_catalog|json_script:"opal-operation-catalog" }}

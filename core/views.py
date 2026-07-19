@@ -7,6 +7,7 @@ from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib import messages
 from .models import Branch, School
 from .forms import BranchForm, SchoolSettingsForm
+from enterprise_ops.permissions import management_required
 
 def can_manage_system(user):
     return user.is_superuser or user.is_staff
@@ -115,4 +116,129 @@ def integrity_center(request):
     return render(request, "core/integrity_center.html", {
         "runs": runs, "selected_run": selected_run, "issues": issues,
         "selected_severity": severity,
+    })
+
+
+@management_required
+def operations_center(request):
+    """Role-aware map of canonical operations and read-only integration diagnostics."""
+    from django.urls import NoReverseMatch, reverse
+
+    from .operation_audit import build_operation_audit
+    from .workflow_catalog import get_operations_for_user, group_operations
+
+    operations = get_operations_for_user(request.user)
+    audit_context = build_operation_audit()
+    for issue in audit_context["integration_issues"]:
+        try:
+            issue["url"] = reverse(issue["route"])
+        except NoReverseMatch:
+            issue["url"] = ""
+
+    strengths = [
+        "نموذج الطالب الرسمي واحد فقط: students.Student، وبطاقة الطالب 360 تجمع القيد والأسرة والرسوم والحضور والعلامات والوثائق والجدول.",
+        "التسجيل الذكي ينشئ الطالب والقيد والرسم والدفعة الأولى والإيصال وملف ولي الأمر ويجهز مزامنة OpenEMIS في عملية مترابطة.",
+        "تكليف المعلم هو الرابط الرسمي بين المعلم والعام والشعبة والمادة، ويُستخدم في الجدول والعلامات والحضور والواجبات.",
+        "الرسوم المدرسية مبسطة حول الرسوم والدفعات والإيصالات والمتبقي والإخوة، مع حذف آمن وسجل عمليات.",
+        "بوابتا المعلم وولي الأمر مقيدتان بصلاحيات ومسارات منفصلة، مع إشعارات وتقارير وسجل عمليات مناسب للدور.",
+        "النظام يحتوي مراكز مستقلة لسلامة البيانات والتحديثات والصلاحيات والتقارير والتكامل الوزاري.",
+    ]
+    weaknesses = [
+        "بعض البيانات القديمة قد تكون موجودة دون الروابط الرسمية الجديدة؛ لذلك تعرض هذه الصفحة فحوص التكامل وعدد الحالات المطلوب إصلاحها.",
+        "الاختبارات الكاملة كبيرة وتحتاج تشغيلًا ضمن بيئة أطول زمنًا أو تقسيمها إلى مجموعات في مسار النشر.",
+        "تكامل OpenEMIS ما زال تأسيسيًا حتى توفر واجهة الوزارة والحقول النهائية، ولا يجوز اعتباره مصدر البيانات الداخلي.",
+        "لا توجد بعد منظومة مخزون ورواتب وموارد بشرية مكتملة، وهي خارج النطاق الأساسي الحالي ويجب ألا تعطل إكمال وظائف المدرسة الأساسية.",
+        "توحيد الواجهة كان موجودًا جزئيًا، لكن البحث العلوي لم يكن ينفذ عملية فعلية؛ أصبح الآن دليل عمليات قابلًا للبحث.",
+    ]
+    completion_requirements = [
+        "معالجة جميع حالات التكامل الظاهرة في الفحوص حتى تصل النسبة إلى 100% قبل إدخال البيانات الحقيقية.",
+        "إكمال تغطية الاختبارات الآلية لمسارات التسجيل، الدفع، الإغلاق، الترفيع، نشر العلامات، الحضور، الوثائق والإشعارات.",
+        "اعتماد دورة تشغيل سنوية موثقة: إنشاء العام والفصلين، الهيكل، التكليفات، الجدول، التسجيل، التشغيل اليومي، النتائج، ثم الإغلاق والترفيع.",
+        "تنفيذ تجربة قبول تشغيلية بأدوار حقيقية: مدير، مسؤول رسوم، سكرتير، معلم وولي أمر، وتسجيل الملاحظات قبل الإطلاق.",
+        "تجهيز خطة الانتقال إلى PostgreSQL قبل زيادة عدد المدارس أو الفروع أو المستخدمين المتزامنين.",
+        "إكمال الربط الوزاري فقط بعد استلام مواصفات API الرسمية وبيانات الاعتماد من الوزارة.",
+    ]
+
+    flow_definitions = [
+        {
+            "title": "تهيئة العام الدراسي",
+            "icon": "calendar-range-fill",
+            "description": "تهيئة المرجع الأكاديمي الذي تعتمد عليه بقية الوحدات.",
+            "steps": [
+                ("إعدادات المدرسة", "core:system_settings"), ("الفروع", "core:branch_list"),
+                ("العام الدراسي", "academics:academic_year_list"), ("الفصل الحالي", "academics:semester_list"),
+                ("الصفوف والشعب", "academics:academic_structure"), ("المواد", "academics:subject_list"),
+                ("الخطة الدراسية", "curriculum:curriculum_list"),
+            ],
+        },
+        {
+            "title": "المعلم والجدول",
+            "icon": "person-workspace",
+            "description": "ملف المعلم ثم الحساب والتكليف، وبعدها إنشاء الجدول دون تعارض.",
+            "steps": [
+                ("ملف المعلم", "teachers:dashboard"), ("التكليفات", "teachers:dashboard"),
+                ("إعداد الحصص", "timetable:schedule_settings"), ("المنشئ الذكي", "timetable:smart_builder"),
+                ("الجدول النهائي", "timetable:dashboard"),
+            ],
+        },
+        {
+            "title": "التسجيل والملف الموحد",
+            "icon": "person-plus-fill",
+            "description": "إنشاء الطالب والقيد والأسرة والرسم والإيصال ثم المتابعة من بطاقة 360.",
+            "steps": [
+                ("المرشحون", "admissions:candidate_list"), ("التسجيل الذكي", "admissions:direct_registration"),
+                ("سجل الطلبة", "admissions:admission_list"), ("قائمة الطلاب", "students:student_list"),
+                ("ملفات الأسر", "parent_portal:family_management"),
+            ],
+        },
+        {
+            "title": "الرسوم المدرسية",
+            "icon": "cash-stack",
+            "description": "إعداد الرسوم، إصدارها، تحصيلها، ثم التقارير والإغلاق من مسارات غير مكررة.",
+            "steps": [
+                ("فئات الرسوم", "accounting:fee_category_list"), ("رسوم الطلاب", "accounting:invoice_list"),
+                ("التسديد الموحد", "admissions:fee_payment_create"), ("أرشيف التسديد", "admissions:fee_payment_archive"),
+                ("الأقساط", "accounting:installment_list"), ("الخصومات", "accounting:discount_list"),
+                ("الكشف الشهري", "accounting:monthly_report"), ("الإغلاق المالي", "accounting:financial_year_close"),
+            ],
+        },
+        {
+            "title": "التشغيل اليومي والنتائج",
+            "icon": "clipboard2-check-fill",
+            "description": "الحضور والواجبات والامتحانات والعلامات ثم النشر لولي الأمر.",
+            "steps": [
+                ("الحضور", "attendance_v2:dashboard"), ("بوابة المعلم", "teachers:portal_dashboard"),
+                ("الامتحانات", "exams:exam_list"), ("العلامات", "exams:mark_list"),
+                ("تحليل النتائج", "exams:exam_dashboard"), ("بوابة ولي الأمر", "parent_portal:dashboard"),
+            ],
+        },
+        {
+            "title": "التواصل والرقابة",
+            "icon": "bell-fill",
+            "description": "استقبال الملاحظات، قياس الرضا، إرسال التنبيهات، ثم التتبع والتقارير.",
+            "steps": [
+                ("الشكاوى والتقييمات", "enterprise_ops:feedback_list"), ("التعاميم", "enterprise_ops:broadcast_list"),
+                ("الإعلانات", "announcements:list"), ("الإشعارات", "enterprise_ops:notification_list"),
+                ("التقارير", "enterprise_ops:report_center"), ("سجل العمليات", "enterprise_ops:audit_log"),
+            ],
+        },
+    ]
+    operation_flows = []
+    for flow in flow_definitions:
+        resolved_steps = []
+        for label, route in flow["steps"]:
+            try:
+                resolved_steps.append({"label": label, "url": reverse(route)})
+            except NoReverseMatch:
+                continue
+        operation_flows.append({**flow, "steps": resolved_steps})
+
+    return render(request, "core/operations_center.html", {
+        "operation_groups": group_operations(operations),
+        "operation_count": len(operations),
+        "strengths": strengths,
+        "weaknesses": weaknesses,
+        "completion_requirements": completion_requirements,
+        "operation_flows": operation_flows,
+        **audit_context,
     })

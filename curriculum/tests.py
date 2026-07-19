@@ -32,10 +32,12 @@ class CurriculumOperationalTests(TestCase):
             weekly_periods=4,
         )
 
-    def test_legacy_list_redirects_to_academic_structure(self):
+    def test_curriculum_list_is_available_from_its_canonical_screen(self):
         self.client.force_login(self.staff)
         response = self.client.get(reverse("curriculum:curriculum_list"))
-        self.assertRedirects(response, reverse("academics:academic_structure"), fetch_redirect_response=False)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "الخطة الدراسية")
+        self.assertContains(response, self.subject.name)
 
     def test_non_management_user_is_denied(self):
         self.client.force_login(self.plain)
@@ -52,16 +54,14 @@ class CurriculumOperationalTests(TestCase):
 
         self.client.force_login(self.staff)
         response = self.client.post(reverse("curriculum:curriculum_delete", args=[self.item.pk]))
-        self.assertRedirects(response, reverse("academics:academic_structure"), fetch_redirect_response=False)
+        self.assertRedirects(response, reverse("curriculum:curriculum_list"), fetch_redirect_response=False)
         self.assertTrue(Curriculum.objects.filter(pk=self.item.pk).exists())
 
-    def test_all_legacy_mutation_routes_are_retired_without_deleting_data(self):
+    def test_create_and_update_routes_are_available_without_hiding_the_feature(self):
         self.client.force_login(self.staff)
-        for route in (
-            reverse("curriculum:curriculum_create"),
-            reverse("curriculum:curriculum_update", args=[self.item.pk]),
-            reverse("curriculum:curriculum_delete", args=[self.item.pk]),
-        ):
-            response = self.client.get(route)
-            self.assertRedirects(response, reverse("academics:academic_structure"), fetch_redirect_response=False)
-        self.assertTrue(Curriculum.objects.filter(pk=self.item.pk).exists())
+        create_response = self.client.get(reverse("curriculum:curriculum_create"))
+        update_response = self.client.get(reverse("curriculum:curriculum_update", args=[self.item.pk]))
+        self.assertEqual(create_response.status_code, 200)
+        self.assertEqual(update_response.status_code, 200)
+        self.assertContains(create_response, "إضافة خطة دراسية")
+        self.assertContains(update_response, "تعديل خطة دراسية")
