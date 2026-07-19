@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.urls import reverse
 
@@ -6,6 +7,13 @@ from core.models import Branch, School
 
 
 class WorkflowRequest(models.Model):
+    """Legacy/internal workflow records retained for compatibility.
+
+    User-facing complaints and suggestions use ``FeedbackTicket`` below. This
+    model remains available to accounting and other internal services that
+    already reference it.
+    """
+
     TYPE_CHOICES = [
         ("general", "طلب عام"),
         ("student", "طلب طالب"),
@@ -104,6 +112,7 @@ class Notification(models.Model):
     link = models.CharField(max_length=500, blank=True)
     event_key = models.CharField(max_length=180, blank=True, db_index=True)
     is_read = models.BooleanField(default=False, db_index=True)
+    sound_enabled = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     read_at = models.DateTimeField(null=True, blank=True)
 
@@ -122,6 +131,93 @@ class Notification(models.Model):
         return self.title
 
 
+class FeedbackTicket(models.Model):
+    KIND_CHOICES = [
+        ("complaint", "شكوى"),
+        ("suggestion", "اقتراح"),
+    ]
+    STATUS_CHOICES = [
+        ("new", "جديدة"),
+        ("review", "قيد المراجعة"),
+        ("resolved", "تمت المعالجة"),
+        ("closed", "مغلقة"),
+    ]
+
+    sender = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name="feedback_tickets")
+    school = models.ForeignKey(School, on_delete=models.SET_NULL, null=True, blank=True, related_name="feedback_tickets")
+    branch = models.ForeignKey(Branch, on_delete=models.SET_NULL, null=True, blank=True, related_name="feedback_tickets")
+    kind = models.CharField(max_length=20, choices=KIND_CHOICES)
+    title = models.CharField(max_length=220)
+    message = models.TextField()
+    teaching_quality_rating = models.PositiveSmallIntegerField(
+        "تقييم جودة التدريس",
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+    )
+    electronic_services_rating = models.PositiveSmallIntegerField(
+        "تقييم الخدمات الإلكترونية",
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="new", db_index=True)
+    assigned_to = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="assigned_feedback_tickets",
+    )
+    response = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["status", "-created_at"], name="feedback_status_created_idx"),
+            models.Index(fields=["sender", "-created_at"], name="feedback_sender_created_idx"),
+        ]
+
+    def __str__(self):
+        return f"#{self.pk} - {self.get_kind_display()} - {self.title}"
+
+    def get_absolute_url(self):
+        return reverse("enterprise_ops:feedback_detail", args=[self.pk])
+
+
+class BroadcastMessage(models.Model):
+    MESSAGE_TYPES = [
+        ("circular", "تعميم"),
+        ("teacher_alert", "تنبيه لمعلم محدد"),
+    ]
+    AUDIENCE_CHOICES = [
+        ("teachers", "المعلمون"),
+        ("parents", "أولياء الأمور"),
+        ("all", "الجميع"),
+    ]
+
+    message_type = models.CharField(max_length=30, choices=MESSAGE_TYPES, default="circular")
+    audience = models.CharField(max_length=20, choices=AUDIENCE_CHOICES, default="all")
+    specific_teacher = models.ForeignKey(
+        "teachers.Teacher",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="direct_alerts",
+    )
+    title = models.CharField(max_length=180)
+    message = models.TextField()
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name="created_broadcast_messages")
+    is_active = models.BooleanField(default=True, db_index=True)
+    recipients_count = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return self.title
+
+
 class ReportPreset(models.Model):
     CATEGORY_CHOICES = [
         ("students", "الطلاب"),
@@ -129,7 +225,7 @@ class ReportPreset(models.Model):
         ("attendance", "الحضور"),
         ("academic", "الأكاديمي"),
         ("documents", "الوثائق"),
-        ("operations", "التشغيل"),
+        ("operations", "العمليات"),
     ]
     name = models.CharField(max_length=160)
     category = models.CharField(max_length=30, choices=CATEGORY_CHOICES)
@@ -149,12 +245,12 @@ class ReportPreset(models.Model):
 
 class RolePermissionRule(models.Model):
     FEATURE_CHOICES = [
-        ("workflow", "الطلبات وسير العمل"),
-        ("approvals", "الموافقات"),
+        ("workflow", "الشكاوى والاقتراحات"),
+        ("approvals", "التعاميم والتنبيهات"),
         ("notifications", "الإشعارات"),
         ("audit", "سجل العمليات"),
         ("reports", "التقارير"),
-        ("executive", "اللوحة التنفيذية"),
+        ("executive", "لوحة الإدارة"),
         ("students", "إدارة الطلاب"),
         ("academics", "الشؤون الأكاديمية"),
         ("attendance", "الحضور"),

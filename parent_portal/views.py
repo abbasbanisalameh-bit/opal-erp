@@ -240,22 +240,47 @@ def timetable(request):
     students = _normalized_students_for_user(request.user)
     if not students:
         return render(request, "parent_portal/no_profile.html")
-    from academics.models import Enrollment
+    from academics.models import Enrollment, Subject
     from timetable.models import TimetableEntry
-    enrollments = Enrollment.objects.filter(student__in=students, status="active").select_related("student", "section", "academic_year")
+
+    student_id = request.GET.get("student", "")
+    day = request.GET.get("day", "")
+    subject_id = request.GET.get("subject", "")
+    selected_students = students
+    if student_id:
+        selected_students = [student for student in students if str(student.pk) == student_id]
+
+    enrollments = Enrollment.objects.filter(
+        student__in=selected_students, status="active"
+    ).select_related("student", "section", "section__grade", "academic_year")
     rows = []
+    all_enrollments = Enrollment.objects.filter(student__in=students, status="active")
+    all_entry_scope = TimetableEntry.objects.filter(
+        section_id__in=all_enrollments.values_list("section_id", flat=True),
+        academic_year_id__in=all_enrollments.values_list("academic_year_id", flat=True),
+        is_active=True,
+    ).distinct()
     for enrollment in enrollments:
-        entries = (
-            TimetableEntry.objects.filter(
-                section=enrollment.section,
-                academic_year=enrollment.academic_year,
-                is_active=True,
-            )
-            .select_related("subject", "teacher", "time_slot")
-            .order_by("day", "time_slot__order")
-        )
-        rows.append({"student": enrollment.student, "entries": entries})
-    return render(request, "parent_portal/timetable.html", {"rows": rows})
+        entries = TimetableEntry.objects.filter(
+            section=enrollment.section,
+            academic_year=enrollment.academic_year,
+            is_active=True,
+        ).select_related("subject", "teacher", "time_slot", "section__grade")
+        if day:
+            entries = entries.filter(day=day)
+        if subject_id:
+            entries = entries.filter(subject_id=subject_id)
+        rows.append({"student": enrollment.student, "enrollment": enrollment, "entries": entries})
+
+    subjects = Subject.objects.filter(timetableentry__in=all_entry_scope).select_related("grade").distinct().order_by("grade__order", "name")
+    audit(request, "view", "parent_portal.Timetable", description="عرض جدول الأبناء")
+    return render(request, "parent_portal/timetable.html", {
+        "rows": rows,
+        "students": students,
+        "subjects": subjects,
+        "days": TimetableEntry.DAYS,
+        "filters": {"student": student_id, "day": day, "subject": subject_id},
+    })
 
 @parent_required
 def documents(request):

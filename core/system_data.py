@@ -37,7 +37,10 @@ def reset_all_operational_data(*, keep_user=None):
     from curriculum.models import Curriculum
     from development_center.models import ActivityLog, Bug, Decision, Idea, Module, Notification as DevelopmentNotification, Release, Sprint
     from documents.models import DocumentSettings, DocumentTemplate, IssuedDocument, StudentIssuedDocument
-    from enterprise_ops.models import ApprovalAction, Notification, ReportPreset, WorkflowRequest
+    from enterprise_ops.models import (
+        ApprovalAction, BroadcastMessage, FeedbackTicket, Notification,
+        ReportPreset, WorkflowRequest,
+    )
     from exams.models import Exam, StudentMark
     from openemis_integration.models import OpenEMISSyncLog
     from parent_portal.models import Family, FamilyStudent
@@ -108,6 +111,8 @@ def reset_all_operational_data(*, keep_user=None):
     _delete_all(Branch)
 
     _delete_all(ApprovalAction)
+    _delete_all(FeedbackTicket)
+    _delete_all(BroadcastMessage)
     _delete_all(WorkflowRequest)
     _delete_all(Notification)
     _delete_all(ReportPreset)
@@ -262,7 +267,7 @@ def seed_system_data(*, student_count=500, teacher_count=50, guardian_count=300,
     from curriculum.models import Curriculum
     from documents.defaults import DEFAULT_DOCUMENT_TEMPLATES
     from documents.models import DocumentTemplate, IssuedDocument, StudentIssuedDocument
-    from enterprise_ops.models import Notification, ReportPreset, WorkflowRequest
+    from enterprise_ops.models import BroadcastMessage, FeedbackTicket, Notification, ReportPreset, WorkflowRequest
     from exams.models import Exam, StudentMark
     from parent_portal.models import Family, FamilyStudent
     from students.models import Student
@@ -641,6 +646,29 @@ def seed_system_data(*, student_count=500, teacher_count=50, guardian_count=300,
             message="تم تسجيل دفعة أو تحديث أكاديمي لأحد الطلبة المرتبطين بالحساب.",
             level="info", event_key=f"seed-family-{family.pk}",
         ) for family in families
+    ])
+    FeedbackTicket.objects.bulk_create([
+        FeedbackTicket(
+            sender=(families[index % len(families)].user if index % 2 else teachers[index % len(teachers)].user),
+            school=school, branch=branch,
+            kind="complaint" if index % 3 == 0 else "suggestion",
+            title=f"رسالة مدرسية رقم {index}",
+            message="رسالة حول جودة التدريس والخدمات الإلكترونية ومتابعة تجربة المستخدم.",
+            teaching_quality_rating=(index % 5) + 1,
+            electronic_services_rating=((index + 2) % 5) + 1,
+            status=("new", "review", "resolved")[index % 3],
+            response="تمت المتابعة من الإدارة." if index % 3 == 2 else "",
+        ) for index in range(1, 13)
+    ])
+    BroadcastMessage.objects.bulk_create([
+        BroadcastMessage(
+            message_type="circular", audience=audience, title=title, message=message,
+            created_by=user, recipients_count=count, is_active=True,
+        ) for audience, title, message, count in (
+            ("teachers", "تعميم للمعلمين", "يرجى متابعة الجدول والتكليفات اليومية.", len(teachers)),
+            ("parents", "تعميم لأولياء الأمور", "يرجى متابعة الحضور والنتائج من البوابة.", len(families)),
+            ("all", "تعميم عام", "نرحب بجميع مستخدمي نظام أوبال.", len(teachers) + len(families) + 1),
+        )
     ])
     WorkflowRequest.objects.bulk_create([
         WorkflowRequest(

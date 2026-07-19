@@ -7,7 +7,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from academics.models import Section
+from academics.models import Grade, Section, Subject
 from core.models import AcademicYear
 from teachers.models import Teacher
 from admissions.services import active_school, current_academic_year
@@ -28,16 +28,22 @@ def dashboard(request):
         "academic_year", "section__grade", "subject", "teacher", "time_slot"
     )
     year_id = request.GET.get("academic_year", "")
+    grade_id = request.GET.get("grade", "")
     section_id = request.GET.get("section", "")
     teacher_id = request.GET.get("teacher", "")
+    subject_id = request.GET.get("subject", "")
     day = request.GET.get("day", "")
     q = request.GET.get("q", "").strip()
     if year_id:
         entries = entries.filter(academic_year_id=year_id)
+    if grade_id:
+        entries = entries.filter(section__grade_id=grade_id)
     if section_id:
         entries = entries.filter(section_id=section_id)
     if teacher_id:
         entries = entries.filter(teacher_id=teacher_id)
+    if subject_id:
+        entries = entries.filter(subject_id=subject_id)
     if day:
         entries = entries.filter(day=day)
     if q:
@@ -54,13 +60,17 @@ def dashboard(request):
         {
             "entries": entries,
             "academic_years": AcademicYear.objects.order_by("-start_date"),
+            "grades": Grade.objects.order_by("order", "name"),
             "sections": Section.objects.select_related("grade").filter(is_active=True),
             "teachers": Teacher.objects.filter(is_active=True),
+            "subjects": Subject.objects.filter(is_active=True).select_related("grade").order_by("grade__order", "name"),
             "days": TimetableEntry.DAYS,
             "filters": {
                 "academic_year": year_id,
+                "grade": grade_id,
                 "section": section_id,
                 "teacher": teacher_id,
+                "subject": subject_id,
                 "day": day,
                 "q": q,
             },

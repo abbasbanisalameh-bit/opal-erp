@@ -1,39 +1,13 @@
 {% load static %}
 <div class="topbar">
-    <div class="top-left">
-        <input class="search-box" placeholder="ابحث هنا...">
-    </div>
-
+    <div class="top-left"><input class="search-box" placeholder="ابحث هنا..."></div>
     <div class="top-right">
-        <a class="icon-btn position-relative text-decoration-none" href="{% url 'enterprise_ops:notification_list' %}" aria-label="الإشعارات">🔔
-            {% if opal_unread_notifications_count %}<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">{{ opal_unread_notifications_count }}</span>{% endif %}
+        <a id="opal-notification-bell" class="icon-btn position-relative text-decoration-none" href="{% url 'enterprise_ops:notification_list' %}" aria-label="الإشعارات" data-status-url="{% url 'enterprise_ops:notification_status' %}" data-latest-id="{{ opal_latest_unread_notification_id|default:'' }}">🔔
+            <span id="opal-notification-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger {% if not opal_unread_notifications_count %}d-none{% endif %}">{{ opal_unread_notifications_count|default:0 }}</span>
         </a>
-
         <a class="profile opal-profile-link text-decoration-none" href="{% url 'accounts:my_profile' %}" title="تعديل الملف الشخصي">
-            <div class="opal-user-photo-frame">
-                {% if request.user.is_authenticated and request.user.profile.photo %}
-                    <img src="{{ request.user.profile.photo.url }}" alt="{{ request.user.profile.full_name|default:request.user.username }}">
-                {% else %}
-                    <i class="bi bi-person-fill"></i>
-                {% endif %}
-            </div>
-
-            <div>
-                <strong>
-                    {% if request.user.is_authenticated and request.user.profile.full_name %}
-                        {{ request.user.profile.full_name }}
-                    {% else %}
-                        {{ request.user.username }}
-                    {% endif %}
-                </strong><br>
-                <small>
-                    {% if request.user.is_authenticated and request.user.profile.role %}
-                        {{ request.user.profile.role.name }}
-                    {% else %}
-                        تعديل الملف الشخصي
-                    {% endif %}
-                </small>
-            </div>
+            <div class="opal-user-photo-frame">{% if request.user.is_authenticated and request.user.profile.photo %}<img src="{{ request.user.profile.photo.url }}" alt="{{ request.user.profile.full_name|default:request.user.username }}">{% else %}<i class="bi bi-person-fill"></i>{% endif %}</div>
+            <div><strong>{% if request.user.is_authenticated and request.user.profile.full_name %}{{ request.user.profile.full_name }}{% else %}{{ request.user.username }}{% endif %}</strong><br><small>{% if request.user.is_authenticated and request.user.profile.role %}{{ request.user.profile.role.name }}{% else %}تعديل الملف الشخصي{% endif %}</small></div>
         </a>
     </div>
 </div>

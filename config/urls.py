@@ -47,6 +47,7 @@ urlpatterns = [
     path('teachers/', include('teachers.urls')),
     path('timetable/', include('timetable.urls')),
     path('enterprise/', include('enterprise_ops.urls')),
+    path('announcements/', include('announcements.urls')),
 ]
 
 if settings.OPAL_ENABLE_OPENEMIS:

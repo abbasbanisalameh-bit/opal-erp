@@ -13,7 +13,9 @@ class TeacherPortalAccessMiddleware:
         "/logout/",
         "/static/",
         "/media/",
-        "/enterprise/workflow/",
+        "/enterprise/feedback/",
+        "/enterprise/reports/",
+        "/enterprise/audit/",
         "/enterprise/notifications/",
     )
 

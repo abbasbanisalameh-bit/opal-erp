@@ -1,0 +1,21 @@
+{% extends "base/base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block page_subtitle %}إدارة الإعلان الظاهر أعلى صفحات النظام{% endblock %}
+{% block content %}
+<div class="opal-card">
+  <form method="post">{% csrf_token %}
+    <div class="row g-3">
+      {% for field in form %}
+      <div class="{% if field.name == 'message' %}col-12{% else %}col-md-6{% endif %}">
+        <label class="form-label fw-bold">{{ field.label }}</label>
+        {% if field.name == 'is_active' %}<div class="form-check form-switch">{{ field }} <label class="form-check-label">تشغيل الإعلان مباشرة</label></div>{% else %}{{ field }}{% endif %}
+        {% for error in field.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+    {% for error in form.non_field_errors %}<div class="alert alert-danger mt-3">{{ error }}</div>{% endfor %}
+    <div class="mt-4 d-flex gap-2"><button class="btn btn-primary">حفظ</button><a class="btn btn-secondary" href="{% url 'announcements:list' %}">رجوع</a></div>
+  </form>
+</div>
+{% endblock %}

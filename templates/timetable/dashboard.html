@@ -7,12 +7,14 @@
 {% if coverage_needed %}<div class="alert alert-danger"><strong>تنبيه:</strong> توجد {{ coverage_needed|length }} حصص اليوم بحاجة إشغال بسبب غياب معلم. <a href="{% url 'timetable:absence_center' %}">معالجة الإشغالات</a></div>{% endif %}
 <div class="opal-card mb-4">
   <form method="get" class="row g-3 align-items-end">
-    <div class="col-md-2"><label class="form-label">العام</label><select class="form-control" name="academic_year"><option value="">الكل</option>{% for item in academic_years %}<option value="{{ item.id }}" {% if filters.academic_year == item.id|stringformat:'s' %}selected{% endif %}>{{ item.name }}</option>{% endfor %}</select></div>
-    <div class="col-md-2"><label class="form-label">الشعبة</label><select class="form-control" name="section"><option value="">الكل</option>{% for item in sections %}<option value="{{ item.id }}" {% if filters.section == item.id|stringformat:'s' %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
-    <div class="col-md-2"><label class="form-label">المعلم</label><select class="form-control" name="teacher"><option value="">الكل</option>{% for item in teachers %}<option value="{{ item.id }}" {% if filters.teacher == item.id|stringformat:'s' %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
-    <div class="col-md-2"><label class="form-label">اليوم</label><select class="form-control" name="day"><option value="">الكل</option>{% for code,label in days %}<option value="{{ code }}" {% if filters.day == code %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
-    <div class="col-md-2"><label class="form-label">بحث</label><input class="form-control" name="q" value="{{ filters.q }}"></div>
-    <div class="col-md-2"><button class="btn btn-primary w-100">تصفية</button></div>
+    <div class="col-lg-2 col-md-4"><label class="form-label">العام</label><select class="form-select" name="academic_year"><option value="">الكل</option>{% for item in academic_years %}<option value="{{ item.id }}" {% if filters.academic_year == item.id|stringformat:'s' %}selected{% endif %}>{{ item.name }}</option>{% endfor %}</select></div>
+    <div class="col-lg-2 col-md-4"><label class="form-label">الصف</label><select class="form-select" name="grade"><option value="">الكل</option>{% for item in grades %}<option value="{{ item.id }}" {% if filters.grade == item.id|stringformat:'s' %}selected{% endif %}>{{ item.name }}</option>{% endfor %}</select></div>
+    <div class="col-lg-2 col-md-4"><label class="form-label">الشعبة</label><select class="form-select" name="section"><option value="">الكل</option>{% for item in sections %}<option value="{{ item.id }}" {% if filters.section == item.id|stringformat:'s' %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
+    <div class="col-lg-2 col-md-4"><label class="form-label">المعلم</label><select class="form-select" name="teacher"><option value="">الكل</option>{% for item in teachers %}<option value="{{ item.id }}" {% if filters.teacher == item.id|stringformat:'s' %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
+    <div class="col-lg-2 col-md-4"><label class="form-label">المادة</label><select class="form-select" name="subject"><option value="">الكل</option>{% for item in subjects %}<option value="{{ item.id }}" {% if filters.subject == item.id|stringformat:'s' %}selected{% endif %}>{{ item.grade.name }} — {{ item.name }}</option>{% endfor %}</select></div>
+    <div class="col-lg-2 col-md-4"><label class="form-label">اليوم</label><select class="form-select" name="day"><option value="">الكل</option>{% for code,label in days %}<option value="{{ code }}" {% if filters.day == code %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+    <div class="col-lg-10"><label class="form-label">بحث حر</label><input class="form-control" name="q" value="{{ filters.q }}" placeholder="الصف أو الشعبة أو المادة أو المعلم أو الغرفة"></div>
+    <div class="col-lg-2 d-grid"><button class="btn btn-primary">عرض الجدول</button></div>
   </form>
 </div>
 <div class="opal-card">

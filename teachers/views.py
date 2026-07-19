@@ -6,6 +6,7 @@ from django.views.decorators.http import require_POST
 
 from .forms import HomeworkForm, TeacherAccountCreateForm, TeacherAssignmentForm, TeacherForm
 from .models import Homework, Teacher, TeacherAssignment
+from academics.models import Section, Subject
 from .account_services import create_teacher_account, reset_teacher_password
 from enterprise_ops.permissions import management_required
 from parent_portal.notification_services import notify_guardian_for_student
@@ -201,6 +202,36 @@ def portal_dashboard(request):
         "homeroom_sections": homeroom_sections,
         "latest_homework": latest_homework,
         "live_status": teacher_live_status(teacher),
+    })
+
+
+@teacher_required
+def portal_timetable(request):
+    """Filtered timetable for the authenticated teacher only."""
+    teacher = request.user.teacher_profile
+    entries = TimetableEntry.objects.filter(teacher=teacher, is_active=True).select_related(
+        "academic_year", "section", "section__grade", "subject", "time_slot"
+    )
+    day = request.GET.get("day", "")
+    section_id = request.GET.get("section", "")
+    subject_id = request.GET.get("subject", "")
+    if day:
+        entries = entries.filter(day=day)
+    if section_id:
+        entries = entries.filter(section_id=section_id)
+    if subject_id:
+        entries = entries.filter(subject_id=subject_id)
+
+    available = TimetableEntry.objects.filter(teacher=teacher, is_active=True)
+    sections = Section.objects.filter(timetable_entries__in=available).select_related("grade").distinct().order_by("grade__order", "name")
+    subjects = Subject.objects.filter(timetableentry__in=available).select_related("grade").distinct().order_by("grade__order", "name")
+    return render(request, "teachers/portal_timetable.html", {
+        "teacher": teacher,
+        "entries": entries,
+        "sections": sections,
+        "subjects": subjects,
+        "days": TimetableEntry.DAYS,
+        "filters": {"day": day, "section": section_id, "subject": subject_id},
     })
 
 

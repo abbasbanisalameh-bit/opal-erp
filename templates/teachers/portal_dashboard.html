@@ -7,7 +7,7 @@
 <div class="opal-module-grid mb-4">
   <a class="opal-module-card" href="#teacher-assignments"><i class="bi bi-journal-bookmark-fill"></i><div><h3>التكليفات</h3><p>طلاب المادة والعلامات والواجبات.</p></div></a>
   <a class="opal-module-card" href="#homeroom-sections"><i class="bi bi-person-check-fill"></i><div><h3>مربي الصف</h3><p>تسجيل الغياب للشعبة التي أنت مربيها فقط.</p></div></a>
-  <a class="opal-module-card" href="#teacher-timetable"><i class="bi bi-calendar3"></i><div><h3>الجدول الدراسي</h3><p>عرض جدول الحصص الحالي.</p></div></a>
+  <a class="opal-module-card" href="{% url 'teachers:portal_timetable' %}"><i class="bi bi-calendar3"></i><div><h3>الجدول الدراسي</h3><p>حسب اليوم أو الصف والشعبة أو المادة.</p></div></a>
 </div>
 <div class="opal-card mb-4" id="teacher-assignments">
   <h3 class="mb-3">مرحبًا {{ teacher.full_name }}</h3>
@@ -15,5 +15,5 @@
 </div>
 <div class="opal-card mb-4" id="homeroom-sections"><h4>الشعب التي أنت مربيها</h4><div class="row g-3">{% for section in homeroom_sections %}<div class="col-md-6"><div class="opal-card p-3"><h5>{{ section }}</h5><p>{{ section.academic_year }}</p><a class="btn btn-primary" href="{% url 'teachers:portal_attendance_section' section.pk %}">تسجيل الحضور والغياب</a></div></div>{% empty %}<p class="text-secondary">لست مربيًا لأي شعبة حاليًا.</p>{% endfor %}</div></div>
 <div class="opal-card mb-4"><h4>أحدث الواجبات</h4><div class="table-responsive"><table class="opal-table"><thead><tr><th>العنوان</th><th>المادة</th><th>الشعبة</th><th>التسليم</th></tr></thead><tbody>{% for item in latest_homework %}<tr><td>{{ item.title }}</td><td>{{ item.assignment.subject }}</td><td>{{ item.assignment.section }}</td><td>{{ item.due_date }}</td></tr>{% empty %}<tr><td colspan="4">لا توجد واجبات.</td></tr>{% endfor %}</tbody></table></div></div>
-<div class="opal-card" id="teacher-timetable"><h4>الجدول</h4><div class="table-responsive"><table class="opal-table"><thead><tr><th>اليوم</th><th>الحصة</th><th>المادة</th><th>الشعبة</th></tr></thead><tbody>{% for e in timetable %}<tr><td>{{ e.get_day_display }}</td><td>{{ e.time_slot }}</td><td>{{ e.subject }}</td><td>{{ e.section }}</td></tr>{% empty %}<tr><td colspan="4">لا يوجد جدول.</td></tr>{% endfor %}</tbody></table></div></div>
+<div class="opal-card" id="teacher-timetable"><div class="d-flex justify-content-between align-items-center"><h4>الجدول</h4><a class="btn btn-outline-info" href="{% url 'teachers:portal_timetable' %}">عرض الجدول مع التصفية</a></div><div class="table-responsive"><table class="opal-table"><thead><tr><th>اليوم</th><th>الحصة</th><th>المادة</th><th>الشعبة</th></tr></thead><tbody>{% for e in timetable %}<tr><td>{{ e.get_day_display }}</td><td>{{ e.time_slot }}</td><td>{{ e.subject }}</td><td>{{ e.section }}</td></tr>{% empty %}<tr><td colspan="4">لا يوجد جدول.</td></tr>{% endfor %}</tbody></table></div></div>
 {% endblock %}

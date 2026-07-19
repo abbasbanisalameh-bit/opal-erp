@@ -36,6 +36,6 @@ python manage.py verify_core_readiness
 ```
 
 تعليمات التركيب الحالية في
-`INSTALL_OPAL_COMPREHENSIVE_DATA_CENTER_V1_AR.md`، وسجل التغيير في
-`OPAL_COMPREHENSIVE_DATA_CENTER_V1_RELEASE_NOTES_AR.md`. الوثائق التاريخية
-محفوظة داخل `docs/archive/`.
+`INSTALL_OPAL_COMMUNICATION_TIMETABLE_MARKS_FIX_V1_AR.md`، وسجل التغيير في
+`OPAL_COMMUNICATION_TIMETABLE_MARKS_FIX_V1_RELEASE_NOTES_AR.md`. الوثائق التاريخية
+محفوظة داخل المشروع للرجوع إليها.

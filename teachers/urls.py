@@ -4,6 +4,7 @@ from . import views
 app_name = "teachers"
 urlpatterns = [
     path("portal/", views.portal_dashboard, name="portal_dashboard"),
+    path("portal/timetable/", views.portal_timetable, name="portal_timetable"),
     path("portal/attendance/<int:assignment_pk>/", views.portal_attendance, name="portal_attendance"),
     path("portal/attendance/section/<int:section_pk>/", views.portal_attendance_section, name="portal_attendance_section"),
     path("portal/students/<int:assignment_pk>/", views.portal_students, name="portal_students"),

@@ -1,0 +1,11 @@
+{% extends "base/base.html" %}
+{% block title %}التعاميم والتنبيهات{% endblock %}
+{% block page_title %}التعاميم والتنبيهات{% endblock %}
+{% block page_subtitle %}إرسال تعميم للمعلمين أو أولياء الأمور أو الجميع، أو تنبيه لمعلم محدد{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-end mb-3"><a href="{% url 'enterprise_ops:broadcast_create' %}" class="btn primary-btn"><i class="bi bi-send-plus"></i> إرسال تعميم أو تنبيه</a></div>
+<section class="opal-enterprise-section"><div class="table-responsive"><table class="table opal-enterprise-table align-middle"><thead><tr><th>النوع</th><th>العنوان والرسالة</th><th>الوجهة</th><th>المستلمون</th><th>الحالة</th><th>التاريخ</th><th>الإجراءات</th></tr></thead><tbody>
+{% for item in items %}<tr><td>{{ item.get_message_type_display }}</td><td><strong>{{ item.title }}</strong><div class="small text-secondary">{{ item.message|truncatechars:100 }}</div></td><td>{% if item.message_type == 'teacher_alert' %}{{ item.specific_teacher|default:"-" }}{% else %}{{ item.get_audience_display }}{% endif %}</td><td>{{ item.recipients_count }}</td><td>{% if item.is_active %}<span class="badge bg-success">فعال</span>{% else %}<span class="badge bg-secondary">متوقف</span>{% endif %}</td><td>{{ item.created_at|date:"Y-m-d H:i" }}</td><td><div class="d-flex gap-1 flex-wrap"><form method="post" action="{% url 'enterprise_ops:broadcast_toggle' item.pk %}">{% csrf_token %}<button class="btn btn-sm {% if item.is_active %}btn-outline-warning{% else %}btn-outline-success{% endif %}">{% if item.is_active %}إيقاف{% else %}تشغيل{% endif %}</button></form><form method="post" action="{% url 'enterprise_ops:broadcast_delete' item.pk %}" onsubmit="return confirm('حذف السجل؟ الإشعارات التي وصلت سابقًا لن تُحذف من حسابات المستلمين.')">{% csrf_token %}<button class="btn btn-sm btn-outline-danger">حذف</button></form></div></td></tr>
+{% empty %}<tr><td colspan="7"><div class="opal-empty-state"><i class="bi bi-megaphone"></i>لا توجد تعاميم أو تنبيهات.</div></td></tr>{% endfor %}
+</tbody></table></div></section>
+{% endblock %}

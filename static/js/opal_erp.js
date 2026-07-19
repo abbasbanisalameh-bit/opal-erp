@@ -325,3 +325,87 @@ document.addEventListener("DOMContentLoaded", function () {
         initializeScrollableTables();
     }
 })();
+
+/* ===== OPAL Audible Notifications V1 ===== */
+(function () {
+    "use strict";
+
+    const bell = document.getElementById("opal-notification-bell");
+    if (!bell) return;
+    const statusUrl = bell.dataset.statusUrl;
+    const badge = document.getElementById("opal-notification-badge");
+    const storageKey = "opal:last-audible-notification";
+    let audioUnlocked = false;
+    let pendingId = bell.dataset.latestId || "";
+    let pendingTitle = "";
+
+    function lastPlayed() {
+        try { return window.localStorage.getItem(storageKey) || ""; } catch (_) { return ""; }
+    }
+    function remember(id) {
+        try { window.localStorage.setItem(storageKey, String(id || "")); } catch (_) {}
+    }
+    function beep() {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return false;
+        try {
+            const ctx = new AudioCtx();
+            const gain = ctx.createGain();
+            const oscillator = ctx.createOscillator();
+            oscillator.type = "sine";
+            oscillator.frequency.setValueAtTime(880, ctx.currentTime);
+            oscillator.frequency.setValueAtTime(660, ctx.currentTime + 0.16);
+            gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.18, ctx.currentTime + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.38);
+            oscillator.connect(gain);
+            gain.connect(ctx.destination);
+            oscillator.start();
+            oscillator.stop(ctx.currentTime + 0.4);
+            oscillator.addEventListener("ended", function () { ctx.close(); }, {once: true});
+            return true;
+        } catch (_) {
+            return false;
+        }
+    }
+    function playPending() {
+        if (!audioUnlocked || !pendingId || String(pendingId) === lastPlayed()) return;
+        if (beep()) {
+            remember(pendingId);
+            bell.setAttribute("title", pendingTitle ? "إشعار جديد: " + pendingTitle : "يوجد إشعار جديد");
+        }
+    }
+    function unlockAudio() {
+        audioUnlocked = true;
+        playPending();
+    }
+    ["click", "touchstart", "keydown"].forEach(function (eventName) {
+        document.addEventListener(eventName, unlockAudio, {once: true, passive: true});
+    });
+    function updateBadge(count) {
+        if (!badge) return;
+        badge.textContent = String(count || 0);
+        badge.classList.toggle("d-none", !count);
+    }
+    async function poll() {
+        if (!statusUrl || document.hidden) return;
+        try {
+            const response = await fetch(statusUrl, {
+                credentials: "same-origin",
+                headers: {"X-Requested-With": "XMLHttpRequest"},
+                cache: "no-store"
+            });
+            if (!response.ok) return;
+            const payload = await response.json();
+            updateBadge(payload.unread_count);
+            if (payload.latest_id) {
+                pendingId = String(payload.latest_id);
+                pendingTitle = payload.latest_title || "";
+                playPending();
+            }
+        } catch (_) {}
+    }
+    window.setInterval(poll, 30000);
+    document.addEventListener("visibilitychange", function () { if (!document.hidden) poll(); });
+    poll();
+})();

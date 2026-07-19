@@ -47,10 +47,18 @@ def has_feature_permission(user, feature, action="view"):
     rule = RolePermissionRule.objects.filter(role_code=code, feature=feature, is_active=True).first()
     if rule is not None:
         return bool(getattr(rule, field, False))
-    if feature in {"executive", "audit", "reports", "approvals"}:
+    if feature in {"executive", "approvals"}:
         return is_management(user)
-    if feature in {"workflow", "notifications"}:
-        return True
+    if feature == "workflow":
+        if action == "view":
+            return True
+        if action == "create":
+            return is_management(user) or code in {"teacher", "parent"} or hasattr(user, "teacher_profile") or hasattr(user, "family_account")
+        return is_management(user)
+    if feature in {"notifications", "audit"}:
+        return action == "view"
+    if feature == "reports":
+        return action in {"view", "export"}
     return False
 
 

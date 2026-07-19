@@ -1,0 +1,13 @@
+{% extends 'base/base.html' %}
+{% block title %}جدولي الدراسي{% endblock %}
+{% block page_title %}الجدول الدراسي للمعلم{% endblock %}
+{% block page_subtitle %}عرض الحصص حسب اليوم أو الصف والشعبة أو المادة التي تدرسها{% endblock %}
+{% block content %}
+<div class="opal-card mb-4"><form method="get" class="row g-3 align-items-end">
+  <div class="col-md-4"><label class="form-label">اليوم</label><select class="form-select" name="day"><option value="">كل الأيام</option>{% for code,label in days %}<option value="{{ code }}" {% if filters.day == code %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+  <div class="col-md-4"><label class="form-label">الصف والشعبة</label><select class="form-select" name="section"><option value="">كل الصفوف والشعب</option>{% for item in sections %}<option value="{{ item.pk }}" {% if filters.section == item.pk|stringformat:'s' %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
+  <div class="col-md-4"><label class="form-label">المادة</label><select class="form-select" name="subject"><option value="">كل المواد</option>{% for item in subjects %}<option value="{{ item.pk }}" {% if filters.subject == item.pk|stringformat:'s' %}selected{% endif %}>{{ item.grade.name }} — {{ item.name }}</option>{% endfor %}</select></div>
+  <div class="col-12 d-flex gap-2"><button class="btn btn-primary"><i class="bi bi-funnel"></i> عرض</button><a class="btn btn-outline-secondary" href="{% url 'teachers:portal_timetable' %}">إلغاء التصفية</a></div>
+</form></div>
+<div class="opal-card"><div class="d-flex justify-content-between align-items-center mb-3"><h3 class="mb-0">حصص {{ teacher.full_name }}</h3><a class="btn btn-outline-info" href="{% url 'teachers:portal_dashboard' %}">العودة للبوابة</a></div><div class="table-responsive"><table class="opal-table"><thead><tr><th>اليوم</th><th>الحصة والوقت</th><th>الصف والشعبة</th><th>المادة</th><th>الغرفة</th></tr></thead><tbody>{% for item in entries %}<tr><td>{{ item.get_day_display }}</td><td>{{ item.time_slot.name }}<br><small>{{ item.time_slot.start_time|time:'H:i' }} - {{ item.time_slot.end_time|time:'H:i' }}</small></td><td>{{ item.section }}</td><td>{{ item.subject }}</td><td>{{ item.room|default:'—' }}</td></tr>{% empty %}<tr><td colspan="5" class="text-center text-secondary">لا توجد حصص مطابقة للتصفية.</td></tr>{% endfor %}</tbody></table></div></div>
+{% endblock %}

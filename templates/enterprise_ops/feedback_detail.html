@@ -1,0 +1,14 @@
+{% extends "base/base.html" %}
+{% block title %}{{ item.get_kind_display }} #{{ item.pk }}{% endblock %}
+{% block page_title %}{{ item.get_kind_display }} #{{ item.pk }}{% endblock %}
+{% block page_subtitle %}{{ item.title }}{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-7"><section class="opal-enterprise-section h-100"><div class="section-head"><h3 class="section-title">تفاصيل الرسالة</h3><span class="opal-status-badge is-{{ item.status }}">{{ item.get_status_display }}</span></div><div class="section-body">
+    <dl class="row mb-0"><dt class="col-sm-4">النوع</dt><dd class="col-sm-8">{{ item.get_kind_display }}</dd><dt class="col-sm-4">المرسل</dt><dd class="col-sm-8">{{ item.sender.get_full_name|default:item.sender.username|default:"-" }}</dd><dt class="col-sm-4">التاريخ</dt><dd class="col-sm-8">{{ item.created_at|date:"Y-m-d H:i" }}</dd><dt class="col-sm-4">تقييم جودة التدريس</dt><dd class="col-sm-8"><strong>{{ item.teaching_quality_rating }}/5</strong></dd><dt class="col-sm-4">تقييم الخدمات الإلكترونية</dt><dd class="col-sm-8"><strong>{{ item.electronic_services_rating }}/5</strong></dd></dl>
+    <hr><h5 class="fw-bold">{{ item.title }}</h5><p class="mb-0" style="white-space:pre-wrap">{{ item.message }}</p>
+    {% if item.response %}<hr><div class="alert alert-success"><h5 class="fw-bold">رد الإدارة</h5><div style="white-space:pre-wrap">{{ item.response }}</div></div>{% endif %}
+  </div></section></div>
+  <div class="col-lg-5">{% if can_manage %}<section class="opal-enterprise-section"><div class="section-head"><h3 class="section-title">المراجعة والرد</h3></div><div class="section-body"><form method="post">{% csrf_token %}{% for field in management_form %}<div class="mb-3"><label class="form-label fw-bold">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>{% endfor %}<button class="btn primary-btn w-100"><i class="bi bi-check2-circle"></i> حفظ وإشعار المرسل</button></form></div></section>{% else %}<div class="opal-card"><h4>متابعة الطلب</h4><p class="text-secondary mb-0">ستصلك رسالة صوتية وإشعار عند تحديث الإدارة للحالة أو إضافة رد.</p></div>{% endif %}</div>
+</div>
+{% endblock %}

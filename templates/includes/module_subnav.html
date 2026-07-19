@@ -9,7 +9,7 @@
     <a href="{% url 'students:student_list' %}" class="opal-subnav-btn {% if ns == 'students' %}active{% endif %}"><i class="bi bi-people"></i><span>الطلاب</span></a>
     <a href="{% url 'admissions:direct_registration' %}" class="opal-subnav-btn {% if ns == 'admissions' and view == 'direct_registration' %}active{% endif %}"><i class="bi bi-person-plus"></i><span>تسجيل طالب</span></a>
     <a href="{% url 'admissions:candidate_list' %}" class="opal-subnav-btn {% if ns == 'admissions' and 'candidate' in view %}active{% endif %}"><i class="bi bi-person-lines-fill"></i><span>مرشحون للقبول</span></a>
-    <a href="{% url 'admissions:admission_list' %}" class="opal-subnav-btn {% if ns == 'admissions' and view != 'direct_registration' and view != 'registration_settings' %}active{% endif %}"><i class="bi bi-card-checklist"></i><span>سجل التسجيل</span></a>
+    <a href="{% url 'admissions:admission_list' %}" class="opal-subnav-btn {% if ns == 'admissions' and view != 'direct_registration' and view != 'registration_settings' %}active{% endif %}"><i class="bi bi-card-checklist"></i><span>سجل الطلبة</span></a>
     <a href="{% url 'parent_portal:family_management' %}" class="opal-subnav-btn {% if ns == 'parent_portal' %}active{% endif %}"><i class="bi bi-person-vcard"></i><span>ملفات أولياء الأمور</span></a>
     <a href="{% url 'documents:document_list' %}" class="opal-subnav-btn {% if ns == 'documents' %}active{% endif %}"><i class="bi bi-file-earmark-text"></i><span>مركز الوثائق</span></a>
     <a href="{% url 'admissions:registration_settings' %}" class="opal-subnav-btn {% if ns == 'admissions' and view == 'registration_settings' %}active{% endif %}"><i class="bi bi-sliders"></i><span>إعدادات التسجيل</span></a>
@@ -55,18 +55,20 @@
   </div>
 </nav>
 
-{% elif ns == "enterprise_ops" %}
-<nav class="opal-module-subnav" aria-label="روابط التشغيل المؤسسي">
+{% elif ns == "enterprise_ops" or ns == "announcements" %}
+<nav class="opal-module-subnav" aria-label="روابط الإشعارات والشكاوى والتنبيهات">
   <div class="opal-module-subnav-head">
-    <span><i class="bi bi-building-gear"></i> التشغيل المؤسسي</span>
+    <span><i class="bi bi-bell-fill"></i> الإشعارات والشكاوى والتنبيهات</span>
   </div>
   <div class="opal-module-subnav-scroll">
-    <a href="{% url 'enterprise_ops:dashboard' %}" class="opal-subnav-btn {% if view == 'dashboard' %}active{% endif %}"><i class="bi bi-house-door"></i><span>لوحة التشغيل</span></a>
-    <a href="{% url 'enterprise_ops:workflow_list' %}" class="opal-subnav-btn {% if view == 'workflow_list' or view == 'workflow_detail' or view == 'workflow_action' %}active{% endif %}"><i class="bi bi-diagram-3"></i><span>الموافقات المرتبطة</span></a>
-    <a href="{% url 'enterprise_ops:notification_list' %}" class="opal-subnav-btn {% if view == 'notification_list' or view == 'notification_read' or view == 'notification_read_all' %}active{% endif %}"><i class="bi bi-bell"></i><span>الإشعارات</span></a>
-    <a href="{% url 'enterprise_ops:report_center' %}" class="opal-subnav-btn {% if view == 'report_center' or view == 'report_export_csv' %}active{% endif %}"><i class="bi bi-bar-chart"></i><span>التقارير</span></a>
-    <a href="{% url 'enterprise_ops:audit_log' %}" class="opal-subnav-btn {% if view == 'audit_log' %}active{% endif %}"><i class="bi bi-shield-check"></i><span>سجل العمليات</span></a>
-    <a href="{% url 'enterprise_ops:permission_matrix' %}" class="opal-subnav-btn {% if view == 'permission_matrix' %}active{% endif %}"><i class="bi bi-person-lock"></i><span>الصلاحيات</span></a>
+    <a href="{% url 'enterprise_ops:dashboard' %}" class="opal-subnav-btn {% if ns == 'enterprise_ops' and view == 'dashboard' %}active{% endif %}"><i class="bi bi-house-door"></i><span>مركز المتابعة</span></a>
+    <a href="{% url 'enterprise_ops:feedback_list' %}" class="opal-subnav-btn {% if ns == 'enterprise_ops' and 'feedback' in view %}active{% endif %}"><i class="bi bi-chat-square-text"></i><span>الشكاوى والاقتراحات</span></a>
+    <a href="{% url 'enterprise_ops:broadcast_list' %}" class="opal-subnav-btn {% if ns == 'enterprise_ops' and 'broadcast' in view %}active{% endif %}"><i class="bi bi-megaphone"></i><span>التعاميم والتنبيهات</span></a>
+    <a href="{% url 'announcements:list' %}" class="opal-subnav-btn {% if ns == 'announcements' %}active{% endif %}"><i class="bi bi-badge-ad"></i><span>إدارة الإعلانات</span></a>
+    <a href="{% url 'enterprise_ops:notification_list' %}" class="opal-subnav-btn {% if ns == 'enterprise_ops' and 'notification' in view %}active{% endif %}"><i class="bi bi-bell"></i><span>الإشعارات</span></a>
+    <a href="{% url 'enterprise_ops:report_center' %}" class="opal-subnav-btn {% if ns == 'enterprise_ops' and view == 'report_center' or view == 'report_export_csv' %}active{% endif %}"><i class="bi bi-bar-chart"></i><span>التقارير</span></a>
+    <a href="{% url 'enterprise_ops:audit_log' %}" class="opal-subnav-btn {% if ns == 'enterprise_ops' and view == 'audit_log' %}active{% endif %}"><i class="bi bi-shield-check"></i><span>سجل العمليات</span></a>
+    <a href="{% url 'enterprise_ops:permission_matrix' %}" class="opal-subnav-btn {% if ns == 'enterprise_ops' and view == 'permission_matrix' %}active{% endif %}"><i class="bi bi-person-lock"></i><span>الصلاحيات</span></a>
   </div>
 </nav>
 

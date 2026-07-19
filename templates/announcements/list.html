@@ -1,0 +1,34 @@
+{% extends "base/base.html" %}
+{% block title %}إدارة الإعلانات{% endblock %}
+{% block page_title %}إدارة الإعلانات{% endblock %}
+{% block page_subtitle %}إضافة الإعلانات الظاهرة أعلى صفحات النظام وتشغيلها أو إيقافها أو حذفها{% endblock %}
+{% block content %}
+<div class="opal-card">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <div><h3 class="fw-bold mb-1">الإعلانات</h3><p class="text-secondary mb-0">يمكن إبقاء أكثر من إعلان فعال؛ يظهر الأحدث أولًا في الشريط العلوي.</p></div>
+    <a href="{% url 'announcements:create' %}" class="btn btn-primary"><i class="bi bi-plus-circle"></i> إضافة إعلان</a>
+  </div>
+  <div class="table-responsive">
+    <table class="opal-table">
+      <thead><tr><th>العنوان</th><th>النوع</th><th>النص</th><th>السرعة</th><th>الحالة</th><th>التاريخ</th><th>الإجراءات</th></tr></thead>
+      <tbody>
+      {% for item in items %}
+        <tr>
+          <td class="fw-bold">{{ item.title }}</td>
+          <td>{{ item.get_announcement_type_display }}</td>
+          <td>{{ item.message|truncatechars:90 }}</td>
+          <td>{{ item.speed_seconds }} ثانية</td>
+          <td>{% if item.is_active %}<span class="badge bg-success">فعال</span>{% else %}<span class="badge bg-secondary">متوقف</span>{% endif %}</td>
+          <td>{{ item.created_at|date:"Y-m-d H:i" }}</td>
+          <td class="d-flex gap-1 flex-wrap">
+            <a class="btn btn-sm btn-outline-primary" href="{% url 'announcements:update' item.pk %}">تعديل</a>
+            <form method="post" action="{% url 'announcements:toggle' item.pk %}">{% csrf_token %}<button class="btn btn-sm {% if item.is_active %}btn-outline-warning{% else %}btn-outline-success{% endif %}">{% if item.is_active %}إيقاف{% else %}تشغيل{% endif %}</button></form>
+            <form method="post" action="{% url 'announcements:delete' item.pk %}" onsubmit="return confirm('حذف الإعلان نهائيًا؟')">{% csrf_token %}<button class="btn btn-sm btn-outline-danger">حذف</button></form>
+          </td>
+        </tr>
+      {% empty %}<tr><td colspan="7" class="text-center text-secondary">لا توجد إعلانات.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

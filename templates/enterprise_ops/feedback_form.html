@@ -1,0 +1,12 @@
+{% extends "base/base.html" %}
+{% block title %}إرسال شكوى أو اقتراح{% endblock %}
+{% block page_title %}إرسال شكوى أو اقتراح{% endblock %}
+{% block page_subtitle %}يلزم إدخال تقييم مستقل لجودة التدريس وتقييم مستقل للخدمات الإلكترونية{% endblock %}
+{% block content %}
+<div class="opal-card"><form method="post" novalidate>{% csrf_token %}
+  <div class="alert alert-info"><i class="bi bi-info-circle"></i> التقييمان منفصلان وإجباريان، من 1 (ضعيف) إلى 5 (ممتاز).</div>
+  <div class="row g-3">{% for field in form %}<div class="{% if field.name == 'message' %}col-12{% else %}col-md-6{% endif %}"><label class="form-label fw-bold">{{ field.label }}</label>{{ field }}{% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}{% for error in field.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}</div>{% endfor %}</div>
+  {% for error in form.non_field_errors %}<div class="alert alert-danger mt-3">{{ error }}</div>{% endfor %}
+  <div class="mt-4 d-flex gap-2"><button class="btn primary-btn"><i class="bi bi-send"></i> إرسال إلى الإدارة</button><a class="btn btn-outline-secondary" href="{% url 'enterprise_ops:feedback_list' %}">رجوع</a></div>
+</form></div>
+{% endblock %}

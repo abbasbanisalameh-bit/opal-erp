@@ -1,0 +1,14 @@
+{% extends "base/base.html" %}
+{% block title %}الشكاوى والاقتراحات{% endblock %}
+{% block page_title %}الشكاوى والاقتراحات{% endblock %}
+{% block page_subtitle %}{% if can_manage %}مراجعة رسائل المعلمين وأولياء الأمور والرد عليها{% else %}إرسال شكوى أو اقتراح ومتابعة رد الإدارة{% endif %}{% endblock %}
+{% block content %}
+<div class="opal-enterprise-toolbar">
+  <form class="flex-grow-1" method="get"><div class="row g-2"><div class="col-lg-5"><input class="form-control" name="q" value="{{ filters.q }}" placeholder="بحث في العنوان أو الرسالة..."></div><div class="col-lg-3"><select class="form-select" name="kind"><option value="">كل الأنواع</option>{% for value,label in kind_choices %}<option value="{{ value }}" {% if filters.kind == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div><div class="col-lg-3"><select class="form-select" name="status"><option value="">كل الحالات</option>{% for value,label in status_choices %}<option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div><div class="col-lg-1"><button class="btn btn-outline-info w-100"><i class="bi bi-search"></i></button></div></div></form>
+  <a href="{% url 'enterprise_ops:feedback_create' %}" class="btn primary-btn"><i class="bi bi-plus-circle"></i> إرسال جديد</a>
+</div>
+<section class="opal-enterprise-section"><div class="table-responsive"><table class="table opal-enterprise-table align-middle"><thead><tr><th>#</th><th>النوع</th><th>العنوان</th>{% if can_manage %}<th>المرسل</th>{% endif %}<th>جودة التدريس</th><th>الخدمات الإلكترونية</th><th>الحالة</th><th>التاريخ</th><th></th></tr></thead><tbody>
+{% for item in items %}<tr><td>{{ item.pk }}</td><td><span class="badge {% if item.kind == 'complaint' %}bg-danger{% else %}bg-info text-dark{% endif %}">{{ item.get_kind_display }}</span></td><td><strong>{{ item.title }}</strong><div class="small text-secondary">{{ item.message|truncatechars:80 }}</div></td>{% if can_manage %}<td>{{ item.sender.get_full_name|default:item.sender.username|default:"-" }}</td>{% endif %}<td>{{ item.teaching_quality_rating }}/5</td><td>{{ item.electronic_services_rating }}/5</td><td><span class="opal-status-badge is-{{ item.status }}">{{ item.get_status_display }}</span></td><td class="text-nowrap">{{ item.created_at|date:"Y-m-d H:i" }}</td><td><a class="btn btn-sm btn-outline-info" href="{{ item.get_absolute_url }}">فتح</a></td></tr>
+{% empty %}<tr><td colspan="{% if can_manage %}9{% else %}8{% endif %}"><div class="opal-empty-state"><i class="bi bi-chat-square"></i>لا توجد رسائل مطابقة.</div></td></tr>{% endfor %}
+</tbody></table></div></section>
+{% endblock %}
