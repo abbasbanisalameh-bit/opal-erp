@@ -601,3 +601,157 @@ document.addEventListener("DOMContentLoaded", function () {
         initializeOperationSearch();
     }
 })();
+
+/* ===== OPAL Unified UX 2026-07 ===== */
+(function () {
+    "use strict";
+
+    function ready(callback) {
+        if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", callback, {once: true});
+        else callback();
+    }
+
+    function updateClock() {
+        const timeNode = document.getElementById("opal-clock-time");
+        const dateNode = document.getElementById("opal-clock-date");
+        if (!timeNode || !dateNode) return;
+        const now = new Date();
+        timeNode.textContent = new Intl.DateTimeFormat("ar-JO", {hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true}).format(now);
+        dateNode.textContent = new Intl.DateTimeFormat("ar-JO", {weekday: "short", year: "numeric", month: "short", day: "numeric"}).format(now);
+    }
+
+    function installBackButton() {
+        const button = document.querySelector(".opal-dynamic-back");
+        if (!button) return;
+        button.addEventListener("click", function () {
+            const sameOriginReferrer = document.referrer && new URL(document.referrer).origin === window.location.origin;
+            if (sameOriginReferrer && window.history.length > 1) window.history.back();
+            else window.location.href = button.dataset.fallbackUrl || "/";
+        });
+    }
+
+    function installInstantTableSearch() {
+        document.querySelectorAll("table[data-opal-instant-table], table.opal-table, table.table").forEach(function (table, index) {
+            if (table.dataset.opalSearchReady === "1" || table.dataset.opalInstantTable === "off") return;
+            const bodyRows = table.querySelectorAll("tbody tr");
+            if (bodyRows.length < 2) return;
+            table.dataset.opalSearchReady = "1";
+            const wrapper = table.closest(".table-responsive, .table-wrap") || table.parentElement;
+            if (!wrapper) return;
+            const bar = document.createElement("div");
+            bar.className = "opal-instant-table-search";
+            bar.innerHTML = '<i class="bi bi-search"></i><input type="search" class="form-control" placeholder="بحث فوري داخل الجدول..." aria-label="بحث فوري داخل الجدول"><span class="opal-table-result-count"></span>';
+            wrapper.parentNode.insertBefore(bar, wrapper);
+            const input = bar.querySelector("input");
+            const count = bar.querySelector(".opal-table-result-count");
+            const rows = Array.from(table.querySelectorAll("tbody tr"));
+            function filter() {
+                const query = (input.value || "").trim().toLocaleLowerCase("ar");
+                let visible = 0;
+                rows.forEach(function (row) {
+                    const show = !query || (row.textContent || "").toLocaleLowerCase("ar").includes(query);
+                    row.classList.toggle("d-none", !show);
+                    if (show) visible += 1;
+                });
+                count.textContent = visible + " نتيجة";
+            }
+            input.addEventListener("input", filter);
+            filter();
+        });
+    }
+
+    function installLiveFilterForms() {
+        document.querySelectorAll("form[data-live-filter], form[method=\"get\"]:not([data-live-filter=\"off\"])").forEach(function (form) {
+            if (form.dataset.liveReady === "1") return;
+            form.dataset.liveReady = "1";
+            let timer = null;
+            function submitSoon(delay) {
+                window.clearTimeout(timer);
+                timer = window.setTimeout(function () {
+                    if (typeof form.requestSubmit === "function") form.requestSubmit();
+                    else form.submit();
+                }, delay);
+            }
+            form.querySelectorAll("select").forEach(function (field) {
+                field.addEventListener("change", function () { submitSoon(80); });
+            });
+            form.querySelectorAll('input[type="search"], input[name="q"]').forEach(function (field) {
+                field.addEventListener("input", function () { submitSoon(450); });
+            });
+        });
+    }
+
+    function installTooltips() {
+        document.querySelectorAll(".btn, .opal-card, .opal-module-card, .icon-btn").forEach(function (element) {
+            if (!element.getAttribute("title")) {
+                const text = (element.getAttribute("aria-label") || element.querySelector("h3,h4,h5,strong")?.textContent || element.textContent || "").replace(/\s+/g, " ").trim();
+                if (text && text.length <= 100) element.setAttribute("title", text);
+            }
+        });
+        if (window.bootstrap && window.bootstrap.Tooltip) {
+            document.querySelectorAll('[title]:not([data-opal-tooltip-ready="1"])').forEach(function (element) {
+                element.dataset.opalTooltipReady = "1";
+                new window.bootstrap.Tooltip(element, {container: "body", trigger: "hover focus", delay: {show: 350, hide: 80}});
+            });
+        }
+    }
+
+    function installExamScope() {
+        const summary = document.getElementById("opal-exam-teacher-summary");
+        const teacherName = document.getElementById("opal-exam-teacher-name");
+        if (!summary || !teacherName || !summary.dataset.scopeUrl) return;
+        const form = summary.closest("form") || document;
+        const fields = {};
+        form.querySelectorAll("[data-exam-scope-field]").forEach(function (field) { fields[field.dataset.examScopeField] = field; });
+        function replaceOptions(select, items, placeholder, selectedValue) {
+            if (!select) return;
+            const previous = selectedValue || select.value;
+            select.innerHTML = "";
+            const empty = document.createElement("option");
+            empty.value = "";
+            empty.textContent = placeholder;
+            select.appendChild(empty);
+            (items || []).forEach(function (item) {
+                const option = document.createElement("option");
+                option.value = String(item.id);
+                option.textContent = item.label + (item.current ? " — الحالي" : "");
+                option.selected = String(item.id) === String(previous);
+                select.appendChild(option);
+            });
+        }
+        async function refresh(changed) {
+            const params = new URLSearchParams();
+            ["academic_year", "grade", "section", "subject"].forEach(function (name) {
+                if (fields[name]?.value) params.set(name, fields[name].value);
+            });
+            try {
+                const response = await fetch(summary.dataset.scopeUrl + "?" + params.toString(), {headers: {"X-Requested-With": "XMLHttpRequest"}});
+                if (!response.ok) return;
+                const payload = await response.json();
+                if (changed === "academic_year") replaceOptions(fields.semester, payload.semesters, "اختر الفصل", "");
+                if (changed === "academic_year" || changed === "grade") {
+                    replaceOptions(fields.section, payload.sections, "اختر الشعبة", changed === "grade" ? "" : fields.section?.value);
+                    replaceOptions(fields.subject, payload.subjects, "اختر المادة", changed === "grade" ? "" : fields.subject?.value);
+                }
+                teacherName.textContent = payload.teacher ? payload.teacher.name : "لا يوجد تكليف فعال مطابق";
+                summary.classList.toggle("is-missing", !payload.teacher);
+            } catch (_) {
+                teacherName.textContent = "تعذر قراءة التكليف حاليًا";
+            }
+        }
+        Object.keys(fields).forEach(function (name) {
+            fields[name].addEventListener("change", function () { refresh(name); });
+        });
+        refresh("");
+    }
+
+    ready(function () {
+        updateClock();
+        window.setInterval(updateClock, 1000);
+        installBackButton();
+        installInstantTableSearch();
+        installLiveFilterForms();
+        installTooltips();
+        installExamScope();
+    });
+})();

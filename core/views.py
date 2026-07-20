@@ -4,6 +4,7 @@ from django.shortcuts import render
 
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.shortcuts import get_object_or_404, render, redirect
+from django.urls import reverse
 from django.contrib import messages
 from .models import Branch, School
 from .forms import BranchForm, SchoolSettingsForm
@@ -15,9 +16,22 @@ def can_manage_system(user):
 @login_required
 @user_passes_test(can_manage_system)
 def system_settings(request):
-    school = School.objects.filter(is_active=True).first() or School.objects.create(name="OPAL School")
+    """لوحة إعدادات OPAL المركزية، وتشمل إعدادات المدرسة والتسجيل والتنقل إلى الوحدات البنيوية."""
+    from admissions.forms import RegistrationSettingsForm, TransportRouteForm
+    from admissions.models import TransportRoute
+    from admissions.services import active_school, current_academic_year, get_registration_settings
+
+    school = School.objects.filter(is_active=True).first() or School.objects.create(name="مدرسة أوبال")
+    registration_settings = get_registration_settings(school)
+    current_year = current_academic_year(school)
+
+    school_form = SchoolSettingsForm(instance=school, prefix="school")
+    registration_form = RegistrationSettingsForm(instance=registration_settings, prefix="registration")
+    route_form = TransportRouteForm(prefix="route")
+
     if request.method == "POST":
-        action = request.POST.get("action", "settings")
+        action = request.POST.get("action", "school_settings")
+
         if action in {"seed_system", "reset_all"}:
             if not request.user.is_superuser:
                 messages.error(request, "إدخال البيانات الشاملة وتصفيرها متاحان لمدير النظام الأعلى فقط.")
@@ -41,14 +55,41 @@ def system_settings(request):
             else:
                 messages.error(request, "تعذر التصفير: اكتب عبارة «تصفير شامل» كما هي.")
             return redirect("core:system_settings")
-        form = SchoolSettingsForm(request.POST, request.FILES, instance=school)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "تم تحديث إعدادات النظام بنجاح.")
-            return redirect("core:system_settings")
-    else:
-        form = SchoolSettingsForm(instance=school)
-    return render(request, "core/system_settings.html", {"form": form, "school": school})
+
+        if action == "registration_settings":
+            registration_form = RegistrationSettingsForm(
+                request.POST, instance=registration_settings, prefix="registration"
+            )
+            if registration_form.is_valid():
+                registration_form.save()
+                messages.success(request, "تم حفظ إعدادات التسجيل والخصومات والدفعة الأولى.")
+                return redirect(f"{reverse('core:system_settings')}?section=registration#registration-settings")
+
+        elif action == "route":
+            route_form = TransportRouteForm(request.POST, prefix="route")
+            if route_form.is_valid():
+                route = route_form.save(commit=False)
+                route.school = school
+                route.save()
+                messages.success(request, "تم حفظ جولة المواصلات.")
+                return redirect(f"{reverse('core:system_settings')}?section=registration#registration-settings")
+
+        else:
+            school_form = SchoolSettingsForm(request.POST, request.FILES, instance=school, prefix="school")
+            if school_form.is_valid():
+                school_form.save()
+                messages.success(request, "تم تحديث بيانات المدرسة وهوية النظام بنجاح.")
+                return redirect(f"{reverse('core:system_settings')}?section=school#school-settings")
+
+    return render(request, "core/system_settings.html", {
+        "form": school_form,
+        "school": school,
+        "registration_form": registration_form,
+        "route_form": route_form,
+        "routes": TransportRoute.objects.filter(school=school).order_by("name"),
+        "current_year": current_year,
+        "selected_section": request.GET.get("section", "school"),
+    })
 
 
 @login_required

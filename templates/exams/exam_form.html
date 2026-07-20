@@ -1,30 +1,15 @@
 {% extends "base/base.html" %}
-{% block title %}{{ title|default:"نموذج الامتحان" }} | OPAL ERP{% endblock %}
+{% block title %}{{ title|default:"نموذج الامتحان" }} | أوبال{% endblock %}
 {% block page_title %}{{ title|default:"الامتحانات" }}{% endblock %}
-{% block page_subtitle %}إضافة أو تعديل بيانات الامتحان{% endblock %}
-
+{% block page_subtitle %}الإدارة تنشئ الامتحان وتربطه بالشعبة والمادة والمعلم المكلف تلقائيًا{% endblock %}
 {% block content %}
-<div class="opal-card">
-    <h3 class="fw-bold mb-4">{{ title|default:"بيانات الامتحان" }}</h3>
-
-    <form method="post">
-        {% csrf_token %}
-        <div class="row g-3">
-            {% for field in form %}
-            <div class="col-md-6">
-                <label class="form-label fw-bold">{{ field.label }}</label>
-                {{ field }}
-                {% if field.errors %}
-                    <div class="text-danger small mt-1">{{ field.errors }}</div>
-                {% endif %}
-            </div>
-            {% endfor %}
-        </div>
-
-        <div class="mt-4 d-flex gap-2">
-            <button type="submit" class="btn btn-primary">حفظ</button>
-            <a href="{% url 'exams:exam_list' %}" class="btn btn-secondary">رجوع</a>
-        </div>
-    </form>
+<div class="opal-card opal-gold-separator">
+  <div class="alert alert-info"><i class="bi bi-info-circle-fill"></i> بعد الحفظ يظهر الامتحان للمعلم المكلف. لا يستطيع المعلم إنشاء امتحان من تلقاء نفسه.</div>
+  <form method="post" id="opal-exam-definition-form">
+    {% csrf_token %}
+    <div class="row g-3">{% for field in form %}<div class="{% if field.name == 'name' %}col-12{% else %}col-lg-4 col-md-6{% endif %}"><label class="form-label fw-bold">{{ field.label }}</label>{{ field }}{% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}{% if field.errors %}<div class="text-danger small mt-1">{{ field.errors }}</div>{% endif %}</div>{% endfor %}</div>
+    <div class="opal-assignment-summary mt-3" id="opal-exam-teacher-summary" data-scope-url="{% url 'exams:exam_scope_options' %}"><i class="bi bi-person-badge-fill"></i><span>المعلم الذي سيستلم الامتحان:</span><strong id="opal-exam-teacher-name">اختر العام والصف والشعبة والمادة</strong></div>
+    <div class="mt-4 d-flex gap-2"><button type="submit" class="btn btn-primary"><i class="bi bi-check2-circle"></i> حفظ وإتاحته للمعلم</button><a href="{% url 'exams:exam_list' %}" class="btn btn-secondary">عودة</a></div>
+  </form>
 </div>
 {% endblock %}

@@ -180,40 +180,8 @@ def receiver_identity(user):
 @login_required
 @user_passes_test(can_manage_registration)
 def registration_settings(request):
-    school = active_school()
-    settings = get_registration_settings(school)
-    settings_form = RegistrationSettingsForm(instance=settings, prefix="settings")
-    current_year = current_academic_year(school)
-    if current_year is None:
-        messages.warning(request, "لا يوجد عام دراسي مفتوح ومفعّل حاليًا.")
-    grade_fee_form = GradeFeeForm(prefix="grade_fee", school=school, academic_year=current_year)
-    route_form = TransportRouteForm(prefix="route")
-    if request.method == "POST":
-        action = request.POST.get("action")
-        if action == "settings":
-            settings_form = RegistrationSettingsForm(request.POST, instance=settings, prefix="settings")
-            if settings_form.is_valid():
-                settings_form.save()
-                messages.success(request, "تم حفظ إعدادات الخصومات والدفعة الأولى.")
-                return redirect("admissions:registration_settings")
-        elif action == "grade_fee":
-            messages.info(request, "رسوم الصفوف تُدار من الهيكل الدراسي الموحد.")
-            return redirect("academics:academic_structure")
-        elif action == "route":
-            route_form = TransportRouteForm(request.POST, prefix="route")
-            if route_form.is_valid():
-                item = route_form.save(commit=False)
-                item.school = school
-                item.save()
-                messages.success(request, "تم حفظ جولة المواصلات.")
-                return redirect("admissions:registration_settings")
-    return render(request, "admissions/registration_settings.html", {
-        "settings_form": settings_form,
-        "grade_fee_form": grade_fee_form,
-        "route_form": route_form,
-        "grade_fees": GradeFee.objects.filter(school=school).select_related("grade", "academic_year"),
-        "routes": TransportRoute.objects.filter(school=school),
-    })
+    """رابط توافق قديم؛ إعدادات التسجيل أصبحت ضمن إعدادات النظام الموحدة."""
+    return redirect("core:system_settings")
 
 
 @login_required

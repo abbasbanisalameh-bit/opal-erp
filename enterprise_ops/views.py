@@ -462,13 +462,14 @@ def notification_list(request):
 
 @login_required
 @feature_required("notifications", "view")
+@require_POST
 def notification_read(request, pk):
     item = get_object_or_404(request.user.opal_notifications, pk=pk)
     if not item.is_read:
         item.is_read = True
         item.read_at = timezone.now()
         item.save(update_fields=["is_read", "read_at"])
-    return redirect(item.link or "enterprise_ops:notification_list")
+    return redirect("enterprise_ops:notification_list")
 
 
 @login_required

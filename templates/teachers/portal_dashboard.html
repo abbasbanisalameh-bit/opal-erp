@@ -5,9 +5,15 @@
 {% block content %}
 {% if live_status %}<div class="opal-card mb-4 border-primary"><h4>{{ live_status.message }}</h4><p>{{ live_status.teacher_message }} — {{ live_status.teacher_next_message }}</p>{% if live_status.current_class %}<strong>{{ live_status.current_class.subject }} مع {{ live_status.current_class.section }}</strong>{% endif %}</div>{% endif %}
 <div class="opal-module-grid mb-4">
+  <a class="opal-module-card" href="#open-exams"><i class="bi bi-clipboard2-check-fill"></i><div><h3>الامتحانات المطلوبة</h3><p>امتحانات أنشأتها الإدارة وتنتظر إدخال العلامات.</p></div></a>
   <a class="opal-module-card" href="#teacher-assignments"><i class="bi bi-journal-bookmark-fill"></i><div><h3>التكليفات</h3><p>طلاب المادة والعلامات والواجبات.</p></div></a>
   <a class="opal-module-card" href="#homeroom-sections"><i class="bi bi-person-check-fill"></i><div><h3>مربي الصف</h3><p>تسجيل الغياب للشعبة التي أنت مربيها فقط.</p></div></a>
   <a class="opal-module-card" href="{% url 'teachers:portal_timetable' %}"><i class="bi bi-calendar3"></i><div><h3>الجدول الدراسي</h3><p>حسب اليوم أو الصف والشعبة أو المادة.</p></div></a>
+</div>
+<div class="opal-card mb-4 opal-gold-separator" id="open-exams">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3"><div><h3 class="mb-1">الامتحانات المفتوحة لإدخال العلامات</h3><p class="text-secondary mb-0">لا يمكن إدخال علامات إلا لامتحان أنشأته الإدارة وربطته بتكليفك.</p></div><span class="badge bg-warning text-dark">{{ open_exams|length }} مطلوب</span></div>
+  <div class="row g-3">{% for exam in open_exams %}<div class="col-lg-4 col-md-6"><div class="opal-card p-3 h-100"><span class="badge bg-info mb-2">{{ exam.get_exam_type_display }}</span><h5>{{ exam.subject }} — {{ exam.section }}</h5><p class="text-secondary">{{ exam.semester.get_code_display }}{% if exam.exam_date %} — {{ exam.exam_date }}{% endif %}</p><a class="btn btn-primary w-100" href="{% url 'exams:exam_marks_bulk' exam.pk %}?assignment={{ exam.teacher_assignment_id }}"><i class="bi bi-pencil-square"></i> إدخال العلامات</a></div></div>{% empty %}<div class="col-12"><p class="text-secondary mb-0">لا توجد امتحانات مفتوحة حاليًا.</p></div>{% endfor %}</div>
+  {% if submitted_exams %}<hr class="opal-gold-line"><h5>مرسلة إلى الإدارة</h5><div class="d-flex flex-wrap gap-2">{% for exam in submitted_exams %}<span class="badge bg-secondary p-2">{{ exam.get_exam_type_display }} — {{ exam.subject }} — {{ exam.section }}</span>{% endfor %}</div>{% endif %}
 </div>
 <div class="opal-card mb-4" id="teacher-assignments">
   <h3 class="mb-3">مرحبًا {{ teacher.full_name }}</h3>

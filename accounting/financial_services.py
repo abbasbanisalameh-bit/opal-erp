@@ -7,7 +7,7 @@ from decimal import Decimal
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.db.models import Q, Sum
+from django.db.models import Count, Q, Sum
 from django.utils import timezone
 
 from admissions.models import FeePayment, StudentRegistration
@@ -15,10 +15,12 @@ from core.models import AcademicYear
 
 from .models import (
     ExpenseEntry,
+    CanteenTransaction,
     FeeCategory,
     FinancialCarryForward,
     FinancialYearClosure,
     MonthlyFinancialTarget,
+    MonthlyFinancialStatement,
     Receipt,
     StudentInvoice,
     StudentPayment,
@@ -29,16 +31,11 @@ ZERO = Decimal("0.00")
 
 
 def financial_period(reference=None):
-    """Return the inclusive school finance cycle: day 29 through day 28."""
+    """Return the inclusive calendar month: first day through the actual last day."""
     reference = reference or timezone.localdate()
-    if reference.day <= 28:
-        period_end = reference.replace(day=28)
-    else:
-        year = reference.year + (1 if reference.month == 12 else 0)
-        month = 1 if reference.month == 12 else reference.month + 1
-        period_end = date(year, month, 28)
-    previous_day = period_end.replace(day=1) - timedelta(days=1)
-    period_start = previous_day.replace(day=29)
+    last_day = calendar.monthrange(reference.year, reference.month)[1]
+    period_start = reference.replace(day=1)
+    period_end = reference.replace(day=last_day)
     return period_start, period_end
 
 
@@ -50,9 +47,8 @@ def normalize_period_end(value=None):
             value = date.fromisoformat(value)
         except ValueError as exc:
             raise ValidationError("تاريخ الشهر المالي غير صحيح.") from exc
-    if value.day != 28:
-        raise ValidationError("اختر يوم 28 كنهاية للشهر المالي.")
-    return value
+    last_day = calendar.monthrange(value.year, value.month)[1]
+    return value.replace(day=last_day)
 
 
 def _income_rows(school, period_start, period_end):
@@ -120,9 +116,19 @@ def monthly_financial_report(school, period_end=None):
         is_deleted=False,
         expense_date__range=(period_start, period_end),
     ).select_related("created_by"))
+    canteen_rows = list(CanteenTransaction.objects.filter(
+        school=school,
+        is_deleted=False,
+        transaction_date__range=(period_start, period_end),
+    ).select_related("created_by"))
     target = MonthlyFinancialTarget.objects.filter(school=school, period_end=period_end).first()
     income = sum((row["amount"] for row in income_rows), ZERO)
-    expenses = sum((row.amount for row in expense_rows), ZERO)
+    canteen_income = sum((row.amount for row in canteen_rows if row.transaction_type == "income"), ZERO)
+    legacy_canteen_expenses = sum((row.amount for row in canteen_rows if row.transaction_type == "expense"), ZERO)
+    school_expenses = sum((row.amount for row in expense_rows if row.source == "school"), ZERO)
+    canteen_expenses = sum((row.amount for row in expense_rows if row.source == "canteen"), ZERO) + legacy_canteen_expenses
+    expenses = school_expenses + canteen_expenses
+    total_income = income + canteen_income
     expected = target.expected_amount if target else ZERO
     due = sum((invoice.remaining for invoice in StudentInvoice.objects.filter(
         academic_year__school=school,
@@ -131,20 +137,92 @@ def monthly_financial_report(school, period_end=None):
     method_totals = {}
     for row in income_rows:
         method_totals[row["method"]] = method_totals.get(row["method"], ZERO) + row["amount"]
+    previous_end = period_start - timedelta(days=1)
+    previous_statement = MonthlyFinancialStatement.objects.filter(school=school, period_end=previous_end).first()
+    opening_balance = previous_statement.closing_balance if previous_statement else ZERO
+    net_movement = total_income - expenses
+    closing_balance = opening_balance + net_movement
+    statement, _ = MonthlyFinancialStatement.objects.get_or_create(
+        school=school,
+        period_end=period_end,
+        defaults={"opening_balance": opening_balance},
+    )
+    if not statement.is_closed:
+        statement.opening_balance = opening_balance
+        statement.fee_income = income
+        statement.canteen_income = canteen_income
+        statement.school_expenses = school_expenses
+        statement.canteen_expenses = canteen_expenses
+        statement.net_movement = net_movement
+        statement.closing_balance = closing_balance
+        statement.save()
     return {
         "period_start": period_start,
         "period_end": period_end,
         "income_rows": income_rows,
         "expense_rows": expense_rows,
-        "income": income,
+        "income": total_income,
+        "fee_income": income,
+        "canteen_income": canteen_income,
         "expenses": expenses,
-        "net": income - expenses,
+        "school_expenses": school_expenses,
+        "canteen_expenses": canteen_expenses,
+        "canteen_rows": canteen_rows,
+        "canteen_profit": canteen_income - canteen_expenses,
+        "opening_balance": statement.opening_balance,
+        "net": statement.net_movement,
+        "closing_balance": statement.closing_balance,
+        "statement": statement,
         "expected": expected,
         "target": target,
-        "target_difference": expected - income,
-        "collection_rate": (income / expected * 100) if expected > 0 else ZERO,
+        "target_difference": expected - total_income,
+        "collection_rate": (total_income / expected * 100) if expected > 0 else ZERO,
         "due": due,
         "method_totals": sorted(method_totals.items()),
+    }
+
+
+@transaction.atomic
+def close_monthly_statement(*, school, period_end, user):
+    period_end = normalize_period_end(period_end)
+    report = monthly_financial_report(school, period_end)
+    statement = MonthlyFinancialStatement.objects.select_for_update().get(pk=report["statement"].pk)
+    if timezone.localdate() < period_end:
+        raise ValidationError("لا يمكن إغلاق الشهر قبل آخر يوم فعلي منه.")
+    if not statement.is_closed:
+        statement.is_closed = True
+        statement.closed_by = user
+        statement.closed_at = timezone.now()
+        statement.save(update_fields=["is_closed", "closed_by", "closed_at", "updated_at"])
+    return statement
+
+
+def finance_consolidation_audit():
+    """Read-only dependency audit before retiring legacy fee helpers."""
+    from .models import DiscountRequest, Installment
+    categories = []
+    for category in FeeCategory.objects.annotate(invoice_count=Count("studentinvoice")):
+        categories.append({
+            "item": category,
+            "invoice_count": category.invoice_count,
+            "can_remove": category.invoice_count == 0,
+        })
+    discounts = {
+        "total": DiscountRequest.objects.count(),
+        "pending": DiscountRequest.objects.filter(status="pending").count(),
+        "approved": DiscountRequest.objects.filter(status="approved").count(),
+        "can_remove": not DiscountRequest.objects.exists(),
+    }
+    installments = {
+        "total": Installment.objects.count(),
+        "active": Installment.objects.exclude(status__in=["paid", "cancelled"]).count(),
+        "can_remove": not Installment.objects.exists(),
+    }
+    return {
+        "categories": categories,
+        "discounts": discounts,
+        "installments": installments,
+        "safe_to_remove_all": all(row["can_remove"] for row in categories) and discounts["can_remove"] and installments["can_remove"],
     }
 
 

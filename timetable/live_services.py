@@ -3,6 +3,7 @@ from datetime import datetime
 from django.utils import timezone
 
 from academics.models import Enrollment
+from teachers.models import Teacher
 
 from .models import SchoolDayEvent, SchoolScheduleSettings, TimeSlot, TimetableEntry
 
@@ -82,8 +83,23 @@ def student_live_status(student, now=None):
 def management_live_status(school, now=None):
     now, day, current_time = _now_parts(now)
     base = school_live_status(school, now)
-    entries = TimetableEntry.objects.filter(
+    entries = list(TimetableEntry.objects.filter(
         academic_year__school=school, academic_year__is_current=True, day=day, is_active=True,
         time_slot__start_time__lte=current_time, time_slot__end_time__gt=current_time,
-    ).select_related("teacher", "section", "subject", "time_slot")
-    return {**base, "current_entries": entries, "busy_teachers": entries.exclude(teacher=None).count()}
+    ).select_related("teacher", "section", "section__grade", "subject", "time_slot"))
+    busy_ids = {entry.teacher_id for entry in entries if entry.teacher_id}
+    free_teachers = list(
+        Teacher.objects.filter(school=school, is_active=True)
+        .exclude(pk__in=busy_ids)
+        .order_by("full_name")
+    )
+    return {
+        **base,
+        "current_entries": entries,
+        "busy_teachers": len(busy_ids),
+        "busy_teacher_ids": busy_ids,
+        "free_teachers": free_teachers,
+        "free_teachers_count": len(free_teachers),
+        "day_code": day,
+        "current_time": current_time,
+    }

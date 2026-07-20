@@ -55,7 +55,7 @@ OPERATIONS = [
     _op("student-register", "students", "سجل الطلبة", "admissions:admission_list", "سجل عمليات التسجيل والإيصالات المرتبطة بها.", icon="card-checklist", keywords="سجل التسجيل الطلبة", order=13),
     _op("families", "students", "ملفات أولياء الأمور", "parent_portal:family_management", "إدارة الأسرة والحساب والأبناء وكشف الأسرة من مكان واحد.", icon="person-vcard-fill", keywords="ولي أمر أسرة إخوة حساب", order=14),
     _op("student-lifecycle", "students", "حركة الطلاب", "academics:lifecycle_list", "الترفيع والنقل والانسحاب وإعادة القيد والتخرج مع سجل تدقيق.", icon="arrow-repeat", keywords="ترفيع نقل انسحاب تخرج", order=15),
-    _op("registration-settings", "students", "إعدادات التسجيل", "admissions:registration_settings", "إعداد رسوم التسجيل والخصومات والسياسات من الشاشة الرسمية.", icon="sliders", keywords="إعداد تسجيل خصم رسوم", order=16),
+    _op("registration-settings", "students", "إعدادات التسجيل", "core:system_settings", "إعدادات التسجيل والخصومات والسياسات داخل إعدادات النظام الموحدة.", icon="sliders", keywords="إعداد تسجيل خصم رسوم", order=16),
 
     _op("academic-structure", "academics", "الهيكل الدراسي", "academics:academic_structure", "إدارة الصفوف والشعب ورسوم الصف في الشاشة الرسمية المترابطة.", icon="diagram-3-fill", keywords="صفوف شعب رسوم هيكل", order=20),
     _op("academic-years", "academics", "الأعوام الدراسية", "academics:academic_year_list", "إنشاء العام وتنشيطه وإغلاقه وفق دورة أكاديمية واحدة.", icon="calendar-range-fill", keywords="عام أكاديمي إغلاق", order=21),

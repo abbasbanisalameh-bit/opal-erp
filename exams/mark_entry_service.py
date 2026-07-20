@@ -47,6 +47,11 @@ def resolve_mark_entry_scope(user, exam, assignment_id=None):
         is_active=True,
     ).select_related("section", "section__grade", "subject", "academic_year")
 
+    if exam.section_id:
+        assignments = assignments.filter(section_id=exam.section_id)
+    if exam.teacher_assignment_id:
+        assignments = assignments.filter(pk=exam.teacher_assignment_id)
+
     if assignment_id:
         try:
             assignment_id = int(assignment_id)

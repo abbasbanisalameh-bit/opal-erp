@@ -1,51 +1,9 @@
 {% extends "base/base.html" %}
-{% block title %}المعلمون{% endblock %}
+{% block title %}المعلمون | أوبال{% endblock %}
 {% block page_title %}المعلمون{% endblock %}
-{% block page_subtitle %}إدارة بيانات المعلمين وحساباتهم{% endblock %}
+{% block page_subtitle %}التكليفات المختصرة وتصنيف الأداء وفق النتائج المعتمدة؛ التعديل من صفحة التفاصيل فقط{% endblock %}
 {% block content %}
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
-    <h2 class="mb-0">المعلمون</h2>
-    <a class="btn btn-primary" href="{% url 'teachers:teacher_create' %}"><i class="bi bi-person-plus"></i> إضافة معلم</a>
-</div>
-<div class="opal-card p-3 mb-3">
-    <form class="row g-2">
-        <div class="col-md-7"><input class="form-control" name="q" value="{{ query }}" placeholder="بحث بالاسم أو الرقم أو الهاتف أو التخصص"></div>
-        <div class="col-md-3"><select class="form-select" name="status"><option value="">كل الحالات</option><option value="active" {% if status == 'active' %}selected{% endif %}>نشط</option><option value="inactive" {% if status == 'inactive' %}selected{% endif %}>موقوف</option></select></div>
-        <div class="col-md-2"><button class="btn btn-dark w-100"><i class="bi bi-search"></i> بحث</button></div>
-    </form>
-</div>
-<div class="opal-card p-3">
-    <div class="table-responsive">
-        <table class="table align-middle">
-            <thead><tr><th>المعلم</th><th>الرقم</th><th>التخصص</th><th>الهاتف</th><th>التكليفات</th><th>الحالة</th><th>الإجراءات</th></tr></thead>
-            <tbody>
-            {% for teacher in teachers %}
-                <tr>
-                    <td>{{ teacher.full_name }}</td>
-                    <td>{{ teacher.employee_number }}</td>
-                    <td>{{ teacher.specialization|default:"-" }}</td>
-                    <td>{{ teacher.phone|default:"-" }}</td>
-                    <td>{{ teacher.assignments_count }}</td>
-                    <td>{% if teacher.is_active %}<span class="badge bg-success">نشط</span>{% else %}<span class="badge bg-secondary">موقوف</span>{% endif %}</td>
-                    <td>
-                        <div class="d-flex flex-wrap gap-2">
-                            <a href="{% url 'teachers:teacher_detail' teacher.pk %}" class="btn btn-sm btn-outline-primary">التفاصيل</a>
-                            {% if request.user.is_superuser and teacher.user_id and teacher.user.is_active %}
-                            <form method="post" action="{% url 'accounts:impersonate_user' teacher.user_id %}" onsubmit="return confirm('سيتم الدخول إلى حساب المعلم {{ teacher.full_name|escapejs }}. هل تريد المتابعة؟');">
-                                {% csrf_token %}
-                                <button class="btn btn-sm btn-warning" type="submit"><i class="bi bi-box-arrow-in-left"></i> الدخول بحسابه</button>
-                            </form>
-                            {% elif request.user.is_superuser %}
-                                <span class="badge text-bg-secondary">لا يوجد حساب فعال</span>
-                            {% endif %}
-                        </div>
-                    </td>
-                </tr>
-            {% empty %}
-                <tr><td colspan="7" class="text-center text-muted">لا توجد نتائج.</td></tr>
-            {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3"><h2 class="mb-0">قائمة المعلمين</h2><a class="btn btn-primary" href="{% url 'teachers:teacher_create' %}"><i class="bi bi-person-plus-fill"></i> إضافة معلم</a></div>
+<div class="opal-card p-3 mb-3"><form class="row g-2 opal-live-filter-form" data-live-filter="input"><div class="col-md-7"><input class="form-control" name="q" value="{{ query }}" placeholder="بحث فوري بالاسم أو الرقم أو الهاتف أو التخصص"></div><div class="col-md-3"><select class="form-select" name="status"><option value="">كل الحالات</option><option value="active" {% if status == 'active' %}selected{% endif %}>نشط</option><option value="inactive" {% if status == 'inactive' %}selected{% endif %}>موقوف</option></select></div><div class="col-md-2"><button class="btn btn-dark w-100"><i class="bi bi-search"></i> بحث</button></div></form></div>
+<div class="opal-card p-3"><div class="table-responsive"><table class="opal-table" data-opal-instant-table><thead><tr><th>المعلم</th><th>التخصص</th><th>التكليفات الحالية</th><th>أداء النتائج</th><th>الحالة</th><th>الإجراء</th></tr></thead><tbody>{% for teacher in teachers %}<tr><td class="fw-bold">{{ teacher.full_name }}<small class="d-block text-secondary">{{ teacher.employee_number }}{% if teacher.phone %} — {{ teacher.phone }}{% endif %}</small></td><td>{{ teacher.specialization|default:"-" }}</td><td><div class="opal-assignment-chips">{% for assignment in teacher.current_assignments|slice:":4" %}<span title="{{ assignment.academic_year }}">{{ assignment.subject.name }} — {{ assignment.section }}</span>{% empty %}<em>لا توجد تكليفات حالية</em>{% endfor %}{% if teacher.assignments_count > 4 %}<small>+{{ teacher.assignments_count|add:"-4" }} أخرى</small>{% endif %}</div></td><td>{% if teacher.results_average != None %}<a class="text-decoration-none" href="{% url 'exams:exam_dashboard' %}?teacher={{ teacher.pk }}"><strong>{{ teacher.results_average|floatformat:1 }}%</strong><span class="badge {% if teacher.results_classification == 'ممتاز' %}bg-success{% elif teacher.results_classification == 'بحاجة متابعة' %}bg-danger{% else %}bg-info{% endif %}">{{ teacher.results_classification }}</span></a>{% else %}<span class="text-secondary">لا توجد نتائج معتمدة</span>{% endif %}</td><td>{% if teacher.is_active %}<span class="badge bg-success">نشط</span>{% else %}<span class="badge bg-secondary">موقوف</span>{% endif %}</td><td><div class="d-flex flex-wrap gap-2"><a href="{% url 'teachers:teacher_detail' teacher.pk %}" class="btn btn-sm btn-outline-primary" title="عرض الملف والتكليفات وتعديلها"><i class="bi bi-eye-fill"></i> التفاصيل</a>{% if request.user.is_superuser and teacher.user_id and teacher.user.is_active %}<form method="post" action="{% url 'accounts:impersonate_user' teacher.user_id %}" onsubmit="return confirm('سيتم الدخول إلى حساب المعلم {{ teacher.full_name|escapejs }}. هل تريد المتابعة؟');">{% csrf_token %}<button class="btn btn-sm btn-warning" type="submit"><i class="bi bi-box-arrow-in-left"></i> الدخول بحسابه</button></form>{% endif %}</div></td></tr>{% empty %}<tr><td colspan="6" class="text-center text-muted">لا توجد نتائج.</td></tr>{% endfor %}</tbody></table></div></div>
 {% endblock %}

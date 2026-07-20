@@ -51,7 +51,7 @@ class DashboardPerformanceTests(TestCase):
             response = self.client.get(reverse("dashboard:home"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertLessEqual(len(queries), 26)
+        self.assertLessEqual(len(queries), 28)
 
 
     def test_dashboard_exposes_professional_satisfaction_analytics(self):

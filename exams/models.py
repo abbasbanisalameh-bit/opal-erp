@@ -21,6 +21,7 @@ class Exam(models.Model):
     STATUS_CHOICES = [
         ("draft", "مسودة"),
         ("open", "مفتوح لإدخال العلامات"),
+        ("submitted", "مرسل للإدارة للمراجعة"),
         ("approved", "معتمد"),
         ("published", "منشور"),
         ("closed", "مغلق"),
@@ -31,7 +32,23 @@ class Exam(models.Model):
     academic_year = models.ForeignKey("core.AcademicYear", on_delete=models.CASCADE, related_name="exams")
     semester = models.ForeignKey("core.Semester", on_delete=models.CASCADE, related_name="exams")
     grade = models.ForeignKey("academics.Grade", on_delete=models.CASCADE, related_name="exams")
+    section = models.ForeignKey(
+        "academics.Section",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="exams",
+        verbose_name="الشعبة",
+    )
     subject = models.ForeignKey("academics.Subject", on_delete=models.PROTECT, related_name="exams")
+    teacher_assignment = models.ForeignKey(
+        "teachers.TeacherAssignment",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="exams",
+        verbose_name="تكليف المعلم",
+    )
     max_mark = models.DecimalField(max_digits=6, decimal_places=2, default=20, editable=False)
     pass_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=60)
     # Retained for compatibility with existing analytics; it mirrors the official
@@ -50,15 +67,30 @@ class Exam(models.Model):
     )
     approved_at = models.DateTimeField(null=True, blank=True)
     published_at = models.DateTimeField(null=True, blank=True)
+    submitted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="submitted_exams",
+        verbose_name="أرسله للمراجعة",
+    )
+    submitted_at = models.DateTimeField(null=True, blank=True, verbose_name="تاريخ الإرسال للمراجعة")
 
     class Meta:
-        ordering = ["academic_year", "semester__code", "grade__order", "subject__name", "exam_type"]
+        ordering = ["academic_year", "semester__code", "grade__order", "section__name", "subject__name", "exam_type"]
         indexes = [models.Index(fields=["academic_year", "grade", "status"])]
         constraints = [
             models.UniqueConstraint(
+                fields=["academic_year", "semester", "section", "subject", "exam_type"],
+                condition=models.Q(section__isnull=False),
+                name="uniq_section_assessment_per_subject_term",
+            ),
+            models.UniqueConstraint(
                 fields=["academic_year", "semester", "grade", "subject", "exam_type"],
-                name="uniq_four_assessments_per_subject_term",
-            )
+                condition=models.Q(section__isnull=True),
+                name="uniq_legacy_assessment_per_subject_term",
+            ),
         ]
 
     @property
@@ -76,6 +108,19 @@ class Exam(models.Model):
             errors["pass_percentage"] = "نسبة النجاح يجب أن تكون بين 0 و100."
         if self.subject_id and self.subject.grade_id != self.grade_id:
             errors["subject"] = "المادة لا تتبع الصف المحدد."
+        if self.section_id:
+            if self.section.grade_id != self.grade_id:
+                errors["section"] = "الشعبة لا تتبع الصف المحدد."
+            if self.section.academic_year_id != self.academic_year_id:
+                errors["section"] = "الشعبة لا تتبع العام الدراسي المحدد."
+        if self.teacher_assignment_id:
+            assignment = self.teacher_assignment
+            if assignment.academic_year_id != self.academic_year_id:
+                errors["teacher_assignment"] = "تكليف المعلم لا يتبع العام الدراسي المحدد."
+            if assignment.section_id != self.section_id:
+                errors["teacher_assignment"] = "تكليف المعلم لا يتبع الشعبة المحددة."
+            if assignment.subject_id != self.subject_id:
+                errors["teacher_assignment"] = "تكليف المعلم لا يتبع المادة المحددة."
         if self.semester_id and self.semester.academic_year_id != self.academic_year_id:
             errors["semester"] = "الفصل الدراسي لا يتبع العام المحدد."
         if self.grade_id and self.academic_year_id and self.grade.school_id != self.academic_year.school_id:
@@ -88,7 +133,8 @@ class Exam(models.Model):
         self.max_mark = official_mark
         self.weight = official_mark
         if not self.name and self.exam_type and self.subject_id:
-            self.name = f"{self.get_exam_type_display()} - {self.subject.name}"
+            suffix = f" - {self.section}" if self.section_id else ""
+            self.name = f"{self.get_exam_type_display()} - {self.subject.name}{suffix}"
         self.full_clean(exclude=["approved_by"])
         return super().save(*args, **kwargs)
 

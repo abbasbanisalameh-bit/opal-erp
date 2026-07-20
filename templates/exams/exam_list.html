@@ -1,15 +1,18 @@
 {% extends "base/base.html" %}
-{% block title %}الامتحانات{% endblock %}
-{% block page_title %}الامتحانات{% endblock %}
-{% block page_subtitle %}إدارة الامتحانات والاختبارات والتحصيل{% endblock %}
+{% block title %}تعريفات الامتحانات | أوبال{% endblock %}
+{% block page_title %}تعريفات الامتحانات{% endblock %}
+{% block page_subtitle %}الامتحانات التي أنشأتها الإدارة وحالات إدخالها ومراجعتها ونشرها{% endblock %}
 {% block content %}
-<div class="opal-card">
-  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-    <h3 class="fw-bold mb-0">قائمة الامتحانات</h3>
-    <div class="d-flex gap-2"><a href="{% url 'exams:exam_dashboard' %}" class="btn btn-info">لوحة التحليل</a><a href="{% url 'exams:exam_create' %}" class="btn btn-primary">إضافة امتحان</a></div>
-  </div>
-  <div class="table-responsive"><table class="opal-table"><thead><tr><th>الاسم</th><th>النوع</th><th>العام</th><th>الصف</th><th>المادة</th><th>العلامة</th><th>التاريخ</th><th>الحالة</th><th>الإجراءات</th></tr></thead><tbody>
-  {% for exam in exams %}<tr><td class="fw-bold">{{ exam.name }}</td><td>{{ exam.get_exam_type_display }}</td><td>{{ exam.academic_year }}</td><td>{{ exam.grade }}</td><td>{{ exam.subject }}</td><td>{{ exam.max_mark }}</td><td>{{ exam.exam_date|default:"-" }}</td><td><span class="badge bg-secondary">{{ exam.get_status_display }}</span></td><td class="d-flex gap-2 flex-wrap"><a class="btn btn-sm btn-info" href="{% url 'exams:exam_detail' exam.id %}">التفاصيل</a></td></tr>{% empty %}<tr><td colspan="9" class="text-center text-secondary">لا توجد امتحانات</td></tr>{% endfor %}
-  </tbody></table></div>
+<div class="opal-card mb-3">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3"><h3 class="fw-bold mb-0">قائمة الامتحانات</h3><div class="d-flex gap-2"><a href="{% url 'exams:exam_list' %}" class="btn btn-info">سجل العلامات</a><a href="{% url 'exams:exam_create' %}" class="btn btn-primary">إضافة امتحان</a></div></div>
+  <form method="get" class="row g-2 align-items-end opal-live-filter-form" data-live-filter="change">
+    <div class="col-md-2"><label class="form-label">العام</label><select name="academic_year" class="form-select"><option value="">الكل</option>{% for item in academic_years %}<option value="{{ item.id }}" {% if filters.year_id == item.id|stringformat:'s' %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
+    <div class="col-md-2"><label class="form-label">الفصل</label><select name="semester" class="form-select"><option value="">الكل</option>{% for item in semesters %}<option value="{{ item.id }}" {% if filters.semester_id == item.id|stringformat:'s' %}selected{% endif %}>{{ item.get_code_display }}</option>{% endfor %}</select></div>
+    <div class="col-md-2"><label class="form-label">الصف</label><select name="grade" class="form-select"><option value="">الكل</option>{% for item in grades %}<option value="{{ item.id }}" {% if filters.grade_id == item.id|stringformat:'s' %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
+    <div class="col-md-2"><label class="form-label">الشعبة</label><select name="section" class="form-select"><option value="">الكل</option>{% for item in sections %}<option value="{{ item.id }}" {% if filters.section_id == item.id|stringformat:'s' %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
+    <div class="col-md-2"><label class="form-label">المادة</label><select name="subject" class="form-select"><option value="">الكل</option>{% for item in subjects %}<option value="{{ item.id }}" {% if filters.subject_id == item.id|stringformat:'s' %}selected{% endif %}>{{ item.name }}</option>{% endfor %}</select></div>
+    <div class="col-md-2 d-grid"><button class="btn btn-primary">تطبيق</button></div>
+  </form>
 </div>
+<div class="opal-card"><div class="table-responsive"><table class="opal-table" data-opal-instant-table><thead><tr><th>الامتحان</th><th>الفصل</th><th>الصف والشعبة</th><th>المادة</th><th>المعلم</th><th>الحالة</th><th>الإجراء</th></tr></thead><tbody>{% for exam in exams %}<tr><td class="fw-bold">{{ exam.get_exam_type_display }}<small class="d-block text-secondary">{{ exam.exam_date|default:"دون تاريخ" }}</small></td><td>{{ exam.semester.get_code_display }}</td><td>{{ exam.grade }}{% if exam.section %} — {{ exam.section.name }}{% endif %}</td><td>{{ exam.subject.name }}</td><td>{{ exam.teacher_assignment.teacher.full_name|default:"غير مرتبط" }}</td><td><span class="badge {% if exam.status == 'submitted' %}bg-warning text-dark{% elif exam.status == 'published' or exam.status == 'closed' %}bg-success{% elif exam.status == 'open' %}bg-info{% else %}bg-secondary{% endif %}">{{ exam.get_status_display }}</span></td><td><a class="btn btn-sm btn-info" href="{% url 'exams:exam_detail' exam.id %}">التفاصيل{% if exam.status == 'submitted' %} والمراجعة{% endif %}</a></td></tr>{% empty %}<tr><td colspan="7" class="text-center text-secondary">لا توجد امتحانات ضمن التصفية.</td></tr>{% endfor %}</tbody></table></div></div>
 {% endblock %}

@@ -18,14 +18,14 @@ from students.models import Student
 from admissions.services import active_school
 
 from .forms import (
-    DiscountRequestForm, ExpenseEntryForm, FeeCategoryForm, FinancialYearClosureForm,
+    CanteenTransactionForm, DiscountRequestForm, ExpenseEntryForm, FeeCategoryForm, FinancialYearClosureForm,
     InstallmentForm, MonthlyFinancialTargetForm, StudentInvoiceForm, StudentPaymentForm,
 )
 from .financial_services import (
-    close_financial_year, collection_dashboard, monthly_financial_report,
+    close_financial_year, close_monthly_statement, collection_dashboard, finance_consolidation_audit, monthly_financial_report,
     next_expense_number, normalize_period_end,
 )
-from .models import DiscountRequest, ExpenseEntry, FeeCategory, FinancialYearClosure, Installment, MonthlyFinancialTarget, Receipt, StudentInvoice, StudentPayment
+from .models import CanteenTransaction, DiscountRequest, ExpenseEntry, FeeCategory, FinancialYearClosure, Installment, MonthlyFinancialTarget, Receipt, StudentInvoice, StudentPayment
 from .services import create_discount_workflow, decide_discount
 from .services.pdf import receipt_pdf
 from .services.receipt import generate_receipt_number
@@ -160,8 +160,10 @@ def payment_safe_delete(request, payment_id):
 @management_required
 def expense_list(request):
     school = active_school()
-    form = ExpenseEntryForm(request.POST or None)
-    if request.method == "POST" and form.is_valid():
+    form = ExpenseEntryForm(request.POST or None, request.FILES or None, prefix="expense")
+    canteen_form = CanteenTransactionForm(request.POST or None, request.FILES or None, prefix="canteen")
+    action = request.POST.get("action", "")
+    if request.method == "POST" and action == "expense" and form.is_valid():
         item = form.save(commit=False)
         item.school = school
         item.expense_number = next_expense_number()
@@ -170,8 +172,25 @@ def expense_list(request):
         audit(request, "create", "accounting.ExpenseEntry", item.pk, f"تسجيل مصروف {item.expense_number}: {item.amount}")
         messages.success(request, "تم تسجيل المصروف ضمن الكشف المالي المستقل.")
         return redirect("accounting:expense_list")
+    if request.method == "POST" and action == "canteen" and canteen_form.is_valid():
+        item = canteen_form.save(commit=False)
+        item.school = school
+        item.transaction_type = "income"
+        item.created_by = request.user
+        item.save()
+        audit(request, "create", "accounting.CanteenTransaction", item.pk, f"حركة مقصف {item.get_transaction_type_display()}: {item.amount}")
+        messages.success(request, "تم تسجيل حركة المقصف بالفاتورة وإدراجها في الكشف الشهري.")
+        return redirect("accounting:expense_list")
     items = ExpenseEntry.objects.filter(school=school, is_deleted=False).select_related("created_by")[:500]
-    return render(request, "accounting/expense_list.html", {"form": form, "items": items})
+    canteen_items = CanteenTransaction.objects.filter(school=school, is_deleted=False).select_related("created_by")[:500]
+    canteen_income = canteen_items.filter(transaction_type="income").aggregate(total=Sum("amount"))["total"] or Decimal("0")
+    legacy_canteen_expenses = canteen_items.filter(transaction_type="expense").aggregate(total=Sum("amount"))["total"] or Decimal("0")
+    canteen_expenses = (ExpenseEntry.objects.filter(school=school, is_deleted=False, source="canteen").aggregate(total=Sum("amount"))["total"] or Decimal("0")) + legacy_canteen_expenses
+    return render(request, "accounting/expense_list.html", {
+        "form": form, "items": items, "canteen_form": canteen_form, "canteen_items": canteen_items,
+        "canteen_income": canteen_income, "canteen_expenses": canteen_expenses,
+        "canteen_profit": canteen_income - canteen_expenses,
+    })
 
 
 @login_required
@@ -195,6 +214,25 @@ def expense_safe_delete(request, pk):
 
 @login_required
 @management_required
+@require_POST
+def canteen_safe_delete(request, pk):
+    item = get_object_or_404(CanteenTransaction, pk=pk, school=active_school(), is_deleted=False)
+    reason = request.POST.get("reason", "").strip()
+    if not reason:
+        messages.error(request, "اكتب سبب الحذف الآمن.")
+    else:
+        item.is_deleted = True
+        item.deleted_by = request.user
+        item.deleted_at = timezone.now()
+        item.deletion_reason = reason
+        item.save(update_fields=["is_deleted", "deleted_by", "deleted_at", "deletion_reason"])
+        audit(request, "delete", "accounting.CanteenTransaction", item.pk, f"حذف آمن لحركة المقصف {item.invoice_number}: {reason}")
+        messages.success(request, "تم حذف حركة المقصف بأمان مع بقاء أثر التدقيق.")
+    return redirect("accounting:expense_list")
+
+
+@login_required
+@management_required
 def monthly_report(request):
     school = active_school()
     try:
@@ -203,8 +241,18 @@ def monthly_report(request):
         messages.error(request, exc.messages[0])
         period_end = normalize_period_end()
     target, _ = MonthlyFinancialTarget.objects.get_or_create(school=school, period_end=period_end)
-    target_form = MonthlyFinancialTargetForm(request.POST or None, instance=target)
-    if request.method == "POST" and target_form.is_valid():
+    action = request.POST.get("action", "target")
+    target_form = MonthlyFinancialTargetForm(request.POST if request.method == "POST" and action == "target" else None, instance=target)
+    if request.method == "POST" and action == "close_month":
+        try:
+            statement = close_monthly_statement(school=school, period_end=period_end, user=request.user)
+        except ValidationError as exc:
+            messages.error(request, exc.messages[0])
+        else:
+            audit(request, "update", "accounting.MonthlyFinancialStatement", statement.pk, f"إغلاق كشف شهر {period_end} وترحيل {statement.closing_balance}")
+            messages.success(request, f"تم إغلاق الشهر وترحيل صافي الرصيد {statement.closing_balance} د.أ إلى الشهر التالي.")
+        return redirect(f"{reverse('accounting:monthly_report')}?period_end={period_end.isoformat()}")
+    if request.method == "POST" and action == "target" and target_form.is_valid():
         item = target_form.save(commit=False)
         item.updated_by = request.user
         item.save()
@@ -214,6 +262,12 @@ def monthly_report(request):
     context = monthly_financial_report(school, period_end)
     context["target_form"] = target_form
     return render(request, "accounting/monthly_report.html", context)
+
+
+@login_required
+@management_required
+def finance_consolidation_center(request):
+    return render(request, "accounting/finance_consolidation_center.html", finance_consolidation_audit())
 
 
 @login_required

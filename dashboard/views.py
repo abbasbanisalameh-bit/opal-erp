@@ -11,7 +11,6 @@ from django.utils import timezone
 
 from academics.models import Section
 from accounting.models import StudentInvoice, StudentPayment
-from announcements.models import Announcement
 from attendance_v2.models import Attendance
 from documents.models import IssuedDocument
 from admissions.models import AdmissionApplication
@@ -216,8 +215,6 @@ def home(request):
         "total_income": snapshot["paid_amount"],
         "total_unpaid": snapshot["outstanding"],
         "latest_students": Student.objects.order_by("-created_at")[:8],
-        "latest_announcements": Announcement.objects.order_by("-id")[:5],
-        "latest_exams": Exam.objects.order_by("-id")[:5],
         "candidate_students": AdmissionApplication.objects.filter(status="candidate").count(),
     })
     return render(request, "dashboard/home.html", snapshot)

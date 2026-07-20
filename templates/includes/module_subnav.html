@@ -12,7 +12,7 @@
     <a href="{% url 'admissions:admission_list' %}" class="opal-subnav-btn {% if ns == 'admissions' and view != 'direct_registration' and view != 'registration_settings' %}active{% endif %}"><i class="bi bi-card-checklist"></i><span>سجل الطلبة</span></a>
     <a href="{% url 'parent_portal:family_management' %}" class="opal-subnav-btn {% if ns == 'parent_portal' %}active{% endif %}"><i class="bi bi-person-vcard"></i><span>ملفات أولياء الأمور</span></a>
     <a href="{% url 'documents:document_list' %}" class="opal-subnav-btn {% if ns == 'documents' %}active{% endif %}"><i class="bi bi-file-earmark-text"></i><span>مركز الوثائق</span></a>
-    <a href="{% url 'admissions:registration_settings' %}" class="opal-subnav-btn {% if ns == 'admissions' and view == 'registration_settings' %}active{% endif %}"><i class="bi bi-sliders"></i><span>إعدادات التسجيل</span></a>
+    <a href="{% url 'core:system_settings' %}#registration-settings" class="opal-subnav-btn {% if ns == 'admissions' and view == 'registration_settings' %}active{% endif %}"><i class="bi bi-sliders"></i><span>إعدادات التسجيل</span></a>
   </div>
 </nav>
 
@@ -55,7 +55,8 @@
     <a href="{% url 'accounting:installment_list' %}" class="opal-subnav-btn {% if ns == 'accounting' and view == 'installment_list' or view == 'installment_create' %}active{% endif %}"><i class="bi bi-calendar2-week"></i><span>الأقساط</span></a>
     <a href="{% url 'accounting:discount_list' %}" class="opal-subnav-btn {% if ns == 'accounting' and view == 'discount_list' or view == 'discount_create' or view == 'discount_decide' %}active{% endif %}"><i class="bi bi-percent"></i><span>الخصومات</span></a>
     <a href="{% url 'accounting:expense_list' %}" class="opal-subnav-btn {% if view == 'expense_list' %}active{% endif %}"><i class="bi bi-receipt-cutoff"></i><span>المصروفات</span></a>
-    <a href="{% url 'accounting:monthly_report' %}" class="opal-subnav-btn {% if view == 'monthly_report' %}active{% endif %}"><i class="bi bi-calendar2-check"></i><span>كشف 28 الشهري</span></a>
+    <a href="{% url 'accounting:monthly_report' %}" class="opal-subnav-btn {% if view == 'monthly_report' %}active{% endif %}"><i class="bi bi-calendar2-check"></i><span>الكشف الشهري</span></a>
+    <a href="{% url 'accounting:finance_consolidation_center' %}" class="opal-subnav-btn {% if view == 'finance_consolidation_center' %}active{% endif %}"><i class="bi bi-shield-check"></i><span>تدقيق الدمج</span></a>
     <a href="{% url 'accounting:financial_year_close' %}" class="opal-subnav-btn {% if view == 'financial_year_close' %}active{% endif %}"><i class="bi bi-arrow-left-right"></i><span>الإغلاق المالي</span></a>
   </div>
 </nav>

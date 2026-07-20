@@ -1,5 +1,6 @@
 from django.contrib import messages
-from django.db.models import Count, Q
+from django.db.models import Avg, Count, DecimalField, ExpressionWrapper, F, Prefetch, Q, Value
+from decimal import Decimal
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
@@ -32,7 +33,13 @@ def dashboard(request):
 def teacher_list(request):
     query = request.GET.get("q", "").strip()
     status = request.GET.get("status", "")
-    teachers = Teacher.objects.select_related("school", "branch").annotate(
+    current_assignments = TeacherAssignment.objects.filter(
+        is_active=True,
+        academic_year__is_current=True,
+    ).select_related("academic_year", "section", "section__grade", "subject")
+    teachers = Teacher.objects.select_related("school", "branch").prefetch_related(
+        Prefetch("assignments", queryset=current_assignments, to_attr="current_assignments")
+    ).annotate(
         assignments_count=Count("assignments", filter=Q(assignments__is_active=True), distinct=True)
     )
     if query:
@@ -44,7 +51,37 @@ def teacher_list(request):
         teachers = teachers.filter(is_active=True)
     elif status == "inactive":
         teachers = teachers.filter(is_active=False)
-    return render(request, "teachers/teacher_list.html", {"teachers": teachers, "query": query, "status": status})
+    teacher_rows = list(teachers)
+    from exams.models import StudentMark
+    normalized = ExpressionWrapper(
+        F("mark") * Value(Decimal("100.00")) / F("exam__max_mark"),
+        output_field=DecimalField(max_digits=7, decimal_places=2),
+    )
+    performance = {
+        row["exam__teacher_assignment__teacher_id"]: row["average"]
+        for row in StudentMark.objects.filter(
+            exam__teacher_assignment__teacher_id__in=[item.pk for item in teacher_rows],
+            exam__status__in=["published", "closed"],
+        ).annotate(normalized=normalized).values(
+            "exam__teacher_assignment__teacher_id"
+        ).annotate(average=Avg("normalized"))
+    }
+    for teacher in teacher_rows:
+        average = performance.get(teacher.pk)
+        teacher.results_average = average
+        if average is None:
+            teacher.results_classification = "لا توجد نتائج"
+        elif average >= 90:
+            teacher.results_classification = "ممتاز"
+        elif average >= 80:
+            teacher.results_classification = "جيد جدًا"
+        elif average >= 70:
+            teacher.results_classification = "جيد"
+        elif average >= 60:
+            teacher.results_classification = "مقبول"
+        else:
+            teacher.results_classification = "بحاجة متابعة"
+    return render(request, "teachers/teacher_list.html", {"teachers": teacher_rows, "query": query, "status": status})
 
 
 @management_required
@@ -193,12 +230,28 @@ def portal_dashboard(request):
     latest_homework = Homework.objects.filter(
         assignment__teacher=teacher, is_active=True
     ).select_related("assignment__subject", "assignment__section")[:10]
+    from exams.models import Exam
+    open_exams = Exam.objects.filter(
+        teacher_assignment__teacher=teacher,
+        teacher_assignment__is_active=True,
+        status__in=["open", "draft"],
+        is_active=True,
+    ).select_related(
+        "academic_year", "semester", "section", "subject", "teacher_assignment"
+    ).order_by("exam_date", "subject__name", "exam_type")
+    submitted_exams = Exam.objects.filter(
+        teacher_assignment__teacher=teacher,
+        status="submitted",
+        is_active=True,
+    ).select_related("section", "subject").order_by("-submitted_at")[:10]
     return render(request, "teachers/portal_dashboard.html", {
         "teacher": teacher,
         "assignments": assignments,
         "timetable": timetable,
         "homeroom_sections": homeroom_sections,
         "latest_homework": latest_homework,
+        "open_exams": open_exams,
+        "submitted_exams": submitted_exams,
         "live_status": teacher_live_status(teacher),
     })
 

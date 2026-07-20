@@ -3,7 +3,7 @@ from django import forms
 from core.finance_constants import ACTIVE_PAYMENT_METHOD_CHOICES
 from core.models import AcademicYear
 
-from .models import DiscountRequest, ExpenseEntry, FeeCategory, Installment, MonthlyFinancialTarget, StudentInvoice, StudentPayment
+from .models import CanteenTransaction, DiscountRequest, ExpenseEntry, FeeCategory, Installment, MonthlyFinancialTarget, StudentInvoice, StudentPayment
 
 
 class StyledModelForm(forms.ModelForm):
@@ -53,9 +53,26 @@ class ExpenseEntryForm(StyledModelForm):
 
     class Meta:
         model = ExpenseEntry
-        fields = ["expense_date", "title", "beneficiary", "amount", "payment_method", "reference", "notes"]
+        fields = ["expense_date", "source", "title", "beneficiary", "amount", "payment_method", "supplier_invoice_number", "invoice_file", "reference", "notes"]
         widgets = {
             "expense_date": forms.DateInput(attrs={"type": "date"}),
+            "notes": forms.Textarea(attrs={"rows": 2}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["supplier_invoice_number"].required = True
+        self.fields["supplier_invoice_number"].help_text = "لا يُحفظ أي مصروف جديد دون رقم فاتورة مورد."
+
+
+class CanteenTransactionForm(StyledModelForm):
+    payment_method = forms.ChoiceField(label="طريقة الدفع", choices=ACTIVE_PAYMENT_METHOD_CHOICES)
+
+    class Meta:
+        model = CanteenTransaction
+        fields = ["transaction_date", "invoice_number", "description", "amount", "payment_method", "invoice_file", "notes"]
+        widgets = {
+            "transaction_date": forms.DateInput(attrs={"type": "date"}),
             "notes": forms.Textarea(attrs={"rows": 2}),
         }
 

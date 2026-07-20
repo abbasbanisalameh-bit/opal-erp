@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.conf.urls.static import static
+from django.contrib import admin
 from django.contrib.auth.views import LoginView
 from django.urls import include, path
 from django.views.decorators.cache import never_cache
@@ -7,6 +8,10 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.generic import RedirectView
 from core import views as core_views
 
+
+admin.site.site_header = "إدارة نظام أوبال"
+admin.site.site_title = "أوبال"
+admin.site.index_title = "إدارة البيانات الرئيسية"
 
 handler400 = "core.security.bad_request"
 handler403 = "core.security.permission_denied"

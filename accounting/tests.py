@@ -85,9 +85,9 @@ class SchoolFinanceTest(TestCase):
 
 
 class FinancialPeriodTests(SimpleTestCase):
-    def test_cycle_is_29_through_28(self):
-        self.assertEqual(financial_period(date(2026, 7, 18)), (date(2026, 6, 29), date(2026, 7, 28)))
-        self.assertEqual(financial_period(date(2026, 7, 29)), (date(2026, 7, 29), date(2026, 8, 28)))
+    def test_cycle_uses_actual_calendar_month(self):
+        self.assertEqual(financial_period(date(2026, 7, 18)), (date(2026, 7, 1), date(2026, 7, 31)))
+        self.assertEqual(financial_period(date(2026, 2, 12)), (date(2026, 2, 1), date(2026, 2, 28)))
 
 
 class FinancialClosingTests(TestCase):
@@ -142,3 +142,42 @@ class FinancialClosingTests(TestCase):
         self.assertEqual(report["income"], Decimal("200"))
         self.assertEqual(report["expenses"], Decimal("30"))
         self.assertEqual(report["net"], Decimal("170"))
+
+
+class MonthlyCanteenStatementTests(TestCase):
+    def setUp(self):
+        from core.models import School
+        self.school = School.objects.create(name="مدرسة المقصف", is_active=True)
+        self.user = User.objects.create_user("canteen", password="x", is_staff=True)
+
+    def test_canteen_profit_and_closing_balance_use_invoices(self):
+        from .models import CanteenTransaction, MonthlyFinancialStatement
+        from .financial_services import monthly_financial_report
+
+        CanteenTransaction.objects.create(
+            school=self.school,
+            transaction_type="income",
+            transaction_date=date(2026, 7, 10),
+            invoice_number="SALE-1",
+            description="مبيعات المقصف",
+            amount=Decimal("300"),
+            payment_method="cash",
+            created_by=self.user,
+        )
+        ExpenseEntry.objects.create(
+            school=self.school,
+            expense_number="EXP-CAN-1",
+            expense_date=date(2026, 7, 11),
+            title="مشتريات المقصف",
+            source="canteen",
+            supplier_invoice_number="SUP-1",
+            amount=Decimal("120"),
+            payment_method="cash",
+            created_by=self.user,
+        )
+        report = monthly_financial_report(self.school, date(2026, 7, 31))
+        self.assertEqual(report["canteen_income"], Decimal("300"))
+        self.assertEqual(report["canteen_expenses"], Decimal("120"))
+        self.assertEqual(report["canteen_profit"], Decimal("180"))
+        self.assertEqual(report["closing_balance"], Decimal("180"))
+        self.assertTrue(MonthlyFinancialStatement.objects.filter(school=self.school, period_end=date(2026, 7, 31)).exists())

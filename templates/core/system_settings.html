@@ -1,7 +1,7 @@
 {% extends "base/base.html" %}
 {% block title %}إعدادات النظام | OPAL ERP{% endblock %}
 {% block page_title %}إعدادات النظام{% endblock %}
-{% block page_subtitle %}إدارة بيانات المدرسة العامة وشعارها{% endblock %}
+{% block page_subtitle %}المركز الموحد لإدارة هوية المدرسة والتسجيل والهيكل الأكاديمي والرسوم والصلاحيات{% endblock %}
 {% block content %}
 {# OPAL_SYSTEM_UPDATES_PAGE_V2 #}
 {% if request.user.is_superuser %}
@@ -14,76 +14,184 @@
 </div>
 {% endif %}
 
-<div class="opal-card mb-4">
-  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
-    <div><h3 class="fw-bold mb-2"><i class="bi bi-signpost-split-fill"></i> دليل العمليات الموحد</h3><p class="text-secondary mb-0">الخريطة الرسمية لكل إجراء وفحوص تكامل الطلاب والتسجيل والأسرة والتكليفات والجدول والرسوم والعلامات.</p></div>
-    <a href="{% url 'core:operations_center' %}" class="btn btn-primary btn-lg"><i class="bi bi-arrow-left-circle"></i> فتح دليل العمليات</a>
-  </div>
-</div>
 
+<nav class="opal-settings-tabs opal-card mb-4" aria-label="أقسام إعدادات النظام">
+  <a href="#school-settings" class="opal-settings-tab"><i class="bi bi-building"></i><span>بيانات المدرسة</span></a>
+  <a href="#academic-settings" class="opal-settings-tab"><i class="bi bi-diagram-3"></i><span>الهيكل الدراسي</span></a>
+  <a href="#registration-settings" class="opal-settings-tab"><i class="bi bi-person-vcard"></i><span>إعدادات التسجيل</span></a>
+  <a href="#finance-settings" class="opal-settings-tab"><i class="bi bi-cash-stack"></i><span>الرسوم والمالية</span></a>
+  <a href="#access-settings" class="opal-settings-tab"><i class="bi bi-shield-lock"></i><span>الوصول والصلاحيات</span></a>
+  <a href="#operations-settings" class="opal-settings-tab"><i class="bi bi-gear-wide-connected"></i><span>التشغيل والصيانة</span></a>
+</nav>
 
-
-
-
-{% if request.user.is_superuser %}
-<div class="opal-card mb-4" style="border:1px solid rgba(245,158,11,.35);background:linear-gradient(135deg,rgba(245,158,11,.08),rgba(239,68,68,.05));">
-  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3"><div><h3 class="fw-bold mb-2"><i class="bi bi-shield-check"></i> مركز سلامة البيانات</h3><p class="text-secondary mb-0">كشف التكرارات والتعارضات وتتبع نتائج الفحوص، مع إصلاح تلقائي للحالات المؤكدة فقط.</p></div><a href="{% url 'core:integrity_center' %}" class="btn btn-warning btn-lg"><i class="bi bi-search"></i> فتح مركز السلامة</a></div>
-</div>
-<div class="opal-card mb-4" style="border:1px solid rgba(20,184,166,.35);background:linear-gradient(135deg,rgba(20,184,166,.09),rgba(59,130,246,.06));">
-  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
-    <div><h3 class="fw-bold mb-2"><i class="bi bi-database-gear"></i> مركز إدخال وتصفير البيانات</h3><p class="text-secondary mb-0">يدخل منظومة مترابطة تشمل 500 طالب و50 معلمًا و300 ولي أمر، مع العام والفصلين والصفوف والشعب والرسوم والإيصالات والحضور والعلامات والوثائق والمرشحين والجدول.</p></div>
-    <div class="d-flex flex-wrap gap-2">
-      <form method="post">{% csrf_token %}<input type="hidden" name="action" value="seed_system"><button class="btn btn-success btn-lg" onclick="return confirm('سيتم استبدال البيانات التشغيلية الحالية ثم إدخال بيانات شاملة جديدة. متابعة؟')"><i class="bi bi-stars"></i> إدخال البيانات</button></form>
-      <form method="post" onsubmit="return confirm('سيتم حذف جميع الطلاب والمعلمين وأولياء الأمور والأعوام والعلامات والوثائق والإيصالات وبقية البيانات التشغيلية نهائيًا. متابعة؟')">{% csrf_token %}<input type="hidden" name="action" value="reset_all"><input class="form-control mb-2" name="confirmation" required placeholder="اكتب: تصفير شامل"><button class="btn btn-outline-danger btn-lg w-100"><i class="bi bi-arrow-counterclockwise"></i> تصفير جميع البيانات</button></form>
+<section id="school-settings" class="opal-card mb-4 opal-settings-section">
+  <div class="opal-section-heading">
+    <div>
+      <span class="opal-section-kicker">هوية أوبال</span>
+      <h3><i class="bi bi-building-fill"></i> بيانات المدرسة والهوية العامة</h3>
+      <p>اسم المدرسة وبيانات التواصل والشعار والمعلومات التي تظهر في الواجهات والمطبوعات.</p>
+    </div>
+    <div class="opal-section-actions">
+      <a href="{% url 'core:branch_list' %}" class="btn btn-outline-primary" title="إدارة فروع المدرسة من شاشة واحدة"><i class="bi bi-signpost-split"></i> الفروع</a>
     </div>
   </div>
-  <div class="small text-muted mt-3">يبقى حساب المدير الأعلى والصلاحيات وإعدادات المدرسة الأساسية فقط. كلمة المرور الموحدة لحسابات المعلمين وأولياء الأمور التي ينشئها الإدخال: <strong>Opal@12345</strong>، ويجب تغييرها قبل التشغيل الفعلي.</div>
-</div>
-{% endif %}
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="school_settings">
+    <div class="row g-3">
+      {% for field in form %}
+      <div class="col-md-6">
+        <label class="form-label fw-bold" for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+        {% if field.errors %}<div class="text-danger small mt-1">{{ field.errors }}</div>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    <div class="opal-form-footer"><button class="btn btn-primary"><i class="bi bi-check2-circle"></i> حفظ بيانات المدرسة</button></div>
+  </form>
+</section>
 
+<section id="academic-settings" class="opal-card mb-4 opal-settings-section">
+  <div class="opal-section-heading">
+    <div>
+      <span class="opal-section-kicker">البنية الأكاديمية</span>
+      <h3><i class="bi bi-diagram-3-fill"></i> الهيكل الدراسي</h3>
+      <p>الصفوف والشعب تدار من شاشة الهيكل الدراسي الموحدة، مع إبقاء الخطة الدراسية دون حذف.</p>
+    </div>
+  </div>
+  <div class="opal-settings-actions-grid">
+    <a href="{% url 'academics:academic_structure' %}" class="opal-settings-action primary" title="إدارة الصفوف والشعب ورسوم الصفوف من شاشة موحدة"><i class="bi bi-diagram-3-fill"></i><strong>الهيكل الدراسي</strong><small>الصفوف والشعب ورسوم الصفوف</small></a>
+    <a href="{% url 'academics:academic_year_list' %}" class="opal-settings-action" title="إنشاء الأعوام الدراسية وتحديد العام الحالي"><i class="bi bi-calendar-range"></i><strong>الأعوام الدراسية</strong><small>العام الحالي والإغلاق</small></a>
+    <a href="{% url 'academics:semester_list' %}" class="opal-settings-action" title="إدارة الفصول وتحديد الفصل الحالي"><i class="bi bi-calendar2-week"></i><strong>الفصول الدراسية</strong><small>الفصل الحالي وتواريخه</small></a>
+    <a href="{% url 'academics:subject_list' %}" class="opal-settings-action" title="إدارة المواد الدراسية"><i class="bi bi-journal-bookmark"></i><strong>المواد</strong><small>المواد الفعالة</small></a>
+    <a href="{% url 'curriculum:curriculum_list' %}" class="opal-settings-action" title="إدارة الخطة الدراسية المعتمدة دون حذفها"><i class="bi bi-journal-richtext"></i><strong>الخطة الدراسية</strong><small>النصاب والحصص الأسبوعية</small></a>
+    <a href="{% url 'teachers:dashboard' %}" class="opal-settings-action" title="ملفات المعلمين وتكليفاتهم"><i class="bi bi-person-workspace"></i><strong>المعلمون والتكليفات</strong><small>ربط المادة والشعبة والمعلم</small></a>
+  </div>
+</section>
 
-{% if opal_openemis_enabled %}
-<div class="opal-card mb-4">
-    <h3 class="fw-bold mb-3">تكامل OpenEMIS</h3>
-    <p class="text-secondary">إعداد الربط مع OpenEMIS، اختبار الاتصال، ومتابعة سجل المزامنة.</p>
-    <a href="{% url 'openemis:settings' %}" class="btn btn-secondary">
-        <i class="bi bi-cloud-arrow-up-fill"></i> فتح إعدادات OpenEMIS
-    </a>
-</div>
+<section id="registration-settings" class="opal-card mb-4 opal-settings-section">
+  <div class="opal-section-heading">
+    <div>
+      <span class="opal-section-kicker">المسار الموحد</span>
+      <h3><i class="bi bi-person-vcard-fill"></i> إعدادات التسجيل</h3>
+      <p>هذه هي الصفحة الرسمية الوحيدة لإعدادات التسجيل. تسجيل الطالب نفسه يتم من نموذج التسجيل الذكي الموحد.</p>
+    </div>
+    <div class="opal-section-actions">
+      <a href="{% url 'admissions:direct_registration' %}" class="btn btn-primary" title="فتح نموذج تسجيل الطالب الرسمي الموحد"><i class="bi bi-person-plus-fill"></i> تسجيل طالب</a>
+      <a href="{% url 'admissions:admission_list' %}" class="btn btn-outline-primary" title="عرض سجل الطلبة المسجلين"><i class="bi bi-card-checklist"></i> سجل التسجيل</a>
+    </div>
+  </div>
 
-{% if request.user.is_superuser %}<div class="opal-card mb-4"><h3 class="fw-bold mb-3">الأدوار والصلاحيات</h3><a href="{% url 'accounts:role_list' %}" class="btn btn-outline-primary">إدارة الأدوار</a></div>{% endif %}
+  {% if not current_year %}<div class="alert alert-warning">لا يوجد عام دراسي حالي مفتوح. أنشئ العام وفعّله قبل بدء التسجيل.</div>{% endif %}
 
-<div class="opal-card mb-4">
-    <h3 class="fw-bold mb-3">هيكل المدرسة</h3>
-    <p class="text-secondary">إدارة الفروع من واجهة OPAL الرسمية.</p>
-    <a href="{% url 'core:branch_list' %}" class="btn btn-outline-primary">إدارة الفروع</a>
-</div>
-{% endif %}
-
-<div class="opal-card mb-4">
-    <h3 class="fw-bold mb-3">إعدادات التسجيل والمالية</h3>
-    <p class="text-secondary">إدارة رسوم الصفوف، جولات المواصلات، الخصومات، والدفعة الأولى من وحدة التسجيل.</p>
-    <a href="{% url 'admissions:registration_settings' %}" class="btn btn-primary">
-        <i class="bi bi-sliders"></i> فتح إعدادات التسجيل والرسوم
-    </a>
-</div>
-
-<div class="opal-card">
-    <h3 class="fw-bold mb-4">بيانات المدرسة</h3>
-    <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-        <div class="row g-3">
-            {% for field in form %}
-            <div class="col-md-6">
-                <label class="form-label fw-bold">{{ field.label }}</label>
-                {{ field }}
-                {% if field.errors %}<div class="text-danger small mt-1">{{ field.errors }}</div>{% endif %}
+  <div class="row g-4">
+    <div class="col-xl-8">
+      <div class="opal-inner-panel h-100">
+        <h4><i class="bi bi-sliders"></i> الخصومات والدفعة الأولى</h4>
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="registration_settings">
+          <div class="row g-3">
+            {% for field in registration_form %}
+            <div class="{% if field.field.widget.input_type == 'checkbox' %}col-md-6{% else %}col-md-4{% endif %}">
+              {% if field.field.widget.input_type == 'checkbox' %}
+              <div class="form-check opal-check-card">{{ field }}<label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label></div>
+              {% else %}
+              <label class="form-label fw-bold" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}
+              {% endif %}
+              {% if field.errors %}<div class="text-danger small mt-1">{{ field.errors }}</div>{% endif %}
             </div>
             {% endfor %}
-        </div>
-        <div class="mt-4">
-            <button class="btn btn-primary">حفظ إعدادات النظام</button>
-        </div>
-    </form>
-</div>
+          </div>
+          <div class="opal-form-footer"><button class="btn btn-primary"><i class="bi bi-check2-circle"></i> حفظ إعدادات التسجيل</button></div>
+        </form>
+      </div>
+    </div>
+    <div class="col-xl-4">
+      <div class="opal-inner-panel h-100">
+        <h4><i class="bi bi-bus-front"></i> إضافة جولة مواصلات</h4>
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="route">
+          {% for field in route_form %}
+          <div class="mb-3">
+            {% if field.field.widget.input_type == 'checkbox' %}
+            <div class="form-check opal-check-card">{{ field }}<label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label></div>
+            {% else %}
+            <label class="form-label fw-bold" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}
+            {% endif %}
+            {% if field.errors %}<div class="text-danger small mt-1">{{ field.errors }}</div>{% endif %}
+          </div>
+          {% endfor %}
+          <button class="btn btn-outline-primary w-100"><i class="bi bi-plus-circle"></i> حفظ الجولة</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  {% if routes %}
+  <div class="opal-inner-panel mt-4">
+    <h4><i class="bi bi-sign-turn-right"></i> جولات المواصلات الحالية</h4>
+    <div class="d-flex flex-wrap gap-2">
+      {% for route in routes %}<span class="opal-data-chip"><strong>{{ route.name }}</strong><span>{{ route.full_fee }} د.أ</span>{% if not route.is_active %}<em>متوقفة</em>{% endif %}</span>{% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</section>
+
+<section id="finance-settings" class="opal-card mb-4 opal-settings-section">
+  <div class="opal-section-heading">
+    <div>
+      <span class="opal-section-kicker">مالية مدرسية مبسطة</span>
+      <h3><i class="bi bi-cash-stack"></i> الرسوم والمصروفات والمقصف</h3>
+      <p>الفواتير والدفعات هي المرجع المالي، مع تدقيق آمن لارتباطات فئات الرسوم والخصومات والأقساط قبل أي حذف مستقبلي.</p>
+    </div>
+  </div>
+  <div class="opal-settings-actions-grid">
+    <a href="{% url 'accounting:dashboard' %}" class="opal-settings-action primary" title="فتح ملخص الرسوم المدرسية"><i class="bi bi-wallet2"></i><strong>الرسوم المدرسية</strong><small>الفواتير والدفعات والمتبقي</small></a>
+    <a href="{% url 'accounting:expense_list' %}" class="opal-settings-action" title="إدارة مصروفات المدرسة وحركات المقصف بالفواتير"><i class="bi bi-receipt-cutoff"></i><strong>المصروفات والمقصف</strong><small>الوارد والمصروف والفواتير</small></a>
+    <a href="{% url 'accounting:monthly_report' %}" class="opal-settings-action" title="كشف الشهر حتى آخر يوم وترحيل الصافي"><i class="bi bi-calendar2-check"></i><strong>الكشف الشهري</strong><small>الإيراد والمصروف والترحيل</small></a>
+    <a href="{% url 'accounting:finance_consolidation_center' %}" class="opal-settings-action warning" title="فحص الارتباطات قبل إزالة الفئات أو الخصومات أو الأقساط"><i class="bi bi-shield-check"></i><strong>تدقيق الدمج والحذف</strong><small>فحص آمن بلا حذف تلقائي</small></a>
+  </div>
+</section>
+
+<section id="access-settings" class="opal-card mb-4 opal-settings-section">
+  <div class="opal-section-heading">
+    <div><span class="opal-section-kicker">الحوكمة</span><h3><i class="bi bi-shield-lock-fill"></i> المستخدمون والصلاحيات</h3><p>إدارة الأدوار ومصفوفة الوصول وسجل العمليات من واجهة أوبال العربية.</p></div>
+  </div>
+  <div class="opal-settings-actions-grid">
+    {% if request.user.is_superuser %}<a href="{% url 'accounts:role_list' %}" class="opal-settings-action primary" title="إدارة أدوار المستخدمين"><i class="bi bi-people-fill"></i><strong>الأدوار</strong><small>أدوار مستخدمي النظام</small></a>{% endif %}
+    <a href="{% url 'enterprise_ops:permission_matrix' %}" class="opal-settings-action" title="تحديد صلاحيات كل دور"><i class="bi bi-person-lock"></i><strong>مصفوفة الصلاحيات</strong><small>عرض وإضافة وتعديل واعتماد</small></a>
+    <a href="{% url 'enterprise_ops:audit_log' %}" class="opal-settings-action" title="مراجعة العمليات المنفذة داخل النظام"><i class="bi bi-clock-history"></i><strong>سجل العمليات</strong><small>من نفّذ الإجراء ومتى</small></a>
+  </div>
+</section>
+
+<section id="operations-settings" class="opal-card mb-4 opal-settings-section">
+  <div class="opal-section-heading">
+    <div><span class="opal-section-kicker">التشغيل والصيانة</span><h3><i class="bi bi-gear-wide-connected"></i> أدوات النظام</h3><p>روابط الإدارة الفنية والتشغيلية مرتبة داخل قسم مستقل.</p></div>
+  </div>
+  <div class="opal-settings-actions-grid">
+    <a href="{% url 'core:operations_center' %}" class="opal-settings-action primary" title="الخريطة الرسمية لمسارات العمل"><i class="bi bi-signpost-split-fill"></i><strong>دليل العمليات</strong><small>مسارات العمل الموحدة</small></a>
+    {% if request.user.is_superuser %}
+    <a href="{% url 'core:integrity_center' %}" class="opal-settings-action warning" title="فحص تناسق وترابط البيانات"><i class="bi bi-database-check"></i><strong>سلامة البيانات</strong><small>فحص وإصلاح آمن</small></a>
+    <a href="{% url 'core:system_updates' %}" class="opal-settings-action" title="رفع التحديثات والنسخ الاحتياطية للكود"><i class="bi bi-arrow-repeat"></i><strong>تحديثات النظام</strong><small>نسخ الكود والاستعادة</small></a>
+    {% endif %}
+    {% if opal_openemis_enabled %}<a href="{% url 'openemis:settings' %}" class="opal-settings-action" title="إعداد التكامل الوزاري عند توفر الواجهة الرسمية"><i class="bi bi-cloud-arrow-up-fill"></i><strong>OpenEMIS</strong><small>تأسيسي ومعطل حتى API رسمي</small></a>{% endif %}
+  </div>
+
+  {% if request.user.is_superuser %}
+  <details class="opal-danger-zone mt-4">
+    <summary><i class="bi bi-database-gear"></i> بيانات التجربة والتصفير</summary>
+    <div class="row g-3 mt-1">
+      <div class="col-lg-6">
+        <form method="post">{% csrf_token %}<input type="hidden" name="action" value="seed_system"><button class="btn btn-success w-100" onclick="return confirm('سيتم استبدال البيانات التشغيلية الحالية ثم إدخال بيانات تجريبية مترابطة. متابعة؟')"><i class="bi bi-stars"></i> إدخال البيانات التجريبية الشاملة</button></form>
+      </div>
+      <div class="col-lg-6">
+        <form method="post" onsubmit="return confirm('سيتم حذف جميع البيانات التشغيلية التجريبية نهائيًا. متابعة؟')">{% csrf_token %}<input type="hidden" name="action" value="reset_all"><div class="input-group"><input class="form-control" name="confirmation" required placeholder="اكتب: تصفير شامل"><button class="btn btn-outline-danger"><i class="bi bi-arrow-counterclockwise"></i> تصفير جميع البيانات</button></div></form>
+      </div>
+    </div>
+  </details>
+  {% endif %}
+</section>
 {% endblock %}

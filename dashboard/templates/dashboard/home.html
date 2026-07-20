@@ -24,6 +24,17 @@
     <div class="dashboard-card"><span>امتحانات النظام</span><h2>{{ exams_count }}</h2><small>متوسط العلامات: {{ academic_average|floatformat:1 }}</small></div>
 </section>
 
+<section class="opal-live-teachers-grid mb-3">
+  <div class="opal-card">
+    <div class="d-flex justify-content-between align-items-center mb-2"><h3 class="mb-0"><i class="bi bi-person-video3 text-warning"></i> المعلمون المشغولون الآن</h3><span class="badge bg-warning text-dark">{{ opal_live_schedule.busy_teachers }}</span></div>
+    <div class="table-responsive"><table class="opal-table" data-opal-instant-table><thead><tr><th>المعلم</th><th>الصف والشعبة</th><th>المادة</th><th>الحصة</th></tr></thead><tbody>{% for entry in opal_live_schedule.current_entries %}{% if entry.teacher %}<tr><td class="fw-bold">{{ entry.teacher.full_name }}</td><td>{{ entry.section.grade.name }} — {{ entry.section.name }}</td><td>{{ entry.subject.name }}</td><td>{{ entry.time_slot.name }}<small class="d-block text-secondary">{{ entry.time_slot.start_time }} - {{ entry.time_slot.end_time }}</small></td></tr>{% endif %}{% empty %}<tr><td colspan="4" class="text-center text-secondary">لا توجد حصة جارية الآن.</td></tr>{% endfor %}</tbody></table></div>
+  </div>
+  <div class="opal-card">
+    <div class="d-flex justify-content-between align-items-center mb-2"><h3 class="mb-0"><i class="bi bi-person-check-fill text-success"></i> المعلمون المتفرغون الآن</h3><span class="badge bg-success">{{ opal_live_schedule.free_teachers_count }}</span></div>
+    <div class="opal-free-teacher-list">{% for teacher in opal_live_schedule.free_teachers %}<a href="{% url 'teachers:teacher_detail' teacher.pk %}" title="فتح ملف المعلم"><i class="bi bi-person-fill-check"></i><span>{{ teacher.full_name }}</span><small>{{ teacher.specialization|default:"معلم" }}</small></a>{% empty %}<p class="text-secondary mb-0">لا يوجد معلمون متفرغون في هذه اللحظة.</p>{% endfor %}</div>
+  </div>
+</section>
+
 <section class="opal-satisfaction-board" aria-labelledby="opal-satisfaction-title">
     <div class="opal-satisfaction-head">
         <div>
