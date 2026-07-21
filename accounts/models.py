@@ -1,7 +1,5 @@
 from django.db import models
 from django.contrib.auth.models import User
-from core.models import School, Branch
-
 
 class Role(models.Model):
     ROLE_CODES = [
@@ -28,8 +26,8 @@ class Role(models.Model):
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
-    school = models.ForeignKey(School, on_delete=models.SET_NULL, null=True, blank=True)
-    branch = models.ForeignKey(Branch, on_delete=models.SET_NULL, null=True, blank=True)
+    school = models.ForeignKey("core.School", on_delete=models.SET_NULL, null=True, blank=True)
+    branch = models.ForeignKey("core.Branch", on_delete=models.SET_NULL, null=True, blank=True)
     role = models.ForeignKey(Role, on_delete=models.SET_NULL, null=True, blank=True)
 
     full_name = models.CharField(max_length=200, blank=True)

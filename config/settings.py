@@ -2,8 +2,21 @@
 Django settings for Opal School Management System.
 """
 
-import os
 from pathlib import Path
+
+from .app_registry import build_installed_apps
+from .deployment_security import build_production_security, build_proxy_ssl_header, get_secret_key
+from .environment import env_bool
+from .operational_registry import (
+    build_allowed_hosts,
+    build_csrf_trusted_origins,
+    build_feature_flags,
+    get_default_auto_field,
+)
+from .runtime_registry import build_context_processors, build_middleware
+from .resource_registry import build_media_paths, build_static_paths, build_templates
+from .security_registry import build_databases, build_password_validators
+from .site_preferences import build_auth_navigation, build_localization, build_session_preferences
 
 # -------------------------
 # المسارات
@@ -11,90 +24,35 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-def env_bool(name, default=False):
-    """Read a boolean environment flag using one consistent policy."""
-    fallback = "True" if default else "False"
-    return os.environ.get(name, fallback).strip().lower() in {"1", "true", "yes", "on"}
-
-
-def env_list(name, default):
-    value = os.environ.get(name, "")
-    if not value.strip():
-        return list(default)
-    return [item.strip() for item in value.split(",") if item.strip()]
-
 
 # -------------------------
 # الأمان
 # -------------------------
-SECRET_KEY = os.environ.get(
-    "OPAL_SECRET_KEY",
-    "django-insecure-change-this-key-before-production",
-)
+SECRET_KEY = get_secret_key()
 
 DEBUG = env_bool("OPAL_DEBUG", False)
 
 # Existing modules remain enabled by default so no feature is hidden or deleted.
 # An environment may disable an optional foundation explicitly without removing its code.
-OPAL_ENABLE_OPENEMIS = env_bool("OPAL_ENABLE_OPENEMIS", True)
-OPAL_ENABLE_DEVELOPMENT_CENTER = env_bool("OPAL_ENABLE_DEVELOPMENT_CENTER", True)
+_FEATURE_FLAGS = build_feature_flags()
+OPAL_ENABLE_OPENEMIS = _FEATURE_FLAGS["openemis"]
+OPAL_ENABLE_DEVELOPMENT_CENTER = _FEATURE_FLAGS["development_center"]
 
-ALLOWED_HOSTS = env_list("OPAL_ALLOWED_HOSTS", [
-    "Opalschool2016.pythonanywhere.com",
-    "opalschool2016.pythonanywhere.com",
-    "localhost",
-    "127.0.0.1",
-])
+ALLOWED_HOSTS = build_allowed_hosts()
 
 
 # -------------------------
 # التطبيقات
 # -------------------------
-INSTALLED_APPS = [
-    'attendance_v2',
-    'parent_portal',
-    'openemis_integration',
-    'accounting',
-    'exams',
-    'documents',
-    'announcements',
-    'admissions',
-    'academics',
-    'core',
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-
-    'dashboard',
-    'accounts',
-    'students',
-    'teachers',
-    'timetable',
-    'curriculum',
-    'enterprise_ops.apps.EnterpriseOpsConfig',
-]
-
-if OPAL_ENABLE_DEVELOPMENT_CENTER:
-    INSTALLED_APPS.insert(0, 'development_center')
+INSTALLED_APPS = build_installed_apps(
+    enable_development_center=OPAL_ENABLE_DEVELOPMENT_CENTER,
+)
 
 
 # -------------------------
 # Middleware
 # -------------------------
-MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'parent_portal.middleware.ParentPortalAccessMiddleware',
-    'teachers.middleware.TeacherPortalAccessMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-]
+MIDDLEWARE = build_middleware()
 
 
 ROOT_URLCONF = 'config.urls'
@@ -103,25 +61,10 @@ ROOT_URLCONF = 'config.urls'
 # -------------------------
 # Templates
 # -------------------------
-TEMPLATES = [
-    {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
-                'announcements.context_processors.active_announcement',
-                'core.context_processors.opal_identity',
-                'core.context_processors.opal_operations',
-                'enterprise_ops.context_processors.enterprise_notifications',
-                'timetable.context_processors.live_schedule',
-            ],
-        },
-    },
-]
+TEMPLATES = build_templates(
+    BASE_DIR,
+    build_context_processors(),
+)
 
 
 WSGI_APPLICATION = 'config.wsgi.application'
@@ -130,94 +73,43 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # -------------------------
 # قاعدة البيانات
 # -------------------------
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
+DATABASES = build_databases(BASE_DIR)
 
 
 # -------------------------
 # كلمات المرور
 # -------------------------
-AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
-]
+AUTH_PASSWORD_VALIDATORS = build_password_validators()
 
 
 # -------------------------
 # اللغة والتوقيت
 # -------------------------
-LANGUAGE_CODE = 'ar'
-
-TIME_ZONE = 'Asia/Amman'
-
-USE_I18N = True
-
-USE_TZ = True
+LANGUAGE_CODE, TIME_ZONE, USE_I18N, USE_TZ = build_localization()
 
 
 # -------------------------
 # الملفات الثابتة
 # -------------------------
-STATIC_URL = 'static/'
-
-STATICFILES_DIRS = [
-    BASE_DIR / 'static',
-]
-
-STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATIC_URL, STATICFILES_DIRS, STATIC_ROOT = build_static_paths(BASE_DIR)
 
 
 # -------------------------
 # ملفات الوسائط
 # -------------------------
-MEDIA_URL = '/media/'
-
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_URL, MEDIA_ROOT = build_media_paths(BASE_DIR)
 
 
 # -------------------------
-# المفتاح الافتراضي
+# تفضيلات الموقع والجلسات
 # -------------------------
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-LOGIN_URL = "/accounts/login/"
-LOGIN_REDIRECT_URL = "/"
-LOGOUT_REDIRECT_URL = "/accounts/login/"
+DEFAULT_AUTO_FIELD = get_default_auto_field()
+LOGIN_URL, LOGIN_REDIRECT_URL, LOGOUT_REDIRECT_URL = build_auth_navigation()
+SESSION_COOKIE_SAMESITE, CSRF_COOKIE_SAMESITE, CSRF_FAILURE_VIEW = build_session_preferences()
 
-CSRF_TRUSTED_ORIGINS = env_list("OPAL_CSRF_TRUSTED_ORIGINS", [
-    "https://opalschool2016.pythonanywhere.com",
-])
-SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-SESSION_COOKIE_SAMESITE = "Lax"
-CSRF_COOKIE_SAMESITE = "Lax"
-
-# Keep CSRF protection enabled, but replace Django's technical failure page with
-# an OPAL-safe recovery flow.  In particular, a stale cached login form is
-# refreshed without retrying or exposing the submitted credentials.
-CSRF_FAILURE_VIEW = "core.security.csrf_failure"
+CSRF_TRUSTED_ORIGINS = build_csrf_trusted_origins()
+SECURE_PROXY_SSL_HEADER = build_proxy_ssl_header()
 
 
 # Production hardening is enabled automatically when OPAL_DEBUG=False.
-if not DEBUG:
-    SECURE_CONTENT_TYPE_NOSNIFF = True
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-    X_FRAME_OPTIONS = "DENY"
-    SECURE_REFERRER_POLICY = "same-origin"
-    SECURE_SSL_REDIRECT = env_bool("OPAL_SECURE_SSL_REDIRECT", False)
-    SECURE_HSTS_SECONDS = int(os.environ.get("OPAL_HSTS_SECONDS", "0"))
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = SECURE_HSTS_SECONDS > 0
-    SECURE_HSTS_PRELOAD = SECURE_HSTS_SECONDS > 0
+globals().update(build_production_security(debug=DEBUG))

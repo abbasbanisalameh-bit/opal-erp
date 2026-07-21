@@ -9,12 +9,7 @@ try:
 except Exception:
     StudentIssuedDocument = None
 
-from admissions.financial_services import (
-    student_finance_snapshot,
-    student_total_fees,
-    student_total_paid,
-    student_remaining,
-)
+from admissions.financial_services import student_finance_snapshot
 
 
 def _safe_percentage(value, total):

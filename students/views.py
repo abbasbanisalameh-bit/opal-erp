@@ -3,7 +3,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from enterprise_ops.permissions import management_required
 from .models import Student
 from .forms import StudentForm
-from .student360 import build_student_360_context
+from .lifecycle import build_student_profile_context
 
 @management_required
 def student_list(request):
@@ -58,10 +58,10 @@ def student_archive(request, pk):
 @management_required
 def student_360(request, pk):
     student = get_object_or_404(Student, pk=pk)
-    return render(request, "students/student_360.html", build_student_360_context(student))
+    return render(request, "students/student_360.html", build_student_profile_context(student))
 
 
 @management_required
 def student_360_print(request, pk):
     student = get_object_or_404(Student, pk=pk)
-    return render(request, "students/student_360_print.html", build_student_360_context(student))
+    return render(request, "students/student_360_print.html", build_student_profile_context(student))

@@ -4,12 +4,11 @@ from django.utils import timezone
 from django.db.models import Sum
 from decimal import Decimal
 
-from admissions.financial_services import student_remaining, student_total_fees, student_total_paid
 from core.models import AcademicYear
 from exams.services import annual_report
 from accounting.models import StudentInvoice, StudentPayment
 
-from ..models import DocumentSettings, DocumentTemplate, IssuedDocument, StudentIssuedDocument
+from ..models import DocumentSettings, IssuedDocument, StudentIssuedDocument
 from ..utils import generate_document_number
 
 
@@ -125,7 +124,8 @@ def _student_year_finance(student, year):
     invoices = StudentInvoice.objects.filter(student=student).exclude(status="cancelled")
     if year:
         invoices = invoices.filter(academic_year=year)
-    invoice_ids = list(invoices.values_list("pk", flat=True))
+    invoices = list(invoices)
+    invoice_ids = [invoice.pk for invoice in invoices]
     total = sum((invoice.net_amount for invoice in invoices), Decimal("0.00"))
     paid = StudentPayment.objects.filter(invoice_id__in=invoice_ids, status="posted").aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
     paid = min(paid, total)

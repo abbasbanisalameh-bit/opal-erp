@@ -21,10 +21,10 @@ from accounts.models import UserProfile
 from .academic_services import homework_for_student, homework_rows_for_students, student_class_rank
 from .parent360 import build_parent360_context
 from admissions.financial_services import (
+    student_finance_snapshot,
     student_total_fees,
     student_total_paid,
     student_remaining,
-    student_payment_status,
 )
 from admissions.models import FeePaymentAllocation, FeePayment
 from enterprise_ops.permissions import management_required
@@ -70,16 +70,19 @@ def _student_or_403(user, student_id):
 
 
 def _student_card(student):
-    remaining = student_remaining(student)
-    status = student_payment_status(student)
+    finance = student_finance_snapshot(student)
+    total = finance["total"]
+    paid = finance["paid"]
+    remaining = finance["remaining"]
+    status = finance["status"]
     return {
         "student": student,
-        "total": student_total_fees(student),
-        "paid": student_total_paid(student),
+        "total": total,
+        "paid": paid,
         "remaining": remaining,
         "status": status,
-        "status_label": "مسدد بالكامل" if remaining <= 0 else ("غير مسدد" if student_total_paid(student) <= 0 else "متبقٍ جزئي"),
-        "status_class": "success" if remaining <= 0 else ("danger" if student_total_paid(student) <= 0 else "warning"),
+        "status_label": "مسدد بالكامل" if remaining <= 0 else ("غير مسدد" if paid <= 0 else "متبقٍ جزئي"),
+        "status_class": "success" if remaining <= 0 else ("danger" if paid <= 0 else "warning"),
         "attendance": Attendance.objects.filter(student=student).order_by("-date")[:5],
         "marks": StudentMark.objects.filter(student=student, exam__status__in=["published", "closed"]).select_related("exam", "exam__subject")[:5],
         "rank": student_class_rank(student),
@@ -153,6 +156,7 @@ def student_detail(request, student_id):
     docs = []
     if StudentIssuedDocument:
         docs = StudentIssuedDocument.objects.filter(student=student).select_related("issued_document")[:20]
+    finance = student_finance_snapshot(student)
     return render(request, "parent_portal/student_detail.html", {
         "student": student,
         "invoices": invoices,
@@ -162,9 +166,9 @@ def student_detail(request, student_id):
         "rank": rank,
         "homework_items": homework_items,
         "documents": docs,
-        "total": student_total_fees(student),
-        "paid": student_total_paid(student),
-        "remaining": student_remaining(student),
+        "total": finance["total"],
+        "paid": finance["paid"],
+        "remaining": finance["remaining"],
     })
 
 

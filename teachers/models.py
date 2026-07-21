@@ -4,9 +4,7 @@ from django.db import models
 from django.utils import timezone
 from django.db.models import Q
 
-from academics.models import Section, Subject
 from core.identifiers import normalize_identifier
-from core.models import AcademicYear, Branch, School
 
 
 class Teacher(models.Model):
@@ -43,8 +41,8 @@ class Teacher(models.Model):
     hire_date = models.DateField(null=True, blank=True)
     end_date = models.DateField("تاريخ انفكاك المعلم", null=True, blank=True)
     end_reason = models.CharField("سبب الانفكاك", max_length=200, blank=True)
-    school = models.ForeignKey(School, on_delete=models.CASCADE, related_name="teachers")
-    branch = models.ForeignKey(Branch, on_delete=models.SET_NULL, null=True, blank=True, related_name="teachers")
+    school = models.ForeignKey("core.School", on_delete=models.CASCADE, related_name="teachers")
+    branch = models.ForeignKey("core.Branch", on_delete=models.SET_NULL, null=True, blank=True, related_name="teachers")
     photo = models.ImageField(upload_to="teachers/", blank=True, null=True)
     is_active = models.BooleanField(default=True)
     monthly_salary = models.DecimalField("الراتب الشهري", max_digits=10, decimal_places=2, default=0)
@@ -94,9 +92,9 @@ class Teacher(models.Model):
 
 class TeacherAssignment(models.Model):
     teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE, related_name="assignments")
-    academic_year = models.ForeignKey(AcademicYear, on_delete=models.CASCADE)
-    section = models.ForeignKey(Section, on_delete=models.CASCADE)
-    subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
+    academic_year = models.ForeignKey("core.AcademicYear", on_delete=models.CASCADE)
+    section = models.ForeignKey("academics.Section", on_delete=models.CASCADE)
+    subject = models.ForeignKey("academics.Subject", on_delete=models.CASCADE)
     is_primary = models.BooleanField(default=True)
     is_active = models.BooleanField(default=True)
     weekly_periods = models.PositiveSmallIntegerField("عدد الحصص أسبوعيًا", default=1)

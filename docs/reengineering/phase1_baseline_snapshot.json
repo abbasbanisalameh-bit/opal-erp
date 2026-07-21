@@ -1,0 +1,6179 @@
+{
+  "schema_version": 1,
+  "generated_at_utc": "2026-07-20T18:27:37.389064+00:00",
+  "project_root": "/mnt/data/opal_phase2_base",
+  "counts": {
+    "django_apps": 18,
+    "python_files": 388,
+    "html_templates": 173,
+    "models": 77,
+    "url_modules": 19
+  },
+  "apps": [
+    "academics",
+    "accounting",
+    "accounts",
+    "admissions",
+    "announcements",
+    "attendance_v2",
+    "core",
+    "curriculum",
+    "dashboard",
+    "development_center",
+    "documents",
+    "enterprise_ops",
+    "exams",
+    "openemis_integration",
+    "parent_portal",
+    "students",
+    "teachers",
+    "timetable"
+  ],
+  "student_model_candidates": [
+    {
+      "file": "students/models.py",
+      "class": "Student",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "student_number",
+          "type": "models.CharField"
+        },
+        {
+          "name": "source",
+          "type": "models.CharField"
+        },
+        {
+          "name": "national_id",
+          "type": "models.CharField"
+        },
+        {
+          "name": "full_name",
+          "type": "models.CharField"
+        },
+        {
+          "name": "guardian_name",
+          "type": "models.CharField"
+        },
+        {
+          "name": "father_name",
+          "type": "models.CharField"
+        },
+        {
+          "name": "mother_name",
+          "type": "models.CharField"
+        },
+        {
+          "name": "gender",
+          "type": "models.CharField"
+        },
+        {
+          "name": "blood_type",
+          "type": "models.CharField"
+        },
+        {
+          "name": "grade",
+          "type": "models.CharField"
+        },
+        {
+          "name": "section",
+          "type": "models.CharField"
+        },
+        {
+          "name": "phone",
+          "type": "models.CharField"
+        },
+        {
+          "name": "address",
+          "type": "models.TextField"
+        },
+        {
+          "name": "medical_notes",
+          "type": "models.TextField"
+        },
+        {
+          "name": "status",
+          "type": "models.CharField"
+        },
+        {
+          "name": "enrollment_date",
+          "type": "models.DateField"
+        },
+        {
+          "name": "ministry_student_id",
+          "type": "models.CharField"
+        },
+        {
+          "name": "openemis_data",
+          "type": "models.JSONField"
+        },
+        {
+          "name": "ministry_sync_status",
+          "type": "models.CharField"
+        },
+        {
+          "name": "last_ministry_sync_at",
+          "type": "models.DateTimeField"
+        },
+        {
+          "name": "archived_at",
+          "type": "models.DateTimeField"
+        },
+        {
+          "name": "is_active",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "is_demo",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "photo",
+          "type": "models.ImageField"
+        },
+        {
+          "name": "created_at",
+          "type": "models.DateTimeField"
+        },
+        {
+          "name": "updated_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    }
+  ],
+  "duplicate_url_names_within_module": [],
+  "models": [
+    {
+      "file": "academics/models.py",
+      "class": "Grade",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "school",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "name",
+          "type": "models.CharField"
+        },
+        {
+          "name": "order",
+          "type": "models.PositiveIntegerField"
+        },
+        {
+          "name": "is_kindergarten",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "is_active",
+          "type": "models.BooleanField"
+        }
+      ]
+    },
+    {
+      "file": "academics/models.py",
+      "class": "Section",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "academic_year",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "branch",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "grade",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "name",
+          "type": "models.CharField"
+        },
+        {
+          "name": "capacity",
+          "type": "models.PositiveIntegerField"
+        },
+        {
+          "name": "homeroom_teacher",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "is_default",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "is_active",
+          "type": "models.BooleanField"
+        }
+      ]
+    },
+    {
+      "file": "academics/models.py",
+      "class": "Enrollment",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "student",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "academic_year",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "grade",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "section",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "status",
+          "type": "models.CharField"
+        },
+        {
+          "name": "joined_at",
+          "type": "models.DateField"
+        },
+        {
+          "name": "ended_at",
+          "type": "models.DateField"
+        },
+        {
+          "name": "status_reason",
+          "type": "models.TextField"
+        }
+      ]
+    },
+    {
+      "file": "academics/models.py",
+      "class": "StudentLifecycleEvent",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "student",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "action",
+          "type": "models.CharField"
+        },
+        {
+          "name": "from_enrollment",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "to_enrollment",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "effective_date",
+          "type": "models.DateField"
+        },
+        {
+          "name": "reason",
+          "type": "models.TextField"
+        },
+        {
+          "name": "performed_by",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "created_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    },
+    {
+      "file": "academics/models.py",
+      "class": "StudentDocument",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "student",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "document_type",
+          "type": "models.CharField"
+        },
+        {
+          "name": "title",
+          "type": "models.CharField"
+        },
+        {
+          "name": "file",
+          "type": "models.FileField"
+        },
+        {
+          "name": "uploaded_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    },
+    {
+      "file": "academics/models.py",
+      "class": "Subject",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "name",
+          "type": "models.CharField"
+        },
+        {
+          "name": "code",
+          "type": "models.CharField"
+        },
+        {
+          "name": "grade",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "is_active",
+          "type": "models.BooleanField"
+        }
+      ]
+    },
+    {
+      "file": "accounting/models.py",
+      "class": "FeeCategory",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "name",
+          "type": "models.CharField"
+        },
+        {
+          "name": "description",
+          "type": "models.TextField"
+        },
+        {
+          "name": "amount",
+          "type": "models.DecimalField"
+        },
+        {
+          "name": "active",
+          "type": "models.BooleanField"
+        }
+      ]
+    },
+    {
+      "file": "accounting/models.py",
+      "class": "StudentInvoice",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "invoice_number",
+          "type": "models.CharField"
+        },
+        {
+          "name": "student",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "academic_year",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "fee_category",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "amount",
+          "type": "models.DecimalField"
+        },
+        {
+          "name": "discount_amount",
+          "type": "models.DecimalField"
+        },
+        {
+          "name": "due_date",
+          "type": "models.DateField"
+        },
+        {
+          "name": "issue_date",
+          "type": "models.DateField"
+        },
+        {
+          "name": "status",
+          "type": "models.CharField"
+        },
+        {
+          "name": "paid",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "notes",
+          "type": "models.TextField"
+        },
+        {
+          "name": "created_by",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "cancelled_by",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "cancelled_at",
+          "type": "models.DateTimeField"
+        },
+        {
+          "name": "cancellation_reason",
+          "type": "models.TextField"
+        },
+        {
+          "name": "created_at",
+          "type": "models.DateTimeField"
+        },
+        {
+          "name": "updated_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    },
+    {
+      "file": "accounting/models.py",
+      "class": "StudentPayment",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "invoice",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "amount",
+          "type": "models.DecimalField"
+        },
+        {
+          "name": "payment_date",
+          "type": "models.DateField"
+        },
+        {
+          "name": "reference",
+          "type": "models.CharField"
+        },
+        {
+          "name": "notes",
+          "type": "models.TextField"
+        },
+        {
+          "name": "payment_method",
+          "type": "models.CharField"
+        },
+        {
+          "name": "status",
+          "type": "models.CharField"
+        },
+        {
+          "name": "created_by",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "reversed_by",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "reversed_at",
+          "type": "models.DateTimeField"
+        },
+        {
+          "name": "reversal_reason",
+          "type": "models.TextField"
+        },
+        {
+          "name": "deleted_by",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "deleted_at",
+          "type": "models.DateTimeField"
+        },
+        {
+          "name": "deletion_reason",
+          "type": "models.TextField"
+        },
+        {
+          "name": "created_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    },
+    {
+      "file": "accounting/models.py",
+      "class": "Receipt",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "payment",
+          "type": "models.OneToOneField"
+        },
+        {
+          "name": "receipt_number",
+          "type": "models.CharField"
+        },
+        {
+          "name": "created_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    },
+    {
+      "file": "accounting/models.py",
+      "class": "Installment",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "invoice",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "sequence",
+          "type": "models.PositiveIntegerField"
+        },
+        {
+          "name": "title",
+          "type": "models.CharField"
+        },
+        {
+          "name": "due_date",
+          "type": "models.DateField"
+        },
+        {
+          "name": "amount",
+          "type": "models.DecimalField"
+        },
+        {
+          "name": "status",
+          "type": "models.CharField"
+        },
+        {
+          "name": "notes",
+          "type": "models.TextField"
+        }
+      ]
+    },
+    {
+      "file": "accounting/models.py",
+      "class": "DiscountRequest",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "invoice",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "requested_amount",
+          "type": "models.DecimalField"
+        },
+        {
+          "name": "reason",
+          "type": "models.TextField"
+        },
+        {
+          "name": "status",
+          "type": "models.CharField"
+        },
+        {
+          "name": "requested_by",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "decided_by",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "decision_note",
+          "type": "models.TextField"
+        },
+        {
+          "name": "created_at",
+          "type": "models.DateTimeField"
+        },
+        {
+          "name": "decided_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    },
+    {
+      "file": "accounting/models.py",
+      "class": "ExpenseEntry",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "school",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "expense_number",
+          "type": "models.CharField"
+        },
+        {
+          "name": "expense_date",
+          "type": "models.DateField"
+        },
+        {
+          "name": "title",
+          "type": "models.CharField"
+        },
+        {
+          "name": "source",
+          "type": "models.CharField"
+        },
+        {
+          "name": "beneficiary",
+          "type": "models.CharField"
+        },
+        {
+          "name": "amount",
+          "type": "models.DecimalField"
+        },
+        {
+          "name": "payment_method",
+          "type": "models.CharField"
+        },
+        {
+          "name": "reference",
+          "type": "models.CharField"
+        },
+        {
+          "name": "supplier_invoice_number",
+          "type": "models.CharField"
+        },
+        {
+          "name": "invoice_file",
+          "type": "models.FileField"
+        },
+        {
+          "name": "notes",
+          "type": "models.TextField"
+        },
+        {
+          "name": "created_by",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "created_at",
+          "type": "models.DateTimeField"
+        },
+        {
+          "name": "is_deleted",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "deleted_by",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "deleted_at",
+          "type": "models.DateTimeField"
+        },
+        {
+          "name": "deletion_reason",
+          "type": "models.TextField"
+        }
+      ]
+    },
+    {
+      "file": "accounting/models.py",
+      "class": "MonthlyFinancialTarget",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "school",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "period_end",
+          "type": "models.DateField"
+        },
+        {
+          "name": "expected_amount",
+          "type": "models.DecimalField"
+        },
+        {
+          "name": "notes",
+          "type": "models.TextField"
+        },
+        {
+          "name": "updated_by",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "updated_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    },
+    {
+      "file": "accounting/models.py",
+      "class": "FinancialYearClosure",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "school",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "source_year",
+          "type": "models.OneToOneField"
+        },
+        {
+          "name": "target_year",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "total_carried",
+          "type": "models.DecimalField"
+        },
+        {
+          "name": "notes",
+          "type": "models.TextField"
+        },
+        {
+          "name": "closed_by",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "closed_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    },
+    {
+      "file": "accounting/models.py",
+      "class": "FinancialCarryForward",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "closure",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "student",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "amount",
+          "type": "models.DecimalField"
+        },
+        {
+          "name": "target_invoice",
+          "type": "models.OneToOneField"
+        },
+        {
+          "name": "created_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    },
+    {
+      "file": "accounting/models.py",
+      "class": "CanteenTransaction",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "school",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "transaction_type",
+          "type": "models.CharField"
+        },
+        {
+          "name": "transaction_date",
+          "type": "models.DateField"
+        },
+        {
+          "name": "invoice_number",
+          "type": "models.CharField"
+        },
+        {
+          "name": "description",
+          "type": "models.CharField"
+        },
+        {
+          "name": "amount",
+          "type": "models.DecimalField"
+        },
+        {
+          "name": "payment_method",
+          "type": "models.CharField"
+        },
+        {
+          "name": "invoice_file",
+          "type": "models.FileField"
+        },
+        {
+          "name": "notes",
+          "type": "models.TextField"
+        },
+        {
+          "name": "created_by",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "created_at",
+          "type": "models.DateTimeField"
+        },
+        {
+          "name": "is_deleted",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "deleted_by",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "deleted_at",
+          "type": "models.DateTimeField"
+        },
+        {
+          "name": "deletion_reason",
+          "type": "models.TextField"
+        }
+      ]
+    },
+    {
+      "file": "accounting/models.py",
+      "class": "MonthlyFinancialStatement",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "school",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "period_end",
+          "type": "models.DateField"
+        },
+        {
+          "name": "opening_balance",
+          "type": "models.DecimalField"
+        },
+        {
+          "name": "fee_income",
+          "type": "models.DecimalField"
+        },
+        {
+          "name": "canteen_income",
+          "type": "models.DecimalField"
+        },
+        {
+          "name": "school_expenses",
+          "type": "models.DecimalField"
+        },
+        {
+          "name": "canteen_expenses",
+          "type": "models.DecimalField"
+        },
+        {
+          "name": "net_movement",
+          "type": "models.DecimalField"
+        },
+        {
+          "name": "closing_balance",
+          "type": "models.DecimalField"
+        },
+        {
+          "name": "is_closed",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "closed_by",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "closed_at",
+          "type": "models.DateTimeField"
+        },
+        {
+          "name": "updated_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    },
+    {
+      "file": "accounts/models.py",
+      "class": "Role",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "code",
+          "type": "models.CharField"
+        },
+        {
+          "name": "name",
+          "type": "models.CharField"
+        },
+        {
+          "name": "description",
+          "type": "models.TextField"
+        },
+        {
+          "name": "is_active",
+          "type": "models.BooleanField"
+        }
+      ]
+    },
+    {
+      "file": "accounts/models.py",
+      "class": "UserProfile",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "user",
+          "type": "models.OneToOneField"
+        },
+        {
+          "name": "school",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "branch",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "role",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "full_name",
+          "type": "models.CharField"
+        },
+        {
+          "name": "phone",
+          "type": "models.CharField"
+        },
+        {
+          "name": "photo",
+          "type": "models.ImageField"
+        },
+        {
+          "name": "is_online_student",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "is_school_user",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "created_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    },
+    {
+      "file": "admissions/models.py",
+      "class": "AdmissionApplication",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "school",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "branch",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "academic_year",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "application_number",
+          "type": "models.CharField"
+        },
+        {
+          "name": "student_full_name",
+          "type": "models.CharField"
+        },
+        {
+          "name": "father_name",
+          "type": "models.CharField"
+        },
+        {
+          "name": "mother_name",
+          "type": "models.CharField"
+        },
+        {
+          "name": "gender",
+          "type": "models.CharField"
+        },
+        {
+          "name": "birth_date",
+          "type": "models.DateField"
+        },
+        {
+          "name": "phone",
+          "type": "models.CharField"
+        },
+        {
+          "name": "address",
+          "type": "models.TextField"
+        },
+        {
+          "name": "photo",
+          "type": "models.ImageField"
+        },
+        {
+          "name": "guardian_name",
+          "type": "models.CharField"
+        },
+        {
+          "name": "guardian_phone",
+          "type": "models.CharField"
+        },
+        {
+          "name": "guardian_email",
+          "type": "models.EmailField"
+        },
+        {
+          "name": "guardian_job",
+          "type": "models.CharField"
+        },
+        {
+          "name": "grade",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "section",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "status",
+          "type": "models.CharField"
+        },
+        {
+          "name": "notes",
+          "type": "models.TextField"
+        },
+        {
+          "name": "created_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    },
+    {
+      "file": "admissions/models.py",
+      "class": "RegistrationSettings",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "school",
+          "type": "models.OneToOneField"
+        },
+        {
+          "name": "first_payment_percent",
+          "type": "models.DecimalField"
+        },
+        {
+          "name": "cash_discount_percent",
+          "type": "models.DecimalField"
+        },
+        {
+          "name": "sibling_discount_percent",
+          "type": "models.DecimalField"
+        },
+        {
+          "name": "quran_25_percent",
+          "type": "models.DecimalField"
+        },
+        {
+          "name": "quran_50_percent",
+          "type": "models.DecimalField"
+        },
+        {
+          "name": "quran_75_percent",
+          "type": "models.DecimalField"
+        },
+        {
+          "name": "quran_100_percent",
+          "type": "models.DecimalField"
+        },
+        {
+          "name": "enable_cash_discount",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "enable_sibling_discount",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "enable_quran_discount",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "enable_admin_discount",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "sibling_discount_once_per_family",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "updated_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    },
+    {
+      "file": "admissions/models.py",
+      "class": "GradeFee",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "school",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "academic_year",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "grade",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "tuition_fee",
+          "type": "models.DecimalField"
+        },
+        {
+          "name": "is_active",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "updated_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    },
+    {
+      "file": "admissions/models.py",
+      "class": "TransportRoute",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "school",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "name",
+          "type": "models.CharField"
+        },
+        {
+          "name": "full_fee",
+          "type": "models.DecimalField"
+        },
+        {
+          "name": "is_active",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "notes",
+          "type": "models.TextField"
+        },
+        {
+          "name": "updated_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    },
+    {
+      "file": "admissions/models.py",
+      "class": "StudentRegistration",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "school",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "branch",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "academic_year",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "registration_number",
+          "type": "models.CharField"
+        },
+        {
+          "name": "operation_token",
+          "type": "models.UUIDField"
+        },
+        {
+          "name": "student",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "grade",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "section",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "first_name",
+          "type": "models.CharField"
+        },
+        {
+          "name": "father_name",
+          "type": "models.CharField"
+        },
+        {
+          "name": "grandfather_name",
+          "type": "models.CharField"
+        },
+        {
+          "name": "family_name",
+          "type": "models.CharField"
+        },
+        {
+          "name": "full_name",
+          "type": "models.CharField"
+        },
+        {
+          "name": "national_id",
+          "type": "models.CharField"
+        },
+        {
+          "name": "gender",
+          "type": "models.CharField"
+        },
+        {
+          "name": "birth_date",
+          "type": "models.DateField"
+        },
+        {
+          "name": "address",
+          "type": "models.TextField"
+        },
+        {
+          "name": "phone",
+          "type": "models.CharField"
+        },
+        {
+          "name": "guardian_name",
+          "type": "models.CharField"
+        },
+        {
+          "name": "guardian_identity_type",
+          "type": "models.CharField"
+        },
+        {
+          "name": "guardian_identity_number",
+          "type": "models.CharField"
+        },
+        {
+          "name": "mother_name",
+          "type": "models.CharField"
+        },
+        {
+          "name": "photo",
+          "type": "models.ImageField"
+        },
+        {
+          "name": "transport_route",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "transport_type",
+          "type": "models.CharField"
+        },
+        {
+          "name": "discount_type",
+          "type": "models.CharField"
+        },
+        {
+          "name": "admin_discount_value",
+          "type": "models.DecimalField"
+        },
+        {
+          "name": "sibling_student",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "tuition_fee",
+          "type": "models.DecimalField"
+        },
+        {
+          "name": "transport_fee",
+          "type": "models.DecimalField"
+        },
+        {
+          "name": "discount_value",
+          "type": "models.DecimalField"
+        },
+        {
+          "name": "net_total",
+          "type": "models.DecimalField"
+        },
+        {
+          "name": "first_payment",
+          "type": "models.DecimalField"
+        },
+        {
+          "name": "payment_method",
+          "type": "models.CharField"
+        },
+        {
+          "name": "remaining_amount",
+          "type": "models.DecimalField"
+        },
+        {
+          "name": "invoice",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "payment",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "receipt",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "notes",
+          "type": "models.TextField"
+        },
+        {
+          "name": "created_by",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "created_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    },
+    {
+      "file": "admissions/models.py",
+      "class": "FeePayment",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "school",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "receipt_number",
+          "type": "models.CharField"
+        },
+        {
+          "name": "operation_token",
+          "type": "models.UUIDField"
+        },
+        {
+          "name": "scope",
+          "type": "models.CharField"
+        },
+        {
+          "name": "main_student",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "guardian_name",
+          "type": "models.CharField"
+        },
+        {
+          "name": "phone",
+          "type": "models.CharField"
+        },
+        {
+          "name": "total_amount",
+          "type": "models.DecimalField"
+        },
+        {
+          "name": "total_due_before",
+          "type": "models.DecimalField"
+        },
+        {
+          "name": "total_due_after",
+          "type": "models.DecimalField"
+        },
+        {
+          "name": "payment_method",
+          "type": "models.CharField"
+        },
+        {
+          "name": "created_by",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "notes",
+          "type": "models.TextField"
+        },
+        {
+          "name": "created_at",
+          "type": "models.DateTimeField"
+        },
+        {
+          "name": "is_deleted",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "deleted_by",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "deleted_at",
+          "type": "models.DateTimeField"
+        },
+        {
+          "name": "deletion_reason",
+          "type": "models.TextField"
+        }
+      ]
+    },
+    {
+      "file": "admissions/models.py",
+      "class": "FeePaymentAllocation",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "fee_payment",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "student",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "invoice",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "accounting_payment",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "amount",
+          "type": "models.DecimalField"
+        },
+        {
+          "name": "total_fees",
+          "type": "models.DecimalField"
+        },
+        {
+          "name": "paid_before",
+          "type": "models.DecimalField"
+        },
+        {
+          "name": "remaining_before",
+          "type": "models.DecimalField"
+        },
+        {
+          "name": "remaining_after",
+          "type": "models.DecimalField"
+        },
+        {
+          "name": "created_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    },
+    {
+      "file": "announcements/models.py",
+      "class": "Announcement",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "title",
+          "type": "models.CharField"
+        },
+        {
+          "name": "message",
+          "type": "models.TextField"
+        },
+        {
+          "name": "announcement_type",
+          "type": "models.CharField"
+        },
+        {
+          "name": "is_active",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "speed_seconds",
+          "type": "models.PositiveIntegerField"
+        },
+        {
+          "name": "created_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    },
+    {
+      "file": "attendance_v2/models.py",
+      "class": "Attendance",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "student",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "academic_year",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "grade",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "section",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "date",
+          "type": "models.DateField"
+        },
+        {
+          "name": "status",
+          "type": "models.CharField"
+        },
+        {
+          "name": "arrival_time",
+          "type": "models.TimeField"
+        },
+        {
+          "name": "departure_time",
+          "type": "models.TimeField"
+        },
+        {
+          "name": "excuse_reason",
+          "type": "models.TextField"
+        },
+        {
+          "name": "notes",
+          "type": "models.TextField"
+        },
+        {
+          "name": "is_locked",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "recorded_by",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "updated_by",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "recorded_at",
+          "type": "models.DateTimeField"
+        },
+        {
+          "name": "updated_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    },
+    {
+      "file": "core/models.py",
+      "class": "School",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "name",
+          "type": "models.CharField"
+        },
+        {
+          "name": "official_name",
+          "type": "models.CharField"
+        },
+        {
+          "name": "phone",
+          "type": "models.CharField"
+        },
+        {
+          "name": "email",
+          "type": "models.EmailField"
+        },
+        {
+          "name": "address",
+          "type": "models.TextField"
+        },
+        {
+          "name": "logo",
+          "type": "models.ImageField"
+        },
+        {
+          "name": "is_active",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "created_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    },
+    {
+      "file": "core/models.py",
+      "class": "Branch",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "school",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "name",
+          "type": "models.CharField"
+        },
+        {
+          "name": "phone",
+          "type": "models.CharField"
+        },
+        {
+          "name": "address",
+          "type": "models.TextField"
+        },
+        {
+          "name": "is_main",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "is_active",
+          "type": "models.BooleanField"
+        }
+      ]
+    },
+    {
+      "file": "core/models.py",
+      "class": "AcademicYear",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "school",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "name",
+          "type": "models.CharField"
+        },
+        {
+          "name": "start_date",
+          "type": "models.DateField"
+        },
+        {
+          "name": "end_date",
+          "type": "models.DateField"
+        },
+        {
+          "name": "midyear_break_start",
+          "type": "models.DateField"
+        },
+        {
+          "name": "midyear_break_end",
+          "type": "models.DateField"
+        },
+        {
+          "name": "is_current",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "is_closed",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "closed_at",
+          "type": "models.DateTimeField"
+        },
+        {
+          "name": "closed_by",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "closure_notes",
+          "type": "models.TextField"
+        }
+      ]
+    },
+    {
+      "file": "core/models.py",
+      "class": "Semester",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "academic_year",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "code",
+          "type": "models.CharField"
+        },
+        {
+          "name": "name",
+          "type": "models.CharField"
+        },
+        {
+          "name": "start_date",
+          "type": "models.DateField"
+        },
+        {
+          "name": "end_date",
+          "type": "models.DateField"
+        },
+        {
+          "name": "is_current",
+          "type": "models.BooleanField"
+        }
+      ]
+    },
+    {
+      "file": "core/models.py",
+      "class": "AuditLog",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "user",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "school",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "branch",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "action",
+          "type": "models.CharField"
+        },
+        {
+          "name": "model_name",
+          "type": "models.CharField"
+        },
+        {
+          "name": "object_id",
+          "type": "models.CharField"
+        },
+        {
+          "name": "description",
+          "type": "models.TextField"
+        },
+        {
+          "name": "ip_address",
+          "type": "models.GenericIPAddressField"
+        },
+        {
+          "name": "request_id",
+          "type": "models.CharField"
+        },
+        {
+          "name": "result",
+          "type": "models.CharField"
+        },
+        {
+          "name": "created_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    },
+    {
+      "file": "core/models.py",
+      "class": "Sequence",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "key",
+          "type": "models.CharField"
+        },
+        {
+          "name": "prefix",
+          "type": "models.CharField"
+        },
+        {
+          "name": "current_number",
+          "type": "models.PositiveIntegerField"
+        },
+        {
+          "name": "padding",
+          "type": "models.PositiveIntegerField"
+        },
+        {
+          "name": "yearly_reset",
+          "type": "models.BooleanField"
+        }
+      ]
+    },
+    {
+      "file": "core/models.py",
+      "class": "DataIntegrityRun",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "school",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "mode",
+          "type": "models.CharField"
+        },
+        {
+          "name": "started_at",
+          "type": "models.DateTimeField"
+        },
+        {
+          "name": "completed_at",
+          "type": "models.DateTimeField"
+        },
+        {
+          "name": "created_by",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "total_issues",
+          "type": "models.PositiveIntegerField"
+        },
+        {
+          "name": "critical_count",
+          "type": "models.PositiveIntegerField"
+        },
+        {
+          "name": "warning_count",
+          "type": "models.PositiveIntegerField"
+        },
+        {
+          "name": "fixed_count",
+          "type": "models.PositiveIntegerField"
+        }
+      ]
+    },
+    {
+      "file": "core/models.py",
+      "class": "DataIntegrityIssue",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "run",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "code",
+          "type": "models.CharField"
+        },
+        {
+          "name": "severity",
+          "type": "models.CharField"
+        },
+        {
+          "name": "model_name",
+          "type": "models.CharField"
+        },
+        {
+          "name": "object_id",
+          "type": "models.CharField"
+        },
+        {
+          "name": "description",
+          "type": "models.TextField"
+        },
+        {
+          "name": "is_fixable",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "is_fixed",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "resolution",
+          "type": "models.TextField"
+        },
+        {
+          "name": "created_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    },
+    {
+      "file": "curriculum/models.py",
+      "class": "Curriculum",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "academic_year",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "grade",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "subject",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "weekly_periods",
+          "type": "models.PositiveIntegerField"
+        },
+        {
+          "name": "is_required",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "is_active",
+          "type": "models.BooleanField"
+        }
+      ]
+    },
+    {
+      "file": "development_center/models.py",
+      "class": "Module",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "name",
+          "type": "models.CharField"
+        },
+        {
+          "name": "category",
+          "type": "models.CharField"
+        },
+        {
+          "name": "description",
+          "type": "models.TextField"
+        },
+        {
+          "name": "version",
+          "type": "models.CharField"
+        },
+        {
+          "name": "progress",
+          "type": "models.PositiveSmallIntegerField"
+        },
+        {
+          "name": "priority",
+          "type": "models.PositiveSmallIntegerField"
+        },
+        {
+          "name": "status",
+          "type": "models.CharField"
+        },
+        {
+          "name": "is_active",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "updated_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    },
+    {
+      "file": "development_center/models.py",
+      "class": "Sprint",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "title",
+          "type": "models.CharField"
+        },
+        {
+          "name": "goal",
+          "type": "models.TextField"
+        },
+        {
+          "name": "start_date",
+          "type": "models.DateField"
+        },
+        {
+          "name": "end_date",
+          "type": "models.DateField"
+        },
+        {
+          "name": "status",
+          "type": "models.CharField"
+        },
+        {
+          "name": "created_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    },
+    {
+      "file": "development_center/models.py",
+      "class": "Task",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "module",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "release",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "sprint",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "title",
+          "type": "models.CharField"
+        },
+        {
+          "name": "description",
+          "type": "models.TextField"
+        },
+        {
+          "name": "status",
+          "type": "models.CharField"
+        },
+        {
+          "name": "progress",
+          "type": "models.PositiveSmallIntegerField"
+        },
+        {
+          "name": "order",
+          "type": "models.PositiveIntegerField"
+        },
+        {
+          "name": "start_date",
+          "type": "models.DateField"
+        },
+        {
+          "name": "due_date",
+          "type": "models.DateField"
+        },
+        {
+          "name": "depends_on",
+          "type": "models.ManyToManyField"
+        },
+        {
+          "name": "created_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    },
+    {
+      "file": "development_center/models.py",
+      "class": "Release",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "version",
+          "type": "models.CharField"
+        },
+        {
+          "name": "title",
+          "type": "models.CharField"
+        },
+        {
+          "name": "description",
+          "type": "models.TextField"
+        },
+        {
+          "name": "planned_date",
+          "type": "models.DateField"
+        },
+        {
+          "name": "released",
+          "type": "models.BooleanField"
+        }
+      ]
+    },
+    {
+      "file": "development_center/models.py",
+      "class": "Milestone",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "title",
+          "type": "models.CharField"
+        },
+        {
+          "name": "version",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "target_date",
+          "type": "models.DateField"
+        },
+        {
+          "name": "progress",
+          "type": "models.PositiveSmallIntegerField"
+        },
+        {
+          "name": "completed",
+          "type": "models.BooleanField"
+        }
+      ]
+    },
+    {
+      "file": "development_center/models.py",
+      "class": "Idea",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "title",
+          "type": "models.CharField"
+        },
+        {
+          "name": "description",
+          "type": "models.TextField"
+        },
+        {
+          "name": "category",
+          "type": "models.CharField"
+        },
+        {
+          "name": "priority",
+          "type": "models.PositiveSmallIntegerField"
+        },
+        {
+          "name": "status",
+          "type": "models.CharField"
+        },
+        {
+          "name": "created_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    },
+    {
+      "file": "development_center/models.py",
+      "class": "Decision",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "title",
+          "type": "models.CharField"
+        },
+        {
+          "name": "decision",
+          "type": "models.TextField"
+        },
+        {
+          "name": "reason",
+          "type": "models.TextField"
+        },
+        {
+          "name": "impact",
+          "type": "models.TextField"
+        },
+        {
+          "name": "status",
+          "type": "models.CharField"
+        },
+        {
+          "name": "created_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    },
+    {
+      "file": "development_center/models.py",
+      "class": "Bug",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "title",
+          "type": "models.CharField"
+        },
+        {
+          "name": "description",
+          "type": "models.TextField"
+        },
+        {
+          "name": "module",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "release",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "severity",
+          "type": "models.CharField"
+        },
+        {
+          "name": "status",
+          "type": "models.CharField"
+        },
+        {
+          "name": "created_at",
+          "type": "models.DateTimeField"
+        },
+        {
+          "name": "updated_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    },
+    {
+      "file": "development_center/models.py",
+      "class": "ActivityLog",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "module",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "task",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "user",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "action",
+          "type": "models.CharField"
+        },
+        {
+          "name": "title",
+          "type": "models.CharField"
+        },
+        {
+          "name": "description",
+          "type": "models.TextField"
+        },
+        {
+          "name": "created_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    },
+    {
+      "file": "development_center/models.py",
+      "class": "SprintDailySnapshot",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "sprint",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "date",
+          "type": "models.DateField"
+        },
+        {
+          "name": "total_tasks",
+          "type": "models.PositiveIntegerField"
+        },
+        {
+          "name": "remaining_tasks",
+          "type": "models.PositiveIntegerField"
+        }
+      ]
+    },
+    {
+      "file": "development_center/models.py",
+      "class": "Notification",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "title",
+          "type": "models.CharField"
+        },
+        {
+          "name": "message",
+          "type": "models.TextField"
+        },
+        {
+          "name": "level",
+          "type": "models.CharField"
+        },
+        {
+          "name": "is_read",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "url",
+          "type": "models.CharField"
+        },
+        {
+          "name": "created_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    },
+    {
+      "file": "documents/models.py",
+      "class": "DocumentTemplate",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "code",
+          "type": "models.SlugField"
+        },
+        {
+          "name": "name",
+          "type": "models.CharField"
+        },
+        {
+          "name": "audience",
+          "type": "models.CharField"
+        },
+        {
+          "name": "document_type",
+          "type": "models.CharField"
+        },
+        {
+          "name": "title",
+          "type": "models.CharField"
+        },
+        {
+          "name": "body",
+          "type": "models.TextField"
+        },
+        {
+          "name": "is_active",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "created_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    },
+    {
+      "file": "documents/models.py",
+      "class": "IssuedDocument",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "template",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "student",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "teacher",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "guardian",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "candidate",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "applicant_name",
+          "type": "models.CharField"
+        },
+        {
+          "name": "document_number",
+          "type": "models.CharField"
+        },
+        {
+          "name": "verification_code",
+          "type": "models.UUIDField"
+        },
+        {
+          "name": "title",
+          "type": "models.CharField"
+        },
+        {
+          "name": "content",
+          "type": "models.TextField"
+        },
+        {
+          "name": "payload",
+          "type": "models.JSONField"
+        },
+        {
+          "name": "manager_name_snapshot",
+          "type": "models.CharField"
+        },
+        {
+          "name": "manager_title_snapshot",
+          "type": "models.CharField"
+        },
+        {
+          "name": "stamp_label_snapshot",
+          "type": "models.CharField"
+        },
+        {
+          "name": "status",
+          "type": "models.CharField"
+        },
+        {
+          "name": "issued_by",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "issued_at",
+          "type": "models.DateTimeField"
+        },
+        {
+          "name": "cancelled_by",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "cancelled_at",
+          "type": "models.DateTimeField"
+        },
+        {
+          "name": "cancellation_reason",
+          "type": "models.TextField"
+        },
+        {
+          "name": "replaces",
+          "type": "models.ForeignKey"
+        }
+      ]
+    },
+    {
+      "file": "documents/models.py",
+      "class": "DocumentSettings",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "school",
+          "type": "models.OneToOneField"
+        },
+        {
+          "name": "manager_name",
+          "type": "models.CharField"
+        },
+        {
+          "name": "manager_title",
+          "type": "models.CharField"
+        },
+        {
+          "name": "stamp_label",
+          "type": "models.CharField"
+        },
+        {
+          "name": "footer_text",
+          "type": "models.CharField"
+        },
+        {
+          "name": "updated_by",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "updated_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    },
+    {
+      "file": "documents/models.py",
+      "class": "StudentIssuedDocument",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "student",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "issued_document",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "created_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    },
+    {
+      "file": "enterprise_ops/models.py",
+      "class": "WorkflowRequest",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "request_type",
+          "type": "models.CharField"
+        },
+        {
+          "name": "title",
+          "type": "models.CharField"
+        },
+        {
+          "name": "description",
+          "type": "models.TextField"
+        },
+        {
+          "name": "requester",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "assignee",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "school",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "branch",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "status",
+          "type": "models.CharField"
+        },
+        {
+          "name": "priority",
+          "type": "models.CharField"
+        },
+        {
+          "name": "related_app",
+          "type": "models.CharField"
+        },
+        {
+          "name": "related_model",
+          "type": "models.CharField"
+        },
+        {
+          "name": "related_object_id",
+          "type": "models.CharField"
+        },
+        {
+          "name": "due_date",
+          "type": "models.DateField"
+        },
+        {
+          "name": "resolution_note",
+          "type": "models.TextField"
+        },
+        {
+          "name": "created_at",
+          "type": "models.DateTimeField"
+        },
+        {
+          "name": "updated_at",
+          "type": "models.DateTimeField"
+        },
+        {
+          "name": "resolved_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    },
+    {
+      "file": "enterprise_ops/models.py",
+      "class": "ApprovalAction",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "workflow",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "actor",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "action",
+          "type": "models.CharField"
+        },
+        {
+          "name": "note",
+          "type": "models.TextField"
+        },
+        {
+          "name": "from_status",
+          "type": "models.CharField"
+        },
+        {
+          "name": "to_status",
+          "type": "models.CharField"
+        },
+        {
+          "name": "created_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    },
+    {
+      "file": "enterprise_ops/models.py",
+      "class": "Notification",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "recipient",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "title",
+          "type": "models.CharField"
+        },
+        {
+          "name": "message",
+          "type": "models.TextField"
+        },
+        {
+          "name": "level",
+          "type": "models.CharField"
+        },
+        {
+          "name": "link",
+          "type": "models.CharField"
+        },
+        {
+          "name": "event_key",
+          "type": "models.CharField"
+        },
+        {
+          "name": "is_read",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "sound_enabled",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "created_at",
+          "type": "models.DateTimeField"
+        },
+        {
+          "name": "read_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    },
+    {
+      "file": "enterprise_ops/models.py",
+      "class": "FeedbackTicket",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "sender",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "school",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "branch",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "kind",
+          "type": "models.CharField"
+        },
+        {
+          "name": "title",
+          "type": "models.CharField"
+        },
+        {
+          "name": "message",
+          "type": "models.TextField"
+        },
+        {
+          "name": "teaching_quality_rating",
+          "type": "models.PositiveSmallIntegerField"
+        },
+        {
+          "name": "electronic_services_rating",
+          "type": "models.PositiveSmallIntegerField"
+        },
+        {
+          "name": "status",
+          "type": "models.CharField"
+        },
+        {
+          "name": "assigned_to",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "response",
+          "type": "models.TextField"
+        },
+        {
+          "name": "created_at",
+          "type": "models.DateTimeField"
+        },
+        {
+          "name": "updated_at",
+          "type": "models.DateTimeField"
+        },
+        {
+          "name": "resolved_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    },
+    {
+      "file": "enterprise_ops/models.py",
+      "class": "BroadcastMessage",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "message_type",
+          "type": "models.CharField"
+        },
+        {
+          "name": "audience",
+          "type": "models.CharField"
+        },
+        {
+          "name": "specific_teacher",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "title",
+          "type": "models.CharField"
+        },
+        {
+          "name": "message",
+          "type": "models.TextField"
+        },
+        {
+          "name": "created_by",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "is_active",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "recipients_count",
+          "type": "models.PositiveIntegerField"
+        },
+        {
+          "name": "created_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    },
+    {
+      "file": "enterprise_ops/models.py",
+      "class": "ReportPreset",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "name",
+          "type": "models.CharField"
+        },
+        {
+          "name": "category",
+          "type": "models.CharField"
+        },
+        {
+          "name": "description",
+          "type": "models.TextField"
+        },
+        {
+          "name": "code",
+          "type": "models.SlugField"
+        },
+        {
+          "name": "is_active",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "allowed_roles",
+          "type": "models.CharField"
+        },
+        {
+          "name": "created_by",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "created_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    },
+    {
+      "file": "enterprise_ops/models.py",
+      "class": "RolePermissionRule",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "role_code",
+          "type": "models.CharField"
+        },
+        {
+          "name": "feature",
+          "type": "models.CharField"
+        },
+        {
+          "name": "can_view",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "can_create",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "can_update",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "can_approve",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "can_export",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "is_active",
+          "type": "models.BooleanField"
+        }
+      ]
+    },
+    {
+      "file": "exams/models.py",
+      "class": "Exam",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "name",
+          "type": "models.CharField"
+        },
+        {
+          "name": "exam_type",
+          "type": "models.CharField"
+        },
+        {
+          "name": "academic_year",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "semester",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "grade",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "section",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "subject",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "teacher_assignment",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "max_mark",
+          "type": "models.DecimalField"
+        },
+        {
+          "name": "pass_percentage",
+          "type": "models.DecimalField"
+        },
+        {
+          "name": "weight",
+          "type": "models.DecimalField"
+        },
+        {
+          "name": "exam_date",
+          "type": "models.DateField"
+        },
+        {
+          "name": "status",
+          "type": "models.CharField"
+        },
+        {
+          "name": "is_locked",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "is_active",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "approved_by",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "approved_at",
+          "type": "models.DateTimeField"
+        },
+        {
+          "name": "published_at",
+          "type": "models.DateTimeField"
+        },
+        {
+          "name": "submitted_by",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "submitted_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    },
+    {
+      "file": "exams/models.py",
+      "class": "StudentMark",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "exam",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "student",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "mark",
+          "type": "models.DecimalField"
+        },
+        {
+          "name": "notes",
+          "type": "models.TextField"
+        },
+        {
+          "name": "entered_by",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "updated_by",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "created_at",
+          "type": "models.DateTimeField"
+        },
+        {
+          "name": "updated_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    },
+    {
+      "file": "openemis_integration/models.py",
+      "class": "OpenEMISSettings",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "school",
+          "type": "models.OneToOneField"
+        },
+        {
+          "name": "is_enabled",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "base_url",
+          "type": "models.URLField"
+        },
+        {
+          "name": "username",
+          "type": "models.CharField"
+        },
+        {
+          "name": "password",
+          "type": "models.CharField"
+        },
+        {
+          "name": "client_id",
+          "type": "models.CharField"
+        },
+        {
+          "name": "client_secret",
+          "type": "models.CharField"
+        },
+        {
+          "name": "auto_push_registration",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "auto_pull_student",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "sync_guardians",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "last_tested_at",
+          "type": "models.DateTimeField"
+        },
+        {
+          "name": "last_sync_at",
+          "type": "models.DateTimeField"
+        },
+        {
+          "name": "notes",
+          "type": "models.TextField"
+        },
+        {
+          "name": "updated_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    },
+    {
+      "file": "openemis_integration/models.py",
+      "class": "OpenEMISSyncLog",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "school",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "student",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "operation",
+          "type": "models.CharField"
+        },
+        {
+          "name": "status",
+          "type": "models.CharField"
+        },
+        {
+          "name": "message",
+          "type": "models.TextField"
+        },
+        {
+          "name": "request_payload",
+          "type": "models.JSONField"
+        },
+        {
+          "name": "response_payload",
+          "type": "models.JSONField"
+        },
+        {
+          "name": "created_by",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "created_at",
+          "type": "models.DateTimeField"
+        },
+        {
+          "name": "completed_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    },
+    {
+      "file": "parent_portal/models.py",
+      "class": "Family",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "school",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "user",
+          "type": "models.OneToOneField"
+        },
+        {
+          "name": "merged_into",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "source",
+          "type": "models.CharField"
+        },
+        {
+          "name": "guardian_name",
+          "type": "models.CharField"
+        },
+        {
+          "name": "relation",
+          "type": "models.CharField"
+        },
+        {
+          "name": "identity_type",
+          "type": "models.CharField"
+        },
+        {
+          "name": "identity_number",
+          "type": "models.CharField"
+        },
+        {
+          "name": "phone",
+          "type": "models.CharField"
+        },
+        {
+          "name": "secondary_phone",
+          "type": "models.CharField"
+        },
+        {
+          "name": "email",
+          "type": "models.EmailField"
+        },
+        {
+          "name": "job_title",
+          "type": "models.CharField"
+        },
+        {
+          "name": "address",
+          "type": "models.TextField"
+        },
+        {
+          "name": "medical_notes",
+          "type": "models.TextField"
+        },
+        {
+          "name": "family_code",
+          "type": "models.CharField"
+        },
+        {
+          "name": "openemis_data",
+          "type": "models.JSONField"
+        },
+        {
+          "name": "is_active",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "created_at",
+          "type": "models.DateTimeField"
+        },
+        {
+          "name": "updated_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    },
+    {
+      "file": "parent_portal/models.py",
+      "class": "FamilyStudent",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "family",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "student",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "relation",
+          "type": "models.CharField"
+        },
+        {
+          "name": "is_active",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "created_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    },
+    {
+      "file": "students/models.py",
+      "class": "Student",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "student_number",
+          "type": "models.CharField"
+        },
+        {
+          "name": "source",
+          "type": "models.CharField"
+        },
+        {
+          "name": "national_id",
+          "type": "models.CharField"
+        },
+        {
+          "name": "full_name",
+          "type": "models.CharField"
+        },
+        {
+          "name": "guardian_name",
+          "type": "models.CharField"
+        },
+        {
+          "name": "father_name",
+          "type": "models.CharField"
+        },
+        {
+          "name": "mother_name",
+          "type": "models.CharField"
+        },
+        {
+          "name": "gender",
+          "type": "models.CharField"
+        },
+        {
+          "name": "blood_type",
+          "type": "models.CharField"
+        },
+        {
+          "name": "grade",
+          "type": "models.CharField"
+        },
+        {
+          "name": "section",
+          "type": "models.CharField"
+        },
+        {
+          "name": "phone",
+          "type": "models.CharField"
+        },
+        {
+          "name": "address",
+          "type": "models.TextField"
+        },
+        {
+          "name": "medical_notes",
+          "type": "models.TextField"
+        },
+        {
+          "name": "status",
+          "type": "models.CharField"
+        },
+        {
+          "name": "enrollment_date",
+          "type": "models.DateField"
+        },
+        {
+          "name": "ministry_student_id",
+          "type": "models.CharField"
+        },
+        {
+          "name": "openemis_data",
+          "type": "models.JSONField"
+        },
+        {
+          "name": "ministry_sync_status",
+          "type": "models.CharField"
+        },
+        {
+          "name": "last_ministry_sync_at",
+          "type": "models.DateTimeField"
+        },
+        {
+          "name": "archived_at",
+          "type": "models.DateTimeField"
+        },
+        {
+          "name": "is_active",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "is_demo",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "photo",
+          "type": "models.ImageField"
+        },
+        {
+          "name": "created_at",
+          "type": "models.DateTimeField"
+        },
+        {
+          "name": "updated_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    },
+    {
+      "file": "teachers/models.py",
+      "class": "Teacher",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "user",
+          "type": "models.OneToOneField"
+        },
+        {
+          "name": "employee_number",
+          "type": "models.CharField"
+        },
+        {
+          "name": "source",
+          "type": "models.CharField"
+        },
+        {
+          "name": "ministry_teacher_id",
+          "type": "models.CharField"
+        },
+        {
+          "name": "openemis_data",
+          "type": "models.JSONField"
+        },
+        {
+          "name": "full_name",
+          "type": "models.CharField"
+        },
+        {
+          "name": "national_id",
+          "type": "models.CharField"
+        },
+        {
+          "name": "gender",
+          "type": "models.CharField"
+        },
+        {
+          "name": "birth_date",
+          "type": "models.DateField"
+        },
+        {
+          "name": "phone",
+          "type": "models.CharField"
+        },
+        {
+          "name": "email",
+          "type": "models.EmailField"
+        },
+        {
+          "name": "address",
+          "type": "models.TextField"
+        },
+        {
+          "name": "specialization",
+          "type": "models.CharField"
+        },
+        {
+          "name": "qualification",
+          "type": "models.CharField"
+        },
+        {
+          "name": "hire_date",
+          "type": "models.DateField"
+        },
+        {
+          "name": "end_date",
+          "type": "models.DateField"
+        },
+        {
+          "name": "end_reason",
+          "type": "models.CharField"
+        },
+        {
+          "name": "school",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "branch",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "photo",
+          "type": "models.ImageField"
+        },
+        {
+          "name": "is_active",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "monthly_salary",
+          "type": "models.DecimalField"
+        },
+        {
+          "name": "is_demo",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "created_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    },
+    {
+      "file": "teachers/models.py",
+      "class": "TeacherAssignment",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "teacher",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "academic_year",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "section",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "subject",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "is_primary",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "is_active",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "weekly_periods",
+          "type": "models.PositiveSmallIntegerField"
+        }
+      ]
+    },
+    {
+      "file": "teachers/models.py",
+      "class": "Homework",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "assignment",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "title",
+          "type": "models.CharField"
+        },
+        {
+          "name": "description",
+          "type": "models.TextField"
+        },
+        {
+          "name": "assigned_date",
+          "type": "models.DateField"
+        },
+        {
+          "name": "due_date",
+          "type": "models.DateField"
+        },
+        {
+          "name": "attachment",
+          "type": "models.FileField"
+        },
+        {
+          "name": "is_active",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "created_by",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "created_at",
+          "type": "models.DateTimeField"
+        },
+        {
+          "name": "updated_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    },
+    {
+      "file": "teachers/models.py",
+      "class": "TeacherDocument",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "teacher",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "document_type",
+          "type": "models.CharField"
+        },
+        {
+          "name": "title",
+          "type": "models.CharField"
+        },
+        {
+          "name": "document_number",
+          "type": "models.CharField"
+        },
+        {
+          "name": "issue_date",
+          "type": "models.DateField"
+        },
+        {
+          "name": "expiry_date",
+          "type": "models.DateField"
+        },
+        {
+          "name": "file",
+          "type": "models.FileField"
+        },
+        {
+          "name": "notes",
+          "type": "models.TextField"
+        },
+        {
+          "name": "created_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    },
+    {
+      "file": "timetable/models.py",
+      "class": "TimeSlot",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "name",
+          "type": "models.CharField"
+        },
+        {
+          "name": "start_time",
+          "type": "models.TimeField"
+        },
+        {
+          "name": "end_time",
+          "type": "models.TimeField"
+        },
+        {
+          "name": "order",
+          "type": "models.PositiveIntegerField"
+        },
+        {
+          "name": "is_active",
+          "type": "models.BooleanField"
+        }
+      ]
+    },
+    {
+      "file": "timetable/models.py",
+      "class": "TimetableEntry",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "academic_year",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "section",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "subject",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "teacher",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "day",
+          "type": "models.CharField"
+        },
+        {
+          "name": "time_slot",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "room",
+          "type": "models.CharField"
+        },
+        {
+          "name": "is_active",
+          "type": "models.BooleanField"
+        },
+        {
+          "name": "generated_automatically",
+          "type": "models.BooleanField"
+        }
+      ]
+    },
+    {
+      "file": "timetable/models.py",
+      "class": "SchoolScheduleSettings",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "school",
+          "type": "models.OneToOneField"
+        },
+        {
+          "name": "weekend_days",
+          "type": "models.CharField"
+        },
+        {
+          "name": "alert_minutes_before_end",
+          "type": "models.PositiveSmallIntegerField"
+        },
+        {
+          "name": "updated_by",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "updated_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    },
+    {
+      "file": "timetable/models.py",
+      "class": "SchoolDayEvent",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "school",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "name",
+          "type": "models.CharField"
+        },
+        {
+          "name": "event_type",
+          "type": "models.CharField"
+        },
+        {
+          "name": "start_time",
+          "type": "models.TimeField"
+        },
+        {
+          "name": "end_time",
+          "type": "models.TimeField"
+        },
+        {
+          "name": "days",
+          "type": "models.CharField"
+        },
+        {
+          "name": "order",
+          "type": "models.PositiveSmallIntegerField"
+        },
+        {
+          "name": "is_active",
+          "type": "models.BooleanField"
+        }
+      ]
+    },
+    {
+      "file": "timetable/models.py",
+      "class": "TeacherAbsence",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "teacher",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "date",
+          "type": "models.DateField"
+        },
+        {
+          "name": "reason",
+          "type": "models.CharField"
+        },
+        {
+          "name": "recorded_by",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "created_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    },
+    {
+      "file": "timetable/models.py",
+      "class": "ClassCoverage",
+      "bases": [
+        "models.Model"
+      ],
+      "fields": [
+        {
+          "name": "entry",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "date",
+          "type": "models.DateField"
+        },
+        {
+          "name": "substitute_teacher",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "status",
+          "type": "models.CharField"
+        },
+        {
+          "name": "assigned_by",
+          "type": "models.ForeignKey"
+        },
+        {
+          "name": "created_at",
+          "type": "models.DateTimeField"
+        }
+      ]
+    }
+  ],
+  "urls": [
+    {
+      "file": "academics/urls.py",
+      "app_name": "academics",
+      "names": [
+        "dashboard",
+        "student_list",
+        "student_create",
+        "student_admission",
+        "student_detail",
+        "student_update",
+        "grade_list",
+        "grade_create",
+        "grade_update",
+        "grade_delete",
+        "academic_structure",
+        "section_list",
+        "section_create",
+        "section_update",
+        "section_delete",
+        "academic_year_list",
+        "academic_year_create",
+        "academic_year_update",
+        "academic_year_close",
+        "academic_year_activate",
+        "semester_list",
+        "semester_create",
+        "semester_update",
+        "semester_delete",
+        "lifecycle_list",
+        "lifecycle_action",
+        "promotion_batch",
+        "subject_list",
+        "subject_create",
+        "subject_update",
+        "student_academic_profile"
+      ]
+    },
+    {
+      "file": "accounting/urls.py",
+      "app_name": "accounting",
+      "names": [
+        "dashboard",
+        "fee_category_list",
+        "fee_category_update",
+        "invoice_list",
+        "invoice_create",
+        "invoice_cancel",
+        "payment_create",
+        "payment_reverse",
+        "payment_safe_delete",
+        "expense_list",
+        "expense_safe_delete",
+        "canteen_safe_delete",
+        "monthly_report",
+        "finance_consolidation_center",
+        "financial_year_close",
+        "installment_list",
+        "installment_create",
+        "discount_list",
+        "discount_create",
+        "discount_decide",
+        "student_statement",
+        "receipt_print",
+        "receipt_list"
+      ]
+    },
+    {
+      "file": "accounts/urls.py",
+      "app_name": "accounts",
+      "names": [
+        "my_profile",
+        "impersonate_user",
+        "stop_impersonation",
+        "role_list",
+        "role_update"
+      ]
+    },
+    {
+      "file": "admissions/urls.py",
+      "app_name": "admissions",
+      "names": [
+        "candidate_list",
+        "candidate_create",
+        "candidate_detail",
+        "candidate_update",
+        "admission_list",
+        "direct_registration",
+        "registration_settings",
+        "registration_calculate_api",
+        "sibling_check_api",
+        "registration_receipt",
+        "fee_payment_create",
+        "fee_payment_search_api",
+        "fee_payment_preview_api",
+        "fee_payment_receipt",
+        "fee_payment_safe_delete",
+        "fee_payment_archive",
+        "registration_payment_safe_delete",
+        "student_financial_record"
+      ]
+    },
+    {
+      "file": "announcements/urls.py",
+      "app_name": "announcements",
+      "names": [
+        "list",
+        "create",
+        "update",
+        "toggle",
+        "delete"
+      ]
+    },
+    {
+      "file": "attendance_v2/urls.py",
+      "app_name": "attendance_v2",
+      "names": [
+        "dashboard",
+        "take_attendance",
+        "report",
+        "attendance_lock",
+        "attendance_edit"
+      ]
+    },
+    {
+      "file": "config/urls.py",
+      "app_name": null,
+      "names": [
+        "login",
+        "admin_disabled"
+      ]
+    },
+    {
+      "file": "core/urls.py",
+      "app_name": "core",
+      "names": [
+        "system_settings",
+        "operations_center",
+        "integrity_center",
+        "branch_list",
+        "branch_update",
+        "system_updates",
+        "updates_reload_webapp",
+        "updates_backup_files_api",
+        "updates_download_backup",
+        "updates_delete_backup"
+      ]
+    },
+    {
+      "file": "curriculum/urls.py",
+      "app_name": "curriculum",
+      "names": [
+        "curriculum_list",
+        "curriculum_create",
+        "curriculum_update",
+        "curriculum_delete"
+      ]
+    },
+    {
+      "file": "dashboard/urls.py",
+      "app_name": "dashboard",
+      "names": [
+        "home",
+        "executive_export_csv"
+      ]
+    },
+    {
+      "file": "development_center/urls.py",
+      "app_name": "development_center",
+      "names": [
+        "dashboard",
+        "executive_dashboard",
+        "run_workflow_engine",
+        "module_list",
+        "module_create",
+        "module_update",
+        "module_delete",
+        "task_list",
+        "task_create",
+        "tasks_board",
+        "task_detail",
+        "task_update",
+        "task_delete",
+        "task_update_status",
+        "activity_list",
+        "release_list",
+        "release_create",
+        "release_update",
+        "release_delete",
+        "milestone_list",
+        "milestone_create",
+        "milestone_update",
+        "milestone_delete",
+        "idea_list",
+        "idea_create",
+        "idea_update",
+        "idea_delete",
+        "decision_list",
+        "decision_create",
+        "decision_update",
+        "decision_delete",
+        "bug_list",
+        "bug_create",
+        "bug_update",
+        "bug_delete",
+        "gantt_chart",
+        "gantt_data",
+        "gantt_update_task_dates",
+        "roadmap",
+        "sprint_list",
+        "sprint_create",
+        "sprint_velocity",
+        "sprint_detail",
+        "sprint_update",
+        "sprint_board",
+        "sprint_burndown",
+        "product_backlog",
+        "notification_list",
+        "notification_mark_read",
+        "generate_task_notifications",
+        "tasks_csv_report",
+        "project_print_report"
+      ]
+    },
+    {
+      "file": "documents/urls.py",
+      "app_name": "documents",
+      "names": [
+        "document_list",
+        "template_list",
+        "template_update",
+        "settings",
+        "issue_student",
+        "issue_candidate",
+        "issue_teacher",
+        "issue_guardian",
+        "verify",
+        "document_detail",
+        "document_cancel",
+        "document_reissue",
+        "issue_student_certificate"
+      ]
+    },
+    {
+      "file": "enterprise_ops/urls.py",
+      "app_name": "enterprise_ops",
+      "names": [
+        "dashboard",
+        "feedback_list",
+        "feedback_create",
+        "feedback_detail",
+        "broadcast_list",
+        "broadcast_create",
+        "broadcast_toggle",
+        "broadcast_delete",
+        "workflow_list",
+        "workflow_detail",
+        "workflow_action",
+        "notification_list",
+        "notification_status",
+        "notification_read",
+        "notification_read_all",
+        "audit_log",
+        "report_center",
+        "permission_matrix",
+        "report_export_csv"
+      ]
+    },
+    {
+      "file": "exams/urls.py",
+      "app_name": "exams",
+      "names": [
+        "exam_list",
+        "gradebook",
+        "exam_definitions",
+        "exam_dashboard",
+        "exam_scope_options",
+        "exam_create",
+        "mark_list",
+        "mark_create",
+        "student_record",
+        "student_record_print",
+        "student_report_card",
+        "issue_student_report_card",
+        "exam_marks_bulk",
+        "exam_export_csv",
+        "exam_action",
+        "exam_detail",
+        "exam_update",
+        "exam_delete"
+      ]
+    },
+    {
+      "file": "openemis_integration/urls.py",
+      "app_name": "openemis",
+      "names": [
+        "settings",
+        "test_connection",
+        "logs",
+        "import_payload",
+        "student_push",
+        "mark_synced"
+      ]
+    },
+    {
+      "file": "parent_portal/urls.py",
+      "app_name": "parent_portal",
+      "names": [
+        "family_management",
+        "guardian_duplicates",
+        "guardian_duplicate_merge",
+        "family_detail",
+        "family_update",
+        "family_statement_print",
+        "family_statement_csv",
+        "family_account_create",
+        "family_account_reset",
+        "dashboard",
+        "parent_360",
+        "children",
+        "fees",
+        "attendance",
+        "marks",
+        "homework",
+        "timetable",
+        "documents",
+        "announcements",
+        "account",
+        "student_detail",
+        "student_personal_update"
+      ]
+    },
+    {
+      "file": "students/urls.py",
+      "app_name": "students",
+      "names": [
+        "student_list",
+        "student_create",
+        "student_detail",
+        "student_360",
+        "student_360_print",
+        "student_update",
+        "student_archive"
+      ]
+    },
+    {
+      "file": "teachers/urls.py",
+      "app_name": "teachers",
+      "names": [
+        "portal_dashboard",
+        "portal_timetable",
+        "portal_attendance",
+        "portal_attendance_section",
+        "portal_students",
+        "portal_homework",
+        "portal_homework_update",
+        "portal_homework_delete",
+        "portal_marks",
+        "dashboard",
+        "teacher_list",
+        "teacher_create",
+        "teacher_detail",
+        "teacher_update",
+        "teacher_toggle",
+        "teacher_account_create",
+        "teacher_account_reset",
+        "assignment_create",
+        "assignment_update",
+        "assignment_delete"
+      ]
+    },
+    {
+      "file": "timetable/urls.py",
+      "app_name": "timetable",
+      "names": [
+        "dashboard",
+        "smart_builder",
+        "schedule_settings",
+        "event_delete",
+        "absence_center",
+        "coverage_assign",
+        "entry_create",
+        "entry_update",
+        "entry_delete",
+        "slot_list",
+        "slot_create",
+        "slot_update",
+        "slot_delete",
+        "section_print",
+        "teacher_print"
+      ]
+    }
+  ],
+  "templates": [
+    {
+      "file": "dashboard/templates/dashboard/home.html",
+      "urls": [
+        "admissions:candidate_list",
+        "dashboard:executive_export_csv",
+        "enterprise_ops:feedback_list",
+        "enterprise_ops:report_export_csv",
+        "teachers:teacher_detail"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "documents/templates/documents/student_certificate.html",
+      "urls": [],
+      "extends": [],
+      "includes": []
+    },
+    {
+      "file": "templates/403.html",
+      "urls": [
+        "dashboard:home"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/403_csrf.html",
+      "urls": [],
+      "extends": [],
+      "includes": []
+    },
+    {
+      "file": "templates/academics/academic_structure.html",
+      "urls": [
+        "academics:academic_structure",
+        "academics:academic_year_list"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/academics/academic_year_close.html",
+      "urls": [
+        "academics:academic_year_list",
+        "academics:promotion_batch",
+        "exams:exam_list"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/academics/academic_year_form.html",
+      "urls": [
+        "academics:academic_year_list"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/academics/academic_year_list.html",
+      "urls": [
+        "academics:academic_structure",
+        "academics:academic_year_activate",
+        "academics:academic_year_close",
+        "academics:academic_year_create",
+        "academics:academic_year_update",
+        "academics:semester_list"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/academics/dashboard.html",
+      "urls": [],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/academics/lifecycle/action.html",
+      "urls": [],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/academics/lifecycle/list.html",
+      "urls": [
+        "academics:promotion_batch",
+        "students:student_360"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/academics/lifecycle/promotion_batch.html",
+      "urls": [],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/academics/semester_list.html",
+      "urls": [
+        "academics:semester_create",
+        "academics:semester_delete",
+        "academics:semester_update"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/academics/subject_form.html",
+      "urls": [
+        "academics:subject_list"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/academics/subject_list.html",
+      "urls": [
+        "academics:subject_create",
+        "academics:subject_update"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/accounting/dashboard.html",
+      "urls": [
+        "accounting:monthly_report",
+        "admissions:fee_payment_create"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/accounting/discount_list.html",
+      "urls": [
+        "accounting:discount_create",
+        "accounting:discount_decide",
+        "students:student_360"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/accounting/expense_list.html",
+      "urls": [
+        "accounting:canteen_safe_delete",
+        "accounting:expense_safe_delete"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/accounting/fee_category_list.html",
+      "urls": [
+        "accounting:fee_category_update"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/accounting/finance_consolidation_center.html",
+      "urls": [],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/accounting/financial_year_close.html",
+      "urls": [],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/accounting/form.html",
+      "urls": [],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/accounting/installment_list.html",
+      "urls": [
+        "accounting:installment_create",
+        "admissions:fee_payment_create",
+        "students:student_360"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/accounting/invoice_list.html",
+      "urls": [
+        "accounting:invoice_cancel",
+        "accounting:invoice_create",
+        "admissions:student_financial_record",
+        "students:student_360"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/accounting/monthly_report.html",
+      "urls": [],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/accounting/student_statement.html",
+      "urls": [],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/accounts/my_profile.html",
+      "urls": [],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/accounts/role_form.html",
+      "urls": [
+        "accounts:role_list"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/accounts/role_list.html",
+      "urls": [
+        "accounts:role_update"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/admissions/admission_list.html",
+      "urls": [
+        "admissions:candidate_list",
+        "admissions:direct_registration",
+        "admissions:registration_receipt",
+        "core:system_settings"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/admissions/candidate_detail.html",
+      "urls": [
+        "admissions:candidate_update",
+        "documents:document_detail",
+        "documents:issue_candidate"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/admissions/candidate_form.html",
+      "urls": [
+        "admissions:candidate_list"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/admissions/candidate_list.html",
+      "urls": [
+        "admissions:candidate_create",
+        "admissions:candidate_detail",
+        "documents:issue_candidate"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/admissions/direct_registration.html",
+      "urls": [
+        "academics:academic_structure"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/admissions/fee_payment_archive.html",
+      "urls": [
+        "accounting:payment_safe_delete",
+        "admissions:fee_payment_create",
+        "admissions:fee_payment_receipt",
+        "admissions:fee_payment_safe_delete",
+        "admissions:registration_payment_safe_delete",
+        "admissions:registration_receipt"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/admissions/fee_payment_form.html",
+      "urls": [
+        "admissions:fee_payment_create",
+        "admissions:fee_payment_preview_api",
+        "admissions:fee_payment_search_api"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/admissions/fee_payment_receipt.html",
+      "urls": [
+        "admissions:fee_payment_create"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/admissions/registration_receipt.html",
+      "urls": [
+        "admissions:direct_registration"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/admissions/registration_settings.html",
+      "urls": [
+        "academics:academic_structure"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/admissions/student_financial_record.html",
+      "urls": [
+        "admissions:fee_payment_create",
+        "admissions:fee_payment_receipt"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/announcements/form.html",
+      "urls": [
+        "announcements:list"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/announcements/list.html",
+      "urls": [
+        "announcements:create",
+        "announcements:delete",
+        "announcements:toggle",
+        "announcements:update"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/attendance_v2/dashboard.html",
+      "urls": [],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/attendance_v2/edit.html",
+      "urls": [],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/attendance_v2/report.html",
+      "urls": [
+        "attendance_v2:attendance_edit",
+        "attendance_v2:attendance_lock"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/base/base.html",
+      "urls": [
+        "accounts:stop_impersonation",
+        "dashboard:home"
+      ],
+      "extends": [],
+      "includes": [
+        "includes/module_subnav.html",
+        "includes/sidebar.html",
+        "includes/topbar.html"
+      ]
+    },
+    {
+      "file": "templates/core/branch_form.html",
+      "urls": [
+        "core:branch_list"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/core/branch_list.html",
+      "urls": [
+        "core:branch_update"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/core/integrity_center.html",
+      "urls": [],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/core/operations_center.html",
+      "urls": [
+        "core:integrity_center"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/core/system_settings.html",
+      "urls": [
+        "academics:academic_structure",
+        "academics:academic_year_list",
+        "academics:semester_list",
+        "academics:subject_list",
+        "accounting:dashboard",
+        "accounting:expense_list",
+        "accounting:finance_consolidation_center",
+        "accounting:monthly_report",
+        "accounts:role_list",
+        "admissions:admission_list",
+        "admissions:direct_registration",
+        "core:branch_list",
+        "core:integrity_center",
+        "core:operations_center",
+        "core:system_updates",
+        "curriculum:curriculum_list",
+        "enterprise_ops:audit_log",
+        "enterprise_ops:permission_matrix",
+        "openemis:settings",
+        "teachers:dashboard"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/core/system_updates.html",
+      "urls": [
+        "core:updates_delete_backup",
+        "core:updates_download_backup"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/curriculum/curriculum_form.html",
+      "urls": [
+        "curriculum:curriculum_list"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/curriculum/curriculum_list.html",
+      "urls": [
+        "curriculum:curriculum_create",
+        "curriculum:curriculum_delete",
+        "curriculum:curriculum_update"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/development_center/activity/list.html",
+      "urls": [],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/development_center/bugs/list.html",
+      "urls": [
+        "development_center:bug_delete",
+        "development_center:bug_update"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/development_center/dashboard.html",
+      "urls": [],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/development_center/decisions/list.html",
+      "urls": [
+        "development_center:decision_create",
+        "development_center:decision_delete",
+        "development_center:decision_update"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/development_center/executive_dashboard.html",
+      "urls": [
+        "development_center:run_workflow_engine",
+        "development_center:task_detail"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/development_center/gantt.html",
+      "urls": [],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/development_center/ideas/list.html",
+      "urls": [
+        "development_center:idea_delete",
+        "development_center:idea_update"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/development_center/milestones/list.html",
+      "urls": [
+        "development_center:milestone_delete",
+        "development_center:milestone_update"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/development_center/modules/form.html",
+      "urls": [],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/development_center/modules/list.html",
+      "urls": [
+        "development_center:module_create",
+        "development_center:module_delete",
+        "development_center:module_update"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/development_center/notifications/list.html",
+      "urls": [
+        "development_center:notification_mark_read"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/development_center/releases/list.html",
+      "urls": [
+        "development_center:release_create",
+        "development_center:release_delete",
+        "development_center:release_update"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/development_center/reports/project_print.html",
+      "urls": [],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/development_center/roadmap.html",
+      "urls": [],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/development_center/shared/form.html",
+      "urls": [],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/development_center/sprints/backlog.html",
+      "urls": [
+        "development_center:task_detail",
+        "development_center:task_update"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/development_center/sprints/board.html",
+      "urls": [
+        "development_center:sprint_detail"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/development_center/sprints/burndown.html",
+      "urls": [],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/development_center/sprints/detail.html",
+      "urls": [
+        "development_center:sprint_board",
+        "development_center:sprint_burndown",
+        "development_center:sprint_update",
+        "development_center:task_detail"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/development_center/sprints/list.html",
+      "urls": [
+        "development_center:sprint_create",
+        "development_center:sprint_detail",
+        "development_center:sprint_update",
+        "development_center:task_detail"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/development_center/sprints/velocity.html",
+      "urls": [],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/development_center/tasks/detail.html",
+      "urls": [
+        "development_center:task_delete",
+        "development_center:task_detail",
+        "development_center:task_list",
+        "development_center:task_update"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/development_center/tasks/kanban_card.html",
+      "urls": [
+        "development_center:task_detail"
+      ],
+      "extends": [],
+      "includes": []
+    },
+    {
+      "file": "templates/development_center/tasks/list.html",
+      "urls": [
+        "development_center:task_create",
+        "development_center:task_delete",
+        "development_center:task_detail",
+        "development_center:task_update",
+        "development_center:tasks_board"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/development_center/tasks_board.html",
+      "urls": [
+        "development_center:tasks_board"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": [
+        "development_center/tasks/kanban_card.html"
+      ]
+    },
+    {
+      "file": "templates/documents/document_detail.html",
+      "urls": [
+        "documents:document_cancel",
+        "documents:document_list",
+        "documents:document_reissue"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/documents/document_list.html",
+      "urls": [
+        "documents:document_detail",
+        "documents:settings",
+        "documents:template_list"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/documents/issue.html",
+      "urls": [],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/documents/settings.html",
+      "urls": [
+        "documents:template_list"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/documents/template_form.html",
+      "urls": [
+        "documents:template_list"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/documents/template_list.html",
+      "urls": [
+        "documents:settings",
+        "documents:template_update"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/documents/verify.html",
+      "urls": [],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/enterprise_ops/audit_log.html",
+      "urls": [],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/enterprise_ops/broadcast_form.html",
+      "urls": [
+        "enterprise_ops:broadcast_list"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/enterprise_ops/broadcast_list.html",
+      "urls": [
+        "enterprise_ops:broadcast_create",
+        "enterprise_ops:broadcast_delete",
+        "enterprise_ops:broadcast_toggle"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/enterprise_ops/dashboard.html",
+      "urls": [
+        "announcements:list",
+        "dashboard:home",
+        "enterprise_ops:audit_log",
+        "enterprise_ops:broadcast_list",
+        "enterprise_ops:feedback_list",
+        "enterprise_ops:notification_list",
+        "enterprise_ops:report_center"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/enterprise_ops/feedback_detail.html",
+      "urls": [],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/enterprise_ops/feedback_form.html",
+      "urls": [
+        "enterprise_ops:feedback_list"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/enterprise_ops/feedback_list.html",
+      "urls": [
+        "enterprise_ops:feedback_create"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/enterprise_ops/notification_list.html",
+      "urls": [
+        "enterprise_ops:notification_read",
+        "enterprise_ops:notification_read_all"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/enterprise_ops/permission_matrix.html",
+      "urls": [],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/enterprise_ops/report_center.html",
+      "urls": [
+        "enterprise_ops:report_export_csv"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/enterprise_ops/workflow_detail.html",
+      "urls": [
+        "enterprise_ops:workflow_action"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/enterprise_ops/workflow_list.html",
+      "urls": [],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/errors/error.html",
+      "urls": [],
+      "extends": [],
+      "includes": []
+    },
+    {
+      "file": "templates/exams/bulk_marks.html",
+      "urls": [
+        "teachers:portal_dashboard"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/exams/dashboard.html",
+      "urls": [
+        "exams:exam_dashboard",
+        "exams:exam_detail",
+        "exams:exam_list"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/exams/exam_confirm_delete.html",
+      "urls": [
+        "exams:exam_detail"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/exams/exam_detail.html",
+      "urls": [
+        "exams:exam_action",
+        "exams:exam_definitions",
+        "exams:exam_export_csv",
+        "exams:exam_update",
+        "exams:student_record"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/exams/exam_form.html",
+      "urls": [
+        "exams:exam_list",
+        "exams:exam_scope_options"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/exams/exam_list.html",
+      "urls": [
+        "exams:exam_create",
+        "exams:exam_detail",
+        "exams:exam_list"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/exams/gradebook.html",
+      "urls": [
+        "exams:exam_create",
+        "exams:exam_dashboard",
+        "exams:exam_definitions",
+        "exams:exam_detail",
+        "exams:exam_scope_options"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/exams/mark_list.html",
+      "urls": [
+        "exams:exam_list"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/exams/student_record.html",
+      "urls": [
+        "exams:student_record_print",
+        "exams:student_report_card",
+        "students:student_360"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/exams/student_record_print.html",
+      "urls": [],
+      "extends": [],
+      "includes": []
+    },
+    {
+      "file": "templates/exams/student_report_card.html",
+      "urls": [],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/includes/module_subnav.html",
+      "urls": [
+        "academics:academic_structure",
+        "academics:academic_year_list",
+        "academics:dashboard",
+        "academics:lifecycle_list",
+        "academics:section_list",
+        "academics:semester_list",
+        "academics:subject_list",
+        "accounting:dashboard",
+        "accounting:discount_list",
+        "accounting:expense_list",
+        "accounting:fee_category_list",
+        "accounting:finance_consolidation_center",
+        "accounting:financial_year_close",
+        "accounting:installment_list",
+        "accounting:invoice_list",
+        "accounting:monthly_report",
+        "admissions:admission_list",
+        "admissions:candidate_list",
+        "admissions:direct_registration",
+        "admissions:fee_payment_archive",
+        "admissions:fee_payment_create",
+        "announcements:list",
+        "attendance_v2:dashboard",
+        "attendance_v2:report",
+        "core:system_settings",
+        "curriculum:curriculum_list",
+        "development_center:activity_list",
+        "development_center:bug_list",
+        "development_center:dashboard",
+        "development_center:decision_list",
+        "development_center:executive_dashboard",
+        "development_center:gantt_chart",
+        "development_center:idea_list",
+        "development_center:milestone_list",
+        "development_center:module_list",
+        "development_center:notification_list",
+        "development_center:product_backlog",
+        "development_center:project_print_report",
+        "development_center:release_list",
+        "development_center:roadmap",
+        "development_center:sprint_list",
+        "development_center:task_list",
+        "development_center:tasks_board",
+        "documents:document_list",
+        "enterprise_ops:audit_log",
+        "enterprise_ops:broadcast_list",
+        "enterprise_ops:dashboard",
+        "enterprise_ops:feedback_list",
+        "enterprise_ops:notification_list",
+        "enterprise_ops:permission_matrix",
+        "enterprise_ops:report_center",
+        "exams:exam_dashboard",
+        "exams:exam_list",
+        "exams:mark_list",
+        "openemis:logs",
+        "openemis:settings",
+        "parent_portal:family_management",
+        "students:student_list",
+        "teachers:dashboard",
+        "timetable:dashboard"
+      ],
+      "extends": [],
+      "includes": []
+    },
+    {
+      "file": "templates/includes/sidebar.html",
+      "urls": [
+        "academics:dashboard",
+        "accounting:dashboard",
+        "accounts:logout",
+        "accounts:my_profile",
+        "core:operations_center",
+        "core:system_settings",
+        "dashboard:home",
+        "development_center:dashboard",
+        "enterprise_ops:audit_log",
+        "enterprise_ops:dashboard",
+        "enterprise_ops:feedback_list",
+        "enterprise_ops:notification_list",
+        "enterprise_ops:report_center",
+        "openemis:settings",
+        "parent_portal:dashboard",
+        "parent_portal:timetable",
+        "students:student_list",
+        "teachers:portal_dashboard",
+        "teachers:portal_timetable"
+      ],
+      "extends": [],
+      "includes": []
+    },
+    {
+      "file": "templates/includes/topbar.html",
+      "urls": [
+        "accounts:my_profile",
+        "core:operations_center",
+        "enterprise_ops:notification_list",
+        "enterprise_ops:notification_read",
+        "enterprise_ops:notification_status"
+      ],
+      "extends": [],
+      "includes": []
+    },
+    {
+      "file": "templates/openemis/import_payload.html",
+      "urls": [],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/openemis/logs.html",
+      "urls": [],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/openemis/settings.html",
+      "urls": [
+        "openemis:import_payload",
+        "openemis:test_connection"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/parent_portal/_guardian_receipt_history.html",
+      "urls": [],
+      "extends": [],
+      "includes": []
+    },
+    {
+      "file": "templates/parent_portal/_nav.html",
+      "urls": [
+        "enterprise_ops:feedback_list",
+        "enterprise_ops:notification_list",
+        "enterprise_ops:report_center",
+        "parent_portal:account",
+        "parent_portal:announcements",
+        "parent_portal:attendance",
+        "parent_portal:children",
+        "parent_portal:dashboard",
+        "parent_portal:documents",
+        "parent_portal:fees",
+        "parent_portal:homework",
+        "parent_portal:marks",
+        "parent_portal:parent_360",
+        "parent_portal:timetable"
+      ],
+      "extends": [],
+      "includes": []
+    },
+    {
+      "file": "templates/parent_portal/account.html",
+      "urls": [],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/parent_portal/announcements.html",
+      "urls": [],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/parent_portal/attendance.html",
+      "urls": [],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/parent_portal/children.html",
+      "urls": [
+        "parent_portal:student_detail"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/parent_portal/dashboard.html",
+      "urls": [
+        "parent_portal:student_detail"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": [
+        "parent_portal/_guardian_receipt_history.html"
+      ]
+    },
+    {
+      "file": "templates/parent_portal/documents.html",
+      "urls": [],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/parent_portal/family_credentials.html",
+      "urls": [
+        "parent_portal:family_detail"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/parent_portal/family_detail.html",
+      "urls": [
+        "admissions:fee_payment_create",
+        "documents:issue_guardian",
+        "parent_portal:family_account_create",
+        "parent_portal:family_account_reset",
+        "parent_portal:family_management",
+        "parent_portal:family_statement_csv",
+        "parent_portal:family_statement_print",
+        "parent_portal:family_update",
+        "students:student_360"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": [
+        "parent_portal/_guardian_receipt_history.html"
+      ]
+    },
+    {
+      "file": "templates/parent_portal/family_form.html",
+      "urls": [
+        "parent_portal:family_detail"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/parent_portal/family_management.html",
+      "urls": [
+        "accounts:impersonate_user",
+        "parent_portal:family_detail",
+        "parent_portal:guardian_duplicates"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/parent_portal/family_statement_print.html",
+      "urls": [],
+      "extends": [],
+      "includes": []
+    },
+    {
+      "file": "templates/parent_portal/fees.html",
+      "urls": [],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": [
+        "parent_portal/_guardian_receipt_history.html"
+      ]
+    },
+    {
+      "file": "templates/parent_portal/guardian_duplicates.html",
+      "urls": [
+        "parent_portal:guardian_duplicate_merge"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/parent_portal/homework.html",
+      "urls": [],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": [
+        "parent_portal/_nav.html"
+      ]
+    },
+    {
+      "file": "templates/parent_portal/marks.html",
+      "urls": [],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/parent_portal/no_profile.html",
+      "urls": [],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/parent_portal/parent_360.html",
+      "urls": [
+        "parent_portal:student_detail",
+        "students:student_360"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": [
+        "parent_portal/_guardian_receipt_history.html"
+      ]
+    },
+    {
+      "file": "templates/parent_portal/student_detail.html",
+      "urls": [
+        "parent_portal:student_personal_update"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/parent_portal/student_personal_form.html",
+      "urls": [
+        "parent_portal:student_detail"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/parent_portal/timetable.html",
+      "urls": [
+        "parent_portal:timetable"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": [
+        "parent_portal/_nav.html"
+      ]
+    },
+    {
+      "file": "templates/registration/auth_base.html",
+      "urls": [],
+      "extends": [],
+      "includes": []
+    },
+    {
+      "file": "templates/registration/logged_out.html",
+      "urls": [
+        "login"
+      ],
+      "extends": [
+        "registration/auth_base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/registration/login.html",
+      "urls": [
+        "login"
+      ],
+      "extends": [],
+      "includes": []
+    },
+    {
+      "file": "templates/registration/password_change_done.html",
+      "urls": [
+        "dashboard:home"
+      ],
+      "extends": [
+        "registration/auth_base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/registration/password_change_form.html",
+      "urls": [
+        "dashboard:home"
+      ],
+      "extends": [
+        "registration/auth_base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/registration/password_reset_complete.html",
+      "urls": [
+        "login"
+      ],
+      "extends": [
+        "registration/auth_base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/registration/password_reset_confirm.html",
+      "urls": [
+        "password_reset"
+      ],
+      "extends": [
+        "registration/auth_base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/registration/password_reset_done.html",
+      "urls": [
+        "login"
+      ],
+      "extends": [
+        "registration/auth_base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/registration/password_reset_email.html",
+      "urls": [
+        "password_reset_confirm"
+      ],
+      "extends": [],
+      "includes": []
+    },
+    {
+      "file": "templates/registration/password_reset_form.html",
+      "urls": [
+        "login"
+      ],
+      "extends": [
+        "registration/auth_base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/students/student_360.html",
+      "urls": [
+        "admissions:fee_payment_create",
+        "admissions:fee_payment_receipt",
+        "admissions:student_financial_record",
+        "documents:document_detail",
+        "documents:issue_student",
+        "openemis:mark_synced",
+        "openemis:student_push",
+        "parent_portal:family_detail",
+        "students:student_360",
+        "students:student_360_print",
+        "students:student_list",
+        "students:student_update"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/students/student_360_print.html",
+      "urls": [],
+      "extends": [],
+      "includes": []
+    },
+    {
+      "file": "templates/students/student_confirm_delete.html",
+      "urls": [
+        "students:student_detail"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/students/student_form.html",
+      "urls": [
+        "students:student_list"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/students/student_list.html",
+      "urls": [
+        "admissions:direct_registration",
+        "students:student_360",
+        "students:student_archive",
+        "students:student_update"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/teachers/account_credentials.html",
+      "urls": [
+        "teachers:teacher_detail"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/teachers/account_form.html",
+      "urls": [
+        "teachers:teacher_detail"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/teachers/assignment_form.html",
+      "urls": [
+        "teachers:teacher_detail"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/teachers/dashboard.html",
+      "urls": [
+        "teachers:teacher_create",
+        "teachers:teacher_detail",
+        "teachers:teacher_list"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/teachers/portal_attendance.html",
+      "urls": [],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/teachers/portal_dashboard.html",
+      "urls": [
+        "exams:exam_marks_bulk",
+        "teachers:portal_attendance_section",
+        "teachers:portal_homework",
+        "teachers:portal_marks",
+        "teachers:portal_students",
+        "teachers:portal_timetable"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/teachers/portal_homework.html",
+      "urls": [
+        "teachers:portal_homework_delete",
+        "teachers:portal_homework_update"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/teachers/portal_homework_form.html",
+      "urls": [
+        "teachers:portal_homework"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/teachers/portal_students.html",
+      "urls": [
+        "teachers:portal_dashboard"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/teachers/portal_timetable.html",
+      "urls": [
+        "teachers:portal_dashboard",
+        "teachers:portal_timetable"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/teachers/teacher_detail.html",
+      "urls": [
+        "documents:document_detail",
+        "documents:issue_teacher",
+        "teachers:assignment_create",
+        "teachers:assignment_delete",
+        "teachers:assignment_update",
+        "teachers:teacher_account_create",
+        "teachers:teacher_account_reset",
+        "teachers:teacher_toggle",
+        "teachers:teacher_update"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/teachers/teacher_form.html",
+      "urls": [
+        "teachers:teacher_list"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/teachers/teacher_list.html",
+      "urls": [
+        "accounts:impersonate_user",
+        "exams:exam_dashboard",
+        "teachers:teacher_create",
+        "teachers:teacher_detail"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/timetable/absence_center.html",
+      "urls": [
+        "timetable:coverage_assign"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/timetable/dashboard.html",
+      "urls": [
+        "timetable:absence_center",
+        "timetable:entry_create",
+        "timetable:entry_delete",
+        "timetable:entry_update",
+        "timetable:schedule_settings",
+        "timetable:slot_list",
+        "timetable:smart_builder"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/timetable/form.html",
+      "urls": [
+        "timetable:dashboard"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/timetable/print.html",
+      "urls": [],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/timetable/schedule_settings.html",
+      "urls": [
+        "timetable:event_delete"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/timetable/slot_list.html",
+      "urls": [
+        "timetable:slot_create",
+        "timetable:slot_delete",
+        "timetable:slot_update"
+      ],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    },
+    {
+      "file": "templates/timetable/smart_builder.html",
+      "urls": [],
+      "extends": [
+        "base/base.html"
+      ],
+      "includes": []
+    }
+  ],
+  "parse_errors": [],
+  "checks": {
+    "django_check": {
+      "command": [
+        "/opt/pyvenv/bin/python",
+        "manage.py",
+        "check"
+      ],
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "Traceback (most recent call last):\n  File \"/mnt/data/opal_phase2_base/manage.py\", line 11, in main\n    from django.core.management import execute_from_command_line\nModuleNotFoundError: No module named 'django'\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/mnt/data/opal_phase2_base/manage.py\", line 22, in <module>\n    main()\n    ~~~~^^\n  File \"/mnt/data/opal_phase2_base/manage.py\", line 13, in main\n    raise ImportError(\n    ...<3 lines>...\n    ) from exc\nImportError: Couldn't import Django. Are you sure it's installed and available on your PYTHONPATH environment variable? Did you forget to activate a virtual environment?\n"
+    },
+    "migration_drift": {
+      "command": [
+        "/opt/pyvenv/bin/python",
+        "manage.py",
+        "makemigrations",
+        "--check",
+        "--dry-run"
+      ],
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "Traceback (most recent call last):\n  File \"/mnt/data/opal_phase2_base/manage.py\", line 11, in main\n    from django.core.management import execute_from_command_line\nModuleNotFoundError: No module named 'django'\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/mnt/data/opal_phase2_base/manage.py\", line 22, in <module>\n    main()\n    ~~~~^^\n  File \"/mnt/data/opal_phase2_base/manage.py\", line 13, in main\n    raise ImportError(\n    ...<3 lines>...\n    ) from exc\nImportError: Couldn't import Django. Are you sure it's installed and available on your PYTHONPATH environment variable? Did you forget to activate a virtual environment?\n"
+    }
+  },
+  "critical_file_hashes": {
+    "config/settings.py": "906d0cf83c00ec22006eed7c389d2acac72d75222432a79cf2304c76ccda14e6",
+    "config/urls.py": "03a1e910adfeee42adc5efdc4d5dab42fe838df883086ca933ab83d6ecbd48a2",
+    "templates/includes/sidebar.html": "d1a0c6ee98b22dcae45f533a8eb5e7c3416959c823f07f366c9a8b346785abfb",
+    "templates/includes/topbar.html": "1367bb565f402e76d301313e56c95466a766a85dc2994276d85691b4ab1e6e98"
+  }
+}

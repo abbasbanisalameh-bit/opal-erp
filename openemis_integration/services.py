@@ -7,11 +7,11 @@ from django.db import transaction
 from django.utils import timezone
 from django.utils.dateparse import parse_date
 
-from academics.models import Enrollment, Grade, Section, Subject
+from academics.models import Enrollment, Grade, Subject
 from academics.canonical_services import resolve_grade, resolve_section
 from attendance_v2.models import Attendance
-from accounting.models import StudentInvoice, StudentPayment
-from core.identifiers import normalize_identifier, normalize_phone
+from accounting.models import StudentPayment
+from core.identifiers import normalize_identifier
 from core.models import AcademicYear, Branch, School
 from core.choices import normalize_student_gender
 from exams.models import Exam, StudentMark

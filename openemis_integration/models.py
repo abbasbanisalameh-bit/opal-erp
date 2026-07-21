@@ -1,10 +1,9 @@
 from django.conf import settings
 from django.db import models
-from core.models import School
 
 
 class OpenEMISSettings(models.Model):
-    school = models.OneToOneField(School, on_delete=models.CASCADE, related_name="openemis_settings")
+    school = models.OneToOneField("core.School", on_delete=models.CASCADE, related_name="openemis_settings")
     is_enabled = models.BooleanField("تفعيل التكامل", default=False)
     base_url = models.URLField("رابط OpenEMIS / API", blank=True)
     username = models.CharField("اسم المستخدم", max_length=200, blank=True)
@@ -46,7 +45,7 @@ class OpenEMISSyncLog(models.Model):
         ("skipped", "تم التجاوز"),
     ]
 
-    school = models.ForeignKey(School, on_delete=models.CASCADE, related_name="openemis_logs")
+    school = models.ForeignKey("core.School", on_delete=models.CASCADE, related_name="openemis_logs")
     student = models.ForeignKey("students.Student", on_delete=models.SET_NULL, null=True, blank=True, related_name="openemis_logs")
     operation = models.CharField("العملية", max_length=50, choices=OPERATION_CHOICES)
     status = models.CharField("الحالة", max_length=30, choices=STATUS_CHOICES, default="pending")

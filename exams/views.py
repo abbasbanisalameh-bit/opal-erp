@@ -13,7 +13,6 @@ from django.views.decorators.http import require_GET, require_POST
 
 from academics.models import Enrollment, Grade, Section, Subject
 from core.models import AcademicYear, Semester
-from enterprise_ops.models import Notification
 from enterprise_ops.permissions import is_management, management_required
 from enterprise_ops.services import audit, notify
 from students.models import Student

@@ -7,7 +7,7 @@ from django.shortcuts import redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from academics.models import Enrollment, Grade, Section
+from academics.models import Grade, Section
 from core.models import AcademicYear
 from enterprise_ops.services import audit
 

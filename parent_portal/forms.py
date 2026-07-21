@@ -7,7 +7,14 @@ from .models import Family
 from .services import normalize_phone
 
 
-class FamilyIdentityForm(forms.ModelForm):
+class NormalizedPhoneMixin:
+    """Normalize the primary phone field consistently across family forms."""
+
+    def clean_phone(self):
+        return normalize_phone(self.cleaned_data.get("phone"))
+
+
+class FamilyIdentityForm(NormalizedPhoneMixin, forms.ModelForm):
     """The only website form that edits authoritative guardian identity data."""
 
     class Meta:
@@ -33,11 +40,8 @@ class FamilyIdentityForm(forms.ModelForm):
         self.fields["guardian_name"].required = True
         self.fields["phone"].required = True
 
-    def clean_phone(self):
-        return normalize_phone(self.cleaned_data.get("phone"))
 
-
-class ParentFamilyPersonalForm(forms.ModelForm):
+class ParentFamilyPersonalForm(NormalizedPhoneMixin, forms.ModelForm):
     class Meta:
         model = Family
         fields = ["phone", "secondary_phone", "email", "job_title", "address", "medical_notes"]
@@ -55,9 +59,6 @@ class ParentFamilyPersonalForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs.setdefault("class", "form-control")
-
-    def clean_phone(self):
-        return normalize_phone(self.cleaned_data.get("phone"))
 
 
 class ParentPhotoForm(forms.ModelForm):

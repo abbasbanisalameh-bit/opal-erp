@@ -1,10 +1,8 @@
 from django.core.exceptions import ValidationError
+from django.apps import apps
 from django.db import models
 from django.db.models import Q
 
-from academics.models import Section, Subject
-from core.models import AcademicYear
-from teachers.models import Teacher, TeacherAssignment
 
 
 class TimeSlot(models.Model):
@@ -41,10 +39,10 @@ class TimetableEntry(models.Model):
         ("friday", "الجمعة"),
     ]
 
-    academic_year = models.ForeignKey(AcademicYear, on_delete=models.CASCADE)
-    section = models.ForeignKey(Section, on_delete=models.CASCADE, related_name="timetable_entries")
-    subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
-    teacher = models.ForeignKey(Teacher, on_delete=models.SET_NULL, null=True, blank=True, related_name="timetable_entries")
+    academic_year = models.ForeignKey("core.AcademicYear", on_delete=models.CASCADE)
+    section = models.ForeignKey("academics.Section", on_delete=models.CASCADE, related_name="timetable_entries")
+    subject = models.ForeignKey("academics.Subject", on_delete=models.CASCADE)
+    teacher = models.ForeignKey("teachers.Teacher", on_delete=models.SET_NULL, null=True, blank=True, related_name="timetable_entries")
     day = models.CharField(max_length=20, choices=DAYS)
     time_slot = models.ForeignKey(TimeSlot, on_delete=models.CASCADE, related_name="entries")
     room = models.CharField(max_length=50, blank=True)
@@ -83,7 +81,8 @@ class TimetableEntry(models.Model):
             errors["room"] = "الغرفة مستخدمة في حصة أخرى في الوقت نفسه."
 
         if self.teacher_id and self.section_id and self.subject_id and self.academic_year_id:
-            assignments = TeacherAssignment.objects.filter(
+            teacher_assignment_model = apps.get_model("teachers", "TeacherAssignment")
+            assignments = teacher_assignment_model.objects.filter(
                 teacher_id=self.teacher_id,
                 academic_year_id=self.academic_year_id,
                 is_active=True,

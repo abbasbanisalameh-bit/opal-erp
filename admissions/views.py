@@ -10,12 +10,13 @@ from .models import AdmissionApplication, StudentRegistration, GradeFee, Transpo
 from .forms import CandidateApplicationForm, GradeFeeForm, TransportRouteForm, RegistrationSettingsForm, DirectStudentRegistrationForm
 from .services import (
     active_school, get_registration_settings, calculate_registration_totals,
-    create_student_registration, current_academic_year,
-    find_existing_siblings, sibling_discount_used_registration, generate_application_number,
+    current_academic_year, find_existing_siblings,
+    sibling_discount_used_registration, generate_application_number,
 )
+from .workflow import create_student_registration
 from .financial_services import (
-    search_students, find_sibling_students, student_total_fees, student_total_paid,
-    student_remaining, student_payment_status, create_siblings_fee_payment,
+    search_students, find_sibling_students, student_finance_snapshot,
+    create_siblings_fee_payment,
     build_family_payment_preview, safe_delete_fee_payment, safe_delete_registration_payment,
 )
 from core.finance_constants import ACTIVE_PAYMENT_METHOD_CHOICES
@@ -24,7 +25,7 @@ from django.core.exceptions import ValidationError
 from django.views.decorators.http import require_POST
 from students.models import Student
 from parent_portal.models import Family
-from parent_portal.services import initial_parent_password, normalize_phone
+from parent_portal.services import normalize_phone
 from core.identifiers import normalize_identifier
 from accounting.models import Receipt
 
@@ -252,12 +253,13 @@ def fee_payment_create(request):
     if selected_student:
         siblings = find_sibling_students(selected_student)
         for student in siblings:
+            finance = student_finance_snapshot(student)
             row = {
                 "student": student,
-                "total": student_total_fees(student),
-                "paid": student_total_paid(student),
-                "remaining": student_remaining(student),
-                "status": student_payment_status(student),
+                "total": finance["total"],
+                "paid": finance["paid"],
+                "remaining": finance["remaining"],
+                "status": finance["status"],
             }
             siblings_data.append(row)
             if student.pk != selected_student.pk and row["remaining"] > 0:
@@ -435,12 +437,13 @@ def student_financial_record(request, student_id):
     invoices = student.invoices.select_related("fee_category").prefetch_related("payments").all()
     allocations = student.fee_payment_allocations.filter(fee_payment__is_deleted=False).select_related("fee_payment", "fee_payment__created_by")
     registrations = student.registrations.select_related("receipt", "created_by").all()
+    finance = student_finance_snapshot(student)
     return render(request, "admissions/student_financial_record.html", {
         "student": student,
         "invoices": invoices,
         "allocations": allocations,
         "registrations": registrations,
-        "total_fees": student_total_fees(student),
-        "total_paid": student_total_paid(student),
-        "remaining": student_remaining(student),
+        "total_fees": finance["total"],
+        "total_paid": finance["paid"],
+        "remaining": finance["remaining"],
     })

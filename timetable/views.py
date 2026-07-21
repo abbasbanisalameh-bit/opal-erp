@@ -1,6 +1,5 @@
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
-from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
@@ -10,7 +9,7 @@ from django.views.decorators.http import require_POST
 from academics.models import Grade, Section, Subject
 from core.models import AcademicYear
 from teachers.models import Teacher
-from admissions.services import active_school, current_academic_year
+from admissions.services import active_school
 
 from enterprise_ops.services import audit
 from .forms import (

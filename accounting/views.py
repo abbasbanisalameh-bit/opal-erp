@@ -29,6 +29,9 @@ from .models import CanteenTransaction, DiscountRequest, ExpenseEntry, FeeCatego
 from .services import create_discount_workflow, decide_discount
 from .services.pdf import receipt_pdf
 from .services.receipt import generate_receipt_number
+from .statement_services import build_student_statement_context
+from .invoice_services import build_invoice_financial_snapshot
+from .receipt_services import build_receipt_list_queryset
 
 
 @login_required
@@ -86,6 +89,8 @@ def invoice_list(request):
     if q:
         invoices = invoices.filter(Q(student__full_name__icontains=q) | Q(student__student_number__icontains=q) | Q(invoice_number__icontains=q))
     items = list(invoices[:1000])
+    for item in items:
+        item.financial_snapshot = build_invoice_financial_snapshot(item)
     if overdue:
         items = [item for item in items if item.is_overdue]
     return render(request, "accounting/invoice_list.html", {"invoices": items, "statuses": StudentInvoice.STATUS_CHOICES, "filters": {"status": status, "q": q, "overdue": overdue}})
@@ -392,18 +397,11 @@ def discount_decide(request, pk):
 @management_required
 def student_statement(request, student_id):
     student = get_object_or_404(Student, pk=student_id)
-    invoices = StudentInvoice.objects.filter(student=student).select_related("fee_category").prefetch_related("payments", "installments")
-    payments = StudentPayment.objects.filter(invoice__student=student, status="posted").select_related("invoice")
-    total_invoice = sum((i.net_amount for i in invoices if i.status != "cancelled"), Decimal("0"))
-    total_payment = sum((p.amount for p in payments), Decimal("0"))
-    return render(request, "accounting/student_statement.html", {
-        "student": student,
-        "invoices": invoices,
-        "payments": payments,
-        "total_invoice": total_invoice,
-        "total_payment": total_payment,
-        "remaining": max(total_invoice - total_payment, Decimal("0")),
-    })
+    return render(
+        request,
+        "accounting/student_statement.html",
+        build_student_statement_context(student),
+    )
 
 
 @login_required
@@ -417,5 +415,5 @@ def receipt_print(request, receipt_id):
 @login_required
 @management_required
 def receipt_list(request):
-    receipts = Receipt.objects.select_related("payment", "payment__invoice", "payment__invoice__student").all().order_by("-created_at")
+    receipts = build_receipt_list_queryset()
     return render(request, "accounting/receipt_list.html", {"receipts": receipts})

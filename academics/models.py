@@ -2,13 +2,11 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 
-from core.models import AcademicYear, Branch, School
-from students.models import Student
 from .grade_names import grade_name_key, normalize_grade_display_name
 
 
 class Grade(models.Model):
-    school = models.ForeignKey(School, on_delete=models.CASCADE, related_name="grades")
+    school = models.ForeignKey("core.School", on_delete=models.CASCADE, related_name="grades")
     name = models.CharField(max_length=100)
     order = models.PositiveIntegerField(default=0)
     is_kindergarten = models.BooleanField("صف روضة", default=False)
@@ -39,11 +37,11 @@ class Grade(models.Model):
 
 class Section(models.Model):
     academic_year = models.ForeignKey(
-        AcademicYear,
+        "core.AcademicYear",
         on_delete=models.CASCADE,
         related_name="sections",
     )
-    branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name="sections")
+    branch = models.ForeignKey("core.Branch", on_delete=models.CASCADE, related_name="sections")
     grade = models.ForeignKey(Grade, on_delete=models.CASCADE, related_name="sections")
     name = models.CharField(max_length=50)
     capacity = models.PositiveIntegerField(default=0)
@@ -107,8 +105,8 @@ class Enrollment(models.Model):
         ("completed", "مكتمل"),
     ]
 
-    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="enrollments")
-    academic_year = models.ForeignKey(AcademicYear, on_delete=models.CASCADE, related_name="enrollments")
+    student = models.ForeignKey("students.Student", on_delete=models.CASCADE, related_name="enrollments")
+    academic_year = models.ForeignKey("core.AcademicYear", on_delete=models.CASCADE, related_name="enrollments")
     grade = models.ForeignKey(Grade, on_delete=models.PROTECT, related_name="enrollments")
     section = models.ForeignKey(
         Section,
@@ -170,7 +168,7 @@ class StudentLifecycleEvent(models.Model):
         ("section_change", "تغيير شعبة"),
     ]
 
-    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="lifecycle_events")
+    student = models.ForeignKey("students.Student", on_delete=models.CASCADE, related_name="lifecycle_events")
     action = models.CharField(max_length=30, choices=ACTION_CHOICES)
     from_enrollment = models.ForeignKey(
         Enrollment,
@@ -214,7 +212,7 @@ class StudentDocument(models.Model):
         ("other", "أخرى"),
     ]
 
-    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="documents")
+    student = models.ForeignKey("students.Student", on_delete=models.CASCADE, related_name="documents")
     document_type = models.CharField(max_length=50, choices=DOCUMENT_TYPES)
     title = models.CharField(max_length=200)
     file = models.FileField(upload_to="student_documents/", blank=True)

@@ -1,3 +1,1 @@
-from django.contrib import admin
-
-# Register your models here.
+# لا توجد نماذج مسجلة في لوحة الإدارة لهذا التطبيق.

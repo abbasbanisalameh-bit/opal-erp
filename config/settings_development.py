@@ -1,15 +1,14 @@
 """Dedicated settings for the OPAL development-center deployment.
 
-The school production site uses ``config.settings`` and does not install or expose
-the development center.  A separate private WSGI application can use this module.
+The school production site uses ``config.settings``. A separate private WSGI
+application can use this module while preserving the established app and
+middleware ordering.
 """
 
 from .settings import *  # noqa: F401,F403
+from .app_registry import ensure_development_center_app
+from .runtime_registry import ensure_development_center_middleware
 
 OPAL_ENABLE_DEVELOPMENT_CENTER = True
-
-if "development_center" not in INSTALLED_APPS:
-    INSTALLED_APPS.insert(0, "development_center")
-
-auth_index = MIDDLEWARE.index("django.contrib.auth.middleware.AuthenticationMiddleware")
-MIDDLEWARE.insert(auth_index + 1, "core.middleware.DevelopmentCenterAccessMiddleware")
+INSTALLED_APPS = ensure_development_center_app(INSTALLED_APPS)
+MIDDLEWARE = ensure_development_center_middleware(MIDDLEWARE)

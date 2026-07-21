@@ -1,6 +1,6 @@
 from django import forms
 
-from core.models import AcademicYear, Branch
+from core.models import AcademicYear
 from teachers.models import Teacher
 
 from .grade_names import grade_name_key, normalize_grade_display_name

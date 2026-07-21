@@ -103,8 +103,7 @@ def find_existing_siblings(*, phone="", father_name="", family_name="", mother_n
     We deliberately do not infer siblings from matching names or phone numbers,
     because that can connect unrelated students.
     """
-    from parent_portal.models import FamilyStudent
-
+    
     identity = normalize_identifier(guardian_identity_number)
     if not identity:
         return Student.objects.none()
@@ -214,14 +213,8 @@ def compose_full_name(first_name, father_name="", grandfather_name="", family_na
     return " ".join([p.strip() for p in [first_name, father_name, grandfather_name, family_name] if p and p.strip()])
 
 
-@transaction.atomic
-def create_student_registration(form, user=None):
-    data = form.cleaned_data
-    operation_token = data.get("registration_token")
-    if operation_token:
-        existing = StudentRegistration.objects.filter(operation_token=operation_token).first()
-        if existing:
-            return existing
+def _registration_context(form, user, data):
+    """Resolve the shared school/year/name/settings context once per registration."""
     selected_grade = data.get("grade")
     profile = getattr(user, "profile", None) if user else None
     school = (
@@ -231,36 +224,39 @@ def create_student_registration(form, user=None):
         or active_school()
     )
     academic_year = getattr(form, "academic_year", None) or current_academic_year(school)
-    full_name = compose_full_name(data.get("first_name"), data.get("father_name"), data.get("grandfather_name"), data.get("family_name"))
-    settings = get_registration_settings(school)
+    full_name = compose_full_name(
+        data.get("first_name"),
+        data.get("father_name"),
+        data.get("grandfather_name"),
+        data.get("family_name"),
+    )
+    return {
+        "profile": profile,
+        "school": school,
+        "academic_year": academic_year,
+        "full_name": full_name,
+        "settings": get_registration_settings(school),
+    }
 
-    # OPAL: التعرف الذكي على الإخوة
+
+def _resolve_registration_discount(data, settings):
     selected_discount_type = data.get("discount_type")
     selected_sibling_student = data.get("sibling_student")
     sibling_message = ""
 
     # لا نطبق خصم الإخوة فوق خصم آخر، لكن إذا لم يختر المستخدم خصمًا نفعله تلقائيًا عند وجود أخ مؤهل.
     if selected_discount_type in (None, "", "none", "sibling"):
-        resolved_discount, resolved_sibling, sibling_message = resolve_sibling_discount_for_form(data, settings)
-        selected_discount_type = resolved_discount
-        selected_sibling_student = resolved_sibling
+        selected_discount_type, selected_sibling_student, sibling_message = resolve_sibling_discount_for_form(
+            data, settings
+        )
+    return selected_discount_type, selected_sibling_student, sibling_message
 
-    totals = calculate_registration_totals(
-        grade=data.get("grade"),
-        transport_route=data.get("transport_route"),
-        transport_type=data.get("transport_type"),
-        discount_type=selected_discount_type,
-        admin_discount_value=data.get("admin_discount_value"),
-        sibling_student=selected_sibling_student,
-        # تظهر النسبة الافتراضية للمستخدم، مع اعتماد أي قيمة موجبة يعدلها قبل الحفظ.
-        first_payment=data.get("first_payment"),
-        school=school,
-        academic_year=academic_year,
-    )
+
+def _create_student_record(*, data, full_name):
+    """Create the canonical student record used by the admission workflow."""
     # الرقم الوطني في التسجيل اليدوي هو رقم ولي الأمر فقط.
     # يبقى Student.national_id متاحًا لتعبئته من OpenEMIS عند المزامنة.
     student_national_id = ""
-
     student = Student.objects.create(
         source="manual",
         student_number=generate_student_number(),
@@ -279,18 +275,56 @@ def create_student_registration(form, user=None):
         status="active",
         is_active=True,
     )
-    if academic_year and data.get("grade"):
-        Enrollment.objects.get_or_create(
-            student=student,
-            academic_year=academic_year,
-            defaults={"grade": data.get("grade"), "section": data.get("section"), "joined_at": timezone.localdate(), "status": "active"},
-        )
+    return student, student_national_id
 
+
+def _ensure_student_enrollment(*, student, data, academic_year):
+    """Create the canonical academic enrollment when a year and grade are available."""
+    if not academic_year or not data.get("grade"):
+        return None
+    enrollment, _ = Enrollment.objects.get_or_create(
+        student=student,
+        academic_year=academic_year,
+        defaults={
+            "grade": data.get("grade"),
+            "section": data.get("section"),
+            "joined_at": timezone.localdate(),
+            "status": "active",
+        },
+    )
+    return enrollment
+
+
+def _create_student_and_enrollment(*, data, full_name, academic_year):
+    """Create the student, then attach its academic enrollment as a separate explicit step."""
+    student, student_national_id = _create_student_record(
+        data=data,
+        full_name=full_name,
+    )
+    _ensure_student_enrollment(
+        student=student,
+        data=data,
+        academic_year=academic_year,
+    )
+    return student, student_national_id
+
+
+def _registration_fee_category(net_total):
+    """Return the canonical fee category used by the registration workflow."""
     fee_category, _ = FeeCategory.objects.get_or_create(
         name="رسوم التسجيل المدرسية",
-        defaults={"description": "رسوم ناتجة عن تسجيل طالب جديد", "amount": totals["net_total"], "active": True},
+        defaults={
+            "description": "رسوم ناتجة عن تسجيل طالب جديد",
+            "amount": net_total,
+            "active": True,
+        },
     )
-    invoice = StudentInvoice.objects.create(
+    return fee_category
+
+
+def _create_registration_invoice(*, student, academic_year, totals, fee_category):
+    """Create the invoice that represents the final registration total."""
+    return StudentInvoice.objects.create(
         student=student,
         academic_year=academic_year,
         fee_category=fee_category,
@@ -298,22 +332,59 @@ def create_student_registration(form, user=None):
         due_date=timezone.localdate(),
         paid=totals["remaining_amount"] <= 0,
     )
-    payment = None
-    receipt = None
-    if totals["first_payment"] > 0:
-        payment = StudentPayment.objects.create(
-            invoice=invoice,
-            amount=totals["first_payment"],
-            payment_method=data.get("payment_method") or "unspecified",
-            created_by=user if getattr(user, "is_authenticated", False) else None,
-            notes="دفعة تسجيل أولى",
-        )
-        receipt = Receipt.objects.create(payment=payment, receipt_number=generate_receipt_number())
 
-    registration = StudentRegistration.objects.create(
-        school=school,
-        branch=(getattr(data.get("section"), "branch", None) or getattr(profile, "branch", None)),
+
+def _create_registration_receipt(payment):
+    """Create the receipt linked to the initial registration payment."""
+    return Receipt.objects.create(
+        payment=payment,
+        receipt_number=generate_receipt_number(),
+    )
+
+
+def _create_initial_registration_payment(*, invoice, totals, data, user):
+    """Create the optional first payment and its linked receipt."""
+    if totals["first_payment"] <= 0:
+        return None, None
+
+    payment = StudentPayment.objects.create(
+        invoice=invoice,
+        amount=totals["first_payment"],
+        payment_method=data.get("payment_method") or "unspecified",
+        created_by=user if getattr(user, "is_authenticated", False) else None,
+        notes="دفعة تسجيل أولى",
+    )
+    return payment, _create_registration_receipt(payment)
+
+
+def _create_registration_financial_records(*, student, academic_year, totals, data, user):
+    """Create the complete financial side of a registration without changing its semantics."""
+    fee_category = _registration_fee_category(totals["net_total"])
+    invoice = _create_registration_invoice(
+        student=student,
         academic_year=academic_year,
+        totals=totals,
+        fee_category=fee_category,
+    )
+    payment, receipt = _create_initial_registration_payment(
+        invoice=invoice,
+        totals=totals,
+        data=data,
+        user=user,
+    )
+    return invoice, payment, receipt
+
+
+def _create_registration_record(
+    *, data, user, operation_token, context, student, student_national_id,
+    totals, selected_discount_type, selected_sibling_student, sibling_message,
+    invoice, payment, receipt,
+):
+    profile = context["profile"]
+    return StudentRegistration.objects.create(
+        school=context["school"],
+        branch=(getattr(data.get("section"), "branch", None) or getattr(profile, "branch", None)),
+        academic_year=context["academic_year"],
         registration_number=generate_registration_number(),
         **({"operation_token": operation_token} if operation_token else {}),
         student=student,
@@ -323,7 +394,7 @@ def create_student_registration(form, user=None):
         father_name=data.get("father_name") or "",
         grandfather_name=data.get("grandfather_name") or "",
         family_name=data.get("family_name") or "",
-        full_name=full_name,
+        full_name=context["full_name"],
         national_id=student_national_id,
         gender=data.get("gender") or "",
         birth_date=data.get("birth_date"),
@@ -348,8 +419,46 @@ def create_student_registration(form, user=None):
         **totals,
     )
 
-    # إنشاء/تحديث حساب ولي الأمر وربط جميع الأبناء بحساب واحد.
+
+
+def _create_registration_domain_records(
+    *, data, user, operation_token, context, totals,
+    selected_discount_type, selected_sibling_student, sibling_message,
+):
+    """Persist the canonical student, finance, and registration records as one explicit stage."""
+    student, student_national_id = _create_student_and_enrollment(
+        data=data,
+        full_name=context["full_name"],
+        academic_year=context["academic_year"],
+    )
+    invoice, payment, receipt = _create_registration_financial_records(
+        student=student,
+        academic_year=context["academic_year"],
+        totals=totals,
+        data=data,
+        user=user,
+    )
+    registration = _create_registration_record(
+        data=data,
+        user=user,
+        operation_token=operation_token,
+        context=context,
+        student=student,
+        student_national_id=student_national_id,
+        totals=totals,
+        selected_discount_type=selected_discount_type,
+        selected_sibling_student=selected_sibling_student,
+        sibling_message=sibling_message,
+        invoice=invoice,
+        payment=payment,
+        receipt=receipt,
+    )
+    return registration, student
+
+def _link_registration_parent_family(*, registration, student, data, school):
+    """Link the student to the canonical family and expose one-time credentials transiently."""
     from parent_portal.services import create_or_update_parent_family_for_student
+
     family = create_or_update_parent_family_for_student(
         student,
         guardian_name=data.get("guardian_name") or "",
@@ -362,13 +471,77 @@ def create_student_registration(form, user=None):
     # One-time credentials are transient and are never stored in the database.
     registration.parent_initial_username = family.user.username if family and family.user else ""
     registration.parent_initial_password = getattr(family, "initial_password", "")
+    return family
 
-    # تجهيز سجل مزامنة OpenEMIS بدون تعطيل التسجيل إذا لم تكن بيانات الربط متوفرة.
+
+def _queue_registration_openemis_push(*, student, user):
+    """Queue the existing OpenEMIS push without blocking a successful registration."""
     try:
         from openemis_integration.services import queue_student_push
         queue_student_push(student, user, reason="registration")
     except Exception:
         pass
+
+
+def _notify_registration_guardian(registration):
+    """Send the existing guardian notification after the family link is ready."""
     from parent_portal.notification_services import notify_guardian_for_registration
     notify_guardian_for_registration(registration)
+
+
+def _complete_registration_integrations(*, registration, student, data, user, school):
+    """Run the existing post-registration integrations in their original order."""
+    _link_registration_parent_family(
+        registration=registration,
+        student=student,
+        data=data,
+        school=school,
+    )
+    _queue_registration_openemis_push(student=student, user=user)
+    _notify_registration_guardian(registration)
+
+
+@transaction.atomic
+def create_student_registration(form, user=None):
+    """Orchestrate the existing admission workflow through explicit internal steps."""
+    data = form.cleaned_data
+    operation_token = data.get("registration_token")
+    if operation_token:
+        existing = StudentRegistration.objects.filter(operation_token=operation_token).first()
+        if existing:
+            return existing
+
+    context = _registration_context(form, user, data)
+    selected_discount_type, selected_sibling_student, sibling_message = _resolve_registration_discount(
+        data, context["settings"]
+    )
+    totals = calculate_registration_totals(
+        grade=data.get("grade"),
+        transport_route=data.get("transport_route"),
+        transport_type=data.get("transport_type"),
+        discount_type=selected_discount_type,
+        admin_discount_value=data.get("admin_discount_value"),
+        sibling_student=selected_sibling_student,
+        # تظهر النسبة الافتراضية للمستخدم، مع اعتماد أي قيمة موجبة يعدلها قبل الحفظ.
+        first_payment=data.get("first_payment"),
+        school=context["school"],
+        academic_year=context["academic_year"],
+    )
+    registration, student = _create_registration_domain_records(
+        data=data,
+        user=user,
+        operation_token=operation_token,
+        context=context,
+        totals=totals,
+        selected_discount_type=selected_discount_type,
+        selected_sibling_student=selected_sibling_student,
+        sibling_message=sibling_message,
+    )
+    _complete_registration_integrations(
+        registration=registration,
+        student=student,
+        data=data,
+        user=user,
+        school=context["school"],
+    )
     return registration

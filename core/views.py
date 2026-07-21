@@ -19,7 +19,7 @@ def system_settings(request):
     """لوحة إعدادات OPAL المركزية، وتشمل إعدادات المدرسة والتسجيل والتنقل إلى الوحدات البنيوية."""
     from admissions.forms import RegistrationSettingsForm, TransportRouteForm
     from admissions.models import TransportRoute
-    from admissions.services import active_school, current_academic_year, get_registration_settings
+    from admissions.services import current_academic_year, get_registration_settings
 
     school = School.objects.filter(is_active=True).first() or School.objects.create(name="مدرسة أوبال")
     registration_settings = get_registration_settings(school)

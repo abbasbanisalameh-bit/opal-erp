@@ -2,7 +2,6 @@ from django.contrib import admin
 from .models import (
     Grade,
     Section,
-    Subject,
     Enrollment,
     StudentDocument,
 )

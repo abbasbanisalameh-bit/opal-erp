@@ -1,14 +1,12 @@
 from django.core.exceptions import ValidationError
 from django.db import models
 
-from academics.models import Grade, Subject
-from core.models import AcademicYear
 
 
 class Curriculum(models.Model):
-    academic_year = models.ForeignKey(AcademicYear, on_delete=models.CASCADE, related_name="curriculums")
-    grade = models.ForeignKey(Grade, on_delete=models.CASCADE, related_name="curriculums")
-    subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name="curriculums")
+    academic_year = models.ForeignKey("core.AcademicYear", on_delete=models.CASCADE, related_name="curriculums")
+    grade = models.ForeignKey("academics.Grade", on_delete=models.CASCADE, related_name="curriculums")
+    subject = models.ForeignKey("academics.Subject", on_delete=models.CASCADE, related_name="curriculums")
     weekly_periods = models.PositiveIntegerField(default=1)
     is_required = models.BooleanField(default=True)
     is_active = models.BooleanField(default=True)

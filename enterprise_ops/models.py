@@ -3,7 +3,6 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.urls import reverse
 
-from core.models import Branch, School
 
 
 class WorkflowRequest(models.Model):
@@ -49,8 +48,8 @@ class WorkflowRequest(models.Model):
     description = models.TextField(blank=True)
     requester = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name="workflow_requests")
     assignee = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="assigned_workflow_requests")
-    school = models.ForeignKey(School, on_delete=models.SET_NULL, null=True, blank=True)
-    branch = models.ForeignKey(Branch, on_delete=models.SET_NULL, null=True, blank=True)
+    school = models.ForeignKey("core.School", on_delete=models.SET_NULL, null=True, blank=True)
+    branch = models.ForeignKey("core.Branch", on_delete=models.SET_NULL, null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="new", db_index=True)
     priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default="normal", db_index=True)
     related_app = models.CharField(max_length=80, blank=True)
@@ -144,8 +143,8 @@ class FeedbackTicket(models.Model):
     ]
 
     sender = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name="feedback_tickets")
-    school = models.ForeignKey(School, on_delete=models.SET_NULL, null=True, blank=True, related_name="feedback_tickets")
-    branch = models.ForeignKey(Branch, on_delete=models.SET_NULL, null=True, blank=True, related_name="feedback_tickets")
+    school = models.ForeignKey("core.School", on_delete=models.SET_NULL, null=True, blank=True, related_name="feedback_tickets")
+    branch = models.ForeignKey("core.Branch", on_delete=models.SET_NULL, null=True, blank=True, related_name="feedback_tickets")
     kind = models.CharField(max_length=20, choices=KIND_CHOICES)
     title = models.CharField(max_length=220)
     message = models.TextField()

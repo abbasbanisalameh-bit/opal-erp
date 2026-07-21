@@ -4,8 +4,6 @@ import uuid
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
-from core.models import School, Branch, AcademicYear
-from academics.models import Grade, Section
 from core.choices import STUDENT_GENDER_CHOICES
 from core.finance_constants import PAYMENT_METHOD_CHOICES
 
@@ -21,9 +19,9 @@ class AdmissionApplication(models.Model):
         ("converted", "تم تحويله لطالب"),
     ]
 
-    school = models.ForeignKey(School, on_delete=models.CASCADE)
-    branch = models.ForeignKey(Branch, on_delete=models.SET_NULL, null=True, blank=True)
-    academic_year = models.ForeignKey(AcademicYear, on_delete=models.SET_NULL, null=True, blank=True)
+    school = models.ForeignKey("core.School", on_delete=models.CASCADE)
+    branch = models.ForeignKey("core.Branch", on_delete=models.SET_NULL, null=True, blank=True)
+    academic_year = models.ForeignKey("core.AcademicYear", on_delete=models.SET_NULL, null=True, blank=True)
 
     application_number = models.CharField(max_length=50, unique=True)
 
@@ -41,8 +39,8 @@ class AdmissionApplication(models.Model):
     guardian_email = models.EmailField(blank=True)
     guardian_job = models.CharField(max_length=150, blank=True)
 
-    grade = models.ForeignKey(Grade, on_delete=models.SET_NULL, null=True)
-    section = models.ForeignKey(Section, on_delete=models.SET_NULL, null=True, blank=True)
+    grade = models.ForeignKey("academics.Grade", on_delete=models.SET_NULL, null=True)
+    section = models.ForeignKey("academics.Section", on_delete=models.SET_NULL, null=True, blank=True)
 
     status = models.CharField(max_length=30, choices=STATUS_CHOICES, default="draft")
     notes = models.TextField(blank=True)
@@ -57,7 +55,7 @@ class AdmissionApplication(models.Model):
 
 
 class RegistrationSettings(models.Model):
-    school = models.OneToOneField(School, on_delete=models.CASCADE, related_name="registration_settings")
+    school = models.OneToOneField("core.School", on_delete=models.CASCADE, related_name="registration_settings")
     first_payment_percent = models.DecimalField("نسبة الدفعة الأولى", max_digits=5, decimal_places=2, default=20)
     cash_discount_percent = models.DecimalField("خصم الكاش", max_digits=5, decimal_places=2, default=10)
     sibling_discount_percent = models.DecimalField("خصم الإخوة", max_digits=5, decimal_places=2, default=5)
@@ -81,9 +79,9 @@ class RegistrationSettings(models.Model):
 
 
 class GradeFee(models.Model):
-    school = models.ForeignKey(School, on_delete=models.CASCADE, related_name="grade_fees")
-    academic_year = models.ForeignKey(AcademicYear, on_delete=models.SET_NULL, null=True, blank=True, related_name="grade_fees")
-    grade = models.ForeignKey(Grade, on_delete=models.CASCADE, related_name="fee_settings")
+    school = models.ForeignKey("core.School", on_delete=models.CASCADE, related_name="grade_fees")
+    academic_year = models.ForeignKey("core.AcademicYear", on_delete=models.SET_NULL, null=True, blank=True, related_name="grade_fees")
+    grade = models.ForeignKey("academics.Grade", on_delete=models.CASCADE, related_name="fee_settings")
     tuition_fee = models.DecimalField("رسوم الصف", max_digits=10, decimal_places=2, default=0)
     is_active = models.BooleanField("فعالة", default=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -114,7 +112,7 @@ class GradeFee(models.Model):
 
 
 class TransportRoute(models.Model):
-    school = models.ForeignKey(School, on_delete=models.CASCADE, related_name="transport_routes")
+    school = models.ForeignKey("core.School", on_delete=models.CASCADE, related_name="transport_routes")
     name = models.CharField("اسم الجولة", max_length=150)
     full_fee = models.DecimalField("رسوم ذهاب وعودة", max_digits=10, decimal_places=2, default=0)
     is_active = models.BooleanField("فعالة", default=True)
@@ -148,15 +146,15 @@ class StudentRegistration(models.Model):
         ("admin", "خصم الإدارة"),
     ]
 
-    school = models.ForeignKey(School, on_delete=models.CASCADE, related_name="student_registrations")
-    branch = models.ForeignKey(Branch, on_delete=models.SET_NULL, null=True, blank=True)
-    academic_year = models.ForeignKey(AcademicYear, on_delete=models.SET_NULL, null=True, blank=True)
+    school = models.ForeignKey("core.School", on_delete=models.CASCADE, related_name="student_registrations")
+    branch = models.ForeignKey("core.Branch", on_delete=models.SET_NULL, null=True, blank=True)
+    academic_year = models.ForeignKey("core.AcademicYear", on_delete=models.SET_NULL, null=True, blank=True)
     registration_number = models.CharField("رقم التسجيل", max_length=50, unique=True)
     operation_token = models.UUIDField("معرف عملية التسجيل", unique=True, editable=False, default=uuid.uuid4)
 
     student = models.ForeignKey("students.Student", on_delete=models.SET_NULL, null=True, blank=True, related_name="registrations")
-    grade = models.ForeignKey(Grade, on_delete=models.SET_NULL, null=True)
-    section = models.ForeignKey(Section, on_delete=models.SET_NULL, null=True, blank=True)
+    grade = models.ForeignKey("academics.Grade", on_delete=models.SET_NULL, null=True)
+    section = models.ForeignKey("academics.Section", on_delete=models.SET_NULL, null=True, blank=True)
 
     first_name = models.CharField("الاسم الأول", max_length=100)
     father_name = models.CharField("اسم الأب", max_length=100, blank=True)
@@ -218,7 +216,7 @@ class FeePayment(models.Model):
         ("all_siblings", "دفعة عن جميع الإخوة"),
     ]
 
-    school = models.ForeignKey(School, on_delete=models.CASCADE, related_name="fee_payments")
+    school = models.ForeignKey("core.School", on_delete=models.CASCADE, related_name="fee_payments")
     receipt_number = models.CharField("رقم الإيصال", max_length=50, unique=True)
     operation_token = models.UUIDField("معرف العملية", unique=True, editable=False, default=uuid.uuid4)
     scope = models.CharField("نوع الدفعة", max_length=30, choices=PAYMENT_SCOPE_CHOICES, default="single")

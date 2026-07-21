@@ -58,10 +58,18 @@ def student_finance_snapshot(student):
     paid = money(min(accounting_paid, total)) if total > 0 else Decimal("0.00")
     remaining = money(max(total - paid, Decimal("0.00")))
 
+    if total <= 0 or remaining <= 0:
+        status = "paid"
+    elif paid <= 0:
+        status = "unpaid"
+    else:
+        status = "partial"
+
     return {
         "total": total,
         "paid": paid,
         "remaining": remaining,
+        "status": status,
         "invoice_total": total,
         "accounting_paid": paid,
         "registration": registration,
@@ -77,18 +85,11 @@ def student_total_paid(student):
 
 
 def student_remaining(student):
-    return money(max(student_total_fees(student) - student_total_paid(student), Decimal("0.00")))
+    return student_finance_snapshot(student)["remaining"]
 
 
 def student_payment_status(student):
-    total = student_total_fees(student)
-    paid = student_total_paid(student)
-    remaining = max(total - paid, Decimal("0.00"))
-    if total <= 0 or remaining <= 0:
-        return "paid"
-    if paid <= 0:
-        return "unpaid"
-    return "partial"
+    return student_finance_snapshot(student)["status"]
 
 
 def find_sibling_students(student):
@@ -157,13 +158,12 @@ def distribute_amount(rows, amount):
 def allocate_equally_to_unpaid_siblings(students, amount):
     rows = []
     for student in students:
-        total = student_total_fees(student)
-        paid = student_total_paid(student)
+        finance = student_finance_snapshot(student)
         rows.append({
             "student": student,
-            "total": total,
-            "paid": paid,
-            "remaining": money(max(total - paid, Decimal("0.00"))),
+            "total": finance["total"],
+            "paid": finance["paid"],
+            "remaining": finance["remaining"],
         })
     return distribute_amount(rows, amount)
 

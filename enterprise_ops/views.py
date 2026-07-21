@@ -19,7 +19,6 @@ from attendance_v2.models import Attendance
 from core.models import AuditLog
 from documents.models import IssuedDocument
 from exams.models import StudentMark
-from parent_portal.models import FamilyStudent
 from students.models import Student
 from timetable.models import TimetableEntry
 
