@@ -3,7 +3,7 @@ from decimal import Decimal
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
-from django.db.models import Q, Sum
+from django.db.models import Sum
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -28,10 +28,13 @@ from .financial_services import (
 from .models import CanteenTransaction, DiscountRequest, ExpenseEntry, FeeCategory, FinancialYearClosure, Installment, MonthlyFinancialTarget, Receipt, StudentInvoice, StudentPayment
 from .services import create_discount_workflow, decide_discount
 from .services.pdf import receipt_pdf
-from .services.receipt import generate_receipt_number
-from .statement_services import build_student_statement_context
-from .invoice_services import build_invoice_financial_snapshot
-from .receipt_services import build_receipt_list_queryset
+from .workflow import (
+    build_invoice_list_context,
+    build_receipt_list_queryset,
+    build_student_statement_context,
+    create_student_invoice,
+    create_student_payment_with_receipt,
+)
 
 
 @login_required
@@ -80,20 +83,12 @@ def fee_category_update(request, pk):
 @login_required
 @management_required
 def invoice_list(request):
-    invoices = StudentInvoice.objects.select_related("student", "fee_category", "academic_year").prefetch_related("payments")
-    status = request.GET.get("status", "")
-    q = request.GET.get("q", "").strip()
-    overdue = request.GET.get("overdue") == "1"
-    if status:
-        invoices = invoices.filter(status=status)
-    if q:
-        invoices = invoices.filter(Q(student__full_name__icontains=q) | Q(student__student_number__icontains=q) | Q(invoice_number__icontains=q))
-    items = list(invoices[:1000])
-    for item in items:
-        item.financial_snapshot = build_invoice_financial_snapshot(item)
-    if overdue:
-        items = [item for item in items if item.is_overdue]
-    return render(request, "accounting/invoice_list.html", {"invoices": items, "statuses": StudentInvoice.STATUS_CHOICES, "filters": {"status": status, "q": q, "overdue": overdue}})
+    context = build_invoice_list_context(
+        status=request.GET.get("status", ""),
+        query=request.GET.get("q", ""),
+        overdue=request.GET.get("overdue") == "1",
+    )
+    return render(request, "accounting/invoice_list.html", context)
 
 
 @login_required
@@ -101,10 +96,7 @@ def invoice_list(request):
 def invoice_create(request):
     form = StudentInvoiceForm(request.POST or None)
     if form.is_valid():
-        invoice = form.save(commit=False)
-        invoice.created_by = request.user
-        invoice.full_clean()
-        invoice.save()
+        invoice = create_student_invoice(form=form, user=request.user)
         audit(request, "create", "accounting.StudentInvoice", invoice.pk, f"إصدار رسوم {invoice.invoice_number} للطالب {invoice.student.full_name}")
         messages.success(request, "تم إصدار الرسوم بنجاح.")
         return redirect("accounting:invoice_list")
@@ -116,14 +108,11 @@ def invoice_create(request):
 def payment_create(request):
     form = StudentPaymentForm(request.POST or None)
     if form.is_valid():
-        payment = form.save(commit=False)
-        payment.created_by = request.user
         try:
-            payment.save()
+            payment, receipt = create_student_payment_with_receipt(form=form, user=request.user)
         except ValidationError as exc:
             form.add_error(None, exc)
         else:
-            receipt, _ = Receipt.objects.get_or_create(payment=payment, defaults={"receipt_number": generate_receipt_number()})
             audit(request, "create", "accounting.StudentPayment", payment.pk, f"دفعة {payment.amount} على {payment.invoice.invoice_number}")
             messages.success(request, f"تم تسجيل الدفعة وإصدار الإيصال {receipt.receipt_number}.")
             return redirect("accounting:receipt_list")

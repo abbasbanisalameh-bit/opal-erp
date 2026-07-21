@@ -1,4 +1,3 @@
-from django.apps import apps
 from django.contrib import messages
 from django.contrib.auth import login as auth_login
 from django.contrib.auth import update_session_auth_hash
@@ -11,15 +10,12 @@ from django.views.decorators.http import require_POST
 
 from .forms import RoleForm, UserProfileForm
 from .models import Role, UserProfile
+from .workflow import can_manage_roles, impersonation_target_kind, role_list_queryset
 
 
 IMPERSONATOR_SESSION_KEY = "opal_impersonator_user_id"
 IMPERSONATED_SESSION_KEY = "opal_impersonated_user_id"
 DEFAULT_AUTH_BACKEND = "django.contrib.auth.backends.ModelBackend"
-
-
-def can_manage_roles(user):
-    return user.is_superuser
 
 
 def _style_password_form(form):
@@ -68,15 +64,6 @@ def my_profile(request):
     )
 
 
-def _impersonation_target_kind(user):
-    Teacher = apps.get_model("teachers", "Teacher")
-    Family = apps.get_model("parent_portal", "Family")
-    if Teacher.objects.filter(user=user, is_active=True).exists():
-        return "teacher"
-    if Family.objects.filter(user=user, is_active=True).exists():
-        return "parent"
-    return ""
-
 
 @login_required
 @require_POST
@@ -88,7 +75,7 @@ def impersonate_user(request, user_id):
         return redirect("dashboard:home")
 
     target = get_object_or_404(User, pk=user_id, is_active=True)
-    target_kind = _impersonation_target_kind(target)
+    target_kind = impersonation_target_kind(target)
     if not target_kind or target.is_staff or target.is_superuser:
         raise PermissionDenied("يسمح بالدخول فقط إلى حساب معلم أو ولي أمر فعال.")
 
@@ -139,7 +126,7 @@ def role_list(request):
         form.save()
         messages.success(request, "تمت إضافة الدور من واجهة OPAL.")
         return redirect("accounts:role_list")
-    return render(request, "accounts/role_list.html", {"form": form, "items": Role.objects.all()})
+    return render(request, "accounts/role_list.html", {"form": form, "items": role_list_queryset()})
 
 
 @login_required

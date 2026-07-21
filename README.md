@@ -1,3 +1,7 @@
+# OPAL ERP Update 57 — Complete Timetable Workflow Reengineering
+
+راجع `OPAL_TIMETABLE_WORKFLOW_REENGINEERING_57_AR.md` و`OPAL_UPDATE_MANIFEST.json`.
+
 # OPAL ERP
 
 ## التزام مداخل البيانات

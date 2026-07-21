@@ -17,6 +17,13 @@ from .forms import (
     AcademicStructureYearForm,
 )
 from .models import Grade, Section, Subject
+from .workflow import (
+    academic_school,
+    academic_structure_url,
+    build_academic_year_list_context,
+    build_semester_list_context,
+    build_subject_list_context,
+)
 
 
 SubjectForm = modelform_factory(
@@ -33,8 +40,8 @@ def _style_form(form):
 
 
 def _school_for_academics():
-    """Use the existing school and never create a parallel academic structure."""
-    return School.objects.filter(is_active=True).first() or School.objects.first()
+    """Compatibility wrapper for the unified academic workflow."""
+    return academic_school()
 
 
 def _main_branch(school):
@@ -60,18 +67,13 @@ def _section_names(count):
 
 
 def _structure_url(year_id=None, **params):
-    url = reverse("academics:academic_structure")
-    query = []
-    if year_id:
-        query.append(f"year={year_id}")
-    query.extend(f"{key}={value}" for key, value in params.items() if value not in (None, ""))
-    return f"{url}?{'&'.join(query)}" if query else url
+    """Compatibility wrapper for the unified academic workflow."""
+    return academic_structure_url(year_id, **params)
 
 
 @management_required
 def academic_year_list(request):
-    years = AcademicYear.objects.select_related("school").order_by("-start_date")
-    return render(request, "academics/academic_year_list.html", {"years": years})
+    return render(request, "academics/academic_year_list.html", build_academic_year_list_context())
 
 
 @management_required
@@ -357,10 +359,7 @@ def academic_structure(request):
 
 @management_required
 def semester_list(request):
-    semesters = Semester.objects.select_related("academic_year", "academic_year__school").order_by(
-        "-academic_year__start_date", "start_date"
-    )
-    return render(request, "academics/semester_list.html", {"semesters": semesters})
+    return render(request, "academics/semester_list.html", build_semester_list_context())
 
 
 @management_required
@@ -384,8 +383,7 @@ def semester_delete(request, pk):
 
 @management_required
 def subject_list(request):
-    subjects = Subject.objects.select_related("grade").order_by("grade__order", "name")
-    return render(request, "academics/subject_list.html", {"subjects": subjects})
+    return render(request, "academics/subject_list.html", build_subject_list_context())
 
 
 @management_required

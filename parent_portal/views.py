@@ -20,6 +20,16 @@ from exams.models import StudentMark
 from accounts.models import UserProfile
 from .academic_services import homework_for_student, homework_rows_for_students, student_class_rank
 from .parent360 import build_parent360_context
+from .workflow import (
+    build_dashboard_context,
+    build_family_finance_context,
+    build_fees_context,
+    build_student_card,
+    build_student_detail_context,
+    family_for_user,
+    student_for_user_or_403,
+    students_for_user,
+)
 from admissions.financial_services import (
     student_finance_snapshot,
     student_total_fees,
@@ -41,54 +51,23 @@ except Exception:  # keeps portal safe if documents app changes later
 
 
 def _students_for_user(user):
-    """Return only students linked to the logged-in parent account."""
-    family = Family.objects.filter(user=user).first()
-    if family:
-        return [
-            link.student
-            for link in FamilyStudent.objects.filter(family=family, is_active=True)
-            .select_related("student")
-            .order_by("student__full_name")
-        ]
-    return []
+    return students_for_user(user)
 
 
 def _normalized_students_for_user(user):
-    return _students_for_user(user)
+    return students_for_user(user)
 
 
 def _family_for_user(user):
-    return Family.objects.filter(user=user).first()
+    return family_for_user(user)
 
 
 def _student_or_403(user, student_id):
-    students = _normalized_students_for_user(user)
-    allowed_ids = {student.id for student in students}
-    if int(student_id) not in allowed_ids:
-        raise PermissionDenied("لا تملك صلاحية الوصول إلى هذا الطالب.")
-    return get_object_or_404(type(students[0]).objects.all(), pk=student_id)
+    return student_for_user_or_403(user, student_id)
 
 
 def _student_card(student):
-    finance = student_finance_snapshot(student)
-    total = finance["total"]
-    paid = finance["paid"]
-    remaining = finance["remaining"]
-    status = finance["status"]
-    return {
-        "student": student,
-        "total": total,
-        "paid": paid,
-        "remaining": remaining,
-        "status": status,
-        "status_label": "مسدد بالكامل" if remaining <= 0 else ("غير مسدد" if paid <= 0 else "متبقٍ جزئي"),
-        "status_class": "success" if remaining <= 0 else ("danger" if paid <= 0 else "warning"),
-        "attendance": Attendance.objects.filter(student=student).order_by("-date")[:5],
-        "marks": StudentMark.objects.filter(student=student, exam__status__in=["published", "closed"]).select_related("exam", "exam__subject")[:5],
-        "rank": student_class_rank(student),
-        "homework": homework_for_student(student)[:5],
-        "schedule": student_live_status(student),
-    }
+    return build_student_card(student)
 
 
 @parent_required
@@ -97,28 +76,7 @@ def dashboard(request):
     if not students:
         return render(request, "parent_portal/no_profile.html")
 
-    cards = [_student_card(student) for student in students]
-    announcements = Announcement.objects.filter(is_active=True).order_by("-created_at")[:10]
-    receipt_history = build_guardian_receipt_history(students)
-    family = _family_for_user(request.user)
-    totals = {
-        "students_count": len(students),
-        "total": sum((card["total"] for card in cards), 0),
-        "paid": sum((card["paid"] for card in cards), 0),
-        "remaining": sum((card["remaining"] for card in cards), 0),
-    }
-    return render(
-        request,
-        "parent_portal/dashboard.html",
-        {
-            "family": family,
-            "students": students,
-            "cards": cards,
-            "announcements": announcements,
-            "receipt_history": receipt_history,
-            "totals": totals,
-        },
-    )
+    return render(request, "parent_portal/dashboard.html", build_dashboard_context(request.user))
 
 
 @parent_required
@@ -147,29 +105,7 @@ def student_detail(request, student_id):
     if not students:
         return render(request, "parent_portal/no_profile.html")
     student = _student_or_403(request.user, student_id)
-    invoices = StudentInvoice.objects.filter(student=student).select_related("fee_category").prefetch_related("payments")
-    allocations = FeePaymentAllocation.objects.filter(student=student).select_related("fee_payment").order_by("-created_at")
-    attendance = Attendance.objects.filter(student=student).order_by("-date")[:30]
-    marks = StudentMark.objects.filter(student=student, exam__status__in=["published", "closed"]).select_related("exam", "exam__subject")
-    rank = student_class_rank(student)
-    homework_items = homework_for_student(student)
-    docs = []
-    if StudentIssuedDocument:
-        docs = StudentIssuedDocument.objects.filter(student=student).select_related("issued_document")[:20]
-    finance = student_finance_snapshot(student)
-    return render(request, "parent_portal/student_detail.html", {
-        "student": student,
-        "invoices": invoices,
-        "allocations": allocations,
-        "attendance": attendance,
-        "marks": marks,
-        "rank": rank,
-        "homework_items": homework_items,
-        "documents": docs,
-        "total": finance["total"],
-        "paid": finance["paid"],
-        "remaining": finance["remaining"],
-    })
+    return render(request, "parent_portal/student_detail.html", build_student_detail_context(student))
 
 
 @parent_required
@@ -177,28 +113,7 @@ def fees(request):
     students = _normalized_students_for_user(request.user)
     if not students:
         return render(request, "parent_portal/no_profile.html")
-    cards = [_student_card(student) for student in students]
-    receipt_history = build_guardian_receipt_history(students)
-    statement_years = guardian_financial_years(students)
-    selected_year = None
-    requested_year = request.GET.get("year")
-    if requested_year:
-        selected_year = statement_years.filter(pk=requested_year).first()
-    if selected_year is None:
-        selected_year = statement_years.filter(is_current=True).first() or statement_years.first()
-    annual_statement = build_guardian_annual_statement(students, selected_year) if selected_year else None
-    return render(
-        request,
-        "parent_portal/fees.html",
-        {
-            "family": _family_for_user(request.user),
-            "cards": cards,
-            "receipt_history": receipt_history,
-            "statement_years": statement_years,
-            "selected_year": selected_year,
-            "annual_statement": annual_statement,
-        },
-    )
+    return render(request, "parent_portal/fees.html", build_fees_context(request.user, request.GET.get("year")))
 
 
 @parent_required
@@ -380,34 +295,7 @@ def guardian_duplicate_merge(request):
 
 
 def _family_finance_context(family):
-    links = list(
-        FamilyStudent.objects.filter(family=family, is_active=True)
-        .select_related("student")
-        .order_by("student__full_name")
-    )
-    cards = [_student_card(link.student) for link in links]
-    student_ids = [link.student_id for link in links]
-    payments = list(
-        FeePayment.objects.filter(allocations__student_id__in=student_ids)
-        .prefetch_related("allocations__student")
-        .select_related("created_by")
-        .distinct()
-        .order_by("-created_at")[:200]
-    )
-    totals = {
-        "students_count": len(cards),
-        "total": sum((card["total"] for card in cards), 0),
-        "paid": sum((card["paid"] for card in cards), 0),
-        "remaining": sum((card["remaining"] for card in cards), 0),
-    }
-    return {
-        "family": family,
-        "links": links,
-        "cards": cards,
-        "payments": payments,
-        "receipt_history": build_guardian_receipt_history([link.student for link in links]),
-        "totals": totals,
-    }
+    return build_family_finance_context(family)
 
 
 @management_required

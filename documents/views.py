@@ -3,10 +3,8 @@ from io import BytesIO
 
 import qrcode
 from django.contrib import messages
-from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
-from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from admissions.models import AdmissionApplication
@@ -19,16 +17,13 @@ from teachers.models import Teacher
 
 from .forms import DocumentSettingsForm, DocumentTemplateForm, IssueDocumentForm
 from .models import DocumentSettings, DocumentTemplate, IssuedDocument, StudentIssuedDocument
-from .services.generation import (
-    candidate_values,
-    create_issued_document,
-    document_settings_for,
-    guardian_payload,
-    guardian_values,
-    render_body,
-    report_payload,
-    student_values,
-    teacher_values,
+from .services.generation import document_settings_for
+from .workflow import (
+    build_document_list_context,
+    build_issue_context,
+    cancel_issued_document,
+    issue_document_from_form,
+    reissue_document,
 )
 
 
@@ -41,31 +36,12 @@ def _qr_data_uri(text):
 
 @management_required
 def document_list(request):
-    documents = IssuedDocument.objects.select_related(
-        "student", "teacher", "guardian", "candidate", "issued_by", "template"
-    ).all()
-    q = request.GET.get("q", "").strip()
-    doc_type = request.GET.get("type", "").strip()
-    status = request.GET.get("status", "").strip()
-    if q:
-        documents = documents.filter(
-            Q(document_number__icontains=q)
-            | Q(title__icontains=q)
-            | Q(student__full_name__icontains=q)
-            | Q(teacher__full_name__icontains=q)
-            | Q(guardian__guardian_name__icontains=q)
-            | Q(candidate__student_full_name__icontains=q)
-            | Q(applicant_name__icontains=q)
-        )
-    if doc_type:
-        documents = documents.filter(template__document_type=doc_type)
-    if status:
-        documents = documents.filter(status=status)
-    return render(request, "documents/document_list.html", {
-        "documents": documents[:500], "q": q, "selected_type": doc_type,
-        "selected_status": status, "statuses": IssuedDocument.STATUS_CHOICES,
-        "document_types": DocumentTemplate.DOCUMENT_TYPES,
-    })
+    context = build_document_list_context(
+        query=request.GET.get("q", ""),
+        document_type=request.GET.get("type", ""),
+        status=request.GET.get("status", ""),
+    )
+    return render(request, "documents/document_list.html", context)
 
 
 @management_required
@@ -106,60 +82,42 @@ def document_settings(request):
     return render(request, "documents/settings.html", {"form": form, "school": school})
 
 
-def _target_data(audience, target, extras=None):
-    if audience == "student":
-        school, enrollment, values = student_values(target, extras)
-        return school or active_school(), values, enrollment
-    if audience == "candidate":
-        school, values = candidate_values(target, extras)
-        return school, values, None
-    if audience == "teacher":
-        school, values = teacher_values(target, extras)
-        return school, values, None
-    school, students, year, values = guardian_values(target, extras)
-    return school, values, (students, year)
-
-
 def _issue_target(request, *, audience, target, back_url):
-    templates = DocumentTemplate.objects.filter(audience=audience, is_active=True).order_by("name")
-    selected = None
-    requested = request.GET.get("template", "")
-    if requested:
-        selected = templates.filter(Q(code=requested) | Q(pk=requested if requested.isdigit() else None)).first()
-    selected = selected or templates.first()
     extras = {
         "target_school": request.POST.get("target_school", "") or "المدرسة المحددة",
         "target_grade": request.POST.get("target_grade", "") or "الصف المحدد",
     }
-    school, values, auxiliary = _target_data(audience, target, extras)
-    initial = {}
-    if selected:
-        initial = {"template": selected, "title": selected.title, "content": render_body(selected, values)}
-    form = IssueDocumentForm(request.POST or None, audience=audience, initial=initial)
+    issue_context = build_issue_context(
+        audience=audience,
+        target=target,
+        requested_template=request.GET.get("template", ""),
+        extras=extras,
+    )
+    form = IssueDocumentForm(
+        request.POST or None, audience=audience, initial=issue_context["initial"]
+    )
     if request.method == "POST" and form.is_valid():
-        template = form.cleaned_data["template"]
-        # Recalculate the context after validation, but preserve the manager's editable body.
-        payload = {}
-        kwargs = {audience: target}
-        if audience == "student" and template.document_type == "report_card":
-            payload = report_payload(target, getattr(auxiliary, "academic_year", None))
-        elif audience == "guardian" and template.document_type == "guardian_statement":
-            students, year = auxiliary
-            payload = guardian_payload(target, students, year)
-        content = form.cleaned_data["content"]
-        if template.document_type == "transfer_letter":
-            content = content.replace("المدرسة المحددة", form.cleaned_data.get("target_school") or "المدرسة المحددة")
-            content = content.replace("الصف المحدد", form.cleaned_data.get("target_grade") or "الصف المحدد")
-        document = create_issued_document(
-            template=template, title=form.cleaned_data["title"], content=content,
-            user=request.user, school=school, payload=payload, **kwargs,
+        document = issue_document_from_form(
+            form=form,
+            audience=audience,
+            target=target,
+            school=issue_context["school"],
+            auxiliary=issue_context["auxiliary"],
+            user=request.user,
         )
-        audit(request, "create", "documents.IssuedDocument", document.pk, f"إصدار {template.name} للمستفيد {document.applicant_name}")
+        audit(
+            request, "create", "documents.IssuedDocument", document.pk,
+            f"إصدار {document.template.name} للمستفيد {document.applicant_name}"
+        )
         messages.success(request, f"تم إصدار الوثيقة رقم {document.document_number}.")
         return redirect("documents:document_detail", document_id=document.pk)
     return render(request, "documents/issue.html", {
-        "form": form, "templates": templates, "selected": selected, "target": target,
-        "audience": audience, "back_url": back_url,
+        "form": form,
+        "templates": issue_context["templates"],
+        "selected": issue_context["selected"],
+        "target": target,
+        "audience": audience,
+        "back_url": back_url,
     })
 
 
@@ -207,16 +165,12 @@ def document_detail(request, document_id):
 def document_cancel(request, document_id):
     document = get_object_or_404(IssuedDocument, pk=document_id)
     reason = request.POST.get("reason", "").strip()
-    if document.status == "cancelled":
+    result = cancel_issued_document(document=document, reason=reason, user=request.user)
+    if result == "already_cancelled":
         messages.info(request, "الوثيقة ملغاة مسبقًا.")
-    elif not reason:
+    elif result == "reason_required":
         messages.error(request, "يجب كتابة سبب إلغاء الوثيقة.")
     else:
-        document.status = "cancelled"
-        document.cancelled_by = request.user
-        document.cancelled_at = timezone.now()
-        document.cancellation_reason = reason
-        document.save(update_fields=["status", "cancelled_by", "cancelled_at", "cancellation_reason"])
         audit(request, "update", "documents.IssuedDocument", document.pk, f"إلغاء وثيقة {document.document_number}: {reason}")
         messages.success(request, "تم إلغاء الوثيقة وحفظ السبب دون حذف السجل.")
     return redirect("documents:document_detail", document_id=document.pk)
@@ -226,17 +180,7 @@ def document_cancel(request, document_id):
 @require_POST
 def document_reissue(request, document_id):
     old = get_object_or_404(IssuedDocument, pk=document_id)
-    new = create_issued_document(
-        template=old.template, student=old.student, teacher=old.teacher, guardian=old.guardian,
-        candidate=old.candidate, title=old.title, content=old.content, payload=old.payload,
-        user=request.user, school=(
-            getattr(old.teacher, "school", None) or getattr(old.guardian, "school", None)
-            or getattr(old.candidate, "school", None)
-            or (student_values(old.student)[0] if old.student_id else None) or active_school()
-        ),
-    )
-    new.replaces = old
-    new.save(update_fields=["replaces"])
+    new = reissue_document(original=old, user=request.user)
     audit(request, "create", "documents.IssuedDocument", new.pk, f"إعادة إصدار بدل الوثيقة {old.document_number}")
     messages.success(request, f"تم إصدار وثيقة بديلة برقم {new.document_number}.")
     return redirect("documents:document_detail", document_id=new.pk)

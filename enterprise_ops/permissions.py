@@ -3,18 +3,13 @@ from functools import wraps
 from django.contrib import messages
 from django.shortcuts import redirect
 
+from accounts.workflow import is_management_user, role_code
+
 from .models import RolePermissionRule
 
 
-def role_code(user):
-    try:
-        return user.profile.role.code or ""
-    except Exception:
-        return ""
-
-
 def is_management(user):
-    return bool(user.is_authenticated and (user.is_staff or user.is_superuser or role_code(user) in {"super_admin", "school_owner", "principal", "accountant", "secretary"}))
+    return is_management_user(user)
 
 
 def management_required(view_func):

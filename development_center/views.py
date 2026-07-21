@@ -12,33 +12,18 @@ from .forms import BugForm, DecisionForm, IdeaForm, MilestoneForm, ModuleForm, R
 from .models import ActivityLog, Bug, Decision, Idea, Milestone, Module, Notification, Release, Sprint, SprintDailySnapshot, Task
 from development_center.services.gantt_service import get_gantt_tasks, update_task_dates
 from development_center.services.workflow_engine import run_workflow_engine, sync_after_task_change, update_task_status
+from .workflow import (
+    build_development_dashboard_context,
+    build_notifications_context,
+    build_roadmap_context,
+    build_sprint_detail_context,
+    build_tasks_board_context,
+)
 
 
 @login_required
 def dashboard(request):
-    modules = Module.objects.all()
-    total = modules.count()
-    tasks_total = Task.objects.count()
-    tasks_done = Task.objects.filter(status="done").count()
-    overall_progress = round((tasks_done / tasks_total) * 100) if tasks_total else 0
-
-    return render(request, "development_center/dashboard.html", {
-        "modules": modules.order_by("-progress"),
-        "latest_tasks": Task.objects.select_related("module", "release").order_by("-id")[:8],
-        "latest_bugs": Bug.objects.select_related("module").order_by("-id")[:8],
-        "latest_releases": Release.objects.order_by("-id")[:5],
-        "total": total,
-        "completed": modules.filter(status="completed").count(),
-        "development": modules.filter(status="development").count(),
-        "planned": modules.filter(status="planned").count(),
-        "progress": round(sum(m.progress for m in modules) / total) if total else 0,
-        "overall_progress": overall_progress,
-        "tasks_count": tasks_total,
-        "tasks_done": tasks_done,
-        "bugs_count": Bug.objects.count(),
-        "ideas_count": Idea.objects.count(),
-        "releases_count": Release.objects.count(),
-    })
+    return render(request, "development_center/dashboard.html", build_development_dashboard_context())
 
 
 def crud_views(model, form_class, template_dir, url_name):
@@ -127,35 +112,7 @@ def task_detail(request, pk):
 
 @login_required
 def tasks_board(request):
-    tasks = Task.objects.select_related("module", "release", "sprint").all()
-
-    module_id = request.GET.get("module")
-    release_id = request.GET.get("release")
-    sprint_id = request.GET.get("sprint")
-    priority = request.GET.get("priority")
-
-    if module_id:
-        tasks = tasks.filter(module_id=module_id)
-    if release_id:
-        tasks = tasks.filter(release_id=release_id)
-    if sprint_id:
-        tasks = tasks.filter(sprint_id=sprint_id)
-    if priority:
-        tasks = tasks.filter(priority=priority)
-
-    return render(request, "development_center/tasks_board.html", {
-        "todo": tasks.filter(status="todo"),
-        "doing": tasks.filter(status="doing"),
-        "review": tasks.filter(status="review"),
-        "done": tasks.filter(status="done"),
-        "modules": Module.objects.all(),
-        "releases": Release.objects.all(),
-        "sprints": Sprint.objects.all(),
-        "selected_module": module_id,
-        "selected_release": release_id,
-        "selected_sprint": sprint_id,
-        "selected_priority": priority,
-    })
+    return render(request, "development_center/tasks_board.html", build_tasks_board_context(request.GET))
 
 
 @login_required
@@ -238,21 +195,7 @@ def gantt_update_task_dates(request, pk):
 
 @login_required
 def roadmap(request):
-    releases = Release.objects.all().order_by("planned_date", "id")
-    roadmap = []
-    for release in releases:
-        milestones = release.milestone_set.all().order_by("target_date")
-        total = milestones.count()
-        completed = milestones.filter(completed=True).count()
-        progress = round(completed / total * 100) if total else 0
-        roadmap.append({
-            "release": release,
-            "milestones": milestones,
-            "total": total,
-            "completed": completed,
-            "progress": progress,
-        })
-    return render(request, "development_center/roadmap.html", {"roadmap": roadmap})
+    return render(request, "development_center/roadmap.html", build_roadmap_context())
 
 
 @login_required
@@ -285,30 +228,7 @@ def sprint_update(request, pk):
 @login_required
 def sprint_detail(request, pk):
     sprint = get_object_or_404(Sprint, pk=pk)
-    tasks = sprint.tasks.all()
-    total = tasks.count()
-    done = tasks.filter(status="done").count()
-    doing = tasks.filter(status="doing").count()
-    review = tasks.filter(status="review").count()
-    todo = tasks.filter(status="todo").count()
-    remaining = total - done
-    progress = round((done / total) * 100) if total else 0
-    today = timezone.localdate()
-    days_left = (sprint.end_date - today).days if sprint.end_date else None
-    overdue_tasks = tasks.filter(due_date__lt=today).exclude(status="done")
-    return render(request, "development_center/sprints/detail.html", {
-        "sprint": sprint,
-        "tasks": tasks,
-        "total": total,
-        "done": done,
-        "doing": doing,
-        "review": review,
-        "todo": todo,
-        "remaining": remaining,
-        "progress": progress,
-        "days_left": days_left,
-        "overdue_tasks": overdue_tasks,
-    })
+    return render(request, "development_center/sprints/detail.html", build_sprint_detail_context(sprint))
 
 
 @login_required

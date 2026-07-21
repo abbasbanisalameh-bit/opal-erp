@@ -1,7 +1,6 @@
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.db import transaction
-from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
@@ -16,94 +15,42 @@ from .forms import (
     CoverageAssignmentForm, SchoolDayEventForm, SchoolScheduleSettingsForm,
     TeacherAbsenceForm, TimeSlotForm, TimetableEntryForm,
 )
-from .live_services import DAY_CODES, management_live_status
 from .models import ClassCoverage, SchoolDayEvent, SchoolScheduleSettings, TeacherAbsence, TimeSlot, TimetableEntry
-from .services import build_smart_timetable
+from .workflow import (
+    active_time_slots_queryset, build_print_context, build_schedule_settings_context,
+    build_smart_builder_state, build_timetable_dashboard_context,
+    create_absence_coverages, school_schedule_settings, section_schedule_queryset,
+    substitute_teacher_is_unavailable, teacher_schedule_queryset,
+    upcoming_coverages_queryset,
+)
 
 
 @staff_member_required
 def dashboard(request):
-    entries = TimetableEntry.objects.select_related(
-        "academic_year", "section__grade", "subject", "teacher", "time_slot"
-    )
-    year_id = request.GET.get("academic_year", "")
-    grade_id = request.GET.get("grade", "")
-    section_id = request.GET.get("section", "")
-    teacher_id = request.GET.get("teacher", "")
-    subject_id = request.GET.get("subject", "")
-    day = request.GET.get("day", "")
-    q = request.GET.get("q", "").strip()
-    if year_id:
-        entries = entries.filter(academic_year_id=year_id)
-    if grade_id:
-        entries = entries.filter(section__grade_id=grade_id)
-    if section_id:
-        entries = entries.filter(section_id=section_id)
-    if teacher_id:
-        entries = entries.filter(teacher_id=teacher_id)
-    if subject_id:
-        entries = entries.filter(subject_id=subject_id)
-    if day:
-        entries = entries.filter(day=day)
-    if q:
-        entries = entries.filter(
-            Q(section__grade__name__icontains=q)
-            | Q(section__name__icontains=q)
-            | Q(subject__name__icontains=q)
-            | Q(teacher__full_name__icontains=q)
-            | Q(room__icontains=q)
-        )
-    return render(
-        request,
-        "timetable/dashboard.html",
-        {
-            "entries": entries,
-            "academic_years": AcademicYear.objects.order_by("-start_date"),
-            "grades": Grade.objects.order_by("order", "name"),
-            "sections": Section.objects.select_related("grade").filter(is_active=True),
-            "teachers": Teacher.objects.filter(is_active=True),
-            "subjects": Subject.objects.filter(is_active=True).select_related("grade").order_by("grade__order", "name"),
-            "days": TimetableEntry.DAYS,
-            "filters": {
-                "academic_year": year_id,
-                "grade": grade_id,
-                "section": section_id,
-                "teacher": teacher_id,
-                "subject": subject_id,
-                "day": day,
-                "q": q,
-            },
-            "live_status": management_live_status(active_school()),
-            "coverage_needed": ClassCoverage.objects.filter(date=timezone.localdate(), status="needed").select_related("entry__section", "entry__subject", "entry__teacher", "entry__time_slot"),
-        },
-    )
+    return render(request, "timetable/dashboard.html", build_timetable_dashboard_context(request))
 
 
 @staff_member_required
 def smart_builder(request):
-    school = active_school()
-    years = AcademicYear.objects.filter(school=school, is_closed=False).order_by("-is_current", "-start_date")
-    year_id = request.POST.get("academic_year") or request.GET.get("academic_year")
-    year = years.filter(pk=year_id).first() if year_id else years.first()
-    result = None
-    if year:
-        apply = request.method == "POST" and request.POST.get("action") == "apply"
-        replace = request.POST.get("replace_generated") == "1"
-        result = build_smart_timetable(academic_year=year, apply=apply, replace_generated=replace)
-        if apply:
-            audit(request, "create", "timetable.SmartBuilder", year.pk, f"بناء الجدول الذكي: {len(result['created'])} حصة")
-            if result["unresolved"]:
-                messages.warning(request, f"تم إنشاء {len(result['created'])} حصة، وتعذر إسناد {len(result['unresolved'])} تكليفات لعدم توفر وقت خالٍ.")
-            else:
-                messages.success(request, f"تم إنشاء {len(result['created'])} حصة دون تعديل الحصص اليدوية.")
-            return redirect(f"{request.path}?academic_year={year.pk}")
-    return render(request, "timetable/smart_builder.html", {"years": years, "year": year, "result": result})
+    state = build_smart_builder_state(request)
+    year = state["year"]
+    result = state["result"]
+    if year and state["apply"]:
+        audit(request, "create", "timetable.SmartBuilder", year.pk, f"بناء الجدول الذكي: {len(result['created'])} حصة")
+        if result["unresolved"]:
+            messages.warning(request, f"تم إنشاء {len(result['created'])} حصة، وتعذر إسناد {len(result['unresolved'])} تكليفات لعدم توفر وقت خالٍ.")
+        else:
+            messages.success(request, f"تم إنشاء {len(result['created'])} حصة دون تعديل الحصص اليدوية.")
+        return redirect(f"{request.path}?academic_year={year.pk}")
+    return render(request, "timetable/smart_builder.html", {
+        "years": state["years"], "year": year, "result": result,
+    })
 
 
 @staff_member_required
 def schedule_settings(request):
     school = active_school()
-    settings, _ = SchoolScheduleSettings.objects.get_or_create(school=school)
+    settings = school_schedule_settings(school)
     settings_form = SchoolScheduleSettingsForm(prefix="settings", instance=settings)
     event_form = SchoolDayEventForm(prefix="event")
     if request.method == "POST":
@@ -124,10 +71,11 @@ def schedule_settings(request):
                 event.save()
                 messages.success(request, "تمت إضافة الحدث إلى المؤقت المدرسي.")
                 return redirect("timetable:schedule_settings")
-    return render(request, "timetable/schedule_settings.html", {
-        "settings_form": settings_form, "event_form": event_form,
-        "events": SchoolDayEvent.objects.filter(school=school),
-    })
+    return render(
+        request,
+        "timetable/schedule_settings.html",
+        build_schedule_settings_context(school=school, settings_form=settings_form, event_form=event_form),
+    )
 
 
 @staff_member_required
@@ -150,22 +98,14 @@ def absence_center(request):
                 absence = form.save(commit=False)
                 absence.recorded_by = request.user
                 absence.save()
-                day = DAY_CODES[absence.date.weekday()]
-                entries = TimetableEntry.objects.filter(
-                    teacher=absence.teacher, day=day, academic_year__school=school,
-                    academic_year__is_current=True, is_active=True,
-                )
-                for entry in entries:
-                    ClassCoverage.objects.get_or_create(entry=entry, date=absence.date)
+                create_absence_coverages(absence, school)
         except Exception as exc:
             form.add_error(None, "غياب هذا المعلم مسجل لهذا التاريخ مسبقًا." if "uniq" in str(exc).lower() else str(exc))
         else:
             audit(request, "create", "timetable.TeacherAbsence", absence.pk, f"تسجيل غياب {absence.teacher} وإنشاء إشغالات الحصص")
             messages.success(request, "تم تسجيل الغياب وإنشاء تنبيه إشغال لكل حصة للمعلم في ذلك اليوم.")
             return redirect("timetable:absence_center")
-    coverages = ClassCoverage.objects.filter(date__gte=timezone.localdate()).select_related(
-        "entry__teacher", "entry__section", "entry__subject", "entry__time_slot", "substitute_teacher"
-    ).order_by("date", "entry__time_slot__order")
+    coverages = upcoming_coverages_queryset()
     return render(request, "timetable/absence_center.html", {"form": form, "coverages": coverages})
 
 
@@ -176,12 +116,7 @@ def coverage_assign(request, pk):
     form.fields["substitute_teacher"].queryset = Teacher.objects.filter(school=coverage.entry.academic_year.school, is_active=True).exclude(pk=coverage.entry.teacher_id)
     if request.method == "POST" and form.is_valid():
         substitute = form.cleaned_data["substitute_teacher"]
-        busy = TimetableEntry.objects.filter(
-            teacher=substitute, academic_year=coverage.entry.academic_year, day=coverage.entry.day,
-            time_slot=coverage.entry.time_slot, is_active=True,
-        ).exists()
-        absent = TeacherAbsence.objects.filter(teacher=substitute, date=coverage.date).exists()
-        if busy or absent:
+        if substitute_teacher_is_unavailable(coverage=coverage, substitute=substitute):
             form.add_error("substitute_teacher", "المعلم المختار مشغول بحصة أخرى أو مسجل غائبًا في هذا الوقت.")
         else:
             coverage = form.save(commit=False)
@@ -235,7 +170,7 @@ def entry_delete(request, pk):
 
 @staff_member_required
 def slot_list(request):
-    return render(request, "timetable/slot_list.html", {"slots": TimeSlot.objects.all()})
+    return render(request, "timetable/slot_list.html", {"slots": active_time_slots_queryset()})
 
 
 @staff_member_required
@@ -274,28 +209,17 @@ def slot_delete(request, pk):
     return redirect("timetable:slot_list")
 
 
-def _print_context(entries, title):
-    days = []
-    for code, label in TimetableEntry.DAYS:
-        days.append((label, entries.filter(day=code)))
-    return {"title": title, "days": days}
-
-
 @staff_member_required
 def section_print(request, section_id):
     section = get_object_or_404(Section.objects.select_related("grade"), pk=section_id)
-    entries = TimetableEntry.objects.filter(section=section, is_active=True).select_related(
-        "subject", "teacher", "time_slot"
-    )
+    entries = section_schedule_queryset(section)
     audit(request, "print", "timetable.SectionSchedule", section.pk, f"طباعة جدول {section}")
-    return render(request, "timetable/print.html", _print_context(entries, f"جدول {section}"))
+    return render(request, "timetable/print.html", build_print_context(entries, f"جدول {section}"))
 
 
 @staff_member_required
 def teacher_print(request, teacher_id):
     teacher = get_object_or_404(Teacher, pk=teacher_id)
-    entries = TimetableEntry.objects.filter(teacher=teacher, is_active=True).select_related(
-        "section__grade", "subject", "time_slot"
-    )
+    entries = teacher_schedule_queryset(teacher)
     audit(request, "print", "timetable.TeacherSchedule", teacher.pk, f"طباعة جدول {teacher}")
-    return render(request, "timetable/print.html", _print_context(entries, f"جدول المعلم {teacher}"))
+    return render(request, "timetable/print.html", build_print_context(entries, f"جدول المعلم {teacher}"))

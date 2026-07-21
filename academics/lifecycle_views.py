@@ -11,20 +11,16 @@ from enterprise_ops.permissions import management_required
 from .lifecycle import perform_lifecycle_action
 from .lifecycle_forms import BulkPromotionForm, StudentLifecycleForm
 from .models import Enrollment, StudentLifecycleEvent
+from .workflow import build_lifecycle_list_context
 
 
 @management_required
 def lifecycle_list(request):
-    events = StudentLifecycleEvent.objects.select_related(
-        "student", "from_enrollment__grade", "to_enrollment__grade", "performed_by"
-    )
     action = request.GET.get("action", "")
-    if action:
-        events = events.filter(action=action)
     return render(
         request,
         "academics/lifecycle/list.html",
-        {"events": events[:500], "actions": StudentLifecycleEvent.ACTION_CHOICES, "selected_action": action},
+        build_lifecycle_list_context(action),
     )
 
 
