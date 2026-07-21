@@ -8,7 +8,7 @@ visible behavior.
 from datetime import timedelta
 from decimal import Decimal
 
-from django.db.models import Avg, Count, DecimalField, ExpressionWrapper, F, Q, Sum, Value
+from django.db.models import Avg, Count, DecimalField, ExpressionWrapper, F, Max, Q, Sum, Value
 from django.db.models.functions import Coalesce, TruncMonth
 from django.utils import timezone
 
@@ -21,6 +21,7 @@ from enterprise_ops.services import feedback_satisfaction_snapshot
 from exams.models import Exam, StudentMark
 from students.models import Student
 from teachers.models import Teacher
+from timetable.models import TeacherAbsence
 
 
 def is_management_user(user):
@@ -169,6 +170,31 @@ def build_executive_snapshot():
         .order_by("-risk_events")[:8]
     )
 
+    absent_students_today = list(
+        Attendance.objects.filter(date=today, status="absent")
+        .select_related("student", "grade", "section")
+        .order_by("student__full_name")
+    )
+    absent_teachers_today = list(
+        TeacherAbsence.objects.filter(date=today)
+        .select_related("teacher")
+        .order_by("teacher__full_name")
+    )
+
+    recent_payment_cutoff = today - timedelta(days=30)
+    no_recent_payment_students = list(
+        Student.objects.filter(is_active=True, invoices__status__in=["open", "partial"])
+        .annotate(
+            last_payment_date=Max(
+                "invoices__payments__payment_date",
+                filter=Q(invoices__payments__status="posted"),
+            )
+        )
+        .filter(Q(last_payment_date__lt=recent_payment_cutoff) | Q(last_payment_date__isnull=True))
+        .distinct()
+        .order_by("full_name")[:40]
+    )
+
     satisfaction = feedback_satisfaction_snapshot(today=today)
 
     return {
@@ -204,6 +230,10 @@ def build_executive_snapshot():
         "attendance_trend": attendance_trend,
         "financial_watch": financial_watch,
         "attendance_watch": attendance_watch,
+        "absent_students_today": absent_students_today,
+        "absent_teachers_today": absent_teachers_today,
+        "no_recent_payment_students": no_recent_payment_students,
+        "recent_payment_cutoff": recent_payment_cutoff,
     }
 
 
@@ -242,3 +272,21 @@ def build_executive_export_rows(snapshot=None):
         ("نسبة النجاح", f'{snapshot["pass_rate"]}%'),
         ("الوثائق المصدرة", snapshot["issued_documents"]),
     ]
+
+
+def build_attendance_detail_context():
+    """Detailed attendance follow-up moved out of the compact dashboard."""
+    snapshot = build_executive_snapshot()
+    return {
+        "today": snapshot["today"],
+        "period_start": snapshot["period_start"],
+        "present_today": snapshot["present_today"],
+        "absent_today": snapshot["absent_today"],
+        "late_today": snapshot["late_today"],
+        "departed_today": snapshot["departed_today"],
+        "attendance_percent": snapshot["attendance_percent"],
+        "attendance_trend": snapshot["attendance_trend"],
+        "attendance_watch": snapshot["attendance_watch"],
+        "absent_students_today": snapshot["absent_students_today"],
+        "absent_teachers_today": snapshot["absent_teachers_today"],
+    }

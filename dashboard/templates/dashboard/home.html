@@ -108,64 +108,58 @@
     </div>
 </section>
 
-<section class="dashboard-layout">
-    <div>
-        <div class="dashboard-panel">
-            <h3>الإيرادات الشهرية</h3>
-            <div class="chart-box"><canvas id="incomeChart"></canvas></div>
+<section class="opal-dashboard-compact-grid mt-3">
+    <article class="dashboard-panel opal-crystal-card opal-attendance-summary">
+        <div class="opal-compact-head">
+            <div><span class="opal-section-eyebrow"><i class="bi bi-person-check-fill"></i> الطلبة اليوم</span><h3>الحضور والغياب</h3></div>
+            <a class="btn btn-sm btn-outline-warning" href="{% url 'dashboard:attendance_detail' %}">تفاصيل</a>
         </div>
-        <div class="dashboard-panel">
-            <h3>اتجاه الحضور خلال 7 أيام</h3>
-            <div class="chart-box"><canvas id="attendanceTrendChart"></canvas></div>
+        <div class="opal-attendance-numbers"><div><strong>{{ present_today }}</strong><span>حاضر</span></div><div class="danger"><strong>{{ absent_today }}</strong><span>غائب</span></div></div>
+        <div class="opal-mini-list">
+            {% for row in absent_students_today|slice:":5" %}<a href="{% url 'students:student_360' row.student_id %}"><span>{{ row.student.full_name }}</span><small>{{ row.grade|default:"-" }}{% if row.section %} — {{ row.section.name }}{% endif %}</small></a>{% empty %}<p class="opal-empty-compact">لا يوجد طلبة غائبون اليوم.</p>{% endfor %}
         </div>
-    </div>
-    <div>
-        <div class="dashboard-panel">
-            <h3>حضور اليوم</h3>
-            <div class="chart-box"><canvas id="attendanceChart"></canvas></div>
-            <div class="d-flex flex-wrap justify-content-between mt-3 text-secondary gap-2">
-                <span>حاضر: {{ present_today }}</span><span>غائب: {{ absent_today }}</span>
-                <span>متأخر: {{ late_today }}</span><span>مغادر: {{ departed_today }}</span>
-            </div>
-        </div>
-        <div class="dashboard-panel quick-list">
-            <h3>تنبيهات الإدارة</h3>
-            <div>غيابات آخر 30 يومًا: <strong>{{ period_absences }}</strong></div>
-            <div>حالات التأخر آخر 30 يومًا: <strong>{{ period_late }}</strong></div>
-            <div>الفواتير المتأخرة: <strong>{{ overdue_invoices }}</strong></div>
-            <div>طلاب غير نشطين: <strong>{{ inactive_students }}</strong></div>
-        </div>
-    </div>
-</section>
+    </article>
 
-<section class="dashboard-layout mt-2">
-    <div class="dashboard-panel">
-        <h3>أعلى المخاطر المالية</h3>
-        <div class="table-wrap"><table class="opal-table">
-            <thead><tr><th>الطالب</th><th>رقم الطالب</th><th>إجمالي الالتزام المفتوح</th></tr></thead>
-            <tbody>{% for row in financial_watch %}<tr><td>{{ row.student__full_name }}</td><td>{{ row.student__student_number }}</td><td>{{ row.total_due }}</td></tr>{% empty %}<tr><td colspan="3" class="text-center text-secondary">لا توجد التزامات مفتوحة.</td></tr>{% endfor %}</tbody>
-        </table></div>
-    </div>
-    <div class="dashboard-panel">
-        <h3>متابعة الحضور</h3>
-        <div class="table-wrap"><table class="opal-table">
-            <thead><tr><th>الطالب</th><th>رقم الطالب</th><th>غياب/تأخر خلال 30 يومًا</th></tr></thead>
-            <tbody>{% for row in attendance_watch %}<tr><td>{{ row.student__full_name }}</td><td>{{ row.student__student_number }}</td><td>{{ row.risk_events }}</td></tr>{% empty %}<tr><td colspan="3" class="text-center text-secondary">لا توجد حالات متابعة.</td></tr>{% endfor %}</tbody>
-        </table></div>
-    </div>
-</section>
+    <article class="dashboard-panel opal-crystal-card opal-attendance-summary">
+        <div class="opal-compact-head">
+            <div><span class="opal-section-eyebrow"><i class="bi bi-person-workspace"></i> المعلمون اليوم</span><h3>غياب المعلمين</h3></div>
+            <a class="btn btn-sm btn-outline-warning" href="{% url 'timetable:absence_center' %}">تفاصيل</a>
+        </div>
+        <div class="opal-attendance-numbers teacher"><div><strong>{{ teachers_count }}</strong><span>المعلمون النشطون</span></div><div class="danger"><strong>{{ absent_teachers_today|length }}</strong><span>غائب</span></div></div>
+        <div class="opal-mini-list">
+            {% for row in absent_teachers_today|slice:":5" %}<a href="{% url 'teachers:teacher_detail' row.teacher_id %}"><span>{{ row.teacher.full_name }}</span><small>{{ row.reason|default:"دون سبب مسجل" }}</small></a>{% empty %}<p class="opal-empty-compact">لا يوجد معلمون غائبون اليوم.</p>{% endfor %}
+        </div>
+    </article>
 
-<section class="dashboard-panel mt-2">
-    <h3>آخر الطلاب المضافين</h3>
-    <div class="table-wrap"><table class="opal-table">
-        <thead><tr><th>الطالب</th><th>رقم الطالب</th><th>الصف</th><th>الحالة</th></tr></thead>
-        <tbody>{% for s in latest_students %}<tr><td>{{ s.full_name }}</td><td>{{ s.student_number }}</td><td>{{ s.grade|default:"-" }}</td><td>{% if s.is_active %}<span class="badge bg-success">نشط</span>{% else %}<span class="badge bg-secondary">غير نشط</span>{% endif %}</td></tr>{% empty %}<tr><td colspan="4" class="text-center text-secondary">لا يوجد طلاب.</td></tr>{% endfor %}</tbody>
-    </table></div>
+    <article class="dashboard-panel opal-crystal-card opal-compact-chart-card">
+        <div class="opal-compact-head"><div><span class="opal-section-eyebrow"><i class="bi bi-graph-up-arrow"></i> التحصيل</span><h3>الإيرادات الشهرية</h3></div></div>
+        <div class="chart-box"><canvas id="incomeChart"></canvas></div>
+    </article>
+
+    <article class="dashboard-panel opal-crystal-card opal-dropdown-card">
+        <div class="opal-compact-head"><div><span class="opal-section-eyebrow"><i class="bi bi-wallet2"></i> متابعة الرسوم</span><h3>لم يسددوا خلال آخر 30 يومًا</h3></div><span class="opal-count-pill">{{ no_recent_payment_students|length }}</span></div>
+        <details class="opal-crystal-dropdown">
+            <summary>عرض أسماء الطلبة</summary>
+            <div>{% for student in no_recent_payment_students %}<a href="{% url 'students:student_360' student.pk %}"><span>{{ student.full_name }}</span><small>{% if student.last_payment_date %}آخر دفعة: {{ student.last_payment_date }}{% else %}لا توجد دفعة معتمدة{% endif %}</small></a>{% empty %}<p>لا توجد حالات متابعة.</p>{% endfor %}</div>
+        </details>
+    </article>
+
+    <article class="dashboard-panel opal-crystal-card opal-dropdown-card">
+        <div class="opal-compact-head"><div><span class="opal-section-eyebrow"><i class="bi bi-person-plus-fill"></i> التسجيل</span><h3>آخر الطلبة المضافين</h3></div><span class="opal-count-pill">{{ latest_students|length }}</span></div>
+        <details class="opal-crystal-dropdown">
+            <summary>عرض القائمة</summary>
+            <div>{% for student in latest_students %}<a href="{% url 'students:student_360' student.pk %}"><span>{{ student.full_name }}</span><small>{{ student.student_number }} — {{ student.grade|default:"دون صف" }}</small></a>{% empty %}<p>لا يوجد طلاب.</p>{% endfor %}</div>
+        </details>
+    </article>
+
+    <article class="dashboard-panel opal-crystal-card opal-admin-alerts">
+        <div class="opal-compact-head"><div><span class="opal-section-eyebrow"><i class="bi bi-shield-exclamation"></i> تنبيهات الإدارة</span><h3>ملخص المتابعة</h3></div></div>
+        <div class="opal-alert-metrics"><div><span>غيابات 30 يومًا</span><strong>{{ period_absences }}</strong></div><div><span>تأخر 30 يومًا</span><strong>{{ period_late }}</strong></div><div><span>فواتير متأخرة</span><strong>{{ overdue_invoices }}</strong></div><div><span>طلاب غير نشطين</span><strong>{{ inactive_students }}</strong></div></div>
+    </article>
 </section>
 
 {{ monthly_income_labels|json_script:"income-labels" }}
 {{ monthly_income_values|json_script:"income-values" }}
-{{ attendance_trend|json_script:"attendance-trend" }}
 {{ teaching_rating_distribution|json_script:"teaching-rating-distribution" }}
 {{ electronic_rating_distribution|json_script:"electronic-rating-distribution" }}
 {% endblock %}
@@ -176,13 +170,10 @@
 if (typeof Chart !== "undefined") {
 const incomeLabels = JSON.parse(document.getElementById("income-labels")?.textContent || "[]");
 const incomeValues = JSON.parse(document.getElementById("income-values")?.textContent || "[]");
-const attendanceTrend = JSON.parse(document.getElementById("attendance-trend")?.textContent || "[]");
 const teachingRatingDistribution = JSON.parse(document.getElementById("teaching-rating-distribution")?.textContent || "[]");
 const electronicRatingDistribution = JSON.parse(document.getElementById("electronic-rating-distribution")?.textContent || "[]");
 
 new Chart(document.getElementById("incomeChart"), {type:"bar",data:{labels:incomeLabels.length?incomeLabels:["لا توجد بيانات"],datasets:[{label:"الإيرادات",data:incomeValues.length?incomeValues:[0],backgroundColor:"rgba(20,184,166,.85)",borderRadius:10}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:"#dbeafe"}}},scales:{x:{ticks:{color:"#dbeafe"},grid:{color:"#1e334f"}},y:{ticks:{color:"#dbeafe"},grid:{color:"#1e334f"}}}}});
-new Chart(document.getElementById("attendanceChart"), {type:"doughnut",data:{labels:["حاضر","غائب","متأخر","مغادر"],datasets:[{data:[{{ present_today }},{{ absent_today }},{{ late_today }},{{ departed_today }}],backgroundColor:["#14b8a6","#fb7185","#f59e0b","#60a5fa"],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:"68%",plugins:{legend:{position:"bottom",labels:{color:"#dbeafe"}}}}});
-new Chart(document.getElementById("attendanceTrendChart"), {type:"line",data:{labels:attendanceTrend.map(x=>x.date),datasets:[{label:"نسبة الحضور %",data:attendanceTrend.map(x=>x.percent),tension:.35,fill:true,borderColor:"#60a5fa",backgroundColor:"rgba(96,165,250,.16)"}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:"#dbeafe"}}},scales:{x:{ticks:{color:"#dbeafe"},grid:{color:"#1e334f"}},y:{min:0,max:100,ticks:{color:"#dbeafe"},grid:{color:"#1e334f"}}}}});
 const ratingCanvas = document.getElementById("ratingDistributionChart");
 if (ratingCanvas) {
     new Chart(ratingCanvas, {

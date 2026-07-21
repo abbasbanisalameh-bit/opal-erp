@@ -5,6 +5,7 @@ from django.http import HttpResponse
 from django.shortcuts import render
 
 from .workflow import (
+    build_attendance_detail_context,
     build_dashboard_context,
     build_executive_export_rows,
     build_executive_snapshot,
@@ -20,6 +21,12 @@ _executive_snapshot = build_executive_snapshot
 @user_passes_test(_is_management_user)
 def home(request):
     return render(request, "dashboard/home.html", build_dashboard_context())
+
+
+@login_required
+@user_passes_test(_is_management_user)
+def attendance_detail(request):
+    return render(request, "dashboard/attendance_detail.html", build_attendance_detail_context())
 
 
 @login_required
