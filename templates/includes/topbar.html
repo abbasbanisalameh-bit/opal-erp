@@ -1,16 +1,20 @@
 {% load static %}
-<div class="topbar opal-topbar-shell">
+<header class="topbar opal-topbar-shell" aria-label="شريط النظام العلوي">
     {% if active_announcement or opal_live_schedule %}
     <div class="opal-topbar-ribbon" aria-live="polite">
-        {% if active_announcement %}
-        <div class="opal-topbar-announcement" title="{{ active_announcement.title }}: {{ active_announcement.message }}">
-            <i class="bi bi-megaphone-fill"></i>
-            <div class="opal-topbar-ticker"><span style="animation-duration: {{ active_announcement.speed_seconds }}s;"><strong>{{ active_announcement.title }}</strong> — {{ active_announcement.message }}</span></div>
+        <div class="opal-ribbon-stream">
+            {% if active_announcement %}
+            <div class="opal-topbar-announcement" title="{{ active_announcement.title }}: {{ active_announcement.message }}">
+                <i class="bi bi-megaphone-fill" aria-hidden="true"></i>
+                <div class="opal-topbar-ticker">
+                    <span style="animation-duration: {{ active_announcement.speed_seconds }}s;"><strong>{{ active_announcement.title }}</strong> — {{ active_announcement.message }}</span>
+                </div>
+            </div>
+            {% endif %}
         </div>
-        {% endif %}
         {% if opal_live_schedule %}
-        <div class="opal-topbar-event" id="opal-live-event">
-            <i class="bi bi-clock-history"></i>
+        <div class="opal-topbar-event" id="opal-live-event" title="التنبيه بالحدث التالي">
+            <i class="bi bi-calendar-event-fill" aria-hidden="true"></i>
             <strong>
                 {% if opal_live_schedule.next %}التالي: {{ opal_live_schedule.next.name }} الساعة {{ opal_live_schedule.next.start }}
                 {% else %}{{ opal_live_schedule.teacher_message|default:opal_live_schedule.message }}{% endif %}
@@ -20,18 +24,25 @@
         {% endif %}
     </div>
     {% endif %}
+
     <div class="opal-topbar-main">
         <div class="top-left opal-global-search-wrap">
-            <div class="opal-global-search-box">
-                <i class="bi bi-search"></i>
-                <input id="opal-global-operation-search" class="search-box" placeholder="ابحث عن عملية في النظام..." autocomplete="off" aria-label="البحث عن عملية">
+            <label class="opal-global-search-box" for="opal-global-operation-search">
+                <i class="bi bi-search" aria-hidden="true"></i>
+                <input id="opal-global-operation-search" class="search-box" placeholder="ابحث عن عملية أو صفحة..." autocomplete="off" aria-label="البحث في عمليات النظام">
                 <kbd>Ctrl K</kbd>
-            </div>
-            <div id="opal-global-operation-results" class="opal-global-operation-results d-none" role="listbox" aria-label="نتائج العمليات"></div>
+            </label>
+            <div id="opal-global-operation-results" class="opal-global-operation-results d-none" role="listbox" aria-label="نتائج البحث"></div>
         </div>
-        <div class="top-right">
-            <div class="opal-gold-clock" id="opal-gold-clock" title="الوقت والتاريخ الحاليان"><i class="bi bi-clock-fill"></i><div><strong id="opal-clock-time">--:--</strong><small id="opal-clock-date">--</small></div></div>
-            {% if opal_is_management %}<a class="icon-btn opal-guide-icon text-decoration-none" href="{% url 'core:operations_center' %}" title="دليل العمليات الموحد" aria-label="دليل العمليات الموحد"><i class="bi bi-signpost-split-fill"></i></a>{% endif %}
+
+        <div class="top-right opal-topbar-actions">
+            <div class="opal-gold-clock" id="opal-gold-clock" title="الوقت والتاريخ الحاليان">
+                <i class="bi bi-clock-fill" aria-hidden="true"></i>
+                <div><strong id="opal-clock-time">--:--</strong><small id="opal-clock-date">--</small></div>
+            </div>
+            {% if opal_is_management %}
+            <a class="icon-btn opal-guide-icon text-decoration-none" href="{% url 'core:operations_center' %}" title="دليل العمليات الموحد" aria-label="دليل العمليات الموحد"><i class="bi bi-signpost-split-fill"></i></a>
+            {% endif %}
             <div class="dropdown opal-notification-dropdown">
                 <button id="opal-notification-bell" class="icon-btn opal-bell-button position-relative" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" aria-label="الإشعارات" data-status-url="{% url 'enterprise_ops:notification_status' %}" data-latest-id="{{ opal_latest_unread_notification_id|default:'' }}">
                     <i class="bi bi-bell-fill"></i>
@@ -47,11 +58,11 @@
                     <div class="opal-notification-menu-foot"><a href="{% url 'enterprise_ops:notification_list' %}"><i class="bi bi-inboxes-fill"></i> فتح مركز الإشعارات الكامل</a></div>
                 </div>
             </div>
-            <a class="profile opal-profile-link text-decoration-none" href="{% url 'accounts:my_profile' %}" title="تعديل الملف الشخصي">
+            <a class="profile opal-profile-link text-decoration-none" href="{% url 'accounts:my_profile' %}" title="الملف الشخصي">
                 <div class="opal-user-photo-frame">{% if request.user.is_authenticated and request.user.profile.photo %}<img src="{{ request.user.profile.photo.url }}" alt="{{ request.user.profile.full_name|default:request.user.username }}">{% else %}<i class="bi bi-person-fill"></i>{% endif %}</div>
-                <div><strong>{% if request.user.is_authenticated and request.user.profile.full_name %}{{ request.user.profile.full_name }}{% else %}{{ request.user.username }}{% endif %}</strong><br><small>{% if request.user.is_authenticated and request.user.profile.role %}{{ request.user.profile.role.name }}{% else %}تعديل الملف الشخصي{% endif %}</small></div>
+                <div class="opal-profile-copy"><strong>{% if request.user.is_authenticated and request.user.profile.full_name %}{{ request.user.profile.full_name }}{% else %}{{ request.user.username }}{% endif %}</strong><small>{% if request.user.is_authenticated and request.user.profile.role %}{{ request.user.profile.role.name }}{% else %}الملف الشخصي{% endif %}</small></div>
             </a>
         </div>
     </div>
-</div>
+</header>
 {{ opal_operation_catalog|json_script:"opal-operation-catalog" }}

@@ -3,6 +3,7 @@
 {% block page_title %}بطاقة الطالب{% endblock %}
 {% block page_subtitle %}مركز موحد لبيانات الطالب الأكاديمية والمالية والسلوكية وبيانات ولي الأمر{% endblock %}
 {% block content %}
+<div class="opal-entity-360 opal-student-360">
 <div class="opal-card mb-4">
   <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
     <div class="d-flex align-items-center gap-3">
@@ -95,5 +96,6 @@
   {% if opal_openemis_enabled %}
   <div class="tab-pane fade" id="openemis"><div class="opal-card"><h4 class="fw-bold mb-3">OpenEMIS</h4><p class="text-secondary">حالة المزامنة: <strong>{{ student.ministry_sync_status|default:"not_synced" }}</strong>{% if student.ministry_student_id %} — الرقم الوزاري: {{ student.ministry_student_id }}{% endif %}</p><div class="d-flex flex-wrap gap-2 mb-3"><a href="{% url 'openemis:student_push' student.id %}" class="btn btn-secondary">إضافة إلى طابور المزامنة</a></div><form method="post" action="{% url 'openemis:mark_synced' student.id %}" class="row g-2 align-items-end">{% csrf_token %}<div class="col-md-7"><label class="form-label fw-bold">رقم الطالب في الوزارة</label><input name="ministry_student_id" class="form-control" value="{{ student.ministry_student_id }}"></div><div class="col-md-5"><button class="btn btn-primary w-100">تحديث حالة المزامنة</button></div></form></div></div>
   {% endif %}
+</div>
 </div>
 {% endblock %}

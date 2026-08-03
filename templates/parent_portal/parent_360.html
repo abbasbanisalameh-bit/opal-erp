@@ -3,6 +3,7 @@
 {% block page_title %}الملف الشامل لولي الأمر {{ family.guardian_name|default:"" }}{% endblock %}
 {% block page_subtitle %}حساب موحد لولي الأمر: الأبناء، المالية، الحضور، التحصيل والوثائق{% endblock %}
 {% block content %}
+<div class="opal-entity-360 opal-parent-360">
 
 <div class="opal-card mb-4">
   <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
@@ -77,4 +78,5 @@
 
 <div class="mb-4">{% include "parent_portal/_guardian_receipt_history.html" %}</div>
 <div class="opal-card"><h3 class="fw-bold mb-3">آخر الوثائق</h3><ul class="mb-0">{% for doc in recent_documents360 %}<li class="mb-2"><strong>{{ doc.student.full_name }}</strong><br><small>{{ doc.issued_document.title }} · {{ doc.created_at|date:"Y-m-d" }}</small></li>{% empty %}<li>لا توجد وثائق صادرة.</li>{% endfor %}</ul></div>
+</div>
 {% endblock %}
