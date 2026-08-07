@@ -1,4 +1,5 @@
 from datetime import timedelta
+import logging
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
@@ -8,88 +9,125 @@ from django.utils import timezone
 
 from core.models import AuditLog
 
-from .models import ApprovalAction, FeedbackTicket, Notification
+from .models import ApprovalAction, FeedbackTicket, MonthlyServiceEvaluation, Notification
 
 
-def feedback_satisfaction_snapshot(queryset=None, today=None):
-    """Return one-query satisfaction analytics for management dashboards.
+logger = logging.getLogger(__name__)
 
-    Ratings are stored on every feedback ticket from 1 to 5. The returned
-    percentages are safe for empty datasets and ready for charts/templates.
+
+def feedback_satisfaction_snapshot(queryset=None, today=None, school=None):
+    """Return school-scoped satisfaction metrics from persisted evaluations.
+
+    One ``MonthlyServiceEvaluation`` row is one participation even when the
+    guardian submitted both rating fields.  Category distributions still count
+    their own rating observations.  The "both positive" indicator is the true
+    share of paired submissions where both scores are at least four.
     """
-    qs = queryset if queryset is not None else FeedbackTicket.objects.all()
+    del queryset
     today = today or timezone.localdate()
     recent_start = today - timedelta(days=29)
     previous_start = recent_start - timedelta(days=30)
 
-    metrics = {
-        "total": Count("id"),
-        "teaching_average": Avg("teaching_quality_rating"),
-        "electronic_average": Avg("electronic_services_rating"),
-        "teaching_positive": Count("id", filter=Q(teaching_quality_rating__gte=4)),
-        "electronic_positive": Count("id", filter=Q(electronic_services_rating__gte=4)),
-        "both_positive": Count(
-            "id",
-            filter=Q(teaching_quality_rating__gte=4, electronic_services_rating__gte=4),
-        ),
-        "recent_total": Count("id", filter=Q(created_at__date__gte=recent_start)),
-        "recent_teaching_average": Avg(
-            "teaching_quality_rating",
-            filter=Q(created_at__date__gte=recent_start),
-        ),
-        "recent_electronic_average": Avg(
-            "electronic_services_rating",
-            filter=Q(created_at__date__gte=recent_start),
-        ),
-        "previous_teaching_average": Avg(
-            "teaching_quality_rating",
-            filter=Q(created_at__date__gte=previous_start, created_at__date__lt=recent_start),
-        ),
-        "previous_electronic_average": Avg(
-            "electronic_services_rating",
-            filter=Q(created_at__date__gte=previous_start, created_at__date__lt=recent_start),
-        ),
-        "teacher_responses": Count("id", filter=Q(sender__teacher_profile__isnull=False)),
-        "parent_responses": Count("id", filter=Q(sender__family_account__isnull=False)),
-    }
-    for score in range(1, 6):
-        metrics[f"teaching_{score}"] = Count(
-            "id", filter=Q(teaching_quality_rating=score)
-        )
-        metrics[f"electronic_{score}"] = Count(
-            "id", filter=Q(electronic_services_rating=score)
-        )
+    base = MonthlyServiceEvaluation.objects.all()
+    if school is not None:
+        base = base.filter(
+            Q(school=school)
+            | Q(school__isnull=True, user__profile__school=school)
+            | Q(school__isnull=True, user__teacher_profile__school=school)
+            | Q(school__isnull=True, user__family_account__school=school)
+        ).distinct()
 
-    raw = qs.aggregate(**metrics)
-    total = raw["total"] or 0
+    def submitted_period_q(field, start, end=None):
+        query = Q(**{f"{field}__date__gte": start}) | Q(
+            **{f"{field}__isnull": True, "created_at__date__gte": start}
+        )
+        if end is not None:
+            query &= (
+                Q(**{f"{field}__date__lt": end})
+                | Q(**{f"{field}__isnull": True, "created_at__date__lt": end})
+            )
+        return query
+
+    def rating_metrics(field, submitted_field):
+        qs = base.exclude(**{f"{field}__isnull": True})
+        recent_q = submitted_period_q(submitted_field, recent_start)
+        previous_q = submitted_period_q(submitted_field, previous_start, recent_start)
+        metrics = {
+            "total": Count("id"),
+            "average": Avg(field),
+            "positive": Count("id", filter=Q(**{f"{field}__gte": 4})),
+            "recent_total": Count("id", filter=recent_q),
+            "recent_average": Avg(field, filter=recent_q),
+            "previous_total": Count("id", filter=previous_q),
+            "previous_average": Avg(field, filter=previous_q),
+        }
+        for score_value in range(1, 6):
+            metrics[f"score_{score_value}"] = Count("id", filter=Q(**{field: score_value}))
+        return qs.aggregate(**metrics)
+
+    teaching = rating_metrics("teaching_quality_rating", "teaching_quality_submitted_at")
+    electronic = rating_metrics("electronic_services_rating", "electronic_services_submitted_at")
+    teaching_total = teaching["total"] or 0
+    electronic_total = electronic["total"] or 0
+    rating_observations = teaching_total + electronic_total
+
+    participation_qs = base.filter(
+        Q(teaching_quality_rating__isnull=False)
+        | Q(electronic_services_rating__isnull=False)
+    )
+    recent_participation_q = (
+        Q(teaching_quality_submitted_at__date__gte=recent_start)
+        | Q(electronic_services_submitted_at__date__gte=recent_start)
+        | Q(
+            teaching_quality_submitted_at__isnull=True,
+            electronic_services_submitted_at__isnull=True,
+            created_at__date__gte=recent_start,
+        )
+    )
+    feedback_total = participation_qs.count()
+    feedback_recent_total = participation_qs.filter(recent_participation_q).count()
+
+    paired_qs = base.filter(
+        teaching_quality_rating__isnull=False,
+        electronic_services_rating__isnull=False,
+    )
+    paired_total = paired_qs.count()
+    both_positive = paired_qs.filter(
+        teaching_quality_rating__gte=4,
+        electronic_services_rating__gte=4,
+    ).count()
 
     def score(value):
         return round(float(value or 0), 2)
 
-    def percent_from_average(value):
-        return round((score(value) / 5) * 100, 1) if total else 0
+    def percent_from_average(value, count):
+        return round((score(value) / 5) * 100, 1) if count else 0
 
-    def positive_percent(value):
-        return round(((value or 0) / total) * 100, 1) if total else 0
+    def positive_percent(value, count):
+        return round(((value or 0) / count) * 100, 1) if count else 0
 
-    teaching_average = score(raw["teaching_average"])
-    electronic_average = score(raw["electronic_average"])
-    overall_average = round((teaching_average + electronic_average) / 2, 2) if total else 0
-    overall_percent = round((overall_average / 5) * 100, 1) if total else 0
+    teaching_average = score(teaching["average"])
+    electronic_average = score(electronic["average"])
+    weighted_total = teaching_average * teaching_total + electronic_average * electronic_total
+    overall_average = round(weighted_total / rating_observations, 2) if rating_observations else 0
+    overall_percent = round((overall_average / 5) * 100, 1) if rating_observations else 0
 
-    recent_teaching = score(raw["recent_teaching_average"])
-    recent_electronic = score(raw["recent_electronic_average"])
-    previous_teaching = score(raw["previous_teaching_average"])
-    previous_electronic = score(raw["previous_electronic_average"])
-    recent_overall = round((recent_teaching + recent_electronic) / 2, 2) if raw["recent_total"] else 0
-    previous_overall = (
-        round((previous_teaching + previous_electronic) / 2, 2)
-        if raw["previous_teaching_average"] is not None or raw["previous_electronic_average"] is not None
-        else 0
+    recent_count = (teaching["recent_total"] or 0) + (electronic["recent_total"] or 0)
+    previous_count = (teaching["previous_total"] or 0) + (electronic["previous_total"] or 0)
+    recent_weighted = (
+        score(teaching["recent_average"]) * (teaching["recent_total"] or 0)
+        + score(electronic["recent_average"]) * (electronic["recent_total"] or 0)
     )
-    trend_delta = round(recent_overall - previous_overall, 2) if recent_overall and previous_overall else 0
+    previous_weighted = (
+        score(teaching["previous_average"]) * (teaching["previous_total"] or 0)
+        + score(electronic["previous_average"]) * (electronic["previous_total"] or 0)
+    )
+    recent_overall = round(recent_weighted / recent_count, 2) if recent_count else 0
+    previous_overall = round(previous_weighted / previous_count, 2) if previous_count else 0
+    trend_available = bool(recent_count and previous_count)
+    trend_delta = round(recent_overall - previous_overall, 2) if trend_available else 0
 
-    if not total:
+    if not rating_observations:
         satisfaction_label = "لا توجد تقييمات بعد"
         satisfaction_level = "empty"
     elif overall_percent >= 85:
@@ -106,22 +144,29 @@ def feedback_satisfaction_snapshot(queryset=None, today=None):
         satisfaction_level = "low"
 
     return {
-        "feedback_total": total,
-        "feedback_recent_total": raw["recent_total"] or 0,
+        "feedback_data_available": bool(rating_observations),
+        "teaching_data_available": bool(teaching_total),
+        "electronic_data_available": bool(electronic_total),
+        "feedback_total": feedback_total,
+        "feedback_rating_observations": rating_observations,
+        "feedback_recent_total": feedback_recent_total,
         "teaching_rating_average": teaching_average,
         "electronic_rating_average": electronic_average,
         "overall_rating_average": overall_average,
-        "teaching_satisfaction_percent": percent_from_average(raw["teaching_average"]),
-        "electronic_satisfaction_percent": percent_from_average(raw["electronic_average"]),
+        "teaching_satisfaction_percent": percent_from_average(teaching["average"], teaching_total),
+        "electronic_satisfaction_percent": percent_from_average(electronic["average"], electronic_total),
         "overall_satisfaction_percent": overall_percent,
-        "teaching_positive_percent": positive_percent(raw["teaching_positive"]),
-        "electronic_positive_percent": positive_percent(raw["electronic_positive"]),
-        "both_positive_percent": positive_percent(raw["both_positive"]),
-        "teaching_rating_distribution": [raw[f"teaching_{score}"] or 0 for score in range(1, 6)],
-        "electronic_rating_distribution": [raw[f"electronic_{score}"] or 0 for score in range(1, 6)],
-        "feedback_teacher_responses": raw["teacher_responses"] or 0,
-        "feedback_parent_responses": raw["parent_responses"] or 0,
+        "teaching_positive_percent": positive_percent(teaching["positive"], teaching_total),
+        "electronic_positive_percent": positive_percent(electronic["positive"], electronic_total),
+        "both_positive_percent": round((both_positive / paired_total) * 100, 1) if paired_total else 0,
+        "both_positive_total": both_positive,
+        "paired_feedback_total": paired_total,
+        "teaching_rating_distribution": [teaching[f"score_{value}"] or 0 for value in range(1, 6)],
+        "electronic_rating_distribution": [electronic[f"score_{value}"] or 0 for value in range(1, 6)],
+        "feedback_teacher_responses": participation_qs.filter(user__teacher_profile__isnull=False).count(),
+        "feedback_parent_responses": participation_qs.filter(user__family_account__isnull=False).count(),
         "feedback_recent_overall_average": recent_overall,
+        "feedback_trend_available": trend_available,
         "feedback_trend_delta": trend_delta,
         "feedback_trend_abs": abs(trend_delta),
         "feedback_satisfaction_label": satisfaction_label,
@@ -166,8 +211,27 @@ def audit(request, action, model_name="", object_id="", description=""):
             description=description,
             ip_address=client_ip(request),
         )
-    except DatabaseError:
+    except Exception:
+        logger.exception("تعذر تسجيل حدث التدقيق الثانوي.")
         return None
+
+
+def visible_notifications_for_user(user):
+    """Return the canonical personal-notification stream for ``user``.
+
+    New complaints and suggestions are operational work items for management,
+    so their count is shown on the executive dashboard card rather than in the
+    personal notification bell.  Historical manager notifications generated
+    by older releases are filtered from the visible stream without deleting
+    audit data.  Feedback status updates sent back to the original sender keep
+    using the normal notification stream.
+    """
+    qs = user.opal_notifications.all()
+    from .permissions import is_management
+
+    if is_management(user):
+        qs = qs.exclude(event_key__startswith="feedback:")
+    return qs
 
 
 def notify(recipient, title, message="", level="info", link="", event_key="", sound_enabled=True):
@@ -180,14 +244,18 @@ def notify(recipient, title, message="", level="info", link="", event_key="", so
         "link": link,
         "sound_enabled": sound_enabled,
     }
-    if event_key:
-        item, _ = Notification.objects.get_or_create(
-            recipient=recipient,
-            event_key=event_key,
-            defaults=values,
-        )
-        return item
-    return Notification.objects.create(recipient=recipient, **values)
+    try:
+        if event_key:
+            item, _ = Notification.objects.get_or_create(
+                recipient=recipient,
+                event_key=event_key,
+                defaults=values,
+            )
+            return item
+        return Notification.objects.create(recipient=recipient, **values)
+    except Exception:
+        logger.exception("تعذر إنشاء إشعار ثانوي للمستخدم %s.", getattr(recipient, "pk", None))
+        return None
 
 
 def management_recipients():
@@ -200,11 +268,84 @@ def management_recipients():
     ).distinct()
 
 
-def notify_management(title, message="", level="info", link="", exclude_user=None):
+def notify_management(title, message="", level="info", link="", exclude_user=None, event_key=""):
     qs = management_recipients()
     if exclude_user:
         qs = qs.exclude(pk=exclude_user.pk)
-    return [notify(user, title, message, level, link) for user in qs]
+    return [
+        notify(user, title, message, level, link, f"{event_key}:user:{user.pk}" if event_key else "")
+        for user in qs
+    ]
+
+
+def notify_management_batch(items, *, exclude_user=None):
+    """Create many management notifications without query-per-item loops.
+
+    ``notify_management`` remains the canonical helper for a single event.
+    Attendance closure can expose dozens of pending registers at once, so this
+    companion accepts event dictionaries and performs recipient discovery once,
+    existing-event checks once per recipient, then one conflict-safe bulk insert.
+    The same per-recipient event-key contract is preserved exactly.
+    """
+    rows = [
+        {
+            "title": str(item.get("title") or "")[:180],
+            "message": str(item.get("message") or ""),
+            "level": str(item.get("level") or "info"),
+            "link": str(item.get("link") or "")[:500],
+            "event_key": str(item.get("event_key") or "")[:180],
+            "sound_enabled": bool(item.get("sound_enabled", True)),
+        }
+        for item in items
+        if item and item.get("event_key")
+    ]
+    if not rows:
+        return 0
+
+    try:
+        recipients = management_recipients()
+        if exclude_user:
+            recipients = recipients.exclude(pk=exclude_user.pk)
+        recipient_ids = list(recipients.values_list("pk", flat=True))
+        if not recipient_ids:
+            return 0
+
+        pending_notifications = []
+        for recipient_id in recipient_ids:
+            suffix = f":user:{recipient_id}"
+            full_keys = [f"{row['event_key'][:180 - len(suffix)]}{suffix}" for row in rows]
+            existing_keys = set(
+                Notification.objects.filter(
+                    recipient_id=recipient_id,
+                    event_key__in=full_keys,
+                ).values_list("event_key", flat=True)
+            )
+            for row, full_key in zip(rows, full_keys):
+                if full_key in existing_keys:
+                    continue
+                pending_notifications.append(
+                    Notification(
+                        recipient_id=recipient_id,
+                        title=row["title"],
+                        message=row["message"],
+                        level=row["level"],
+                        link=row["link"],
+                        event_key=full_key,
+                        sound_enabled=row["sound_enabled"],
+                    )
+                )
+
+        if not pending_notifications:
+            return 0
+        Notification.objects.bulk_create(
+            pending_notifications,
+            batch_size=500,
+            ignore_conflicts=True,
+        )
+        return len(pending_notifications)
+    except Exception:
+        logger.exception("تعذر إنشاء حزمة إشعارات الإدارة الثانوية.")
+        return 0
 
 
 def broadcast_recipients(message):

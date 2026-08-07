@@ -3,6 +3,7 @@ from datetime import date
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 from django.contrib.auth.models import User
 
 from admissions.models import GradeFee
@@ -11,6 +12,7 @@ from students.models import Student
 from teachers.models import Teacher
 
 from .lifecycle import perform_lifecycle_action
+from .year_transition import annual_transition_report, execute_annual_transition
 from parent_portal.models import Family, FamilyStudent
 
 from .models import Enrollment, Grade, Section, StudentDocument, StudentLifecycleEvent, Subject
@@ -33,9 +35,9 @@ class AcademicsModelsTest(TestCase):
         self.student = Student.objects.create(student_number="ST-001", full_name="طالب اختبار", grade=self.grade.name, section=self.section.name)
 
     def test_create_grade_section_subject_and_enrollment(self):
-        subject = Subject.objects.create(name="الرياضيات", code="MATH1", grade=self.grade)
+        subject = Subject.objects.create(academic_year=self.year, name="الرياضيات", code="MATH1", grade=self.grade)
         enrollment = Enrollment.objects.create(student=self.student, academic_year=self.year, grade=self.grade, section=self.section)
-        self.assertEqual(str(self.section), "الصف الأول - أ")
+        self.assertEqual(str(self.section), "الصف الأول شعبة أ")
         self.assertIn("الرياضيات", str(subject))
         self.assertEqual(enrollment.student, self.student)
         self.assertEqual(self.section.available_seats, 29)
@@ -49,6 +51,8 @@ class AcademicsModelsTest(TestCase):
 
     def test_promote_closes_old_enrollment_and_creates_event(self):
         old = Enrollment.objects.create(student=self.student, academic_year=self.year, grade=self.grade, section=self.section)
+        AcademicYear.objects.filter(pk=self.year.pk).update(is_closed=True, is_current=False)
+        self.year.refresh_from_db()
         event = perform_lifecycle_action(
             student=self.student,
             action="promote",
@@ -76,6 +80,52 @@ class AcademicsModelsTest(TestCase):
                 target_grade=self.next_grade,
                 target_section=self.next_section,
             )
+
+    def test_annual_transition_allows_capacity_overflow_and_reports_warning(self):
+        second_student = Student.objects.create(
+            student_number="ST-003",
+            full_name="طالب انتقال إضافي",
+            grade=self.grade.name,
+            section=self.section.name,
+        )
+        Enrollment.objects.create(
+            student=self.student,
+            academic_year=self.year,
+            grade=self.grade,
+            section=self.section,
+            status="active",
+        )
+        Enrollment.objects.create(
+            student=second_student,
+            academic_year=self.year,
+            grade=self.grade,
+            section=self.section,
+            status="active",
+        )
+        AcademicYear.objects.filter(pk=self.year.pk).update(is_closed=True, is_current=False)
+        AcademicYear.objects.filter(pk=self.next_year.pk).update(
+            prepared_at=timezone.now(),
+            preparation_source=self.year,
+        )
+        self.year.refresh_from_db()
+        self.next_year.refresh_from_db()
+
+        report = annual_transition_report(source_year=self.year, target_year=self.next_year)
+        self.assertFalse(report["blockers"])
+        self.assertEqual(len(report["warnings"]), 1)
+        self.assertEqual(report["warnings"][0]["projected_count"], 2)
+        self.assertEqual(report["warnings"][0]["capacity"], 1)
+
+        _source, summary = execute_annual_transition(
+            source_year=self.year,
+            target_year=self.next_year,
+        )
+        self.assertEqual(summary["promotions"], 2)
+        self.assertEqual(len(summary["capacity_warnings"]), 1)
+        self.assertEqual(
+            Enrollment.objects.filter(academic_year=self.next_year, status="active").count(),
+            2,
+        )
 
 
 class AcademicStructureFlowTests(TestCase):
@@ -192,7 +242,7 @@ class BulkGraduationFlowTests(TestCase):
             )
         self.client.force_login(self.user)
 
-    def test_bulk_graduation_finishes_selected_enrollments(self):
+    def test_legacy_bulk_route_redirects_to_atomic_annual_center(self):
         response = self.client.post(
             reverse("academics:promotion_batch"),
             {
@@ -205,10 +255,9 @@ class BulkGraduationFlowTests(TestCase):
                 "execute": "1",
             },
         )
-        self.assertRedirects(response, reverse("academics:lifecycle_list"))
+        self.assertRedirects(response, reverse("academics:annual_lifecycle_center"))
         self.assertEqual(
-            Enrollment.objects.filter(pk__in=[item.pk for item in self.enrollments], status="graduated").count(),
+            Enrollment.objects.filter(pk__in=[item.pk for item in self.enrollments], status="active").count(),
             2,
         )
-        self.assertEqual(StudentLifecycleEvent.objects.filter(action="graduate").count(), 2)
-        self.assertEqual(Student.objects.filter(student_number__startswith="GRAD-", status="graduated").count(), 2)
+        self.assertEqual(StudentLifecycleEvent.objects.filter(action="graduate").count(), 0)

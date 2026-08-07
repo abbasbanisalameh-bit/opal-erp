@@ -5,32 +5,10 @@ from django import forms
 
 from core.identifiers import normalize_identifier
 from core.finance_constants import ACTIVE_PAYMENT_METHOD_CHOICES
-from .models import AdmissionApplication, GradeFee, TransportRoute, RegistrationSettings, StudentRegistration
+from .models import GradeFee, TransportRoute, RegistrationSettings, StudentRegistration
 from academics.models import Grade, Section
 from students.models import Student
 
-
-class CandidateApplicationForm(forms.ModelForm):
-    class Meta:
-        model = AdmissionApplication
-        fields = [
-            "student_full_name", "father_name", "mother_name", "gender", "birth_date",
-            "guardian_name", "guardian_phone", "guardian_email", "guardian_job",
-            "grade", "section", "phone", "address", "photo", "notes",
-        ]
-        widgets = {
-            "birth_date": forms.DateInput(attrs={"type": "date"}),
-            "address": forms.Textarea(attrs={"rows": 2}),
-            "notes": forms.Textarea(attrs={"rows": 2}),
-        }
-
-    def __init__(self, *args, school=None, academic_year=None, **kwargs):
-        super().__init__(*args, **kwargs)
-        if school:
-            self.fields["grade"].queryset = Grade.objects.filter(school=school, is_active=True)
-            self.fields["section"].queryset = Section.objects.filter(branch__school=school, is_active=True)
-        for field in self.fields.values():
-            field.widget.attrs.setdefault("class", "form-select" if isinstance(field.widget, forms.Select) else "form-control")
 
 
 class GradeFeeForm(forms.ModelForm):

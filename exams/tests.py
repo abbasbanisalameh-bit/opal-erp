@@ -17,7 +17,7 @@ class ExamsWorkflowTest(TestCase):
         self.school = School.objects.create(name="مدرسة")
         self.year = AcademicYear.objects.create(school=self.school, name="2026/2027", start_date=date(2026, 9, 1), end_date=date(2027, 6, 30))
         self.grade = Grade.objects.create(school=self.school, name="الأول", order=1)
-        self.subject = Subject.objects.create(name="رياضيات", grade=self.grade)
+        self.subject = Subject.objects.create(academic_year=self.year, name="رياضيات", grade=self.grade)
         self.student = Student.objects.create(student_number="E-1", full_name="طالب امتحان", grade="الأول")
         self.semester = self.year.semesters.get(code="first")
         self.exam = Exam.objects.create(
@@ -64,8 +64,8 @@ class OfficialAnnualReportCalculationTest(TestCase):
             end_date=date(2027, 6, 30),
         )
         self.grade = Grade.objects.create(school=self.school, name="السابع", order=7)
-        self.math = Subject.objects.create(name="رياضيات", grade=self.grade)
-        self.arabic = Subject.objects.create(name="لغة عربية", grade=self.grade)
+        self.math = Subject.objects.create(academic_year=self.year, name="رياضيات", grade=self.grade)
+        self.arabic = Subject.objects.create(academic_year=self.year, name="لغة عربية", grade=self.grade)
         self.student = Student.objects.create(student_number="REPORT-1", full_name="طالب الشهادة", grade="السابع")
         Enrollment.objects.create(student=self.student, academic_year=self.year, grade=self.grade, status="active")
 
@@ -79,7 +79,7 @@ class OfficialAnnualReportCalculationTest(TestCase):
                     semester=semester,
                     grade=self.grade,
                     subject=subject,
-                    status="open",
+                    status="published",
                 )
                 StudentMark.objects.create(exam=exam, student=self.student, mark=Decimal(str(mark)))
 

@@ -19,7 +19,7 @@ class FamilyIdentityForm(NormalizedPhoneMixin, forms.ModelForm):
 
     class Meta:
         model = Family
-        fields = ["guardian_name", "relation", "identity_type", "identity_number", "phone", "secondary_phone", "email", "job_title", "address", "medical_notes"]
+        fields = ["guardian_name", "relation", "identity_type", "identity_number", "phone", "secondary_phone", "email", "job_title", "address", "medical_notes", "financial_policy"]
         labels = {
             "guardian_name": "اسم ولي الأمر",
             "phone": "رقم الهاتف",
@@ -31,6 +31,7 @@ class FamilyIdentityForm(NormalizedPhoneMixin, forms.ModelForm):
             "job_title": "المهنة",
             "address": "العنوان",
             "medical_notes": "ملاحظات",
+            "financial_policy": "سياسة الرسوم والدفعات",
         }
 
     def __init__(self, *args, **kwargs):

@@ -1,7 +1,7 @@
 {% extends "base/base.html" %}
 {% block title %}تسديد رسوم | OPAL ERP{% endblock %}
 {% block page_title %}تسديد رسوم{% endblock %}
-{% block page_subtitle %}بحث فوري عن الطالب أو ولي الأمر، ثم تسديد الطالب أو جميع الإخوة المستحقين{% endblock %}
+{% block page_subtitle %}رسوم السنة الحالية منفصلة عن متبقيات السنوات السابقة، مع توزيع تلقائي على الإخوة{% endblock %}
 
 {% block content %}
 <div class="opal-card mb-4">
@@ -28,21 +28,23 @@
 
 {% if selected_student %}
 <div class="row g-3 mb-4">
-    <div class="col-md-4"><div class="opal-card h-100"><div class="text-secondary">عدد الأبناء</div><div class="display-6 fw-bold">{{ siblings_data|length }}</div></div></div>
-    <div class="col-md-4"><div class="opal-card h-100"><div class="text-secondary">إجمالي المتبقي</div><div class="display-6 fw-bold text-danger">{{ family_total_remaining }}</div></div></div>
-    <div class="col-md-4"><div class="opal-card h-100"><div class="text-secondary">الطالب المرجعي</div><div class="h4 fw-bold">{{ selected_student.full_name }}</div></div></div>
+    <div class="col-md-3"><div class="opal-card h-100"><div class="text-secondary">السنة الحالية</div><div class="h4 fw-bold">{{ current_year.name|default:"غير محددة" }}</div></div></div>
+    <div class="col-md-3"><div class="opal-card h-100"><div class="text-secondary">متبقي السنة الحالية</div><div class="display-6 fw-bold text-warning">{{ family_total_current_remaining }}</div></div></div>
+    <div class="col-md-3"><div class="opal-card h-100"><div class="text-secondary">متبقيات السنوات السابقة</div><div class="display-6 fw-bold text-danger">{{ family_total_previous_remaining }}</div></div></div>
+    <div class="col-md-3"><div class="opal-card h-100"><div class="text-secondary">الإجمالي المطلوب</div><div class="display-6 fw-bold">{{ family_total_combined_remaining }}</div></div></div>
 </div>
 
 <div class="opal-card mb-4">
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
-        <div><h3 class="fw-bold mb-1">حالة الطالب وإخوته</h3><p class="text-secondary mb-0">الأخضر مسدد، الأصفر جزئي، الأحمر غير مسدد.</p></div>
+        <div><h3 class="fw-bold mb-1">حالة الطالب وإخوته للسنة الحالية</h3><p class="text-secondary mb-0">الأخضر مسدد، الأصفر جزئي، الأحمر غير مسدد. المتراكم السابق ظاهر في عمود مستقل ولا يدخل في هذه الحالة.</p></div>
         <a href="{% url 'admissions:fee_payment_create' %}" class="btn btn-secondary">بحث جديد</a>
     </div>
     <div class="table-responsive"><table class="opal-table" id="familyRows">
-        <thead><tr><th>الطالب</th><th>الصف</th><th>الرسوم</th><th>المدفوع</th><th>المتبقي</th><th>الحالة</th></tr></thead>
+        <thead><tr><th>الطالب</th><th>الصف</th><th>رسوم السنة الحالية</th><th>مدفوع السنة الحالية</th><th>متبقي السنة الحالية</th><th>متبقيات السنوات السابقة</th><th>الإجمالي المطلوب</th><th>حالة السنة الحالية</th><th></th></tr></thead>
         <tbody>{% for row in siblings_data %}<tr class="sibling-{{ row.status }}">
-            <td>{{ row.student.full_name }}</td><td>{{ row.student.grade }}</td><td>{{ row.total }}</td><td>{{ row.paid }}</td><td>{{ row.remaining }}</td>
+            <td>{{ row.student.full_name }}</td><td>{{ row.student.grade }}</td><td>{{ row.total }}</td><td>{{ row.paid }}</td><td>{{ row.remaining }}</td><td class="text-danger fw-bold">{{ row.previous_debt.total }}</td><td class="fw-bold">{{ row.combined_remaining }}</td>
             <td>{% if row.status == "paid" %}<span class="badge bg-success">مسدد بالكامل</span>{% elif row.status == "unpaid" %}<span class="badge bg-danger">غير مسدد</span>{% else %}<span class="badge bg-warning text-dark">سداد جزئي</span>{% endif %}</td>
+            <td>{% if row.previous_debt.has_debt %}<a class="btn btn-sm btn-outline-danger" href="{% url 'admissions:previous_debt_payment' row.student.pk %}">دفع المتراكم السابق</a>{% else %}<span class="text-success small">لا يوجد متراكم</span>{% endif %}</td>
         </tr>{% endfor %}</tbody>
     </table></div>
 </div>
@@ -51,13 +53,13 @@
     <form method="post" id="paymentForm" class="row g-3">
         {% csrf_token %}<input type="hidden" name="student" value="{{ selected_student.id }}"><input type="hidden" name="operation_token" value="{{ operation_token }}">
         <div class="col-md-4"><label class="form-label fw-bold">مبلغ الدفعة</label>
-            <input id="paymentAmount" name="amount" type="number" step="0.01" min="0.01" max="{{ family_total_remaining }}" class="form-control" required {% if not has_payable_siblings %}disabled{% endif %}>
-            <div class="form-text">الحد الأعلى {{ family_total_remaining }} د.أ. لا يقبل النظام أي زيادة.</div>
+            <input id="paymentAmount" name="amount" type="number" step="0.01" min="0.01" max="{{ family_total_current_remaining }}" class="form-control" required {% if not has_payable_siblings %}disabled{% endif %}>
+            <div class="form-text">الحد الأعلى {{ family_total_current_remaining }} د.أ من رسوم السنة الحالية فقط.</div>
         </div>
         <div class="col-md-4"><label class="form-label fw-bold">طريقة الدفع</label><select name="payment_method" class="form-select" required>{% for value,label in payment_methods %}<option value="{{ value }}" {% if value == selected_payment_method %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
         <div class="col-md-4"><label class="form-label fw-bold">المستلم</label><input class="form-control" value="{{ request.user.profile.full_name|default:request.user.username }}" readonly><div class="form-text">يُسجل تلقائيًا من الحساب الحالي.</div></div>
         <div class="col-12"><label class="form-label fw-bold">ملاحظات</label><input name="notes" class="form-control" placeholder="اختياري"></div>
-        <div class="col-12"><div class="alert alert-info mb-0">التوزيع تلقائي فقط وبالتساوي بين الأبناء ذوي الرصيد، ثم يعاد توزيع حصة أي طالب يصل للصفر على البقية. الطالب المسدد لا يستقبل دفعة.</div></div>
+        <div class="col-12"><div class="alert alert-info mb-0">هذه الدفعة تخص رسوم {{ current_year.name|default:"السنة الحالية" }} فقط. التوزيع تلقائي وبالتساوي بين الأبناء ذوي المتبقي الحالي، والطالب المسدد لا يستقبل دفعة. متبقيات السنوات السابقة لا تُمس وتُدفع من زرها المستقل.</div></div>
         <div class="col-12"><button type="button" id="previewBtn" class="btn btn-outline-primary" {% if not has_payable_siblings %}disabled{% endif %}><i class="bi bi-eye"></i> معاينة التوزيع</button>
             <button id="submitBtn" class="btn btn-primary" disabled><i class="bi bi-cash-stack"></i> {% if has_unpaid_other_siblings %}دفعة عن جميع الإخوة{% else %}دفعة{% endif %}</button></div>
     </form>
@@ -66,11 +68,11 @@
 <div class="opal-card d-none" id="previewCard">
     <div class="d-flex justify-content-between align-items-center mb-3"><h3 class="fw-bold mb-0">معاينة التوزيع التلقائي</h3><span id="previewValidity" class="badge"></span></div>
     <div class="row g-3 mb-3">
-        <div class="col-md-4"><div class="p-3 rounded border">قبل الدفعة<br><strong id="dueBefore">0.00</strong></div></div>
+        <div class="col-md-4"><div class="p-3 rounded border">متبقي السنة الحالية قبل الدفعة<br><strong id="dueBefore">0.00</strong></div></div>
         <div class="col-md-4"><div class="p-3 rounded border">الموزع<br><strong id="allocatedTotal">0.00</strong></div></div>
-        <div class="col-md-4"><div class="p-3 rounded border">بعد الدفعة<br><strong id="dueAfter">0.00</strong></div></div>
+        <div class="col-md-4"><div class="p-3 rounded border">متبقي السنة الحالية بعد الدفعة<br><strong id="dueAfter">0.00</strong></div></div>
     </div>
-    <div class="table-responsive"><table class="opal-table"><thead><tr><th>الطالب</th><th>المتبقي قبل</th><th>حصة الطالب</th><th>المتبقي بعد</th><th>الحالة بعد</th></tr></thead><tbody id="previewBody"></tbody></table></div>
+    <div class="table-responsive"><table class="opal-table"><thead><tr><th>الطالب</th><th>متبقي السنة الحالية قبل</th><th>حصة الطالب</th><th>متبقي السنة الحالية بعد</th><th>الحالة بعد</th></tr></thead><tbody id="previewBody"></tbody></table></div>
 </div>
 {% endif %}
 {% endblock %}

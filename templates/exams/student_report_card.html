@@ -1,4 +1,5 @@
 {% extends "base/base.html" %}
+{% load opal_subjects %}
 {% block title %}شهادة الطالب | OPAL ERP{% endblock %}
 {% block page_title %}شهادة الطالب{% endblock %}
 {% block page_subtitle %}النتيجة السنوية وفق أربعة امتحانات لكل مادة في كل فصل{% endblock %}
@@ -13,7 +14,7 @@
   <h3 class="fw-bold mt-4">{{ term.semester.name }}</h3>
   <div class="table-responsive"><table class="table align-middle">
     <thead><tr><th>المادة</th><th>الأول /20</th><th>الثاني /20</th><th>الثالث /20</th><th>النهائي /40</th><th>المجموع /100</th></tr></thead>
-    <tbody>{% for row in term.rows %}<tr><td>{{ row.subject.name }}</td>{% for item in row.assessments %}<td>{{ item.mark }}</td>{% endfor %}<td class="fw-bold">{{ row.total }}</td></tr>{% empty %}<tr><td colspan="6" class="text-center text-muted">لا توجد مواد أو علامات.</td></tr>{% endfor %}</tbody>
+    <tbody>{% for row in term.rows %}<tr><td class="opal-subject-cell" style="{% subject_style row.subject %}"><span class="opal-subject-chip" style="{% subject_style row.subject %}">{{ row.subject.name }}</span></td>{% for item in row.assessments %}<td>{{ item.mark }}</td>{% endfor %}<td class="fw-bold">{{ row.total }}</td></tr>{% empty %}<tr><td colspan="6" class="text-center text-muted">لا توجد مواد أو علامات.</td></tr>{% endfor %}</tbody>
     <tfoot><tr><th colspan="5">معدل الفصل</th><th>{{ term.average }}</th></tr></tfoot>
   </table></div>
   {% endfor %}

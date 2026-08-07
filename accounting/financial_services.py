@@ -7,10 +7,12 @@ from decimal import Decimal
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.db.models import Count, Q, Sum
+from django.db.models import Count, DecimalField, ExpressionWrapper, F, Q, Sum, Value
+from django.db.models.functions import Coalesce
 from django.utils import timezone
 
 from admissions.models import FeePayment, StudentRegistration
+from core.academic_context import current_academic_year
 from core.models import AcademicYear
 
 from .models import (
@@ -62,7 +64,7 @@ def _income_rows(school, period_start, period_end):
         rows.append({
             "date": timezone.localtime(item.created_at),
             "number": item.receipt_number,
-            "description": item.get_scope_display(),
+            "description": f"{item.payment_period_label} — {item.get_scope_display()}",
             "party": item.guardian_name or getattr(item.main_student, "full_name", ""),
             "method": item.get_payment_method_display(),
             "receiver": item.created_by.get_full_name() or item.created_by.username if item.created_by else "النظام",
@@ -133,7 +135,10 @@ def monthly_financial_report(school, period_end=None):
     due = sum((invoice.remaining for invoice in StudentInvoice.objects.filter(
         academic_year__school=school,
         due_date__lte=period_end,
-    ).exclude(status="cancelled").prefetch_related("payments")), ZERO)
+    ).exclude(status="cancelled")
+        .exclude(carry_forward_record__source_invoices__isnull=False)
+        .distinct()
+        .prefetch_related("payments")), ZERO)
     method_totals = {}
     for row in income_rows:
         method_totals[row["method"]] = method_totals.get(row["method"], ZERO) + row["amount"]
@@ -261,52 +266,83 @@ def close_financial_year(*, school, source_year, target_year, user, notes=""):
         notes=(notes or "").strip(),
         closed_by=user,
     )
-    category, _ = FeeCategory.objects.get_or_create(
-        name=f"رصيد مرحل من {source_year.name}",
-        defaults={"description": "رصيد مالي مرحل بعد إغلاق العام", "amount": 0, "active": True},
-    )
     source_by_student = {}
     for invoice in invoices:
         if invoice.student_id in balances:
             source_by_student.setdefault(invoice.student_id, []).append(invoice)
     for student_id, amount in balances.items():
-        target_invoice = StudentInvoice.objects.create(
-            student_id=student_id,
-            academic_year=target_year,
-            fee_category=category,
-            amount=amount,
-            due_date=target_year.start_date,
-            notes=f"رصيد مرحل آليًا من العام {source_year.name}",
-            created_by=user,
-        )
-        FinancialCarryForward.objects.create(
+        carried = FinancialCarryForward.objects.create(
             closure=closure,
             student_id=student_id,
             amount=amount,
-            target_invoice=target_invoice,
         )
-        for invoice in source_by_student[student_id]:
-            invoice.status = "cancelled"
-            invoice.paid = False
-            invoice.cancelled_by = user
-            invoice.cancelled_at = timezone.now()
-            invoice.cancellation_reason = f"أُغلق ماليًا ورُحّل الرصيد إلى {target_year.name}"
-            invoice.save(update_fields=["status", "paid", "cancelled_by", "cancelled_at", "cancellation_reason", "updated_at"])
+        carried.source_invoices.add(*source_by_student[student_id])
     return closure
 
 
 def collection_dashboard(school):
     report = monthly_financial_report(school)
-    invoices = list(StudentInvoice.objects.filter(academic_year__school=school).exclude(status="cancelled").select_related("student").prefetch_related("payments"))
+    academic_year = current_academic_year(school=school)
+    money_field = DecimalField(max_digits=14, decimal_places=2)
+    invoices = []
+    if academic_year is not None:
+        invoices = list(
+            StudentInvoice.objects
+            .filter(academic_year=academic_year)
+            .exclude(status="cancelled")
+            .exclude(carry_forward_record__source_invoices__isnull=False)
+            .distinct()
+            .select_related("student")
+            .annotate(
+                posted_paid=Coalesce(
+                    Sum("payments__amount", filter=Q(payments__status="posted")),
+                    Value(ZERO, output_field=money_field),
+                )
+            )
+        )
     balances = {}
     overdue = ZERO
+    current_fees = ZERO
+    current_paid = ZERO
+    today = timezone.localdate()
     for invoice in invoices:
-        if invoice.remaining > 0:
+        net_amount = max((invoice.amount or ZERO) - (invoice.discount_amount or ZERO), ZERO)
+        paid_amount = min(max(invoice.posted_paid or ZERO, ZERO), net_amount)
+        remaining = max(net_amount - paid_amount, ZERO)
+        current_fees += net_amount
+        current_paid += paid_amount
+        if remaining > 0:
             balances[invoice.student_id] = {
                 "student": invoice.student,
-                "remaining": balances.get(invoice.student_id, {}).get("remaining", ZERO) + invoice.remaining,
+                "remaining": balances.get(invoice.student_id, {}).get("remaining", ZERO) + remaining,
             }
-            if invoice.is_overdue:
-                overdue += invoice.remaining
+            if invoice.due_date < today:
+                overdue += remaining
     debtors = sorted(balances.values(), key=lambda row: row["remaining"], reverse=True)
-    return {**report, "receivables": sum((row["remaining"] for row in debtors), ZERO), "overdue": overdue, "debtors": debtors[:20], "debtors_count": len(debtors)}
+    current_remaining = sum((row["remaining"] for row in debtors), ZERO)
+    from .previous_debt_services import previous_debt_summary
+
+    previous = (
+        previous_debt_summary(school=school, academic_year=academic_year)
+        if academic_year is not None
+        else {"total": ZERO, "guardians_count": 0, "students_count": 0}
+    )
+    return {
+        **report,
+        "current_year": academic_year,
+        "current_fees": current_fees,
+        "current_paid": current_paid,
+        "current_remaining": current_remaining,
+        "current_collection_rate": (
+            current_paid / current_fees * 100 if current_fees > ZERO else ZERO
+        ),
+        "previous_remaining": previous["total"],
+        "combined_remaining": current_remaining + previous["total"],
+        "previous_guardians_count": previous["guardians_count"],
+        "previous_students_count": previous["students_count"],
+        # Compatibility aliases now deliberately mean current-year balances.
+        "receivables": current_remaining,
+        "overdue": overdue,
+        "debtors": debtors[:20],
+        "debtors_count": len(debtors),
+    }

@@ -42,14 +42,20 @@ def exam_statistics(exam: Exam) -> dict:
 
 def dashboard_statistics(exams: Iterable[Exam]) -> dict:
     exams = list(exams)
-    marks_qs = StudentMark.objects.filter(exam_id__in=[e.id for e in exams])
-    aggregate = marks_qs.aggregate(count=Count("id"), average=Avg("mark"), highest=Max("mark"), lowest=Min("mark"))
-    passed = failed = 0
-    for mark in marks_qs.select_related("exam"):
-        if Decimal(str(mark.percentage)) >= mark.exam.pass_percentage: passed += 1
-        else: failed += 1
-    total = aggregate["count"] or 0
-    return {"exam_count": len(exams), "mark_count": total, "average": aggregate["average"] or Decimal("0"), "highest": aggregate["highest"] or Decimal("0"), "lowest": aggregate["lowest"] or Decimal("0"), "passed": passed, "failed": failed, "pass_rate": round((passed / total) * 100, 2) if total else 0}
+    marks = list(StudentMark.objects.filter(exam_id__in=[e.id for e in exams]).select_related("exam"))
+    percentages = [Decimal(str(mark.percentage)) for mark in marks]
+    passed = sum(1 for mark in marks if Decimal(str(mark.percentage)) >= mark.exam.pass_percentage)
+    failed = len(marks) - passed
+    total = len(marks)
+    average = (sum(percentages, Decimal("0")) / total).quantize(Decimal("0.01")) if total else Decimal("0.00")
+    return {
+        "exam_count": len(exams), "mark_count": total,
+        "average": average,
+        "highest": max(percentages) if percentages else Decimal("0.00"),
+        "lowest": min(percentages) if percentages else Decimal("0.00"),
+        "passed": passed, "failed": failed,
+        "pass_rate": round((passed / total) * 100, 2) if total else 0,
+    }
 
 
 def student_academic_record(student, published_only=False) -> dict:
@@ -57,7 +63,7 @@ def student_academic_record(student, published_only=False) -> dict:
     if published_only:
         marks_qs = marks_qs.filter(exam__status__in=["published", "closed"])
     marks = list(marks_qs.select_related("exam", "exam__subject", "exam__grade", "exam__academic_year").order_by("exam__exam_date", "exam__subject__name", "exam__name"))
-    by_subject = defaultdict(lambda: {"marks": [], "total_percentage": Decimal("0")})
+    by_subject = defaultdict(lambda: {"marks": [], "total_percentage": Decimal("0"), "color": "#64748B"})
     by_year = defaultdict(lambda: {"marks": [], "total": Decimal("0")})
     timeline = []
     for item in marks:
@@ -66,6 +72,7 @@ def student_academic_record(student, published_only=False) -> dict:
         year_name = str(item.exam.academic_year)
         by_subject[subject_name]["marks"].append(item)
         by_subject[subject_name]["total_percentage"] += pct
+        by_subject[subject_name]["color"] = item.exam.subject.color or "#64748B"
         by_year[year_name]["marks"].append(item)
         by_year[year_name]["total"] += pct
         timeline.append({"label": item.exam.name, "subject": subject_name, "date": item.exam.exam_date, "percentage": pct})
@@ -75,7 +82,7 @@ def student_academic_record(student, published_only=False) -> dict:
         count = len(data["marks"])
         avg = (data["total_percentage"] / count) if count else Decimal("0")
         percentages = [Decimal(str(m.percentage)) for m in data["marks"]]
-        subjects.append({"name": name, "count": count, "average": avg.quantize(Decimal("0.01")), "highest": max(percentages) if percentages else Decimal("0"), "lowest": min(percentages) if percentages else Decimal("0"), "trend": (percentages[-1] - percentages[0]).quantize(Decimal("0.01")) if len(percentages) > 1 else Decimal("0"), "grade": _grade_label(avg), "marks": data["marks"]})
+        subjects.append({"name": name, "color": data["color"], "count": count, "average": avg.quantize(Decimal("0.01")), "highest": max(percentages) if percentages else Decimal("0"), "lowest": min(percentages) if percentages else Decimal("0"), "trend": (percentages[-1] - percentages[0]).quantize(Decimal("0.01")) if len(percentages) > 1 else Decimal("0"), "grade": _grade_label(avg), "marks": data["marks"]})
     subjects.sort(key=lambda r: (-r["average"], r["name"]))
 
     years = []
@@ -110,6 +117,7 @@ def subject_semester_result(*, student, academic_year, semester, subject):
             exam__semester=semester,
             exam__subject=subject,
             exam__is_active=True,
+            exam__status__in=["published", "closed"],
         ).select_related("exam")
     }
     assessments = []
@@ -142,7 +150,7 @@ def semester_report(*, student, academic_year, semester):
 
     enrollment = student.enrollments.filter(academic_year=academic_year).select_related("grade").first()
     if enrollment:
-        subjects = list(Subject.objects.filter(grade=enrollment.grade, is_active=True).order_by("name"))
+        subjects = list(Subject.objects.filter(academic_year=academic_year, grade=enrollment.grade, is_active=True).order_by("name"))
     else:
         subjects = list(Subject.objects.filter(
             exams__marks__student=student,
@@ -174,7 +182,10 @@ def annual_report(*, student, academic_year):
     second = academic_year.semesters.get(code="second")
     first_report = semester_report(student=student, academic_year=academic_year, semester=first)
     second_report = semester_report(student=student, academic_year=academic_year, semester=second)
-    annual_average = _two_places((first_report["average"] + second_report["average"]) / Decimal("2"))
+    from .models import AnnualStudentResult
+
+    snapshot = AnnualStudentResult.objects.filter(student=student, academic_year=academic_year).first()
+    annual_average = snapshot.general_average if snapshot else _two_places((first_report["average"] + second_report["average"]) / Decimal("2"))
     return {
         "student": student,
         "academic_year": academic_year,
@@ -182,5 +193,70 @@ def annual_report(*, student, academic_year):
         "second": second_report,
         "terms": [first_report, second_report],
         "annual_average": annual_average,
-        "complete": first_report["complete"] and second_report["complete"],
+        "complete": bool(snapshot) or (first_report["complete"] and second_report["complete"]),
+        "is_snapshot": bool(snapshot),
+    }
+
+
+def student_marks_matrix(student, academic_year=None):
+    """Compact read-only matrix for guardian and management enquiries."""
+    from academics.models import Enrollment, Subject
+    from core.models import AcademicYear
+
+    if academic_year is None:
+        enrollment = student.enrollments.select_related("academic_year", "grade").filter(status="active").order_by("-academic_year__start_date").first()
+        academic_year = enrollment.academic_year if enrollment else AcademicYear.objects.filter(is_current=True).first()
+    else:
+        enrollment = student.enrollments.select_related("grade").filter(academic_year=academic_year).first()
+
+    if not academic_year:
+        return {"academic_year": None, "subjects": [], "exam_types": [], "by_subject": [], "by_exam": [], "semesters": []}
+
+    semesters = list(academic_year.semesters.order_by("code"))
+    subject_qs = Subject.objects.filter(academic_year=academic_year, is_active=True)
+    if enrollment:
+        subject_qs = subject_qs.filter(grade=enrollment.grade)
+    else:
+        subject_qs = subject_qs.filter(exams__marks__student=student, exams__academic_year=academic_year).distinct()
+    subjects = list(subject_qs.order_by("name"))
+
+    marks = StudentMark.objects.filter(
+        student=student,
+        exam__academic_year=academic_year,
+        exam__is_active=True,
+        exam__status__in=["published", "closed"],
+    ).select_related("exam", "exam__semester", "exam__subject")
+    mark_map = {(m.exam.semester_id, m.exam.subject_id, m.exam.exam_type): m for m in marks}
+
+    exam_types = [{"key": key, "label": label, "max_mark": Exam.MAX_MARKS[key]} for key, label in Exam.EXAM_TYPES]
+    by_subject = []
+    for subject in subjects:
+        term_rows = []
+        for semester in semesters:
+            cells = []
+            total = Decimal("0.00")
+            for exam_type in exam_types:
+                mark = mark_map.get((semester.id, subject.id, exam_type["key"]))
+                if mark:
+                    total += Decimal(mark.mark)
+                cells.append({"exam_type": exam_type, "mark": mark, "value": mark.mark if mark else None})
+            term_rows.append({"semester": semester, "cells": cells, "total": total, "is_closed": semester.is_closed})
+        by_subject.append({"subject": subject, "terms": term_rows})
+
+    by_exam = []
+    for semester in semesters:
+        for exam_type in exam_types:
+            rows = []
+            for subject in subjects:
+                mark = mark_map.get((semester.id, subject.id, exam_type["key"]))
+                rows.append({"subject": subject, "mark": mark, "value": mark.mark if mark else None})
+            by_exam.append({"semester": semester, "exam_type": exam_type, "rows": rows})
+
+    return {
+        "academic_year": academic_year,
+        "subjects": subjects,
+        "exam_types": exam_types,
+        "by_subject": by_subject,
+        "by_exam": by_exam,
+        "semesters": semesters,
     }

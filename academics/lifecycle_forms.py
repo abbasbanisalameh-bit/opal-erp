@@ -37,7 +37,7 @@ class BulkPromotionForm(forms.Form):
     ]
 
     operation = forms.ChoiceField(label="الإجراء الجماعي", choices=OPERATION_CHOICES, initial="promote")
-    source_year = forms.ModelChoiceField(label="العام الحالي", queryset=AcademicYear.objects.filter(is_closed=False))
+    source_year = forms.ModelChoiceField(label="العام المغلق المصدر", queryset=AcademicYear.objects.filter(is_closed=True))
     source_grade = forms.ModelChoiceField(label="الصف الحالي", queryset=Grade.objects.filter(is_active=True))
     target_year = forms.ModelChoiceField(
         label="العام الجديد",
@@ -71,8 +71,8 @@ class BulkPromotionForm(forms.Form):
         target_grade = cleaned.get("target_grade")
         target_section = cleaned.get("target_section")
 
-        if source_year and source_year.is_closed:
-            self.add_error("source_year", "العام المصدر مغلق ولا يقبل حركات جديدة.")
+        if source_year and not source_year.is_closed:
+            self.add_error("source_year", "يجب إغلاق العام المصدر قبل الترفيع أو التخريج.")
         if source_year and source_grade and source_grade.school_id != source_year.school_id:
             self.add_error("source_grade", "الصف الحالي لا يتبع مدرسة العام المصدر.")
 

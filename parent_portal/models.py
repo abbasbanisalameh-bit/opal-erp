@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import Q
 
@@ -15,6 +16,13 @@ class Family(models.Model):
     SOURCE_CHOICES = [
         ("manual", "إدخال OPAL"),
         ("openemis", "OpenEMIS"),
+    ]
+    FINANCIAL_POLICY_CHOICES = [
+        ("alert_only", "تنبيه فقط دون حجب"),
+        ("hide_results", "حجب النتائج فقط"),
+        ("hide_certificates", "حجب الشهادات والوثائق فقط"),
+        ("restrict_noncritical", "تقييد الخدمات غير الأساسية"),
+        ("exceptional_suspension", "تعليق استثنائي بقرار الإدارة"),
     ]
 
     school = models.ForeignKey(
@@ -50,6 +58,13 @@ class Family(models.Model):
     job_title = models.CharField("المهنة", max_length=150, blank=True)
     address = models.TextField("العنوان", blank=True)
     medical_notes = models.TextField("ملاحظات", blank=True)
+    financial_policy = models.CharField(
+        "سياسة الرسوم والدفعات",
+        max_length=30,
+        choices=FINANCIAL_POLICY_CHOICES,
+        default="alert_only",
+        help_text="الوضع الافتراضي تنبيه فقط؛ الحضور والتنبيهات الأساسية لا تُحجب.",
+    )
     family_code = models.CharField("رقم ملف ولي الأمر", max_length=50, blank=True, db_index=True)
     openemis_data = models.JSONField("بيانات OpenEMIS الكاملة", default=dict, blank=True)
     is_active = models.BooleanField("نشطة", default=True)
@@ -140,3 +155,40 @@ class FamilyStudent(models.Model):
 
     def __str__(self):
         return f"{self.family} - {self.student}"
+
+
+class TeacherMonthlyEvaluation(models.Model):
+    """One guardian assessment per teacher in each calendar month."""
+
+    family = models.ForeignKey(Family, on_delete=models.CASCADE, related_name="teacher_evaluations")
+    teacher = models.ForeignKey("teachers.Teacher", on_delete=models.PROTECT, related_name="parent_evaluations")
+    period = models.DateField("شهر التقييم", db_index=True, help_text="يحفظ اليوم الأول من الشهر.")
+    teaching_quality_rating = models.PositiveSmallIntegerField(
+        "جودة التدريس", validators=[MinValueValidator(1), MaxValueValidator(5)]
+    )
+    electronic_services_rating = models.PositiveSmallIntegerField(
+        "الخدمات الإلكترونية (سجل تاريخي)",
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+        null=True,
+        blank=True,
+        help_text="للتوافق مع التقييمات السابقة فقط؛ التقييم الحالي للخدمات الإلكترونية مركزي ومستقل.",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-period", "teacher__full_name"]
+        constraints = [
+            models.UniqueConstraint(fields=["family", "teacher", "period"], name="uniq_family_teacher_month_eval"),
+        ]
+        verbose_name = "تقييم ولي الأمر للمعلم"
+        verbose_name_plural = "تقييمات أولياء الأمور للمعلمين"
+
+    def clean(self):
+        super().clean()
+        if self.period and self.period.day != 1:
+            raise ValidationError({"period": "يحفظ التقييم بالشهر عبر اليوم الأول منه."})
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)

@@ -1,42 +1,67 @@
 {% extends "base/base.html" %}
+{% load opal_subjects %}
 {% block title %}حساب ولي الأمر {{ family.guardian_name|default:"" }}{% endblock %}
 {% block page_title %}حساب ولي الأمر {{ family.guardian_name|default:"" }}{% endblock %}
 {% block page_subtitle %}متابعة الأبناء والرسوم والحضور والنتائج والوثائق من مكان واحد{% endblock %}
 {% block content %}
 
-<div class="stats-grid mb-4">
-  <div class="stat-card"><span>عدد الأبناء</span><h2>👨‍👩‍👧 {{ totals.students_count }}</h2></div>
-  <div class="stat-card"><span>إجمالي الرسوم</span><h2>💰 {{ totals.total }}</h2></div>
-  <div class="stat-card"><span>إجمالي المدفوع</span><h2>✅ {{ totals.paid }}</h2></div>
-  <div class="stat-card"><span>إجمالي المتبقي</span><h2>⚠️ {{ totals.remaining }}</h2></div>
+<div class="opal-compact-metric-grid opal-parent-metric-grid mb-4">
+  <div class="opal-card opal-compact-metric-card"><span class="opal-metric-label">عدد الأبناء</span><strong class="opal-metric-value">{{ totals.students_count }}</strong></div>
+  <div class="opal-card opal-compact-metric-card"><span class="opal-metric-label">رسوم السنة الحالية</span><strong class="opal-metric-value">{{ totals.total }}</strong></div>
+  <div class="opal-card opal-compact-metric-card"><span class="opal-metric-label">مدفوع السنة الحالية</span><strong class="opal-metric-value text-success">{{ totals.paid }}</strong></div>
+  <div class="opal-card opal-compact-metric-card"><span class="opal-metric-label">متبقي السنة الحالية</span><strong class="opal-metric-value text-warning">{{ totals.remaining }}</strong></div>
+  <div class="opal-card opal-compact-metric-card"><span class="opal-metric-label">متبقيات السنوات السابقة</span><strong class="opal-metric-value text-danger">{{ totals.previous_debt }}</strong></div>
+  <div class="opal-card opal-compact-metric-card"><span class="opal-metric-label">الإجمالي المطلوب</span><strong class="opal-metric-value">{{ totals.combined_remaining }}</strong></div>
 </div>
+
+{% if totals.previous_debt > 0 %}
+<div class="opal-previous-debt-alert mb-4" role="alert">
+  <div><span class="opal-previous-debt-pulse">على الأسرة متبقيات رسوم سابقة بقيمة {{ totals.previous_debt|floatformat:2 }} د.أ</span>
+    <div class="small mt-1">{% for card in cards %}{% if card.previous_debt.has_debt %}{{ card.student.full_name }}: {{ card.previous_debt.years_text }} — {{ card.previous_debt.total|floatformat:2 }} د.أ{% if not forloop.last %}<br>{% endif %}{% endif %}{% endfor %}</div>
+  </div>
+  <a class="btn btn-outline-danger btn-sm" href="{% url 'parent_portal:fees' %}"><i class="bi bi-receipt"></i> عرض كشف الرسوم</a>
+</div>
+{% endif %}
+
+<section class="opal-card mb-4">
+  <div class="mb-3"><h3 class="mb-1">خدمات ولي الأمر</h3><p class="text-secondary mb-0">كل خدمة تبدأ من بطاقة واحدة هنا، ولا تتكرر أزرارها داخل صفحات الأبناء.</p></div>
+  <div class="opal-module-grid opal-compact-module-grid">
+    <a class="opal-module-card" href="{% url 'parent_portal:children' %}"><i class="bi bi-people-fill"></i><div><h3>الأبناء</h3><p>المدخل الوحيد لفتح ملف كل ابن وبياناته الشخصية.</p></div></a>
+    <a class="opal-module-card" href="{% url 'parent_portal:marks' %}"><i class="bi bi-bar-chart-fill"></i><div><h3>علامات الأبناء</h3><p>المدخل الوحيد للعلامات المنشورة والتفاصيل.</p></div></a>
+    <a class="opal-module-card" href="{% url 'parent_portal:homework' %}"><i class="bi bi-journal-text"></i><div><h3>واجبات الأبناء</h3><p>الواجبات الفعالة ومواعيد التسليم.</p></div></a>
+    <a class="opal-module-card" href="{% url 'parent_portal:fees' %}"><i class="bi bi-wallet2"></i><div><h3>الرسوم والدفعات</h3><p>الرسوم والمدفوع والمتبقي والإيصالات.</p></div></a>
+    <a class="opal-module-card" href="{% url 'parent_portal:attendance' %}"><i class="bi bi-calendar-check"></i><div><h3>الغياب والمغادرة</h3><p>سجل الاستثناءات اليومية لكل ابن.</p></div></a>
+    <a class="opal-module-card" href="{% url 'parent_portal:timetable' %}"><i class="bi bi-calendar3"></i><div><h3>جداول الأبناء</h3><p>الجدول حسب الابن واليوم والمادة.</p></div></a>
+    <a class="opal-module-card" href="{% url 'parent_portal:documents' %}"><i class="bi bi-file-earmark-text"></i><div><h3>وثائق الأبناء</h3><p>الوثائق المتاحة للأسرة.</p></div></a>
+    <a class="opal-module-card" href="{% url 'parent_portal:teacher_evaluations' %}"><i class="bi bi-star-fill"></i><div><h3>تقييم المعلمين</h3><p>تقييم معلمي الأبناء في موعده الشهري.</p></div></a>
+    <a class="opal-module-card" href="{% url 'parent_portal:announcements' %}"><i class="bi bi-megaphone-fill"></i><div><h3>إعلانات المدرسة</h3><p>الإعلانات الفعالة الموجهة لولي الأمر.</p></div></a>
+  </div>
+</section>
 
 <div class="stats-grid mb-4">
   {% for card in cards %}
   <div class="stat-card border border-{{ card.status_class }}">
-    <span>{{ card.student.grade }} - {{ card.student.section|default:"بدون شعبة" }}</span>
+    <span>{{ card.student.class_display|default:"بدون صف وشعبة" }}</span>
     <h2>🎓 {{ card.student.full_name }}</h2>
-    <p class="mb-1">الحالة المالية: <strong>{{ card.status_label }}</strong></p>
-    <p class="mb-1">المدفوع: {{ card.paid }} د.أ</p>
-    <p class="mb-1">المتبقي: {{ card.remaining }} د.أ</p><p class="mb-1">الترتيب: {% if card.rank.available %}<strong>{{ card.rank.rank }} من {{ card.rank.class_count }}</strong>{% else %}غير متاح{% endif %}</p><p class="mb-2">الواجبات الحالية: {{ card.homework|length }}</p>
-    <div class="alert alert-info py-2"><strong>{{ card.schedule.message }}</strong>{% if card.schedule.current_class %}<div>الحصة الحالية: {{ card.schedule.current_class.subject }}</div>{% endif %}{% if card.schedule.next_class %}<div>الحصة التالية: {{ card.schedule.next_class.subject }} — {{ card.schedule.next_class.time_slot.start_time }}</div>{% endif %}{% if card.schedule.ends_soon %}<div class="text-danger">اقترب انتهاء الحدث الجاري</div>{% endif %}</div>
-    <a class="btn btn-sm btn-primary" href="{% url 'parent_portal:student_detail' card.student.id %}">فتح ملف الطالب</a>
+    <p class="mb-1">حالة رسوم {{ card.current_year.name|default:"السنة الحالية" }}: <strong>{{ card.status_label }}</strong></p>
+    <p class="mb-1">مدفوع السنة الحالية: {{ card.paid }} د.أ</p>
+    <p class="mb-1">متبقي السنة الحالية: {{ card.remaining }} د.أ</p>
+    <p class="mb-1">متبقيات السنوات السابقة: <strong class="text-danger">{{ card.previous_debt.total }} د.أ</strong></p>
+    <p class="mb-1">الإجمالي المطلوب: <strong>{{ card.combined_remaining }} د.أ</strong></p><p class="mb-1">الترتيب: {% if card.rank.available %}<strong>{{ card.rank.rank }} من {{ card.rank.class_count }}</strong>{% else %}غير متاح{% endif %}</p><p class="mb-2">الواجبات الحالية: {{ card.homework|length }}</p>
+    <div class="alert alert-info py-2"><strong>{{ card.schedule.message }}</strong>{% if card.schedule.current_class %}<div>الحصة الحالية: <span class="opal-subject-chip" style="{% subject_style card.schedule.current_class.subject %}">{{ card.schedule.current_class.subject }}</span></div>{% endif %}{% if card.schedule.next_class %}<div>الحصة التالية: <span class="opal-subject-chip" style="{% subject_style card.schedule.next_class.subject %}">{{ card.schedule.next_class.subject }}</span></div>{% endif %}{% if card.schedule.ends_soon %}<div class="text-danger">اقترب انتهاء الحدث الجاري</div>{% endif %}</div>
+    <small class="text-secondary">فتح الملف من بطاقة «الأبناء» أعلاه.</small>
   </div>
   {% endfor %}
 </div>
 
 <div class="mb-4">
-  {% include "parent_portal/_guardian_receipt_history.html" %}
+  <a class="opal-card d-block text-decoration-none" href="{% url 'enterprise_ops:feedback_list' %}#feedback-send-card">
+    <div class="d-flex align-items-center gap-3">
+      <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-info-subtle text-info" style="width:52px;height:52px"><i class="bi bi-chat-square-text-fill fs-4"></i></span>
+      <div><h3 class="h5 mb-1">الشكاوى والاقتراحات</h3><p class="text-secondary mb-0">المدخل الوحيد لإرسال رسالة إلى الإدارة ومتابعة حالتها والرد عليها.</p></div>
+    </div>
+    <span class="btn btn-primary mt-3"><i class="bi bi-send-fill"></i> إرسال شكوى أو اقتراح</span>
+  </a>
 </div>
 
-<div class="row g-4">
-  <div class="col-12">
-    <div class="opal-card">
-      <h3 class="fw-bold mb-3">🔔 الإعلانات</h3>
-      <ul class="mb-0">
-        {% for a in announcements %}<li><strong>{{ a.title }}</strong><br><small>{{ a.message|truncatechars:120 }}</small></li>{% empty %}<li>لا توجد إعلانات.</li>{% endfor %}
-      </ul>
-    </div>
-  </div>
-</div>
 {% endblock %}

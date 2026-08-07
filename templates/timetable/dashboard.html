@@ -1,29 +1,70 @@
 {% extends "base/base.html" %}
 {% block title %}الجدول الدراسي{% endblock %}
 {% block page_title %}الجدول الدراسي{% endblock %}
-{% block page_subtitle %}إدارة الحصص ومنع تعارض المعلمين والشعب والغرف{% endblock %}
+{% block page_subtitle %}الجدول الرسمي والمنشئ الذكي في شاشة تشغيل واحدة{% endblock %}
 {% block content %}
-{% if live_status %}<div class="opal-card mb-4 border-primary"><div class="d-flex justify-content-between flex-wrap"><div><strong>{{ live_status.message }}</strong>{% if live_status.next %}<div>التالي: {{ live_status.next.name }} الساعة {{ live_status.next.start }}</div>{% endif %}</div><div>المعلمون المنشغلون الآن: <strong>{{ live_status.busy_teachers }}</strong></div></div>{% if live_status.current_entries %}<div class="mt-2">{% for row in live_status.current_entries %}<span class="badge bg-primary me-1">{{ row.teacher|default:'دون معلم' }} — {{ row.section }}</span>{% endfor %}</div>{% endif %}</div>{% endif %}
-{% if coverage_needed %}<div class="alert alert-danger"><strong>تنبيه:</strong> توجد {{ coverage_needed|length }} حصص اليوم بحاجة إشغال بسبب غياب معلم. <a href="{% url 'timetable:absence_center' %}">معالجة الإشغالات</a></div>{% endif %}
-<div class="opal-card mb-4">
-  <form method="get" class="row g-3 align-items-end">
-    <div class="col-lg-2 col-md-4"><label class="form-label">العام</label><select class="form-select" name="academic_year"><option value="">الكل</option>{% for item in academic_years %}<option value="{{ item.id }}" {% if filters.academic_year == item.id|stringformat:'s' %}selected{% endif %}>{{ item.name }}</option>{% endfor %}</select></div>
-    <div class="col-lg-2 col-md-4"><label class="form-label">الصف</label><select class="form-select" name="grade"><option value="">الكل</option>{% for item in grades %}<option value="{{ item.id }}" {% if filters.grade == item.id|stringformat:'s' %}selected{% endif %}>{{ item.name }}</option>{% endfor %}</select></div>
-    <div class="col-lg-2 col-md-4"><label class="form-label">الشعبة</label><select class="form-select" name="section"><option value="">الكل</option>{% for item in sections %}<option value="{{ item.id }}" {% if filters.section == item.id|stringformat:'s' %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
-    <div class="col-lg-2 col-md-4"><label class="form-label">المعلم</label><select class="form-select" name="teacher"><option value="">الكل</option>{% for item in teachers %}<option value="{{ item.id }}" {% if filters.teacher == item.id|stringformat:'s' %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
-    <div class="col-lg-2 col-md-4"><label class="form-label">المادة</label><select class="form-select" name="subject"><option value="">الكل</option>{% for item in subjects %}<option value="{{ item.id }}" {% if filters.subject == item.id|stringformat:'s' %}selected{% endif %}>{{ item.grade.name }} — {{ item.name }}</option>{% endfor %}</select></div>
-    <div class="col-lg-2 col-md-4"><label class="form-label">اليوم</label><select class="form-select" name="day"><option value="">الكل</option>{% for code,label in days %}<option value="{{ code }}" {% if filters.day == code %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
-    <div class="col-lg-10"><label class="form-label">بحث حر</label><input class="form-control" name="q" value="{{ filters.q }}" placeholder="الصف أو الشعبة أو المادة أو المعلم أو الغرفة"></div>
-    <div class="col-lg-2 d-grid"><button class="btn btn-primary">عرض الجدول</button></div>
+<div class="opal-card mb-4 opal-screen-only">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div><h3 class="mb-1">الجدول الرسمي{% if current_year %} — {{ current_year.name }}{% endif %}</h3><p class="text-secondary mb-0">العرض مقيد تلقائيًا بالمدرسة والعام الحاليين، ولا يوجد جدول تشغيلي موازٍ.</p></div>
+    <div class="d-flex gap-2 flex-wrap"><a class="btn btn-outline-primary" href="{% url 'academics:academic_structure' %}#timetable-operations">بوابة الخطة والتكليفات</a><button type="button" class="btn btn-outline-secondary" onclick="window.print()">طباعة الجدول</button><a class="btn btn-primary" href="{% url 'timetable:entry_create' %}">إضافة حصة</a></div>
+  </div>
+</div>
+{% if not current_year %}<div class="alert alert-warning opal-screen-only">لا يوجد عام دراسي حالي للمدرسة. عيّن عامًا حاليًا قبل إدارة الجدول.</div>{% endif %}
+{% if live_status %}
+<div class="opal-card mb-4 border-primary opal-screen-only" data-live-seconds="{{ live_status.seconds_remaining|default_if_none:'' }}">
+  <div class="d-flex justify-content-between flex-wrap gap-2"><div><strong>{{ live_status.message }}</strong>{% if live_status.next %}<div class="small text-secondary">التالي: {{ live_status.next.name }} — {{ live_status.next.start|time:'H:i' }}</div>{% endif %}</div><div>المشغولون الآن: <strong>{{ live_status.busy_teachers }}</strong> — المتفرغون: <strong>{{ live_status.free_teachers_count }}</strong></div></div>
+  {% if live_status.current_entries %}<div class="mt-2 d-flex gap-1 flex-wrap">{% for row in live_status.current_entries %}<span class="badge {% if row.teacher_state_code == 'available' %}bg-primary{% elif row.teacher_state_code == 'substitute' %}bg-success{% else %}bg-danger{% endif %}">{{ row.section }} — {{ row.teacher_state_label }}</span>{% endfor %}</div>{% endif %}
+  {% if live_status.grade_rows %}<div class="table-responsive mt-3"><table class="table table-sm mb-0"><thead><tr><th>الصف</th><th>الحالة الجارية</th></tr></thead><tbody>{% for row in live_status.grade_rows %}<tr><td>{{ row.grade.name }}</td><td>{% for state in row.states %}<span class="badge bg-light text-dark border me-1">{{ state.label }}{% if row.is_multiple %} — {{ state.sections }}{% endif %}</span>{% endfor %}</td></tr>{% endfor %}</tbody></table></div>{% endif %}
+</div>
+{% endif %}
+{% if coverage_needed %}<div class="alert alert-danger opal-screen-only"><strong>تنبيه إشغال:</strong> توجد {{ coverage_needed|length }} حصة اليوم متأثرة باستثناء دوام ولم يعين لها بديل. <a href="{% url 'timetable:absence_center' %}">فتح سجل دوام المعلمين والإشغال</a>.</div>{% endif %}
+
+<div class="opal-card mb-4 opal-timetable-filter-card opal-screen-only">
+  <form method="get" class="row g-2 align-items-end">
+    <div class="col-lg-3 col-md-6"><label class="form-label">المعلم</label><select class="form-select" name="teacher" onchange="this.form.submit()"><option value="">الكل</option>{% for item in teachers %}<option value="{{ item.id }}" {% if filters.teacher == item.id|stringformat:'s' %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
+    <div class="col-lg-3 col-md-6"><label class="form-label">اليوم</label><select class="form-select" name="day" onchange="this.form.submit()"><option value="">الكل</option>{% for code,label in days %}<option value="{{ code }}" {% if filters.day == code %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+    <div class="col-lg-3 col-md-6"><label class="form-label">الحصة</label><select class="form-select" name="period" onchange="this.form.submit()"><option value="">الكل</option>{% for item in periods %}<option value="{{ item }}" {% if filters.period == item|stringformat:'s' %}selected{% endif %}>الحصة {{ item }}</option>{% endfor %}</select></div>
+    <div class="col-lg-3 col-md-6"><label class="form-label">المادة</label><select class="form-select" name="subject" onchange="this.form.submit()"><option value="">الكل</option>{% for item in subjects %}<option value="{{ item.id }}" {% if filters.subject == item.id|stringformat:'s' %}selected{% endif %}>{{ item.grade.name }} — {{ item.name }}</option>{% endfor %}</select></div>
   </form>
 </div>
-<div class="opal-card">
-  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-    <h3 class="mb-0">الحصص</h3>
-    <div class="d-flex gap-1 flex-wrap"><a class="btn btn-outline-primary" href="{% url 'timetable:smart_builder' %}">البناء الذكي</a><a class="btn btn-outline-primary" href="{% url 'timetable:schedule_settings' %}">المؤقت والأحداث</a><a class="btn btn-outline-danger" href="{% url 'timetable:absence_center' %}">غياب المعلمين</a><a class="btn btn-outline-primary" href="{% url 'timetable:slot_list' %}">أوقات الحصص</a><a class="btn btn-primary" href="{% url 'timetable:entry_create' %}">إضافة حصة</a></div>
+
+<div class="opal-card mb-4 opal-print-timetable" data-opal-instant-table="off">
+  <div class="opal-print-title d-none"><h2>{{ school.name }}</h2><p>{{ current_year.name }}{% if filters.teacher %} — مرشح المعلم{% endif %}{% if filters.day %} — {{ filters.day }}{% endif %}</p></div>
+  <div class="d-flex justify-content-between align-items-center mb-3"><h3 class="mb-0">مصفوفة الجدول</h3><span class="badge bg-light text-dark border">{{ schedule_matrix.entry_count }} حصة</span></div>
+  <div class="table-responsive opal-timetable-matrix-wrap">
+    <table class="opal-table opal-timetable-grid timetable-grid opal-keep-grid">
+      <thead><tr><th class="opal-timetable-day-col">اليوم / الحصة</th>{% for period in schedule_matrix.periods %}<th><strong>{{ period.name }}</strong>{% for range in period.time_labels %}<small>{{ range.label }}{% if range.sections_label %}<br>{{ range.sections_label }}{% endif %}</small>{% endfor %}</th>{% endfor %}</tr></thead>
+      <tbody>{% for day in schedule_matrix.rows %}<tr{% if day.is_today %} class="opal-timetable-today-row"{% endif %}><th class="opal-timetable-day-col">{{ day.label }}{% if day.is_today %}<small class="opal-timetable-today-badge">اليوم</small>{% endif %}</th>{% for cell in day.cells %}<td{% if cell.is_current %} class="opal-timetable-current-cell"{% endif %}>
+        {% for item in cell.entries %}<div class="opal-timetable-entry{% if item.is_current_lesson %} is-current{% endif %}" style="--opal-subject-color: {{ item.subject_colour }}; border-inline-start-color: {{ item.subject_colour }};">
+          {% if item.is_current_lesson %}<span class="opal-current-lesson-badge">الحصة الجارية</span>{% endif %}<strong>{{ item.section }}</strong><span>{{ item.subject.name }}</span><small>{{ item.teacher|default:'دون معلم' }}{% if item.room %} · {{ item.room }}{% endif %}</small>
+          {% if item.teacher_state_code != 'available' %}<span class="badge {% if item.teacher_state_code == 'substitute' %}bg-success{% else %}bg-danger{% endif %}">{{ item.teacher_state_label }}</span>{% endif %}
+          <div class="opal-timetable-actions"><a class="btn btn-sm btn-outline-primary" href="{% url 'timetable:entry_update' item.id %}">تعديل</a><form method="post" action="{% url 'timetable:entry_delete' item.id %}" onsubmit="return confirm('حذف الحصة؟')">{% csrf_token %}<button class="btn btn-sm btn-outline-danger">حذف</button></form></div>
+        </div>{% empty %}{% if cell.is_free %}<span class="badge bg-warning text-dark">فراغ</span>{% else %}<span class="opal-timetable-empty">—</span>{% endif %}{% endfor %}
+        {% for event in cell.break_events %}<div class="opal-timetable-break mt-2"><strong>{{ event.name }}</strong><small>{{ event.time_label }}{% if event.sections_label %} — {{ event.sections_label }}{% endif %}</small></div>{% endfor %}
+      </td>{% endfor %}</tr>{% endfor %}</tbody>
+    </table>
   </div>
-  <div class="table-responsive"><table class="opal-table"><thead><tr><th>اليوم</th><th>الوقت</th><th>الشعبة</th><th>المادة</th><th>المعلم</th><th>الغرفة</th><th>إجراء</th></tr></thead><tbody>
-  {% for item in entries %}<tr><td>{{ item.get_day_display }}</td><td>{{ item.time_slot.name }}<br><small>{{ item.time_slot.start_time }} - {{ item.time_slot.end_time }}</small></td><td>{{ item.section }}</td><td>{{ item.subject }}</td><td>{{ item.teacher|default:'—' }}</td><td>{{ item.room|default:'—' }}</td><td><a class="btn btn-sm btn-outline-primary" href="{% url 'timetable:entry_update' item.id %}">تعديل</a><form class="d-inline" method="post" action="{% url 'timetable:entry_delete' item.id %}" onsubmit="return confirm('حذف الحصة؟')">{% csrf_token %}<button class="btn btn-sm btn-outline-danger">حذف</button></form></td></tr>{% empty %}<tr><td colspan="7" class="text-center text-secondary">لا توجد حصص مطابقة.</td></tr>{% endfor %}
-  </tbody></table></div>
+  {% if not schedule_matrix.has_entries %}<p class="text-center text-secondary mt-3 mb-0">لا توجد حصص مطابقة.</p>{% endif %}
 </div>
+
+<details class="opal-card mb-4" id="smart-builder" {% if builder_result %}open{% endif %}>
+  <summary class="fw-bold fs-5">إنشاء أو تحديث الجدول بالمنشئ الذكي</summary>
+  <p class="text-secondary mt-2">المعاينة والبدائل والتعارضات والاعتماد الذري تعمل داخل شاشة الجدول الرسمية نفسها.</p>
+  <form method="post" class="row g-2 align-items-end mb-3">{% csrf_token %}
+    <div class="col-md-5"><label class="form-label">العام المفتوح للبناء</label><select name="builder_year" class="form-select">{% for item in builder_years %}<option value="{{ item.pk }}" {% if builder_year.pk == item.pk %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
+    <div class="col-md-4"><label class="form-label">أسلوب الاقتراح</label><select name="variant" class="form-select"><option value="balanced" {% if builder_variant == 'balanced' %}selected{% endif %}>متوازن</option><option value="compact" {% if builder_variant == 'compact' %}selected{% endif %}>تقليل الفراغ</option><option value="spread" {% if builder_variant == 'spread' %}selected{% endif %}>توزيع أوسع</option></select></div>
+    <div class="col-md-3 d-grid"><button class="btn btn-primary" name="action" value="builder_preview">معاينة آمنة</button></div>
+  </form>
+  {% if builder_result %}
+    <div class="row g-2 mb-3"><div class="col"><div class="stat-card"><span>الاكتمال</span><h2>{{ builder_result.quality.completion }}%</h2></div></div><div class="col"><div class="stat-card"><span>المقترح</span><h2>{{ builder_result.plan|length }}</h2></div></div><div class="col"><div class="stat-card"><span>غير مسند</span><h2>{{ builder_result.unresolved|length }}</h2></div></div><div class="col"><div class="stat-card"><span>التعارضات</span><h2>{{ builder_result.quality.conflicts }}</h2></div></div></div>
+    {% if builder_result.blockers %}<div class="alert alert-danger"><strong>موانع الاعتماد:</strong><ul class="mb-0">{% for issue in builder_result.blockers %}<li>{{ issue.message }}</li>{% endfor %}</ul></div>{% endif %}
+    <form method="post" id="builder-approval">{% csrf_token %}<input type="hidden" name="builder_year" value="{{ builder_year.pk }}"><input type="hidden" name="variant" value="{{ builder_result.variant }}"><input type="hidden" name="source_fingerprint" value="{{ builder_result.fingerprint }}">
+      <div class="table-responsive opal-timetable-matrix-wrap"><table class="table opal-timetable-grid timetable-grid opal-keep-grid"><thead><tr><th>اليوم / الحصة</th>{% for period in builder_result.plan_matrix.periods %}<th><strong>{{ period.name }}</strong>{% for range in period.time_labels %}<small>{{ range.label }}{% if range.sections_label %}<br>{{ range.sections_label }}{% endif %}</small>{% endfor %}</th>{% endfor %}</tr></thead><tbody>{% for day in builder_result.plan_matrix.rows %}<tr><th>{{ day.label }}</th>{% for cell in day.cells %}<td>{% for row in cell.entries %}<div class="opal-timetable-entry"><strong>{{ row.assignment.subject.name }}</strong><span>{{ row.assignment.section }}</span><small>{{ row.assignment.teacher }}</small><label class="small mt-2">اليوم</label><select class="form-select form-select-sm" name="day__{{ row.row_key }}">{% for code,label in builder_result.working_day_options %}<option value="{{ code }}" {% if row.day == code %}selected{% endif %}>{{ label }}</option>{% endfor %}</select><label class="small mt-2">الحصة</label><select class="form-select form-select-sm" name="slot__{{ row.row_key }}">{% for slot in builder_result.base_slots %}<option value="{{ slot.pk }}" {% if row.base_slot.pk == slot.pk %}selected{% endif %}>{{ slot.name }}</option>{% endfor %}</select>{% if row.override_error %}<small class="text-danger">{{ row.override_error }}</small>{% endif %}</div>{% empty %}<span>—</span>{% endfor %}</td>{% endfor %}</tr>{% endfor %}</tbody></table></div>
+      {% if builder_result.unresolved %}<div class="alert alert-warning mt-3"><ul class="mb-0">{% for row in builder_result.unresolved %}<li>{{ row.assignment }} — {{ row.reason }}</li>{% endfor %}</ul></div>{% endif %}
+      <div class="form-check my-3"><input class="form-check-input" type="checkbox" name="replace_generated" value="1" id="replace-generated"><label class="form-check-label" for="replace-generated">إعادة بناء الحصص الآلية فقط دون المساس بالحصص اليدوية</label></div>
+      <div class="d-flex gap-2"><button class="btn btn-outline-primary" name="action" value="builder_preview">إعادة فحص المعاينة</button><button class="btn btn-primary" name="action" value="builder_apply" {% if not builder_result.can_apply %}disabled{% endif %} onclick="return confirm('اعتماد الاقتراح في عملية واحدة؟')">اعتماد الجدول</button></div>
+    </form>
+  {% endif %}
+</details>
+<script>(function(){var node=document.querySelector('[data-live-seconds]');if(!node)return;var seconds=parseInt(node.dataset.liveSeconds||'',10);if(Number.isFinite(seconds)&&seconds>=0){window.setTimeout(function(){window.location.reload();},(seconds+1)*1000);}})();</script>
 {% endblock %}

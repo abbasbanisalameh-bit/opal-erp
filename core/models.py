@@ -1,7 +1,7 @@
 from datetime import timedelta
 
 from django.contrib.auth.models import User
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import models, transaction
 from django.db.models import Q
 
@@ -56,6 +56,32 @@ class AcademicYear(models.Model):
         verbose_name="أغلقه",
     )
     closure_notes = models.TextField("ملاحظات الإغلاق", blank=True)
+    prepared_at = models.DateTimeField("تاريخ تهيئة العام", null=True, blank=True)
+    prepared_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="prepared_academic_years",
+        verbose_name="هيأه",
+    )
+    preparation_source = models.ForeignKey(
+        "self",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="prepared_successors",
+        verbose_name="عام التهيئة المصدر",
+    )
+    transition_completed_at = models.DateTimeField("تاريخ اكتمال الانتقال", null=True, blank=True)
+    transition_completed_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="completed_academic_year_transitions",
+        verbose_name="منفذ الانتقال",
+    )
 
     class Meta:
         ordering = ["-start_date", "name"]
@@ -125,11 +151,28 @@ class AcademicYear(models.Model):
 
     @property
     def operational_status(self):
+        try:
+            self.financial_closure
+            return "financial_archived"
+        except (AttributeError, ObjectDoesNotExist):
+            pass
         if self.is_closed:
-            return "closed"
+            return "academic_closed"
         if self.is_current:
             return "current"
-        return "open"
+        if self.prepared_at:
+            return "ready"
+        return "upcoming"
+
+    @property
+    def operational_status_label(self):
+        return {
+            "upcoming": "قادم غير مهيأ",
+            "ready": "مهيأ وجاهز",
+            "current": "حالي",
+            "academic_closed": "مغلق أكاديميًا",
+            "financial_archived": "مؤرشف ماليًا",
+        }[self.operational_status]
 
 
 class Semester(models.Model):
@@ -144,6 +187,17 @@ class Semester(models.Model):
     start_date = models.DateField()
     end_date = models.DateField()
     is_current = models.BooleanField(default=False)
+    is_closed = models.BooleanField("فصل مغلق أكاديميًا", default=False, db_index=True)
+    closed_at = models.DateTimeField("تاريخ إغلاق الفصل", null=True, blank=True)
+    closed_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="closed_semesters",
+        verbose_name="أغلقه",
+    )
+    closure_notes = models.TextField("ملاحظات إغلاق الفصل", blank=True)
 
     class Meta:
         ordering = ["academic_year__start_date", "code"]
@@ -166,6 +220,8 @@ class Semester(models.Model):
                 errors["start_date"] = "الفصل لا يمكن أن يبدأ قبل العام الدراسي."
             if self.end_date and self.end_date > self.academic_year.end_date:
                 errors["end_date"] = "الفصل لا يمكن أن ينتهي بعد العام الدراسي."
+        if self.is_closed and self.is_current:
+            errors["is_current"] = "لا يمكن أن يكون الفصل المغلق هو الفصل النشط."
         if errors:
             raise ValidationError(errors)
 
@@ -173,6 +229,8 @@ class Semester(models.Model):
         if not self.code and self.academic_year_id:
             existing_codes = set(type(self).objects.filter(academic_year_id=self.academic_year_id).exclude(pk=self.pk).values_list("code", flat=True))
             self.code = "first" if "first" not in existing_codes else "second"
+        if self.is_closed:
+            self.is_current = False
         self.full_clean(exclude=["is_current"])
         with transaction.atomic():
             if self.is_current and self.academic_year_id:
@@ -181,6 +239,42 @@ class Semester(models.Model):
 
     def __str__(self):
         return f"{self.academic_year.name} - {self.get_code_display()}"
+
+
+class SemesterStructureSnapshot(models.Model):
+    """Historical term structure while live operations keep their canonical models."""
+
+    semester = models.OneToOneField(
+        Semester,
+        on_delete=models.PROTECT,
+        related_name="structure_snapshot",
+        verbose_name="الفصل الدراسي",
+    )
+    source_snapshot = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="derived_snapshots",
+        verbose_name="لقطة الفصل المصدر",
+    )
+    payload = models.JSONField("بيانات البنية التاريخية", default=dict)
+    is_final = models.BooleanField("لقطة إغلاق نهائية", default=False, db_index=True)
+    captured_at = models.DateTimeField("وقت الالتقاط", auto_now=True)
+    captured_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="captured_semester_structures",
+        verbose_name="التقطها",
+    )
+
+    class Meta:
+        ordering = ["semester__academic_year__start_date", "semester__code"]
+
+    def __str__(self):
+        return f"لقطة بنية {self.semester}"
 
 
 class AuditLog(models.Model):

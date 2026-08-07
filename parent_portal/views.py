@@ -2,11 +2,12 @@ from django.contrib import messages
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import update_session_auth_hash
 from django.core.exceptions import PermissionDenied
+from django.db.models import Q
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse
 import csv
 
-from .models import Family, FamilyStudent
+from .models import Family, FamilyStudent, TeacherMonthlyEvaluation
 from .services import ensure_family_account, reset_family_password
 from .services import update_family_identity
 from .receipt_services import build_guardian_receipt_history
@@ -17,8 +18,9 @@ from accounting.models import StudentInvoice
 from attendance_v2.models import Attendance
 from announcements.models import Announcement
 from exams.models import StudentMark
+from exams.services import student_marks_matrix
 from accounts.models import UserProfile
-from .academic_services import homework_for_student, homework_rows_for_students, student_class_rank
+from .academic_services import current_enrollment, homework_for_student, homework_rows_for_students, student_class_rank
 from .parent360 import build_parent360_context
 from .workflow import (
     build_dashboard_context,
@@ -30,19 +32,16 @@ from .workflow import (
     student_for_user_or_403,
     students_for_user,
 )
-from admissions.financial_services import (
-    student_finance_snapshot,
-    student_total_fees,
-    student_total_paid,
-    student_remaining,
-)
 from admissions.models import FeePaymentAllocation, FeePayment
 from enterprise_ops.permissions import management_required
 from enterprise_ops.services import audit
 from django.views.decorators.http import require_POST
+from django.utils import timezone
 from django.core.exceptions import ValidationError
 from .duplicate_services import guardian_duplicate_groups, merge_guardian_group
 from timetable.live_services import student_live_status
+from .financial_access import guardian_feature_allowed
+from .evaluation_services import teachers_for_family_students
 
 try:
     from documents.models import StudentIssuedDocument
@@ -96,7 +95,8 @@ def children(request):
     students = _normalized_students_for_user(request.user)
     if not students:
         return render(request, "parent_portal/no_profile.html")
-    return render(request, "parent_portal/children.html", {"cards": [_student_card(s) for s in students]})
+    marks_allowed = guardian_feature_allowed(_family_for_user(request.user), "marks")
+    return render(request, "parent_portal/children.html", {"cards": [build_student_card(s, marks_allowed=marks_allowed) for s in students]})
 
 
 @parent_required
@@ -105,7 +105,14 @@ def student_detail(request, student_id):
     if not students:
         return render(request, "parent_portal/no_profile.html")
     student = _student_or_403(request.user, student_id)
-    return render(request, "parent_portal/student_detail.html", build_student_detail_context(student))
+    context = build_student_detail_context(student)
+    family = _family_for_user(request.user)
+    if not guardian_feature_allowed(family, "marks"):
+        context["marks"] = []
+        context["financial_restriction"] = "النتائج محجوبة وفق السياسة المالية المحددة لهذا الحساب."
+    if not guardian_feature_allowed(family, "documents"):
+        context["documents"] = []
+    return render(request, "parent_portal/student_detail.html", context)
 
 
 @parent_required
@@ -121,8 +128,17 @@ def attendance(request):
     students = _normalized_students_for_user(request.user)
     if not students:
         return render(request, "parent_portal/no_profile.html")
-    records = Attendance.objects.filter(student__in=students).select_related("student").order_by("-date")[:120]
-    return render(request, "parent_portal/attendance.html", {"records": records})
+    student_id = request.GET.get("student", "")
+    date = request.GET.get("date", "")
+    selected_student = _student_or_403(request.user, student_id) if student_id else None
+    records = Attendance.objects.filter(student=selected_student) if selected_student else Attendance.objects.filter(student__in=students)
+    if date:
+        records = records.filter(date=date)
+    records = records.select_related("student").order_by("-date")[:120]
+    return render(request, "parent_portal/attendance.html", {
+        "records": records, "students": students, "selected_student": selected_student,
+        "student_id": student_id, "date": date,
+    })
 
 
 @parent_required
@@ -130,9 +146,34 @@ def marks(request):
     students = _normalized_students_for_user(request.user)
     if not students:
         return render(request, "parent_portal/no_profile.html")
-    records = StudentMark.objects.filter(student__in=students, exam__status__in=["published", "closed"]).select_related("student", "exam", "exam__subject").order_by("student__full_name", "-exam__exam_date")
-    ranks = {student.pk: student_class_rank(student) for student in students}
-    return render(request, "parent_portal/marks.html", {"records": records, "students": students, "ranks": ranks})
+    if not guardian_feature_allowed(_family_for_user(request.user), "marks"):
+        return render(request, "parent_portal/financial_restriction.html", {"feature": "النتائج والشهادات"})
+    student_id = request.GET.get("student", "")
+    subject_id = request.GET.get("subject", "")
+    exam_key = request.GET.get("exam", "")
+    selected_student = _student_or_403(request.user, student_id) if student_id else None
+    matrix = student_marks_matrix(selected_student) if selected_student else None
+    selected_subject = None
+    subject_rows = []
+    selected_exam = None
+    exam_rows = []
+    if matrix:
+        if subject_id:
+            selected_subject = next((row["subject"] for row in matrix["by_subject"] if str(row["subject"].pk) == subject_id), None)
+            subject_rows = [row for row in matrix["by_subject"] if selected_subject and row["subject"].pk == selected_subject.pk]
+        if exam_key:
+            try:
+                semester_id, exam_type = exam_key.split(":", 1)
+            except ValueError:
+                semester_id = exam_type = ""
+            selected_exam = next((row for row in matrix["by_exam"] if str(row["semester"].pk) == semester_id and row["exam_type"]["key"] == exam_type), None)
+            exam_rows = selected_exam["rows"] if selected_exam else []
+    return render(request, "parent_portal/marks.html", {
+        "students": students, "selected_student": selected_student, "student_id": student_id,
+        "matrix": matrix, "subject_id": subject_id, "exam_key": exam_key,
+        "selected_subject": selected_subject, "subject_rows": subject_rows,
+        "selected_exam": selected_exam, "exam_rows": exam_rows,
+    })
 
 
 @parent_required
@@ -140,7 +181,61 @@ def homework(request):
     students = _normalized_students_for_user(request.user)
     if not students:
         return render(request, "parent_portal/no_profile.html")
-    return render(request, "parent_portal/homework.html", {"rows": homework_rows_for_students(students)})
+    if not guardian_feature_allowed(_family_for_user(request.user), "homework"):
+        return render(request, "parent_portal/financial_restriction.html", {"feature": "الخدمات غير الأساسية"})
+    student_id = request.GET.get("student", "")
+    subject_id = request.GET.get("subject", "")
+    selected_student = _student_or_403(request.user, student_id) if student_id else None
+    items = []
+    subjects = []
+    if selected_student:
+        enrollment = current_enrollment(selected_student)
+        if enrollment and enrollment.section_id:
+            from academics.models import Subject
+            subjects = Subject.objects.filter(
+                teacherassignment__academic_year=enrollment.academic_year,
+                teacherassignment__section=enrollment.section,
+                teacherassignment__is_active=True,
+            ).distinct().order_by("name")
+        items = homework_for_student(selected_student)
+        if subject_id:
+            items = items.filter(assignment__subject_id=subject_id)
+    return render(request, "parent_portal/homework.html", {
+        "students": students, "selected_student": selected_student, "student_id": student_id,
+        "subject_id": subject_id, "subjects": subjects, "items": items,
+    })
+
+
+@parent_required
+def teacher_evaluations(request):
+    students = _normalized_students_for_user(request.user)
+    family = _family_for_user(request.user)
+    if not students or family is None:
+        return render(request, "parent_portal/no_profile.html")
+    today = timezone.localdate()
+    period = today.replace(day=1)
+    rows = teachers_for_family_students(students)
+    evaluations = {
+        item.teacher_id: item
+        for item in TeacherMonthlyEvaluation.objects.filter(
+            family=family, period=period, teacher_id__in=[row["teacher"].pk for row in rows]
+        )
+    }
+    for row in rows:
+        row["evaluation"] = evaluations.get(row["teacher"].pk)
+    return render(request, "parent_portal/teacher_evaluations.html", {
+        "rows": rows,
+        "period": period,
+    })
+
+
+@require_POST
+@parent_required
+def submit_monthly_teacher_evaluations(request):
+    """Compatibility URL routed into the single central monthly workflow."""
+    from enterprise_ops.views import submit_monthly_evaluations
+
+    return submit_monthly_evaluations(request)
 
 
 @parent_required
@@ -156,6 +251,8 @@ def student_personal_update(request, student_id):
 
 @parent_required
 def timetable(request):
+    if not guardian_feature_allowed(_family_for_user(request.user), "timetable"):
+        return render(request, "parent_portal/financial_restriction.html", {"feature": "الخدمات غير الأساسية"})
     students = _normalized_students_for_user(request.user)
     if not students:
         return render(request, "parent_portal/no_profile.html")
@@ -173,6 +270,7 @@ def timetable(request):
         student__in=selected_students, status="active"
     ).select_related("student", "section", "section__grade", "academic_year")
     rows = []
+    all_matrix_entries = []
     all_enrollments = Enrollment.objects.filter(student__in=students, status="active")
     all_entry_scope = TimetableEntry.objects.filter(
         section_id__in=all_enrollments.values_list("section_id", flat=True),
@@ -189,7 +287,17 @@ def timetable(request):
             entries = entries.filter(day=day)
         if subject_id:
             entries = entries.filter(subject_id=subject_id)
-        rows.append({"student": enrollment.student, "enrollment": enrollment, "entries": entries})
+        entry_list = list(entries)
+        all_matrix_entries.extend(entry_list)
+        rows.append({"student": enrollment.student, "enrollment": enrollment, "entries": entry_list})
+
+    from timetable.workflow import build_horizontal_schedule_matrix
+    matrix_school = enrollments.first().academic_year.school if enrollments.exists() else None
+    shared_matrix = build_horizontal_schedule_matrix(all_matrix_entries, selected_day=day, school=matrix_school)
+    for row in rows:
+        row["schedule_matrix"] = build_horizontal_schedule_matrix(
+            row["entries"], selected_day=day, periods=shared_matrix["periods"], school=row["enrollment"].academic_year.school
+        )
 
     subjects = Subject.objects.filter(timetableentry__in=all_entry_scope).select_related("grade").distinct().order_by("grade__order", "name")
     audit(request, "view", "parent_portal.Timetable", description="عرض جدول الأبناء")
@@ -206,6 +314,8 @@ def documents(request):
     students = _normalized_students_for_user(request.user)
     if not students:
         return render(request, "parent_portal/no_profile.html")
+    if not guardian_feature_allowed(_family_for_user(request.user), "documents"):
+        return render(request, "parent_portal/financial_restriction.html", {"feature": "الوثائق والشهادات"})
     records = []
     if StudentIssuedDocument:
         records = StudentIssuedDocument.objects.filter(student__in=students).select_related("student", "issued_document")[:100]
@@ -221,6 +331,8 @@ def announcements(request):
 @parent_required
 def account(request):
     family = _family_for_user(request.user)
+    if family is None:
+        return render(request, "parent_portal/no_profile.html")
     profile, _ = UserProfile.objects.get_or_create(user=request.user)
     action = request.POST.get("action", "") if request.method == "POST" else ""
     family_form = ParentFamilyPersonalForm(
@@ -322,6 +434,9 @@ def family_update(request, pk):
             message = getattr(exc, "messages", None)
             form.add_error(None, message[0] if message else str(exc))
         else:
+            if family.financial_policy != form.cleaned_data["financial_policy"]:
+                family.financial_policy = form.cleaned_data["financial_policy"]
+                family.save(update_fields=["financial_policy", "updated_at"])
             messages.success(request, "تم تحديث المصدر الرسمي لبيانات ولي الأمر ومزامنة الأبناء.")
             return redirect("parent_portal:family_detail", pk=family.pk)
     return render(request, "parent_portal/family_form.html", {"family": family, "form": form})
@@ -364,11 +479,35 @@ def family_statement_csv(request, pk):
     writer = csv.writer(response)
     writer.writerow(["ولي الأمر", family.guardian_name, "الهاتف", family.phone, "رقم ملف ولي الأمر", family.family_code])
     writer.writerow([])
-    writer.writerow(["الطالب", "الصف", "إجمالي الرسوم", "المدفوع", "المتبقي", "الحالة"])
+    writer.writerow([
+        "الطالب",
+        "الصف",
+        "رسوم السنة الحالية",
+        "مدفوع السنة الحالية",
+        "متبقي السنة الحالية",
+        "متبقيات السنوات السابقة",
+        "الإجمالي المطلوب",
+        "حالة السنة الحالية",
+    ])
     for card in context["cards"]:
-        writer.writerow([card["student"].full_name, f'{card["student"].grade} {card["student"].section}', card["total"], card["paid"], card["remaining"], card["status_label"]])
+        writer.writerow([
+            card["student"].full_name,
+            f'{card["student"].grade} {card["student"].section}',
+            card["total"],
+            card["paid"],
+            card["remaining"],
+            card["previous_debt"]["total"],
+            card["combined_remaining"],
+            card["status_label"],
+        ])
     writer.writerow([])
     writer.writerow(["الإيصال", "التاريخ", "النوع", "المبلغ", "المتبقي بعد العملية"])
     for payment in context["payments"]:
-        writer.writerow([payment.receipt_number, payment.created_at.strftime("%Y-%m-%d %H:%M"), payment.get_scope_display(), payment.total_amount, payment.total_due_after])
+        writer.writerow([
+            payment.receipt_number,
+            payment.created_at.strftime("%Y-%m-%d %H:%M"),
+            f"{payment.payment_period_label} — {payment.get_scope_display()}",
+            payment.total_amount,
+            payment.total_due_after,
+        ])
     return response

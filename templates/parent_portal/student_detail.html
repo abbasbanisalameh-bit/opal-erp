@@ -1,49 +1,44 @@
 {% extends "base/base.html" %}
 {% block title %}{{ student.full_name }}{% endblock %}
 {% block page_title %}{{ student.full_name }}{% endblock %}
-{% block page_subtitle %}الملف المالي والأكاديمي للطالب{% endblock %}
+{% block page_subtitle %}بيانات الطالب وروابط الخدمات الرسمية المرتبطة به{% endblock %}
 {% block content %}
 <div class="stats-grid mb-4">
-  <div class="stat-card"><span>إجمالي الرسوم</span><h2>💰 {{ total }}</h2></div>
-  <div class="stat-card"><span>إجمالي المدفوع</span><h2>✅ {{ paid }}</h2></div>
-  <div class="stat-card"><span>المتبقي</span><h2>⚠️ {{ remaining }}</h2></div>
+  <div class="stat-card"><span>رسوم {{ current_year.name|default:"السنة الحالية" }}</span><h2>💰 {{ total }}</h2></div>
+  <div class="stat-card"><span>مدفوع السنة الحالية</span><h2>✅ {{ paid }}</h2></div>
+  <div class="stat-card"><span>متبقي السنة الحالية</span><h2>⚠️ {{ remaining }}</h2></div>
+  <div class="stat-card"><span>متبقيات السنوات السابقة</span><h2 class="text-danger">{{ previous_debt.total }}</h2></div>
+  <div class="stat-card"><span>الإجمالي المطلوب</span><h2>{{ combined_remaining }}</h2></div>
   <div class="stat-card"><span>ترتيب الطالب في الشعبة</span><h2>{% if rank.available %}{{ rank.rank }} من {{ rank.class_count }}{% else %}غير متاح{% endif %}</h2><small>مجموع العلامات المعتمدة: {{ rank.total }}</small></div>
 </div>
 
-<div class="opal-card mb-4">
-  <div class="d-flex justify-content-between align-items-center"><h3 class="fw-bold mb-3">👤 بيانات الطالب</h3><a class="btn btn-outline-primary" href="{% url 'parent_portal:student_personal_update' student.pk %}">تعديل الصورة والمعلومات الشخصية</a></div>
-  <div class="row g-3">
-    <div class="col-md-4"><strong>رقم الطالب:</strong> {{ student.student_number }}</div>
-    <div class="col-md-4"><strong>الصف:</strong> {{ student.grade }}</div>
-    <div class="col-md-4"><strong>الشعبة:</strong> {{ student.section|default:"-" }}</div>
-    <div class="col-md-4"><strong>ولي الأمر:</strong> {{ student.guardian_name|default:"-" }}</div>
-    <div class="col-md-4"><strong>الهاتف:</strong> {{ student.phone|default:"-" }}</div>
-    <div class="col-md-4"><strong>الحالة:</strong> {{ student.get_status_display }}</div>
+{% if previous_debt.has_debt %}
+<div class="opal-previous-debt-alert mb-4" role="alert">
+  <span class="opal-previous-debt-pulse">على الطالب متبقيات رسوم سابقة بقيمة {{ previous_debt.total|floatformat:2 }} د.أ عن {{ previous_debt.years_text }}</span>
+  <span class="small text-danger-emphasis">يمكن مراجعتها من قسم الرسوم والدفعات في بوابة ولي الأمر الرئيسية.</span>
+</div>
+{% endif %}
+
+<section class="opal-card mb-4">
+  <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+    <div>
+      <h3 class="fw-bold mb-3">بيانات الطالب الأساسية</h3>
+      <div class="row g-3">
+        <div class="col-md-4"><strong>رقم الطالب:</strong> {{ student.student_number }}</div>
+        <div class="col-md-4"><strong>الصف:</strong> {{ student.grade }}</div>
+        <div class="col-md-4"><strong>الشعبة:</strong> {{ student.section|default:"-" }}</div>
+        <div class="col-md-4"><strong>ولي الأمر:</strong> {{ student.guardian_name|default:"-" }}</div>
+        <div class="col-md-4"><strong>الهاتف:</strong> {{ student.phone|default:"-" }}</div>
+        <div class="col-md-4"><strong>الحالة:</strong> {{ student.get_status_display }}</div>
+      </div>
+    </div>
+    <a class="btn btn-outline-primary" href="{% url 'parent_portal:student_personal_update' student.pk %}"><i class="bi bi-pencil-square"></i> تعديل الصورة والمعلومات الشخصية</a>
   </div>
-</div>
+</section>
 
-<div class="opal-card mb-4">
-  <h3 class="fw-bold mb-3">💳 كشف مالي مختصر</h3>
-  <div class="table-responsive"><table class="opal-table"><thead><tr><th>الإيصال</th><th>المبلغ</th><th>قبل الدفعة</th><th>بعد الدفعة</th><th>التاريخ</th></tr></thead><tbody>{% for a in allocations %}<tr><td>{{ a.fee_payment.receipt_number }}</td><td>{{ a.amount }}</td><td>{{ a.remaining_before }}</td><td>{{ a.remaining_after }}</td><td>{{ a.created_at|date:"Y-m-d H:i" }}</td></tr>{% empty %}<tr><td colspan="5">لا توجد دفعات.</td></tr>{% endfor %}</tbody></table></div>
-</div>
-
-<div class="opal-card mb-4">
-  <h3 class="fw-bold mb-3">✅ آخر الحضور</h3>
-  <div class="table-responsive"><table class="opal-table"><thead><tr><th>التاريخ</th><th>الحالة</th><th>ملاحظات</th></tr></thead><tbody>{% for a in attendance %}<tr><td>{{ a.date }}</td><td>{{ a.get_status_display }}</td><td>{{ a.notes|default:"-" }}</td></tr>{% empty %}<tr><td colspan="3">لا توجد سجلات حضور.</td></tr>{% endfor %}</tbody></table></div>
-</div>
-
-<div class="opal-card mb-4">
-  <h3 class="fw-bold mb-3">📊 النتائج</h3>
-  <div class="table-responsive"><table class="opal-table"><thead><tr><th>الامتحان</th><th>المادة</th><th>العلامة</th><th>النسبة</th><th>التقدير</th></tr></thead><tbody>{% for m in marks %}<tr><td>{{ m.exam.name }}</td><td>{{ m.exam.subject }}</td><td>{{ m.mark }} / {{ m.exam.max_mark }}</td><td>{{ m.percentage }}%</td><td>{{ m.grade_letter }}</td></tr>{% empty %}<tr><td colspan="5">لا توجد علامات.</td></tr>{% endfor %}</tbody></table></div>
-</div>
-
-<div class="opal-card mb-4">
-  <h3 class="fw-bold mb-3">📝 الواجبات</h3>
-  <div class="table-responsive"><table class="opal-table"><thead><tr><th>المادة</th><th>الواجب</th><th>التسليم</th></tr></thead><tbody>{% for item in homework_items %}<tr><td>{{ item.assignment.subject }}</td><td>{{ item.title }}</td><td>{{ item.due_date }}</td></tr>{% empty %}<tr><td colspan="3">لا توجد واجبات.</td></tr>{% endfor %}</tbody></table></div>
-</div>
-
-<div class="opal-card">
-  <h3 class="fw-bold mb-3">📄 الوثائق</h3>
-  <div class="table-responsive"><table class="opal-table"><thead><tr><th>رقم الوثيقة</th><th>العنوان</th><th>تاريخ الإصدار</th></tr></thead><tbody>{% for d in documents %}<tr><td>{{ d.issued_document.document_number }}</td><td>{{ d.issued_document.title }}</td><td>{{ d.issued_document.issued_at|date:"Y-m-d" }}</td></tr>{% empty %}<tr><td colspan="3">لا توجد وثائق صادرة.</td></tr>{% endfor %}</tbody></table></div>
-</div>
+<section class="opal-card">
+  <h3 class="fw-bold mb-1">مسار الخدمات</h3>
+  <p class="text-secondary mb-0">العلامات والحضور والواجبات والجدول والرسوم والوثائق تُفتح من بطاقاتها الوحيدة في رئيسية ولي الأمر.</p>
+  {% if financial_restriction %}<p class="text-secondary small mt-3 mb-0">{{ financial_restriction }}</p>{% endif %}
+</section>
 {% endblock %}

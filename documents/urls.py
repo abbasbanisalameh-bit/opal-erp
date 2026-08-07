@@ -10,7 +10,6 @@ urlpatterns = [
     path("templates/<int:pk>/edit/", views.template_update, name="template_update"),
     path("settings/", views.document_settings, name="settings"),
     path("student/<int:student_id>/issue/", views.issue_student, name="issue_student"),
-    path("candidate/<int:candidate_id>/issue/", views.issue_candidate, name="issue_candidate"),
     path("teacher/<int:teacher_id>/issue/", views.issue_teacher, name="issue_teacher"),
     path("guardian/<int:guardian_id>/issue/", views.issue_guardian, name="issue_guardian"),
     path("verify/<str:document_number>/<uuid:verification_code>/", views.verify_document, name="verify"),

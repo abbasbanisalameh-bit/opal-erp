@@ -13,7 +13,7 @@ from admissions.models import FeePayment
 from admissions.financial_services import student_remaining
 
 from .financial_services import close_financial_year, financial_period, monthly_financial_report
-from .models import DiscountRequest, ExpenseEntry, FeeCategory, FinancialYearClosure, Installment, Receipt, StudentInvoice, StudentPayment
+from .models import DiscountRequest, ExpenseEntry, FeeCategory, FinancialCarryForward, FinancialYearClosure, Installment, Receipt, StudentInvoice, StudentPayment
 from .services import decide_discount
 
 
@@ -83,6 +83,33 @@ class SchoolFinanceTest(TestCase):
         self.assertEqual(self.student.fees_paid, Decimal("250.00"))
         self.assertEqual(self.student.fees_remaining, Decimal("750.00"))
 
+    def test_prefetched_invoice_payments_are_reused_for_balance_display(self):
+        StudentPayment.objects.create(invoice=self.invoice, amount=Decimal("250"), created_by=self.user)
+        invoice = StudentInvoice.objects.prefetch_related("payments").get(pk=self.invoice.pk)
+
+        with self.assertNumQueries(0):
+            self.assertEqual(invoice.total_paid, Decimal("250"))
+            self.assertEqual(invoice.remaining, Decimal("750"))
+            self.assertEqual(invoice.total_paid, Decimal("250"))
+
+    def test_prefetched_installment_status_is_calculated_without_database_writes(self):
+        installment = Installment.objects.create(
+            invoice=self.invoice,
+            sequence=1,
+            title="قسط عرض",
+            due_date=date.today() - timedelta(days=1),
+            amount=Decimal("500"),
+        )
+        item = list(
+            Installment.objects.filter(pk=installment.pk)
+            .select_related("invoice")
+            .prefetch_related("invoice__payments", "invoice__installments")
+        )[0]
+
+        with self.assertNumQueries(0):
+            self.assertEqual(item.calculated_status, "overdue")
+        self.assertEqual(Installment.objects.get(pk=item.pk).status, "pending")
+
 
 class FinancialPeriodTests(SimpleTestCase):
     def test_cycle_uses_actual_calendar_month(self):
@@ -117,9 +144,11 @@ class FinancialClosingTests(TestCase):
         )
         self.assertEqual(closure.total_carried, Decimal("750"))
         self.invoice.refresh_from_db()
-        self.assertEqual(self.invoice.status, "cancelled")
-        carried = StudentInvoice.objects.get(academic_year=self.target, student=self.student)
+        self.assertEqual(self.invoice.status, "partial")
+        self.assertFalse(StudentInvoice.objects.filter(academic_year=self.target, student=self.student).exists())
+        carried = FinancialCarryForward.objects.get(closure=closure, student=self.student)
         self.assertEqual(carried.amount, Decimal("750"))
+        self.assertEqual(list(carried.source_invoices.all()), [self.invoice])
         self.assertEqual(student_remaining(self.student), Decimal("750.00"))
         with self.assertRaises(ValidationError):
             close_financial_year(

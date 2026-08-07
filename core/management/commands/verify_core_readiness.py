@@ -1,5 +1,8 @@
 import json
+import os
 from collections import defaultdict
+from datetime import datetime, timezone
+from pathlib import Path
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -13,12 +16,21 @@ from accounting.models import StudentInvoice
 from admissions.models import GradeFee
 from attendance_v2.models import Attendance
 from core.models import AcademicYear, School, Semester
-from curriculum.models import Curriculum
 from documents.models import IssuedDocument
 from exams.models import Exam
 from students.models import Student
 from teachers.models import TeacherAssignment
 from timetable.models import TimetableEntry
+
+
+def _opal_release_version(root: Path) -> str:
+    """Read the canonical code release marker without touching the database."""
+    marker = root / "OPAL_VERSION.txt"
+    try:
+        value = marker.read_text(encoding="utf-8").strip()
+    except OSError:
+        return "unknown"
+    return value or "unknown"
 
 
 class Command(BaseCommand):
@@ -41,6 +53,10 @@ class Command(BaseCommand):
             default="text",
             help="صيغة تقرير الجاهزية.",
         )
+        parser.add_argument(
+            "--output",
+            help="مسار اختياري لحفظ نسخة JSON من تقرير الجاهزية دون تعديل البيانات.",
+        )
 
     def handle(self, *args, **options):
         errors = []
@@ -59,6 +75,9 @@ class Command(BaseCommand):
         secret = str(settings.SECRET_KEY or "")
         if not secret or secret.startswith("django-insecure-") or secret == "django-insecure-change-this-key-before-production":
             required("SEC_SECRET_KEY", "مفتاح OPAL_SECRET_KEY غير مضبوط بمفتاح إنتاجي آمن.")
+        allowed_hosts = list(getattr(settings, "ALLOWED_HOSTS", []) or [])
+        if not allowed_hosts or "*" in allowed_hosts:
+            required("SEC_ALLOWED_HOSTS", "ALLOWED_HOSTS فارغ أو يسمح لجميع النطاقات؛ يجب حصر نطاقات الموقع الفعلية.")
         if not getattr(settings, "SESSION_COOKIE_SECURE", False):
             add(warnings, "SEC_SESSION_COOKIE", "ملف جلسة المستخدم غير مقيد باتصال HTTPS.")
         if not getattr(settings, "CSRF_COOKIE_SECURE", False):
@@ -72,6 +91,9 @@ class Command(BaseCommand):
         pending_plan = executor.migration_plan(executor.loader.graph.leaf_nodes())
         if pending_plan:
             add(errors, "DB_PENDING_MIGRATIONS", f"يوجد {len(pending_plan)} ترحيلًا غير مطبق.")
+        table_names = set(connection.introspection.table_names())
+        if "curriculum_curriculum" in table_names:
+            add(errors, "DB_PARALLEL_CURRICULUM", "ما زال جدول الخطة الموازي curriculum_curriculum موجودًا بعد تحديث الدمج.")
 
         if not get_user_model().objects.filter(is_active=True, is_superuser=True).exists():
             required("AUTH_SUPERUSER", "لا يوجد حساب مدير نظام فعّال للاسترداد والإدارة العليا.")
@@ -97,7 +119,7 @@ class Command(BaseCommand):
                     required("ACADEMIC_SECTIONS", f"لا توجد شعب فعالة للعام {current_year.name}.")
                 if not GradeFee.objects.filter(academic_year=current_year, is_active=True).exists():
                     required("FINANCE_GRADE_FEES", f"لم تُضبط رسوم الصفوف للعام {current_year.name}.")
-                if not Subject.objects.filter(grade__school=school, is_active=True).exists():
+                if not Subject.objects.filter(academic_year=current_year, grade__school=school, is_active=True).exists():
                     required("ACADEMIC_SUBJECTS", f"لا توجد مواد فعالة للمدرسة {school.name}.")
                 if Enrollment.objects.filter(academic_year=current_year, status="active").exists():
                     if not TeacherAssignment.objects.filter(academic_year=current_year, is_active=True).exists():
@@ -148,9 +170,9 @@ class Command(BaseCommand):
                 active_fees = GradeFee.objects.filter(academic_year=year, is_active=True).count()
                 if active_fees:
                     add(errors, "CORE_CLOSED_GRADE_FEES", f"العام المغلق {year.name} يحتوي {active_fees} إعداد رسوم فعالًا.")
-                active_curricula = Curriculum.objects.filter(academic_year=year, is_active=True).count()
-                if active_curricula:
-                    add(errors, "CORE_CLOSED_CURRICULA", f"العام المغلق {year.name} يحتوي {active_curricula} خطة دراسية فعالة.")
+                active_subjects = Subject.objects.filter(academic_year=year, is_active=True).count()
+                if active_subjects:
+                    add(errors, "CORE_CLOSED_SUBJECT_PLANS", f"العام المغلق {year.name} يحتوي {active_subjects} مادة خطة فعالة.")
                 unlocked_attendance = Attendance.objects.filter(academic_year=year, is_locked=False).count()
                 if unlocked_attendance:
                     add(errors, "CORE_CLOSED_ATTENDANCE", f"العام المغلق {year.name} يحتوي {unlocked_attendance} سجل حضور غير مقفل.")
@@ -171,6 +193,26 @@ class Command(BaseCommand):
                 add(warnings, "ACADEMIC_SECTION_NO_CAPACITY", f"الشعبة #{section.pk} فعالة دون سعة محددة.")
             if section.is_active and not section.homeroom_teacher_id:
                 add(warnings, "ACADEMIC_SECTION_NO_HOMEROOM", f"الشعبة #{section.pk} دون مربي صف.")
+
+        for subject in Subject.objects.select_related("academic_year", "grade"):
+            if subject.academic_year.school_id != subject.grade.school_id:
+                add(errors, "ACADEMIC_SUBJECT_SCHOOL", f"المادة #{subject.pk} تربط عامًا وصفًا من مدرستين مختلفتين.")
+            if not 1 <= subject.weekly_periods <= 20:
+                add(errors, "ACADEMIC_SUBJECT_PERIODS", f"المادة #{subject.pk} تحمل عدد حصص غير صالح.")
+            if not subject.canonical_key or not subject.color:
+                add(errors, "ACADEMIC_SUBJECT_IDENTITY", f"المادة #{subject.pk} لا تحمل هوية ولونًا موحدين.")
+
+        for assignment in TeacherAssignment.objects.select_related("academic_year", "section", "subject"):
+            if assignment.subject.academic_year_id != assignment.academic_year_id:
+                add(errors, "ACADEMIC_ASSIGNMENT_SUBJECT_YEAR", f"التكليف #{assignment.pk} يستخدم مادة من عام آخر.")
+            if assignment.subject.grade_id != assignment.section.grade_id:
+                add(errors, "ACADEMIC_ASSIGNMENT_SUBJECT_GRADE", f"التكليف #{assignment.pk} يستخدم مادة من صف آخر.")
+
+        for entry in TimetableEntry.objects.select_related("academic_year", "section", "subject"):
+            if entry.subject.academic_year_id != entry.academic_year_id:
+                add(errors, "ACADEMIC_TIMETABLE_SUBJECT_YEAR", f"الحصة #{entry.pk} تستخدم مادة من عام آخر.")
+            if entry.subject.grade_id != entry.section.grade_id:
+                add(errors, "ACADEMIC_TIMETABLE_SUBJECT_GRADE", f"الحصة #{entry.pk} تستخدم مادة من صف آخر.")
 
         duplicate_active_enrollments = (
             Enrollment.objects.filter(status="active")
@@ -227,12 +269,113 @@ class Command(BaseCommand):
         if demo_students:
             add(warnings, "DATA_GENERATED_STUDENTS", f"توجد سجلات مولدة آليًا وفق الحقل التاريخي لعدد {demo_students} طالب.")
 
+        # سلامة ملفات التشغيل والمجلدات الأساسية. هذا فحص قراءة فقط.
+        root = Path(settings.BASE_DIR)
+        required_files = (
+            "manage.py",
+            "templates/includes/sidebar.html",
+            "templates/includes/topbar.html",
+            "static/css/opal_erp.css",
+            "docs/uiux/OPAL_UI_UX_GUIDE_AR.md",
+        )
+        missing_files = [item for item in required_files if not (root / item).is_file()]
+        if missing_files:
+            add(errors, "APP_REQUIRED_FILES", "ملفات OPAL الأساسية مفقودة: " + ", ".join(missing_files))
+
+        # بوابة Update 122: عقود قشرة التشغيل والتنقل المركزي. قراءة فقط.
+        from core.runtime_contracts import run_runtime_stability_audit
+
+        runtime_report = run_runtime_stability_audit(root=root)
+        for issue in runtime_report["issues"]:
+            add(
+                errors,
+                f"APP_{issue['code'].upper()}",
+                issue["message"] + (f" ({issue['path']})" if issue.get("path") else ""),
+            )
+
+        # بوابة Update 124: المسارات الحرجة وبيانات دورة الخدمة. قراءة فقط.
+        from core.critical_workflow_contracts import (
+            audit_critical_workflow_data,
+            run_critical_workflow_contract_audit,
+        )
+
+        critical_contracts = run_critical_workflow_contract_audit(root=root)
+        for issue in critical_contracts["issues"]:
+            add(
+                errors,
+                f"APP_{issue['code'].upper()}",
+                issue["message"] + (f" ({issue['path']})" if issue.get("path") else ""),
+            )
+        critical_data = audit_critical_workflow_data()
+        for issue in critical_data["errors"]:
+            add(errors, issue["code"], issue["message"])
+        for issue in critical_data["warnings"]:
+            add(warnings, issue["code"], issue["message"])
+
+        # بوابة Update 125: مدخل مرئي واحد لكل وظيفة ولكل دور. قراءة فقط.
+        from core.single_entry_contracts import run_single_entry_contract_audit
+
+        single_entry = run_single_entry_contract_audit(root=root)
+        for issue in single_entry["issues"]:
+            add(
+                errors,
+                f"APP_{issue['code'].upper()}",
+                issue["message"] + (f" ({issue['path']})" if issue.get("path") else ""),
+            )
+
+        # بوابة Update 126: لغة الرسوم المدرسية المبسطة وروابط المؤشرات الرسمية. قراءة فقط.
+        from core.school_finance_language_contracts import run_school_finance_language_audit
+
+        finance_language = run_school_finance_language_audit(root=root)
+        for issue in finance_language["issues"]:
+            add(
+                errors,
+                f"APP_{issue['code'].upper()}",
+                issue["message"] + (f" ({issue['path']})" if issue.get("path") else ""),
+            )
+
+        # بوابة Update 127: الخطة والتكليفات والنصاب والاستراحات ضمن محرك واحد بلا نظام موازٍ.
+        from core.smart_timetable_contracts import run_smart_timetable_contract_audit
+
+        smart_timetable = run_smart_timetable_contract_audit(root=root)
+        for issue in smart_timetable["issues"]:
+            add(
+                errors,
+                f"APP_{issue['code'].upper()}",
+                issue["message"] + (f" ({issue['path']})" if issue.get("path") else ""),
+            )
+
+        for path, code, label in (
+            (Path(settings.MEDIA_ROOT), "FS_MEDIA", "مجلد الوسائط"),
+            (Path(settings.STATIC_ROOT), "FS_STATIC_ROOT", "مجلد static المجمّع"),
+        ):
+            if not path.exists():
+                add(warnings, code, f"{label} غير موجود بعد: {path}")
+            elif not os.access(path, os.W_OK):
+                add(errors, code, f"{label} غير قابل للكتابة: {path}")
+
         report = {
+            "audit": "OPAL ERP canonical production readiness",
+            "version": _opal_release_version(root),
+            "generated_at": datetime.now(timezone.utc).isoformat(),
             "ready": not errors and (not warnings or not options["strict_warnings"]),
             "errors": errors,
             "warnings": warnings,
             "summary": {"errors": len(errors), "warnings": len(warnings)},
+            "safety": {
+                "data_deleted": False,
+                "database_modified": False,
+                "student_model": "students.Student",
+            },
         }
+
+        output_path = options.get("output")
+        if output_path:
+            output = Path(output_path)
+            if not output.is_absolute():
+                output = root / output
+            output.parent.mkdir(parents=True, exist_ok=True)
+            output.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
         if options["format"] == "json":
             self.stdout.write(json.dumps(report, ensure_ascii=False, indent=2))
         else:

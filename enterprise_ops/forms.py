@@ -28,38 +28,21 @@ class WorkflowActionForm(forms.Form):
         return data
 
 
-RATING_CHOICES = [(value, f"{value} من 5") for value in range(1, 6)]
-
-
 class FeedbackTicketForm(forms.ModelForm):
-    teaching_quality_rating = forms.TypedChoiceField(
-        label="تقييم جودة التدريس",
-        choices=RATING_CHOICES,
-        coerce=int,
-        empty_value=None,
-        widget=forms.Select(attrs={"class": "form-select"}),
-    )
-    electronic_services_rating = forms.TypedChoiceField(
-        label="تقييم الخدمات الإلكترونية التي تقدمها المدرسة",
-        choices=RATING_CHOICES,
-        coerce=int,
-        empty_value=None,
-        widget=forms.Select(attrs={"class": "form-select"}),
-    )
+    """Simple user message form; monthly evaluation has its own workflow."""
 
     class Meta:
         model = FeedbackTicket
-        fields = [
-            "kind",
-            "title",
-            "message",
-            "teaching_quality_rating",
-            "electronic_services_rating",
-        ]
+        fields = ["kind", "message"]
         widgets = {
             "kind": forms.Select(attrs={"class": "form-select"}),
-            "title": forms.TextInput(attrs={"class": "form-control", "maxlength": 220}),
-            "message": forms.Textarea(attrs={"class": "form-control", "rows": 6}),
+            "message": forms.Textarea(
+                attrs={
+                    "class": "form-control",
+                    "rows": 6,
+                    "placeholder": "اكتب تفاصيل الشكوى أو الاقتراح بوضوح...",
+                }
+            ),
         }
 
 

@@ -1,8 +1,9 @@
 from decimal import Decimal
 
-from attendance_v2.models import Attendance
+from attendance_v2.analytics import build_student_attendance_summaries
 from exams.models import StudentMark
 from .receipt_services import build_guardian_receipt_history
+from .financial_access import guardian_feature_allowed
 
 try:
     from documents.models import StudentIssuedDocument
@@ -28,18 +29,20 @@ def build_parent360_context(family, students):
     students = list(students)
     student_ids = [student.pk for student in students]
 
-    attendance_qs = Attendance.objects.filter(student_id__in=student_ids).select_related("student")
+    attendance_summaries = build_student_attendance_summaries(students)
+    marks_allowed = guardian_feature_allowed(family, "marks")
     marks_qs = StudentMark.objects.filter(student_id__in=student_ids).select_related(
         "student", "exam", "exam__subject"
-    )
+    ) if marks_allowed else StudentMark.objects.none()
     receipt_history = build_guardian_receipt_history(students)
 
     children = []
     total_fees = Decimal("0")
     total_paid = Decimal("0")
     total_remaining = Decimal("0")
+    total_attendance_days = 0
+    total_present = 0
     total_absent = 0
-    total_late = 0
     total_departed = 0
 
     for student in students:
@@ -47,11 +50,17 @@ def build_parent360_context(family, students):
         fees = Decimal(finance["total"] or 0)
         paid = Decimal(finance["paid"] or 0)
         remaining = Decimal(finance["remaining"] or 0)
-        child_attendance = attendance_qs.filter(student=student)
-        absent = child_attendance.filter(status="absent").count()
-        late = child_attendance.filter(status="late").count()
-        present = child_attendance.filter(status="present").count()
-        departed = child_attendance.filter(status="departed").count()
+        attendance = attendance_summaries.get(student.pk, {
+            "total": 0,
+            "present_count": 0,
+            "absent_count": 0,
+            "departed_count": 0,
+            "rate": 0,
+        })
+        attendance_days = attendance["total"]
+        present = attendance["present_count"]
+        absent = attendance["absent_count"]
+        departed = attendance["departed_count"]
         marks = list(marks_qs.filter(student=student).order_by("-exam__exam_date")[:8])
         average = round(sum(float(m.percentage) for m in marks) / len(marks), 1) if marks else None
 
@@ -73,11 +82,11 @@ def build_parent360_context(family, students):
                 "status_class": status_class,
                 "status_label": status_label,
                 "attendance": {
+                    "days": attendance_days,
                     "present": present,
                     "absent": absent,
-                    "late": late,
                     "departed": departed,
-                    "total": present + absent + late + departed,
+                    "rate": attendance["rate"],
                 },
                 "marks": marks,
                 "average": average,
@@ -86,8 +95,9 @@ def build_parent360_context(family, students):
         total_fees += fees
         total_paid += paid
         total_remaining += remaining
+        total_attendance_days += attendance_days
+        total_present += present
         total_absent += absent
-        total_late += late
         total_departed += departed
 
     documents_count = 0
@@ -104,8 +114,6 @@ def build_parent360_context(family, students):
         alerts.append({"level": "warning", "title": "رصيد مالي متبقٍ", "text": f"إجمالي المتبقي على أبناء ولي الأمر: {total_remaining:.2f}"})
     if total_absent:
         alerts.append({"level": "danger", "title": "غياب يحتاج متابعة", "text": f"إجمالي حالات الغياب المسجلة: {total_absent}"})
-    if total_late:
-        alerts.append({"level": "warning", "title": "تأخر صباحي", "text": f"إجمالي حالات التأخر: {total_late}"})
     if not getattr(family, "user_id", None):
         alerts.append({"level": "danger", "title": "حساب ولي الأمر غير مفعل", "text": "لا يوجد حساب دخول مرتبط بملف ولي الأمر."})
     if not getattr(family, "phone", ""):
@@ -130,8 +138,10 @@ def build_parent360_context(family, students):
             "paid": total_paid,
             "remaining": total_remaining,
             "paid_percentage": _safe_percentage(total_paid, total_fees),
+            "attendance_days": total_attendance_days,
+            "present": total_present,
+            "attendance_rate": _safe_percentage(total_present, total_attendance_days),
             "absent": total_absent,
-            "late": total_late,
             "departed": total_departed,
             "documents": documents_count,
             "payments": len(receipt_history),
@@ -140,4 +150,5 @@ def build_parent360_context(family, students):
         "recent_documents360": recent_documents,
         "alerts360": alerts,
         "profile_completeness360": completeness,
+        "marks_restricted": not marks_allowed,
     }

@@ -39,11 +39,20 @@ def build_semester_list_context():
     }
 
 
-def build_subject_list_context():
+def build_subject_list_context(request=None):
+    school = academic_school()
+    years = AcademicYear.objects.filter(school=school).order_by("-is_current", "-start_date") if school else AcademicYear.objects.none()
+    selected = (request.GET.get("academic_year") if request is not None else "") or ""
+    year = years.filter(pk=selected).first() if selected else years.filter(is_current=True).first() or years.first()
+    subjects = Subject.objects.select_related("academic_year", "grade", "grade__school")
+    if school:
+        subjects = subjects.filter(academic_year__school=school)
+    if year:
+        subjects = subjects.filter(academic_year=year)
     return {
-        "subjects": Subject.objects.select_related("grade", "grade__school").order_by(
-            "grade__order", "name"
-        ),
+        "subjects": subjects.order_by("grade__order", "name"),
+        "academic_years": years,
+        "selected_year": year,
     }
 
 
@@ -58,7 +67,7 @@ def build_academic_catalogue_snapshot(school=None, academic_year=None):
         years = AcademicYear.objects.filter(school=school).order_by("-is_current", "-start_date")
         academic_year = academic_year or years.filter(is_current=True).first() or years.first()
         grades = Grade.objects.filter(school=school).order_by("order", "name")
-        subjects = Subject.objects.filter(grade__school=school).select_related("grade").order_by(
+        subjects = Subject.objects.filter(academic_year=academic_year, grade__school=school).select_related("grade", "academic_year").order_by(
             "grade__order", "name"
         )
         if academic_year is not None:

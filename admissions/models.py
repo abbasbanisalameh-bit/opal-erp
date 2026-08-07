@@ -8,50 +8,9 @@ from core.choices import STUDENT_GENDER_CHOICES
 from core.finance_constants import PAYMENT_METHOD_CHOICES
 
 
-class AdmissionApplication(models.Model):
-    STATUS_CHOICES = [
-        ("candidate", "مرشح للقبول"),
-        ("draft", "مسودة"),
-        ("submitted", "مقدم"),
-        ("under_review", "قيد المراجعة"),
-        ("approved", "مقبول"),
-        ("rejected", "مرفوض"),
-        ("converted", "تم تحويله لطالب"),
-    ]
-
-    school = models.ForeignKey("core.School", on_delete=models.CASCADE)
-    branch = models.ForeignKey("core.Branch", on_delete=models.SET_NULL, null=True, blank=True)
-    academic_year = models.ForeignKey("core.AcademicYear", on_delete=models.SET_NULL, null=True, blank=True)
-
-    application_number = models.CharField(max_length=50, unique=True)
-
-    student_full_name = models.CharField(max_length=200)
-    father_name = models.CharField(max_length=200, blank=True)
-    mother_name = models.CharField(max_length=200, blank=True)
-    gender = models.CharField(max_length=10, choices=STUDENT_GENDER_CHOICES, blank=True)
-    birth_date = models.DateField(null=True, blank=True)
-    phone = models.CharField(max_length=30, blank=True)
-    address = models.TextField(blank=True)
-    photo = models.ImageField(upload_to="admissions/photos/", blank=True, null=True)
-
-    guardian_name = models.CharField(max_length=200)
-    guardian_phone = models.CharField(max_length=30)
-    guardian_email = models.EmailField(blank=True)
-    guardian_job = models.CharField(max_length=150, blank=True)
-
-    grade = models.ForeignKey("academics.Grade", on_delete=models.SET_NULL, null=True)
-    section = models.ForeignKey("academics.Section", on_delete=models.SET_NULL, null=True, blank=True)
-
-    status = models.CharField(max_length=30, choices=STATUS_CHOICES, default="draft")
-    notes = models.TextField(blank=True)
-
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        ordering = ["-created_at"]
-
-    def __str__(self):
-        return f"{self.application_number} - {self.student_full_name}"
+CURRENT_YEAR_FEE_NOTE_PREFIX = "دفعة رسوم السنة الحالية"
+PREVIOUS_YEARS_FEE_NOTE_PREFIX = "دفعة من متبقيات الرسوم السابقة"
+LEGACY_PREVIOUS_YEARS_FEE_NOTE_PREFIXES = ("دفعة من الذمم السابقة",)
 
 
 class RegistrationSettings(models.Model):
@@ -242,6 +201,31 @@ class FeePayment(models.Model):
 
     def __str__(self):
         return f"{self.receipt_number} - {self.total_amount}"
+
+    @property
+    def payment_period(self):
+        """Return a durable, display-only classification for the receipt.
+
+        The classification is stored in the operation note instead of a second
+        balance table.  Allocations and their linked invoices remain the source
+        of every financial amount.
+        """
+        notes = self.notes or ""
+        if notes.startswith(
+            (PREVIOUS_YEARS_FEE_NOTE_PREFIX, *LEGACY_PREVIOUS_YEARS_FEE_NOTE_PREFIXES)
+        ):
+            return "previous"
+        if notes.startswith(CURRENT_YEAR_FEE_NOTE_PREFIX):
+            return "current"
+        return "legacy"
+
+    @property
+    def payment_period_label(self):
+        return {
+            "previous": "متبقيات السنوات السابقة",
+            "current": "رسوم السنة الحالية",
+            "legacy": "دفعة رسوم سابقة غير مصنفة",
+        }[self.payment_period]
 
 
 class FeePaymentAllocation(models.Model):

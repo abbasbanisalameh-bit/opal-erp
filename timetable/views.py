@@ -1,7 +1,9 @@
 from django.contrib import messages
-from django.contrib.admin.views.decorators import staff_member_required
 from django.db import transaction
+from django.core.exceptions import ValidationError
+from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
@@ -10,6 +12,7 @@ from core.models import AcademicYear
 from teachers.models import Teacher
 from admissions.services import active_school
 
+from enterprise_ops.permissions import management_required
 from enterprise_ops.services import audit
 from .forms import (
     CoverageAssignmentForm, SchoolDayEventForm, SchoolScheduleSettingsForm,
@@ -25,34 +28,56 @@ from .workflow import (
 )
 
 
-@staff_member_required
+@management_required
 def dashboard(request):
-    return render(request, "timetable/dashboard.html", build_timetable_dashboard_context(request))
+    builder_state = None
+    if request.method == "POST" and request.POST.get("action") in {"builder_preview", "builder_apply"}:
+        try:
+            builder_state = build_smart_builder_state(request)
+        except Exception as exc:
+            detail = getattr(exc, "messages", [str(exc)])
+            messages.error(
+                request,
+                f"لم يُعتمد الجدول وبقي الجدول السابق كما هو: {detail[0] if detail else 'تعارض غير متوقع'}.",
+            )
+            return redirect("timetable:dashboard")
+        result = builder_state.get("builder_result")
+        year = builder_state.get("builder_year")
+        if year and builder_state.get("builder_apply") and result:
+            audit(
+                request, "create", "timetable.SmartBuilder", year.pk,
+                f"اعتماد اقتراح الجدول الذكي ({result['variant_label']}): {len(result['created'])} حصة",
+            )
+            messages.success(
+                request,
+                f"تم اعتماد {len(result['created'])} حصة في عملية ذرية واحدة دون المساس بالحصص اليدوية.",
+            )
+            return redirect("timetable:dashboard")
+    return render(request, "timetable/dashboard.html", build_timetable_dashboard_context(request, builder_state=builder_state))
 
 
-@staff_member_required
+@management_required
 def smart_builder(request):
-    state = build_smart_builder_state(request)
-    year = state["year"]
-    result = state["result"]
-    if year and state["apply"]:
-        audit(request, "create", "timetable.SmartBuilder", year.pk, f"بناء الجدول الذكي: {len(result['created'])} حصة")
-        if result["unresolved"]:
-            messages.warning(request, f"تم إنشاء {len(result['created'])} حصة، وتعذر إسناد {len(result['unresolved'])} تكليفات لعدم توفر وقت خالٍ.")
-        else:
-            messages.success(request, f"تم إنشاء {len(result['created'])} حصة دون تعديل الحصص اليدوية.")
-        return redirect(f"{request.path}?academic_year={year.pk}")
-    return render(request, "timetable/smart_builder.html", {
-        "years": state["years"], "year": year, "result": result,
-    })
+    """LEGACY/DEPRECATED for OPAL Update 131 only; no internal link may use it."""
+    target = reverse("timetable:dashboard") + "#smart-builder"
+    response = HttpResponseRedirect(target)
+    response["Deprecation"] = "true"
+    response["Sunset"] = "OPAL Update 132.0"
+    response["Link"] = f'<{target}>; rel="successor-version"'
+    return response
 
 
-@staff_member_required
+@management_required
 def schedule_settings(request):
     school = active_school()
     settings = school_schedule_settings(school)
+    event_id = request.POST.get("event_id") or request.GET.get("event")
+    event_instance = (
+        SchoolDayEvent.objects.filter(school=school, pk=event_id).first()
+        if event_id else None
+    )
     settings_form = SchoolScheduleSettingsForm(prefix="settings", instance=settings)
-    event_form = SchoolDayEventForm(prefix="event")
+    event_form = SchoolDayEventForm(prefix="event", instance=event_instance, school=school)
     if request.method == "POST":
         action = request.POST.get("action")
         if action == "settings":
@@ -64,52 +89,91 @@ def schedule_settings(request):
                 messages.success(request, "تم حفظ أيام العطلة ومدة التنبيه.")
                 return redirect("timetable:schedule_settings")
         elif action == "event":
-            event_form = SchoolDayEventForm(request.POST, prefix="event")
+            event_form = SchoolDayEventForm(
+                request.POST,
+                prefix="event",
+                instance=event_instance,
+                school=school,
+            )
             if event_form.is_valid():
-                event = event_form.save(commit=False)
-                event.school = school
-                event.save()
-                messages.success(request, "تمت إضافة الحدث إلى المؤقت المدرسي.")
+                with transaction.atomic():
+                    event = event_form.save(commit=False)
+                    event.school = school
+                    event.save()
+                    event_form.save_m2m()
+                    audit(
+                        request,
+                        "update" if event_instance else "create",
+                        "timetable.SchoolDayEvent",
+                        event.pk,
+                        f"{'تعديل' if event_instance else 'إضافة'} حدث اليوم المدرسي: {event.name}",
+                    )
+                messages.success(
+                    request,
+                    "تم تحديث الاستراحة ومجموعة الشعب." if event_instance
+                    else "تمت إضافة الحدث إلى اليوم المدرسي.",
+                )
                 return redirect("timetable:schedule_settings")
-    return render(
-        request,
-        "timetable/schedule_settings.html",
-        build_schedule_settings_context(school=school, settings_form=settings_form, event_form=event_form),
+    context = build_schedule_settings_context(
+        school=school,
+        settings_form=settings_form,
+        event_form=event_form,
     )
+    context["event_instance"] = event_instance
+    return render(request, "timetable/schedule_settings.html", context)
 
 
-@staff_member_required
+@management_required
 @require_POST
 def event_delete(request, pk):
-    event = get_object_or_404(SchoolDayEvent, pk=pk)
+    event = get_object_or_404(SchoolDayEvent, pk=pk, school=active_school())
     event.delete()
     messages.success(request, "تم حذف الحدث من المؤقت.")
     return redirect("timetable:schedule_settings")
 
 
-@staff_member_required
+@management_required
 def absence_center(request):
     school = active_school()
     form = TeacherAbsenceForm(request.POST or None)
     form.fields["teacher"].queryset = Teacher.objects.filter(school=school, is_active=True)
     if request.method == "POST" and form.is_valid():
+        cleaned = form.cleaned_data
         try:
             with transaction.atomic():
-                absence = form.save(commit=False)
-                absence.recorded_by = request.user
+                defaults = {
+                    name: cleaned.get(name)
+                    for name in [
+                        "attendance_status", "arrival_time", "departure_time", "absence_type",
+                        "reason", "is_approved", "payroll_approved", "deduction_amount", "payroll_notes",
+                    ]
+                }
+                defaults["recorded_by"] = request.user
+                defaults["approved_by"] = request.user if cleaned.get("is_approved") else None
+                absence, created = TeacherAbsence.objects.update_or_create(
+                    teacher=cleaned["teacher"], date=cleaned["date"], defaults=defaults,
+                )
+                absence.full_clean()
                 absence.save()
-                create_absence_coverages(absence, school)
+                affected = create_absence_coverages(absence, school)
         except Exception as exc:
-            form.add_error(None, "غياب هذا المعلم مسجل لهذا التاريخ مسبقًا." if "uniq" in str(exc).lower() else str(exc))
+            form.add_error(None, str(exc))
         else:
-            audit(request, "create", "timetable.TeacherAbsence", absence.pk, f"تسجيل غياب {absence.teacher} وإنشاء إشغالات الحصص")
-            messages.success(request, "تم تسجيل الغياب وإنشاء تنبيه إشغال لكل حصة للمعلم في ذلك اليوم.")
+            audit(
+                request, "create" if created else "update", "timetable.TeacherAbsence", absence.pk,
+                f"{'تسجيل' if created else 'تصحيح'} دوام {absence.teacher}: {absence.get_attendance_status_display()}",
+            )
+            messages.success(
+                request,
+                f"تم حفظ استثناء الدوام ومزامنة {len(affected)} حصة متأثرة دون إنشاء سجل حضور يومي.",
+            )
             return redirect("timetable:absence_center")
-    coverages = upcoming_coverages_queryset()
-    return render(request, "timetable/absence_center.html", {"form": form, "coverages": coverages})
+    coverages = upcoming_coverages_queryset(school)
+    exceptions = TeacherAbsence.objects.filter(teacher__school=school, date__gte=timezone.localdate()).select_related("teacher").order_by("date", "teacher__full_name")
+    return render(request, "timetable/absence_center.html", {"form": form, "coverages": coverages, "exceptions": exceptions})
 
 
-@staff_member_required
+@management_required
 def coverage_assign(request, pk):
     coverage = get_object_or_404(ClassCoverage.objects.select_related("entry__academic_year__school", "entry__time_slot"), pk=pk)
     form = CoverageAssignmentForm(request.POST or None, instance=coverage)
@@ -128,7 +192,7 @@ def coverage_assign(request, pk):
     return render(request, "timetable/form.html", {"form": form, "title": "تعيين معلم بديل", "coverage": coverage})
 
 
-@staff_member_required
+@management_required
 def entry_create(request):
     form = TimetableEntryForm(request.POST or None)
     if form.is_valid():
@@ -139,7 +203,7 @@ def entry_create(request):
     return render(request, "timetable/form.html", {"form": form, "title": "إضافة حصة"})
 
 
-@staff_member_required
+@management_required
 def entry_update(request, pk):
     entry = get_object_or_404(TimetableEntry, pk=pk)
     if entry.academic_year.is_closed:
@@ -154,7 +218,7 @@ def entry_update(request, pk):
     return render(request, "timetable/form.html", {"form": form, "title": "تعديل حصة", "entry": entry})
 
 
-@staff_member_required
+@management_required
 def entry_delete(request, pk):
     entry = get_object_or_404(TimetableEntry, pk=pk)
     if request.method == "POST":
@@ -168,12 +232,12 @@ def entry_delete(request, pk):
     return redirect("timetable:dashboard")
 
 
-@staff_member_required
+@management_required
 def slot_list(request):
     return render(request, "timetable/slot_list.html", {"slots": active_time_slots_queryset()})
 
 
-@staff_member_required
+@management_required
 def slot_create(request):
     form = TimeSlotForm(request.POST or None)
     if form.is_valid():
@@ -184,9 +248,12 @@ def slot_create(request):
     return render(request, "timetable/form.html", {"form": form, "title": "إضافة وقت حصة"})
 
 
-@staff_member_required
+@management_required
 def slot_update(request, pk):
     slot = get_object_or_404(TimeSlot, pk=pk)
+    if slot.generated_for_smart_schedule:
+        messages.warning(request, "هذا الوقت مشتق من الجدول الذكي ولا يعدل يدويًا. أعد بناء الجدول بدلًا من ذلك.")
+        return redirect("timetable:slot_list")
     form = TimeSlotForm(request.POST or None, instance=slot)
     if form.is_valid():
         form.save()
@@ -196,11 +263,13 @@ def slot_update(request, pk):
     return render(request, "timetable/form.html", {"form": form, "title": "تعديل وقت حصة"})
 
 
-@staff_member_required
+@management_required
 def slot_delete(request, pk):
     slot = get_object_or_404(TimeSlot, pk=pk)
     if request.method == "POST":
-        if slot.entries.exists():
+        if slot.generated_for_smart_schedule:
+            messages.warning(request, "الوقت المشتق آليًا يحذف فقط عند إعادة بناء الجدول الذكي.")
+        elif slot.entries.exists():
             messages.error(request, "لا يمكن حذف وقت مرتبط بحصص. أوقف تفعيله بدلًا من ذلك.")
         else:
             slot.delete()
@@ -209,17 +278,17 @@ def slot_delete(request, pk):
     return redirect("timetable:slot_list")
 
 
-@staff_member_required
+@management_required
 def section_print(request, section_id):
     section = get_object_or_404(Section.objects.select_related("grade"), pk=section_id)
     entries = section_schedule_queryset(section)
     audit(request, "print", "timetable.SectionSchedule", section.pk, f"طباعة جدول {section}")
-    return render(request, "timetable/print.html", build_print_context(entries, f"جدول {section}"))
+    return render(request, "timetable/print.html", build_print_context(entries, f"جدول {section}", school=section.academic_year.school))
 
 
-@staff_member_required
+@management_required
 def teacher_print(request, teacher_id):
     teacher = get_object_or_404(Teacher, pk=teacher_id)
     entries = teacher_schedule_queryset(teacher)
     audit(request, "print", "timetable.TeacherSchedule", teacher.pk, f"طباعة جدول {teacher}")
-    return render(request, "timetable/print.html", build_print_context(entries, f"جدول المعلم {teacher}"))
+    return render(request, "timetable/print.html", build_print_context(entries, f"جدول المعلم {teacher}", school=teacher.school))

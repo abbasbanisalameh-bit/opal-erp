@@ -1,55 +1,44 @@
 {% extends "base/base.html" %}
-{% block title %}المواد الدراسية | OPAL ERP{% endblock %}
-{% block page_title %}المواد الدراسية{% endblock %}
-{% block page_subtitle %}إدارة المواد وربطها بالصفوف الدراسية{% endblock %}
+{% block title %}المواد والخطة الدراسية | OPAL ERP{% endblock %}
+{% block page_title %}المواد والخطة الدراسية{% endblock %}
+{% block page_subtitle %}المصدر الوحيد لتعريف المادة وحصصها الأسبوعية ولونها في العام الدراسي{% endblock %}
 
 {% block content %}
 <div class="opal-card mb-4">
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
         <div>
-            <h3 class="fw-bold mb-1">المواد الدراسية</h3>
-            <p class="text-secondary mb-0">تنظيم المواد حسب الصف والرمز والحالة</p>
+            <h3 class="fw-bold mb-1">المواد والخطة الدراسية</h3>
+            <p class="text-secondary mb-0">لا توجد شاشة خطة موازية؛ كل صف هنا هو المادة وخطتها الرسمية للعام المحدد.</p>
         </div>
-        <a href="{% url 'academics:subject_create' %}" class="btn btn-primary">+ إضافة مادة</a>
+        <a href="{% url 'academics:subject_create' %}" class="btn btn-primary">+ إضافة مادة وخطة</a>
     </div>
+</div>
+
+<div class="opal-card mb-4">
+  <form method="get" class="row g-2 align-items-end">
+    <div class="col-md-6"><label class="form-label">العام الدراسي</label><select class="form-select" name="academic_year">{% for item in academic_years %}<option value="{{ item.pk }}" {% if selected_year.pk == item.pk %}selected{% endif %}>{{ item.name }}{% if item.is_current %} — الحالي{% endif %}</option>{% endfor %}</select></div>
+    <div class="col-md-2 d-grid"><button class="btn btn-primary">عرض</button></div>
+  </form>
 </div>
 
 <div class="opal-card">
     <div class="table-responsive">
-        <table class="opal-table">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>المادة</th>
-                    <th>الرمز</th>
-                    <th>الصف</th>
-                    <th>الحالة</th>
-                    <th class="text-center">الإجراءات</th>
-                </tr>
-            </thead>
+        <table class="opal-table" data-opal-instant-table>
+            <thead><tr><th>#</th><th>المادة</th><th>الرمز</th><th>الصف</th><th>الحصص الأسبوعية</th><th>النوع</th><th>اللون</th><th>الحالة</th><th class="text-center">الإجراءات</th></tr></thead>
             <tbody>
                 {% for s in subjects %}
                 <tr>
                     <td>{{ forloop.counter }}</td>
-                    <td class="fw-bold">{{ s.name }}</td>
+                    <td class="fw-bold"><span class="opal-subject-swatch" style="--opal-subject-color: {{ s.color }}"></span>{{ s.name }}</td>
                     <td>{{ s.code|default:"-" }}</td>
                     <td>{{ s.grade|default:"-" }}</td>
-                    <td>
-                        {% if s.is_active %}
-                            <span class="badge bg-success">نشطة</span>
-                        {% else %}
-                            <span class="badge bg-secondary">غير نشطة</span>
-                        {% endif %}
-                    </td>
-                    <td class="text-center">
-                        <a href="{% url 'academics:subject_update' s.id %}" class="btn btn-sm btn-warning">تعديل</a>
-                    </td>
+                    <td>{{ s.weekly_periods }}</td>
+                    <td>{% if s.is_required %}<span class="badge bg-primary">إلزامية</span>{% else %}<span class="badge bg-info text-dark">اختيارية</span>{% endif %}</td>
+                    <td><span class="badge" style="background:{{ s.color }};color:#fff">{{ s.color }}</span></td>
+                    <td>{% if s.is_active %}<span class="badge bg-success">نشطة</span>{% else %}<span class="badge bg-secondary">متوقفة</span>{% endif %}</td>
+                    <td class="text-center"><a href="{% url 'academics:subject_update' s.id %}" class="btn btn-sm btn-warning">تعديل</a></td>
                 </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="6" class="text-center text-secondary">لا توجد مواد دراسية</td>
-                </tr>
-                {% endfor %}
+                {% empty %}<tr><td colspan="9" class="text-center text-secondary">لا توجد مواد في هذا العام.</td></tr>{% endfor %}
             </tbody>
         </table>
     </div>

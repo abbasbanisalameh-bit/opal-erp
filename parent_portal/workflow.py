@@ -7,23 +7,16 @@ documents and timetable contexts.
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404
 
-from accounting.models import StudentInvoice
-from admissions.financial_services import student_finance_snapshot
-from admissions.models import FeePayment, FeePaymentAllocation
-from announcements.models import Announcement
+from admissions.financial_services import student_separated_finance_snapshot
+from admissions.models import FeePayment
 from attendance_v2.models import Attendance
 from exams.models import StudentMark
 
 from .academic_services import homework_for_student, student_class_rank
 from .financial_services import build_guardian_annual_statement, guardian_financial_years
 from .models import Family, FamilyStudent
+from .financial_access import guardian_feature_allowed
 from .receipt_services import build_guardian_receipt_history
-
-try:
-    from documents.models import StudentIssuedDocument
-except Exception:
-    StudentIssuedDocument = None
-
 
 def students_for_user(user):
     family = Family.objects.filter(user=user).first()
@@ -49,20 +42,25 @@ def student_for_user_or_403(user, student_id):
     return get_object_or_404(type(students[0]).objects.all(), pk=student_id)
 
 
-def build_student_card(student):
-    finance = student_finance_snapshot(student)
+def build_student_card(student, *, marks_allowed=True):
+    separated = student_separated_finance_snapshot(student)
+    finance = separated["current"]
     paid = finance["paid"]
     remaining = finance["remaining"]
+    previous_debt = separated["previous"]
     return {
         "student": student,
+        "current_year": separated["current_year"],
+        "previous_debt": previous_debt,
         "total": finance["total"],
         "paid": paid,
         "remaining": remaining,
+        "combined_remaining": separated["combined_remaining"],
         "status": finance["status"],
         "status_label": "مسدد بالكامل" if remaining <= 0 else ("غير مسدد" if paid <= 0 else "متبقٍ جزئي"),
         "status_class": "success" if remaining <= 0 else ("danger" if paid <= 0 else "warning"),
         "attendance": Attendance.objects.filter(student=student).order_by("-date")[:5],
-        "marks": StudentMark.objects.filter(student=student, exam__status__in=["published", "closed"]).select_related("exam", "exam__subject")[:5],
+        "marks": StudentMark.objects.filter(student=student, exam__status__in=["published", "closed"]).select_related("exam", "exam__subject")[:5] if marks_allowed else [],
         "rank": student_class_rank(student),
         "homework": homework_for_student(student)[:5],
     }
@@ -70,39 +68,44 @@ def build_student_card(student):
 
 def build_dashboard_context(user):
     students = students_for_user(user)
-    cards = [build_student_card(student) for student in students]
+    family = family_for_user(user)
+    marks_allowed = guardian_feature_allowed(family, "marks")
+    cards = [build_student_card(student, marks_allowed=marks_allowed) for student in students]
     return {
-        "family": family_for_user(user),
+        "family": family,
+        "marks_restricted": not marks_allowed,
         "students": students,
         "cards": cards,
-        "announcements": Announcement.objects.filter(is_active=True).order_by("-created_at")[:10],
         "receipt_history": build_guardian_receipt_history(students),
         "totals": {
             "students_count": len(students),
             "total": sum((card["total"] for card in cards), 0),
             "paid": sum((card["paid"] for card in cards), 0),
             "remaining": sum((card["remaining"] for card in cards), 0),
+            "previous_debt": sum((card["previous_debt"]["total"] for card in cards), 0),
+            "combined_remaining": sum((card["combined_remaining"] for card in cards), 0),
         },
     }
 
 
 def build_student_detail_context(student):
-    documents = []
-    if StudentIssuedDocument:
-        documents = StudentIssuedDocument.objects.filter(student=student).select_related("issued_document")[:20]
-    finance = student_finance_snapshot(student)
+    """Return a lightweight profile summary and direct the parent to each official service.
+
+    Detailed finance, attendance, marks, homework and document tables live in
+    their dedicated guardian gateways.  This prevents the student summary from
+    becoming a second, competing route to the same information.
+    """
+    separated = student_separated_finance_snapshot(student)
+    finance = separated["current"]
     return {
         "student": student,
-        "invoices": StudentInvoice.objects.filter(student=student).select_related("fee_category").prefetch_related("payments"),
-        "allocations": FeePaymentAllocation.objects.filter(student=student).select_related("fee_payment").order_by("-created_at"),
-        "attendance": Attendance.objects.filter(student=student).order_by("-date")[:30],
-        "marks": StudentMark.objects.filter(student=student, exam__status__in=["published", "closed"]).select_related("exam", "exam__subject"),
         "rank": student_class_rank(student),
-        "homework_items": homework_for_student(student),
-        "documents": documents,
+        "current_year": separated["current_year"],
         "total": finance["total"],
         "paid": finance["paid"],
         "remaining": finance["remaining"],
+        "combined_remaining": separated["combined_remaining"],
+        "previous_debt": separated["previous"],
     }
 
 
@@ -119,6 +122,10 @@ def build_fees_context(user, requested_year=None):
         "statement_years": years,
         "selected_year": selected,
         "annual_statement": build_guardian_annual_statement(students, selected) if selected else None,
+        "current_year": next((card["current_year"] for card in cards if card["current_year"]), None),
+        "previous_total": sum((card["previous_debt"]["total"] for card in cards), 0),
+        "current_remaining": sum((card["remaining"] for card in cards), 0),
+        "combined_remaining": sum((card["combined_remaining"] for card in cards), 0),
     }
 
 
@@ -138,5 +145,8 @@ def build_family_finance_context(family):
             "total": sum((card["total"] for card in cards), 0),
             "paid": sum((card["paid"] for card in cards), 0),
             "remaining": sum((card["remaining"] for card in cards), 0),
+            "previous_debt": sum((card["previous_debt"]["total"] for card in cards), 0),
+            "combined_remaining": sum((card["combined_remaining"] for card in cards), 0),
+            "current_year": next((card["current_year"] for card in cards if card["current_year"]), None),
         },
     }

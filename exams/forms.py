@@ -1,10 +1,49 @@
 from django import forms
+from django.core.exceptions import ValidationError
 
 from academics.models import Grade, Section, Subject
 from core.models import AcademicYear, Semester
 from teachers.models import TeacherAssignment
 
-from .models import Exam
+from .models import Exam, ExamCycle
+
+
+class ExamCycleOpenForm(forms.Form):
+    academic_year = forms.ModelChoiceField(label="العام الدراسي", queryset=AcademicYear.objects.none())
+    semester = forms.ModelChoiceField(label="الفصل الدراسي", queryset=Semester.objects.none())
+    exam_type = forms.ChoiceField(label="الدورة الامتحانية", choices=ExamCycle.EXAM_TYPES)
+    name = forms.CharField(label="اسم توضيحي", required=False, max_length=200)
+    notes = forms.CharField(label="ملاحظات", required=False, widget=forms.Textarea(attrs={"rows": 2}))
+
+    def __init__(self, *args, school=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        years = AcademicYear.objects.filter(is_closed=False)
+        if school is not None:
+            years = years.filter(school=school)
+        years = years.order_by("-is_current", "-start_date")
+        self.fields["academic_year"].queryset = years
+        year_id = self.data.get("academic_year") if self.is_bound else None
+        if not year_id:
+            current = years.filter(is_current=True).first() or years.first()
+            year_id = current.pk if current else None
+            if current:
+                self.initial.setdefault("academic_year", current.pk)
+        semesters = Semester.objects.filter(academic_year_id=year_id, is_closed=False) if year_id else Semester.objects.none()
+        self.fields["semester"].queryset = semesters.order_by("code")
+        if not self.is_bound:
+            current_semester = semesters.filter(is_current=True).first()
+            if current_semester:
+                self.initial.setdefault("semester", current_semester.pk)
+        for field in self.fields.values():
+            field.widget.attrs.setdefault("class", "form-select" if isinstance(field.widget, forms.Select) else "form-control")
+
+    def clean(self):
+        cleaned = super().clean()
+        year = cleaned.get("academic_year")
+        semester = cleaned.get("semester")
+        if year and semester and semester.academic_year_id != year.pk:
+            self.add_error("semester", "الفصل الدراسي لا يتبع العام المحدد.")
+        return cleaned
 
 
 class ExamForm(forms.ModelForm):
@@ -20,6 +59,7 @@ class ExamForm(forms.ModelForm):
             "subject",
             "pass_percentage",
             "exam_date",
+            "marks_due_date",
             "is_active",
         ]
         labels = {
@@ -32,10 +72,12 @@ class ExamForm(forms.ModelForm):
             "subject": "المادة",
             "pass_percentage": "نسبة النجاح",
             "exam_date": "تاريخ الامتحان",
+            "marks_due_date": "الموعد النهائي لإدخال العلامات",
             "is_active": "فعال",
         }
         widgets = {
             "exam_date": forms.DateInput(attrs={"type": "date"}),
+            "marks_due_date": forms.DateInput(attrs={"type": "date"}),
             "name": forms.TextInput(attrs={"placeholder": "يُنشأ تلقائيًا عند تركه فارغًا"}),
         }
 
@@ -74,7 +116,11 @@ class ExamForm(forms.ModelForm):
             sections = sections.filter(grade_id=grade_id)
         self.fields["section"].queryset = sections.order_by("grade__order", "name")
 
-        subjects = Subject.objects.filter(is_active=True).select_related("grade")
+        subjects = Subject.objects.filter(is_active=True).select_related("grade", "academic_year")
+        if year_id:
+            subjects = subjects.filter(academic_year_id=year_id)
+        else:
+            subjects = subjects.none()
         if grade_id:
             subjects = subjects.filter(grade_id=grade_id)
         self.fields["subject"].queryset = subjects.order_by("name")
@@ -106,6 +152,18 @@ class ExamForm(forms.ModelForm):
             self.add_error("section", "الشعبة لا تتبع العام المحدد.")
         if grade and subject and subject.grade_id != grade.pk:
             self.add_error("subject", "المادة لا تتبع الصف المحدد.")
+        if year and subject and subject.academic_year_id != year.pk:
+            self.add_error("subject", "المادة لا تتبع العام الدراسي المحدد.")
+        exam_type = cleaned.get("exam_type")
+        if year and semester and exam_type and not self.instance.pk:
+            from .lifecycle import validate_exam_cycle_opening
+            try:
+                validate_exam_cycle_opening(
+                    academic_year=year, semester=semester, exam_type=exam_type
+                )
+            except ValidationError as exc:
+                self.add_error("exam_type", exc)
+
         if year and section and subject:
             assignments = TeacherAssignment.objects.filter(
                 academic_year=year,

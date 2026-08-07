@@ -2,14 +2,16 @@ from decimal import Decimal, ROUND_HALF_UP
 
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
+from django.db.models import DecimalField, ExpressionWrapper, F, Sum, Value
+from django.db.models.functions import Coalesce
 from django.utils import timezone
 
 from accounting.models import FeeCategory, StudentInvoice, StudentPayment
 from core.models import Sequence
 from students.models import Student
 
-from .models import FeePayment, FeePaymentAllocation
-from .services import active_school
+from .models import CURRENT_YEAR_FEE_NOTE_PREFIX, FeePayment, FeePaymentAllocation
+from .services import active_school, current_academic_year
 
 TWOPLACES = Decimal("0.01")
 
@@ -44,15 +46,44 @@ def _latest_registration(student):
     )
 
 
-def student_finance_snapshot(student):
-    """Return the live balance from invoices and posted payments only."""
-    invoice_total = sum((invoice.net_amount for invoice in student.invoices.exclude(status="cancelled")), Decimal("0.00"))
-    accounting_paid = (
+def _empty_finance_snapshot(*, academic_year=None, registration=None):
+    return {
+        "total": Decimal("0.00"),
+        "paid": Decimal("0.00"),
+        "remaining": Decimal("0.00"),
+        "status": "paid",
+        "invoice_total": Decimal("0.00"),
+        "accounting_paid": Decimal("0.00"),
+        "registration": registration,
+        "academic_year": academic_year,
+        "data_available": academic_year is not None,
+    }
+
+
+def student_finance_snapshot(student, *, academic_year=None):
+    """Return a live invoice balance, optionally restricted to one school year.
+
+    The default remains the historical all-years behaviour for compatibility.
+    Every operational payment screen passes an explicit current academic year
+    so previous balances cannot leak into a current-year payment.
+    """
+    invoices = (
+        student.invoices.exclude(status="cancelled")
+        .exclude(carry_forward_record__source_invoices__isnull=False)
+        .distinct()
+    )
+    payments = (
         StudentPayment.objects.filter(invoice__student=student, status="posted")
         .exclude(invoice__status="cancelled")
-        .aggregate(total=models.Sum("amount"))["total"]
-        or Decimal("0.00")
+        .exclude(invoice__carry_forward_record__source_invoices__isnull=False)
+        .distinct()
     )
+    if academic_year is not None:
+        invoices = invoices.filter(academic_year=academic_year)
+        payments = payments.filter(invoice__academic_year=academic_year)
+
+    invoice_total = sum((invoice.net_amount for invoice in invoices), Decimal("0.00"))
+    accounting_paid = payments.aggregate(total=models.Sum("amount"))["total"] or Decimal("0.00")
     registration = _latest_registration(student)
     total = money(invoice_total)
     paid = money(min(accounting_paid, total)) if total > 0 else Decimal("0.00")
@@ -73,8 +104,119 @@ def student_finance_snapshot(student):
         "invoice_total": total,
         "accounting_paid": paid,
         "registration": registration,
+        "academic_year": academic_year,
+        "data_available": academic_year is not None or total > 0,
     }
 
+
+
+
+def students_finance_snapshots(students, *, academic_year=None):
+    """Return live finance snapshots for many students with a fixed query count.
+
+    This is the list-page counterpart of ``student_finance_snapshot`` and avoids
+    issuing invoice/payment queries once per sibling.
+    """
+    students = list(students)
+    student_ids = [student.pk for student in students]
+    if not student_ids:
+        return {}
+
+    money_field = DecimalField(max_digits=14, decimal_places=2)
+    net_expression = ExpressionWrapper(
+        F("amount") - F("discount_amount"),
+        output_field=money_field,
+    )
+    invoice_scope = (
+        StudentInvoice.objects.filter(student_id__in=student_ids)
+        .exclude(status="cancelled")
+        .exclude(carry_forward_record__source_invoices__isnull=False)
+        .distinct()
+    )
+    payment_scope = (
+        StudentPayment.objects.filter(invoice__student_id__in=student_ids, status="posted")
+        .exclude(invoice__status="cancelled")
+        .exclude(invoice__carry_forward_record__source_invoices__isnull=False)
+        .distinct()
+    )
+    if academic_year is not None:
+        invoice_scope = invoice_scope.filter(academic_year=academic_year)
+        payment_scope = payment_scope.filter(invoice__academic_year=academic_year)
+
+    invoice_rows = (
+        invoice_scope
+        .values("student_id")
+        .annotate(total=Coalesce(Sum(net_expression), Value(Decimal("0.00"), output_field=money_field)))
+    )
+    payment_rows = (
+        payment_scope
+        .values("invoice__student_id")
+        .annotate(total=Coalesce(Sum("amount"), Value(Decimal("0.00"), output_field=money_field)))
+    )
+    invoice_totals = {row["student_id"]: money(row["total"]) for row in invoice_rows}
+    payment_totals = {row["invoice__student_id"]: money(row["total"]) for row in payment_rows}
+
+    snapshots = {}
+    for student in students:
+        total = invoice_totals.get(student.pk, Decimal("0.00"))
+        paid = money(min(payment_totals.get(student.pk, Decimal("0.00")), total)) if total > 0 else Decimal("0.00")
+        remaining = money(max(total - paid, Decimal("0.00")))
+        status = "paid" if total <= 0 or remaining <= 0 else ("unpaid" if paid <= 0 else "partial")
+        snapshots[student.pk] = {
+            "total": total,
+            "paid": paid,
+            "remaining": remaining,
+            "status": status,
+            "invoice_total": total,
+            "accounting_paid": paid,
+            "registration": None,
+            "academic_year": academic_year,
+            "data_available": academic_year is not None or total > 0,
+        }
+    return snapshots
+
+
+def student_current_year_finance_snapshot(student, *, academic_year=None):
+    if academic_year is None:
+        from accounting.previous_debt_services import resolve_current_year_for_student
+
+        academic_year = resolve_current_year_for_student(student)
+    if academic_year is None:
+        return _empty_finance_snapshot(registration=_latest_registration(student))
+    return student_finance_snapshot(student, academic_year=academic_year)
+
+
+def students_current_year_finance_snapshots(students, *, academic_year=None):
+    students = list(students)
+    if academic_year is None and students:
+        from accounting.previous_debt_services import resolve_current_year_for_student
+
+        academic_year = resolve_current_year_for_student(students[0])
+    if academic_year is None:
+        return {
+            student.pk: _empty_finance_snapshot(registration=None)
+            for student in students
+        }
+    return students_finance_snapshots(students, academic_year=academic_year)
+
+
+def student_separated_finance_snapshot(student, *, academic_year=None):
+    """Return current-year fees and accumulated previous balances separately."""
+    current = student_current_year_finance_snapshot(student, academic_year=academic_year)
+    from accounting.previous_debt_services import student_previous_debt_snapshot
+
+    previous = student_previous_debt_snapshot(
+        student,
+        academic_year=current["academic_year"],
+    )
+    combined_remaining = money(current["remaining"] + previous["total"])
+    return {
+        "student": student,
+        "current_year": current["academic_year"],
+        "current": current,
+        "previous": previous,
+        "combined_remaining": combined_remaining,
+    }
 
 def student_total_fees(student):
     return student_finance_snapshot(student)["total"]
@@ -155,10 +297,15 @@ def distribute_amount(rows, amount):
     return data, money(left)
 
 
-def allocate_equally_to_unpaid_siblings(students, amount):
+def allocate_equally_to_unpaid_siblings(students, amount, *, academic_year=None):
+    students = list(students)
+    snapshots = students_current_year_finance_snapshots(
+        students,
+        academic_year=academic_year,
+    )
     rows = []
     for student in students:
-        finance = student_finance_snapshot(student)
+        finance = snapshots[student.pk]
         rows.append({
             "student": student,
             "total": finance["total"],
@@ -169,11 +316,19 @@ def allocate_equally_to_unpaid_siblings(students, amount):
 
 
 
-def build_family_payment_preview(main_student, amount):
-    """Return a safe, read-only preview of automatic sibling allocation."""
+def build_family_payment_preview(main_student, amount, *, academic_year=None):
+    """Preview automatic allocation against current-year fees only."""
     amount = money(amount)
+    if academic_year is None:
+        academic_year = student_current_year_finance_snapshot(main_student)["academic_year"]
+    if academic_year is None:
+        raise ValidationError("لا يوجد عام دراسي حالي لتسجيل دفعة الرسوم.")
     siblings = list(find_sibling_students(main_student))
-    rows, unused_amount = allocate_equally_to_unpaid_siblings(siblings, amount)
+    rows, unused_amount = allocate_equally_to_unpaid_siblings(
+        siblings,
+        amount,
+        academic_year=academic_year,
+    )
     due_before = money(sum((row["remaining"] for row in rows), Decimal("0.00")))
     allocated_total = money(sum((row["allocated"] for row in rows), Decimal("0.00")))
     due_after = money(max(due_before - allocated_total, Decimal("0.00")))
@@ -205,6 +360,7 @@ def build_family_payment_preview(main_student, amount):
         "due_before": due_before,
         "due_after": due_after,
         "is_valid": amount > 0 and due_before > 0 and unused_amount <= 0,
+        "academic_year": academic_year,
     }
 
 def ensure_balance_invoice(student, minimum_amount):
@@ -228,13 +384,27 @@ def ensure_balance_invoice(student, minimum_amount):
     )
 
 
-def apply_student_payment(student, amount, receipt_number, *, user=None, payment_method="unspecified"):
-    """Apply one allocation across open invoices without overpaying any invoice."""
+def apply_student_payment(
+    student,
+    amount,
+    receipt_number,
+    *,
+    academic_year,
+    user=None,
+    payment_method="unspecified",
+):
+    """Apply one allocation across this year's open invoices only."""
     left = money(amount)
     first_invoice = None
     first_payment = None
 
-    open_invoices = list(student.invoices.exclude(status__in=["paid", "cancelled"]).order_by("due_date", "id"))
+    open_invoices = list(
+        student.invoices.select_for_update().filter(academic_year=academic_year)
+        .exclude(carry_forward_record__source_invoices__isnull=False)
+        .exclude(status__in=["paid", "cancelled"])
+        .distinct()
+        .order_by("due_date", "id")
+    )
     for invoice in open_invoices:
         capacity = money(max(invoice.remaining, Decimal("0.00")))
         if capacity <= 0:
@@ -247,7 +417,7 @@ def apply_student_payment(student, amount, receipt_number, *, user=None, payment
             payment_method=payment_method,
             reference=receipt_number,
             created_by=user if getattr(user, "is_authenticated", False) else None,
-            notes=f"دفعة عن جميع الإخوة - إيصال {receipt_number}",
+            notes=f"دفعة رسوم السنة الحالية {academic_year.name} - إيصال {receipt_number}",
         )
         first_invoice = first_invoice or invoice
         first_payment = first_payment or payment
@@ -255,20 +425,10 @@ def apply_student_payment(student, amount, receipt_number, *, user=None, payment
         if left <= 0:
             break
 
-    # Legacy balances may exist on students without invoices.
     if left > 0:
-        invoice = ensure_balance_invoice(student, left)
-        payment = StudentPayment.objects.create(
-            invoice=invoice,
-            amount=left,
-            payment_method=payment_method,
-            reference=receipt_number,
-            created_by=user if getattr(user, "is_authenticated", False) else None,
-            notes=f"دفعة عن جميع الإخوة - إيصال {receipt_number}",
+        raise ValidationError(
+            "تعذر توزيع الدفعة كاملة على رسوم السنة الحالية. لم تُحفظ أي دفعة جزئية."
         )
-        first_invoice = first_invoice or invoice
-        first_payment = first_payment or payment
-        left = Decimal("0.00")
 
     return first_invoice, first_payment
 
@@ -285,8 +445,15 @@ def create_siblings_fee_payment(*, main_student, amount, user, payment_method, o
         return existing
 
     school = active_school()
+    academic_year = current_academic_year(school)
+    if academic_year is None:
+        raise ValidationError("لا يوجد عام دراسي حالي لتسجيل دفعة الرسوم.")
     siblings = list(find_sibling_students(main_student).select_for_update())
-    allocations_data, unused_amount = allocate_equally_to_unpaid_siblings(siblings, amount)
+    allocations_data, unused_amount = allocate_equally_to_unpaid_siblings(
+        siblings,
+        amount,
+        academic_year=academic_year,
+    )
     due_before = money(sum((row["remaining"] for row in allocations_data), Decimal("0.00")))
 
     if due_before <= 0:
@@ -315,7 +482,10 @@ def create_siblings_fee_payment(*, main_student, amount, user, payment_method, o
         payment_method=payment_method,
         operation_token=operation_token,
         created_by=user if getattr(user, "is_authenticated", False) else None,
-        notes=(notes or "").strip(),
+        notes=(
+            f"{CURRENT_YEAR_FEE_NOTE_PREFIX} — {academic_year.name}"
+            + (f" — {(notes or '').strip()}" if (notes or "").strip() else "")
+        ),
     )
 
     for item in allocations_data:
@@ -323,7 +493,14 @@ def create_siblings_fee_payment(*, main_student, amount, user, payment_method, o
         allocated = money(item["allocated"])
         invoice = payment = None
         if allocated > 0:
-            invoice, payment = apply_student_payment(student, allocated, receipt_number, user=user, payment_method=payment_method)
+            invoice, payment = apply_student_payment(
+                student,
+                allocated,
+                receipt_number,
+                academic_year=academic_year,
+                user=user,
+                payment_method=payment_method,
+            )
 
         FeePaymentAllocation.objects.create(
             fee_payment=fee_payment,
@@ -359,9 +536,12 @@ def safe_delete_fee_payment(*, fee_payment, user, reason):
         | models.Q(reference=fee_payment.receipt_number)
         | models.Q(notes__icontains=fee_payment.receipt_number)
     ).distinct()
+    touched_invoice_ids = set(payments.values_list("invoice_id", flat=True))
     for payment in payments:
         if payment.status == "posted":
             payment.safe_delete(user, reason)
+    from accounting.previous_debt_services import sync_carry_forward_status_for_invoices
+    sync_carry_forward_status_for_invoices(touched_invoice_ids)
     fee_payment.is_deleted = True
     fee_payment.deleted_by = user
     fee_payment.deleted_at = timezone.now()

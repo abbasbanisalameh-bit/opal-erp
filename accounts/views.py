@@ -25,6 +25,13 @@ def _style_password_form(form):
 
 @login_required
 def my_profile(request):
+    # A guardian's account page owns family details, photo and password in one
+    # place.  Keep this legacy URL as a compatible redirect rather than a
+    # second profile workflow.
+    from parent_portal.permissions import is_parent_user
+
+    if is_parent_user(request.user):
+        return redirect("parent_portal:account")
     profile, _created = UserProfile.objects.get_or_create(user=request.user)
     action = request.POST.get("action", "profile") if request.method == "POST" else ""
 

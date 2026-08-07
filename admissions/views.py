@@ -1,21 +1,23 @@
+import logging
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from enterprise_ops.permissions import management_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
-from django.db import models
+from django.db.models import Q
 import json
 import uuid
-from .models import AdmissionApplication, StudentRegistration, GradeFee, TransportRoute, FeePayment
-from .forms import CandidateApplicationForm, GradeFeeForm, TransportRouteForm, RegistrationSettingsForm, DirectStudentRegistrationForm
+from .models import StudentRegistration, GradeFee, TransportRoute, FeePayment
+from .forms import GradeFeeForm, TransportRouteForm, RegistrationSettingsForm, DirectStudentRegistrationForm
 from .services import (
     active_school, get_registration_settings, calculate_registration_totals,
     current_academic_year, find_existing_siblings,
-    sibling_discount_used_registration, generate_application_number,
+    sibling_discount_used_registration,
 )
 from .workflow import create_student_registration
 from .financial_services import (
-    search_students, find_sibling_students, student_finance_snapshot,
+    search_students, find_sibling_students,
+    student_separated_finance_snapshot, students_current_year_finance_snapshots,
     create_siblings_fee_payment,
     build_family_payment_preview, safe_delete_fee_payment, safe_delete_registration_payment,
 )
@@ -28,6 +30,15 @@ from parent_portal.models import Family
 from parent_portal.services import normalize_phone
 from core.identifiers import normalize_identifier
 from accounting.models import Receipt
+from accounting.previous_debt_services import (
+    create_previous_debt_payment,
+    previous_debt_receipt_breakdown,
+    resolve_current_year_for_student,
+    student_previous_debt_snapshot,
+)
+
+
+logger = logging.getLogger(__name__)
 
 
 def can_manage_registration(user):
@@ -37,64 +48,8 @@ def can_manage_registration(user):
 @management_required
 def admission_list(request):
     registrations = StudentRegistration.objects.select_related("student", "grade", "section", "receipt").all()
-    applications = AdmissionApplication.objects.all()[:20]
-    return render(request, "admissions/admission_list.html", {"registrations": registrations, "applications": applications})
+    return render(request, "admissions/admission_list.html", {"registrations": registrations})
 
-
-@management_required
-def candidate_list(request):
-    query = request.GET.get("q", "").strip()
-    candidates = AdmissionApplication.objects.filter(status="candidate").select_related("school", "academic_year", "grade", "section")
-    if query:
-        candidates = candidates.filter(
-            models.Q(student_full_name__icontains=query)
-            | models.Q(guardian_name__icontains=query)
-            | models.Q(guardian_phone__icontains=query)
-            | models.Q(application_number__icontains=query)
-        )
-    return render(request, "admissions/candidate_list.html", {"candidates": candidates, "query": query})
-
-
-@management_required
-def candidate_create(request):
-    school = active_school()
-    academic_year = current_academic_year(school)
-    form = CandidateApplicationForm(request.POST or None, request.FILES or None, school=school, academic_year=academic_year)
-    if request.method == "POST" and form.is_valid():
-        candidate = form.save(commit=False)
-        candidate.school = school
-        candidate.academic_year = academic_year
-        candidate.application_number = generate_application_number()
-        candidate.status = "candidate"
-        candidate.save()
-        audit(request, "create", "admissions.AdmissionApplication", candidate.pk, f"إضافة مرشح للقبول {candidate.student_full_name}")
-        messages.success(request, "تم حفظ المرشح دون إنشاء طالب أو تسجيل دراسي فعلي.")
-        return redirect("admissions:candidate_detail", pk=candidate.pk)
-    return render(request, "admissions/candidate_form.html", {"form": form, "title": "إضافة طالب مرشح للقبول"})
-
-
-@management_required
-def candidate_update(request, pk):
-    candidate = get_object_or_404(AdmissionApplication, pk=pk, status="candidate")
-    form = CandidateApplicationForm(request.POST or None, request.FILES or None, instance=candidate, school=candidate.school, academic_year=candidate.academic_year)
-    if request.method == "POST" and form.is_valid():
-        form.save()
-        audit(request, "update", "admissions.AdmissionApplication", candidate.pk, f"تحديث مرشح للقبول {candidate.student_full_name}")
-        messages.success(request, "تم تحديث بيانات المرشح.")
-        return redirect("admissions:candidate_detail", pk=candidate.pk)
-    return render(request, "admissions/candidate_form.html", {"form": form, "title": "تعديل بيانات المرشح", "candidate": candidate})
-
-
-@management_required
-def candidate_detail(request, pk):
-    candidate = get_object_or_404(
-        AdmissionApplication.objects.select_related("school", "academic_year", "grade", "section"),
-        pk=pk, status="candidate",
-    )
-    return render(request, "admissions/candidate_detail.html", {
-        "candidate": candidate,
-        "documents": candidate.issued_documents.select_related("template").all(),
-    })
 
 
 @management_required
@@ -243,6 +198,8 @@ def sibling_check_api(request):
 @login_required
 @management_required
 def fee_payment_create(request):
+    school = active_school()
+    academic_year = current_academic_year(school)
     query = request.GET.get("q", "").strip()
     student_id = request.GET.get("student") or request.POST.get("student")
     selected_student = Student.objects.filter(pk=student_id).first() if student_id else None
@@ -251,15 +208,25 @@ def fee_payment_create(request):
     has_unpaid_other_siblings = False
 
     if selected_student:
-        siblings = find_sibling_students(selected_student)
+        siblings = list(find_sibling_students(selected_student))
+        finance_snapshots = students_current_year_finance_snapshots(
+            siblings,
+            academic_year=academic_year,
+        )
         for student in siblings:
-            finance = student_finance_snapshot(student)
+            finance = finance_snapshots[student.pk]
+            previous_debt = student_previous_debt_snapshot(
+                student,
+                academic_year=academic_year,
+            )
             row = {
                 "student": student,
                 "total": finance["total"],
                 "paid": finance["paid"],
                 "remaining": finance["remaining"],
                 "status": finance["status"],
+                "previous_debt": previous_debt,
+                "combined_remaining": finance["remaining"] + previous_debt["total"],
             }
             siblings_data.append(row)
             if student.pk != selected_student.pk and row["remaining"] > 0:
@@ -291,12 +258,73 @@ def fee_payment_create(request):
         "search_results": search_results,
         "selected_student": selected_student,
         "siblings_data": siblings_data,
+        "current_year": academic_year,
+        "family_total_current_remaining": sum((row["remaining"] for row in siblings_data), 0),
+        "family_total_previous_remaining": sum((row["previous_debt"]["total"] for row in siblings_data), 0),
+        "family_total_combined_remaining": sum((row["combined_remaining"] for row in siblings_data), 0),
+        # Compatibility alias: the ordinary payment limit is current-year only.
         "family_total_remaining": sum((row["remaining"] for row in siblings_data), 0),
         "has_payable_siblings": any(row["remaining"] > 0 for row in siblings_data),
         "has_unpaid_other_siblings": has_unpaid_other_siblings,
         "payment_methods": ACTIVE_PAYMENT_METHOD_CHOICES,
         "selected_payment_method": request.POST.get("payment_method", "cash"),
         "operation_token": request.POST.get("operation_token") or str(uuid.uuid4()),
+    })
+
+
+@login_required
+@management_required
+def previous_debt_payment(request, student_id):
+    school = active_school()
+    academic_year = current_academic_year(school)
+    student = get_object_or_404(
+        Student.objects.filter(
+            Q(enrollments__academic_year__school=school)
+            | Q(invoices__academic_year__school=school)
+        ).distinct(),
+        pk=student_id,
+    )
+    snapshot = student_previous_debt_snapshot(student, academic_year=academic_year)
+    if not snapshot["has_debt"]:
+        messages.info(request, "لا توجد متبقيات رسوم سابقة على هذا الطالب.")
+        return redirect("students:student_360", pk=student.pk)
+
+    operation_token = request.POST.get("operation_token") or str(uuid.uuid4())
+    selected_payment_method = request.POST.get("payment_method", "cash")
+    if request.method == "POST":
+        try:
+            fee_payment = create_previous_debt_payment(
+                student=student,
+                amount=request.POST.get("amount") or "0",
+                user=request.user,
+                payment_method=selected_payment_method,
+                operation_token=operation_token,
+                notes=request.POST.get("notes") or "",
+                academic_year=academic_year,
+            )
+            audit(
+                request,
+                "create",
+                "admissions.FeePayment",
+                fee_payment.pk,
+                f"دفعة من متبقيات الرسوم السابقة للطالب {student.full_name} بقيمة {fee_payment.total_amount}",
+            )
+            messages.success(request, "تم تسجيل دفعة متبقيات الرسوم السابقة وإصدار الإيصال بنجاح.")
+            return redirect("admissions:fee_payment_receipt", pk=fee_payment.pk)
+        except ValidationError as exc:
+            messages.error(request, exc.messages[0])
+            snapshot = student_previous_debt_snapshot(student, academic_year=academic_year)
+        except Exception:
+            logger.exception("Previous-debt payment failed for student_id=%s", student.pk)
+            messages.error(request, "تعذر تسجيل دفعة متبقيات الرسوم السابقة. لم تُحفظ أي دفعة جزئية.")
+            snapshot = student_previous_debt_snapshot(student, academic_year=academic_year)
+
+    return render(request, "admissions/previous_debt_payment.html", {
+        "student": student,
+        "previous_debt": snapshot,
+        "payment_methods": ACTIVE_PAYMENT_METHOD_CHOICES,
+        "selected_payment_method": selected_payment_method,
+        "operation_token": operation_token,
     })
 
 
@@ -328,7 +356,11 @@ def fee_payment_preview_api(request):
     student = get_object_or_404(Student, pk=request.GET.get("student"))
     amount = request.GET.get("amount") or "0"
     try:
-        preview = build_family_payment_preview(student, amount)
+        preview = build_family_payment_preview(
+            student,
+            amount,
+            academic_year=current_academic_year(active_school()),
+        )
         return JsonResponse({
             "ok": True,
             "amount": str(preview["amount"]),
@@ -337,6 +369,7 @@ def fee_payment_preview_api(request):
             "due_before": str(preview["due_before"]),
             "due_after": str(preview["due_after"]),
             "is_valid": preview["is_valid"],
+            "academic_year": preview["academic_year"].name,
             "rows": [
                 {
                     "student_id": row["student"].pk,
@@ -360,18 +393,36 @@ def fee_payment_preview_api(request):
 @management_required
 def fee_payment_receipt(request, pk):
     fee_payment = get_object_or_404(
-        FeePayment.objects.select_related("school", "main_student", "created_by").prefetch_related("allocations__student"),
+        FeePayment.objects.select_related("school", "main_student", "created_by").prefetch_related(
+            "allocations__student",
+            "allocations__invoice__academic_year",
+        ),
         pk=pk,
     )
     if fee_payment.is_deleted:
         messages.error(request, "هذا الإيصال محذوف بأمان ولا يمكن طباعته.")
         return redirect("admissions:fee_payment_archive")
     receiver_name, receiver_title = receiver_identity(fee_payment.created_by)
+    receipt_allocations = list(fee_payment.allocations.all())
+    allocation_count = len(receipt_allocations)
+    receipt_academic_year = next(
+        (
+            allocation.invoice.academic_year
+            for allocation in receipt_allocations
+            if allocation.invoice_id and allocation.invoice.academic_year_id
+        ),
+        None,
+    )
+    receipt_density = "very-dense" if allocation_count > 7 else ("dense" if allocation_count > 4 else "")
+    previous_debt_receipt = previous_debt_receipt_breakdown(fee_payment)
     return render(request, "admissions/fee_payment_receipt.html", {
         "fee_payment": fee_payment,
         "receipt_copies": ["نسخة المدرسة", "نسخة ولي الأمر"],
         "receiver_name": receiver_name,
         "receiver_title": receiver_title,
+        "receipt_density": receipt_density,
+        "previous_debt_receipt": previous_debt_receipt,
+        "receipt_academic_year": receipt_academic_year,
     })
 
 
@@ -379,12 +430,12 @@ def fee_payment_receipt(request, pk):
 @management_required
 def fee_payment_archive(request):
     show_deleted = request.GET.get("show_deleted") == "1"
-    payments = FeePayment.objects.select_related("main_student", "created_by", "deleted_by").prefetch_related("allocations")
-    registrations = StudentRegistration.objects.select_related("student", "receipt__payment", "created_by", "grade")
+    payments = FeePayment.objects.select_related("main_student", "created_by", "deleted_by").prefetch_related("allocations").order_by("-created_at", "-pk")
+    registrations = StudentRegistration.objects.select_related("student", "receipt__payment", "created_by", "grade").order_by("-created_at", "-pk")
     registration_receipt_ids = StudentRegistration.objects.exclude(receipt_id=None).values_list("receipt_id", flat=True)
     legacy_receipts = Receipt.objects.exclude(pk__in=registration_receipt_ids).select_related(
         "payment__invoice__student", "payment__created_by", "payment__deleted_by"
-    )
+    ).order_by("-created_at", "-pk")
     if not show_deleted:
         payments = payments.filter(is_deleted=False)
         registrations = registrations.filter(payment__status="posted")
@@ -434,16 +485,50 @@ def registration_payment_safe_delete(request, pk):
 @management_required
 def student_financial_record(request, student_id):
     student = get_object_or_404(Student, pk=student_id)
-    invoices = student.invoices.select_related("fee_category").prefetch_related("payments").all()
-    allocations = student.fee_payment_allocations.filter(fee_payment__is_deleted=False).select_related("fee_payment", "fee_payment__created_by")
+    current_year = resolve_current_year_for_student(student)
+    invoices = list(
+        student.invoices.select_related("fee_category", "academic_year")
+        .exclude(carry_forward_record__source_invoices__isnull=False)
+        .distinct()
+        .prefetch_related("payments")
+        .all()
+    )
+    allocations = student.fee_payment_allocations.filter(
+        fee_payment__is_deleted=False,
+        amount__gt=0,
+    ).select_related(
+        "fee_payment",
+        "fee_payment__created_by",
+        "invoice__academic_year",
+    )
     registrations = student.registrations.select_related("receipt", "created_by").all()
-    finance = student_finance_snapshot(student)
+    finance = student_separated_finance_snapshot(student, academic_year=current_year)
+    current_invoices = [
+        invoice for invoice in invoices
+        if current_year is not None and invoice.academic_year_id == current_year.pk
+    ]
+    previous_invoices = [
+        invoice for invoice in invoices
+        if current_year is not None
+        and invoice.academic_year_id
+        and invoice.academic_year.start_date < current_year.start_date
+    ]
+    other_invoices = [
+        invoice for invoice in invoices
+        if invoice not in current_invoices and invoice not in previous_invoices
+    ]
     return render(request, "admissions/student_financial_record.html", {
         "student": student,
         "invoices": invoices,
+        "current_invoices": current_invoices,
+        "previous_invoices": previous_invoices,
+        "other_invoices": other_invoices,
         "allocations": allocations,
         "registrations": registrations,
-        "total_fees": finance["total"],
-        "total_paid": finance["paid"],
-        "remaining": finance["remaining"],
+        "current_year": current_year,
+        "finance": finance,
+        "previous_debt": finance["previous"],
+        "total_fees": finance["current"]["total"],
+        "total_paid": finance["current"]["paid"],
+        "remaining": finance["current"]["remaining"],
     })

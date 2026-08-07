@@ -1,14 +1,75 @@
 {% extends "base/base.html" %}
 {% block title %}الشكاوى والاقتراحات{% endblock %}
 {% block page_title %}الشكاوى والاقتراحات{% endblock %}
-{% block page_subtitle %}{% if can_manage %}مراجعة رسائل المعلمين وأولياء الأمور والرد عليها{% else %}إرسال شكوى أو اقتراح ومتابعة رد الإدارة{% endif %}{% endblock %}
+{% block page_subtitle %}{% if can_manage %}مراجعة رسائل المعلمين وأولياء الأمور والرد عليها{% else %}إرسال رسالة مباشرة إلى الإدارة ومتابعة الرد من الصفحة نفسها{% endif %}{% endblock %}
 {% block content %}
+{% if can_manage %}
 <div class="opal-enterprise-toolbar">
-  <form class="flex-grow-1" method="get"><div class="row g-2"><div class="col-lg-5"><input class="form-control" name="q" value="{{ filters.q }}" placeholder="بحث في العنوان أو الرسالة..."></div><div class="col-lg-3"><select class="form-select" name="kind"><option value="">كل الأنواع</option>{% for value,label in kind_choices %}<option value="{{ value }}" {% if filters.kind == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div><div class="col-lg-3"><select class="form-select" name="status"><option value="">كل الحالات</option>{% for value,label in status_choices %}<option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div><div class="col-lg-1"><button class="btn btn-outline-info w-100"><i class="bi bi-search"></i></button></div></div></form>
-  <a href="{% url 'enterprise_ops:feedback_create' %}" class="btn primary-btn"><i class="bi bi-plus-circle"></i> إرسال جديد</a>
+  <form class="flex-grow-1" method="get">
+    <div class="row g-2">
+      <div class="col-lg-5"><input class="form-control" name="q" value="{{ filters.q }}" placeholder="بحث في العنوان أو الرسالة..."></div>
+      <div class="col-lg-3"><select class="form-select" name="kind"><option value="">كل الأنواع</option>{% for value,label in kind_choices %}<option value="{{ value }}" {% if filters.kind == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+      <div class="col-lg-3"><select class="form-select" name="status"><option value="">كل الحالات</option>{% for value,label in status_choices %}<option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+      <div class="col-lg-1"><button type="submit" class="btn btn-outline-info w-100" aria-label="بحث"><i class="bi bi-search"></i></button></div>
+    </div>
+  </form>
 </div>
-<section class="opal-enterprise-section"><div class="table-responsive"><table class="table opal-enterprise-table align-middle"><thead><tr><th>#</th><th>النوع</th><th>العنوان</th>{% if can_manage %}<th>المرسل</th>{% endif %}<th>جودة التدريس</th><th>الخدمات الإلكترونية</th><th>الحالة</th><th>التاريخ</th><th></th></tr></thead><tbody>
-{% for item in items %}<tr><td>{{ item.pk }}</td><td><span class="badge {% if item.kind == 'complaint' %}bg-danger{% else %}bg-info text-dark{% endif %}">{{ item.get_kind_display }}</span></td><td><strong>{{ item.title }}</strong><div class="small text-secondary">{{ item.message|truncatechars:80 }}</div></td>{% if can_manage %}<td>{{ item.sender.get_full_name|default:item.sender.username|default:"-" }}</td>{% endif %}<td>{{ item.teaching_quality_rating }}/5</td><td>{{ item.electronic_services_rating }}/5</td><td><span class="opal-status-badge is-{{ item.status }}">{{ item.get_status_display }}</span></td><td class="text-nowrap">{{ item.created_at|date:"Y-m-d H:i" }}</td><td><a class="btn btn-sm btn-outline-info" href="{{ item.get_absolute_url }}">فتح</a></td></tr>
-{% empty %}<tr><td colspan="{% if can_manage %}9{% else %}8{% endif %}"><div class="opal-empty-state"><i class="bi bi-chat-square"></i>لا توجد رسائل مطابقة.</div></td></tr>{% endfor %}
-</tbody></table></div></section>
+{% else %}
+<section class="opal-card mb-4" id="feedback-send-card">
+  <div class="d-flex align-items-center gap-3 mb-3">
+    <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-info-subtle text-info" style="width:48px;height:48px"><i class="bi bi-chat-square-text-fill fs-4"></i></span>
+    <div>
+      <h3 class="h5 mb-1">إرسال شكوى أو اقتراح</h3>
+      <p class="text-secondary mb-0">اختر النوع واكتب التفاصيل بوضوح، ثم اضغط زر الإرسال إلى الإدارة.</p>
+    </div>
+  </div>
+  {% if can_submit and form %}
+  <form method="post" novalidate data-opal-feedback-form>
+    {% csrf_token %}
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label fw-bold" for="{{ form.kind.id_for_label }}">{{ form.kind.label }}</label>
+        {{ form.kind }}
+        {% for error in form.kind.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+      </div>
+      <div class="col-12">
+        <label class="form-label fw-bold" for="{{ form.message.id_for_label }}">{{ form.message.label }}</label>
+        {{ form.message }}
+        {% for error in form.message.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+      </div>
+    </div>
+    {% for error in form.non_field_errors %}<div class="alert alert-danger mt-3 mb-0">{{ error }}</div>{% endfor %}
+    <button type="submit" class="btn btn-primary mt-3 px-4" id="feedback-submit-button">
+      <i class="bi bi-send-fill"></i> إرسال إلى الإدارة
+    </button>
+  </form>
+  {% else %}
+  <div class="alert alert-warning mb-0">تعذر فتح نموذج الإرسال لهذا الحساب. راجع صلاحية حساب ولي الأمر.</div>
+  {% endif %}
+</section>
+{% endif %}
+
+<section class="opal-enterprise-section">
+  <div class="section-head"><h3 class="section-title">{% if can_manage %}الرسائل الواردة{% else %}شكاواي واقتراحاتي السابقة{% endif %}</h3></div>
+  <div class="table-responsive">
+    <table class="table opal-enterprise-table align-middle">
+      <thead><tr><th>#</th><th>النوع</th><th>{% if can_manage %}العنوان والرسالة{% else %}الرسالة{% endif %}</th>{% if can_manage %}<th>المرسل</th>{% endif %}<th>الحالة</th><th>التاريخ</th><th></th></tr></thead>
+      <tbody>
+      {% for item in items %}
+      <tr>
+        <td>{{ item.pk }}</td>
+        <td><span class="badge {% if item.kind == 'complaint' %}bg-danger{% else %}bg-info text-dark{% endif %}">{{ item.get_kind_display }}</span></td>
+        <td>{% if can_manage %}<strong>{{ item.title }}</strong>{% endif %}<div class="small {% if can_manage %}text-secondary{% endif %}">{{ item.message|truncatechars:100 }}</div></td>
+        {% if can_manage %}<td>{{ item.sender.get_full_name|default:item.sender.username|default:"-" }}</td>{% endif %}
+        <td><span class="opal-status-badge is-{{ item.status }}">{{ item.get_status_display }}</span></td>
+        <td class="text-nowrap">{{ item.created_at|date:"Y-m-d H:i" }}</td>
+        <td><a class="btn btn-sm btn-outline-info" href="{{ item.get_absolute_url }}">فتح</a></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="{% if can_manage %}7{% else %}6{% endif %}"><div class="opal-empty-state"><i class="bi bi-chat-square"></i>{% if can_manage %}لا توجد رسائل مطابقة.{% else %}لم تُرسل أي شكوى أو اقتراح حتى الآن.{% endif %}</div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
 {% endblock %}

@@ -21,7 +21,7 @@ class MarkEntryResilienceTests(TestCase):
         self.year = AcademicYear.objects.create(school=self.school, name="2026/2027", start_date=date(2026, 9, 1), end_date=date(2027, 6, 30), is_current=True)
         self.grade = Grade.objects.create(school=self.school, name="السادس", order=6)
         self.section = Section.objects.create(academic_year=self.year, branch=self.branch, grade=self.grade, name="أ")
-        self.subject = Subject.objects.create(grade=self.grade, name="علوم", code="S6")
+        self.subject = Subject.objects.create(academic_year=self.year, grade=self.grade, name="علوم", code="S6")
         self.student = Student.objects.create(student_number="MR-1", full_name="طالب المرونة", grade=self.grade.name)
         Enrollment.objects.create(student=self.student, academic_year=self.year, grade=self.grade, section=self.section)
         self.user = User.objects.create_user("mark_resilience_teacher", is_staff=True)

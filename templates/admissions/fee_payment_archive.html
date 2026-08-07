@@ -6,17 +6,17 @@
 <div class="opal-card mb-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h3 class="fw-bold mb-0">إيصالات دفعات الرسوم</h3>
-        <div class="d-flex gap-2"><a href="?{% if show_deleted %}{% else %}show_deleted=1{% endif %}" class="btn btn-outline-secondary">{% if show_deleted %}إخفاء المحذوف{% else %}عرض المحذوف بأمان{% endif %}</a><a href="{% url 'admissions:fee_payment_create' %}" class="btn btn-primary">تسجيل دفعة</a></div>
+        <a href="?{% if show_deleted %}{% else %}show_deleted=1{% endif %}" class="btn btn-outline-secondary">{% if show_deleted %}إخفاء المحذوف{% else %}عرض المحذوف بأمان{% endif %}</a>
     </div>
     <div class="table-responsive">
         <table class="opal-table">
-            <thead><tr><th>رقم الإيصال</th><th>ولي الأمر</th><th>الطالب المرجعي</th><th>طريقة الدفع</th><th>المبلغ</th><th>المستلم</th><th>الحالة</th><th></th></tr></thead>
+            <thead><tr><th>رقم الإيصال</th><th>ولي الأمر</th><th>الطالب المرجعي</th><th>الفترة المالية</th><th>طريقة الدفع</th><th>المبلغ</th><th>المستلم</th><th>الحالة</th><th></th></tr></thead>
             <tbody>
             {% for p in payments %}
             <tr>
-                <td>{{ p.receipt_number }}</td><td>{{ p.guardian_name|default:"-" }}</td><td>{{ p.main_student.full_name|default:"-" }}</td><td>{{ p.get_payment_method_display }}</td><td>{{ p.total_amount }}</td><td>{{ p.created_by.profile.full_name|default:p.created_by.username|default:"النظام" }}</td><td>{% if p.is_deleted %}<span class="badge bg-danger">محذوف بأمان</span>{% else %}<span class="badge bg-success">معتمد</span>{% endif %}</td><td>{% if not p.is_deleted %}<a class="btn btn-sm btn-primary" href="{% url 'admissions:fee_payment_receipt' p.pk %}" target="_blank">طباعة</a><form method="post" action="{% url 'admissions:fee_payment_safe_delete' p.pk %}" class="d-inline" onsubmit="return confirm('سيعاد احتساب الأرصدة مع بقاء سجل الإيصال. متابعة؟')">{% csrf_token %}<input name="reason" required placeholder="سبب الحذف" class="form-control form-control-sm d-inline-block" style="width:130px"><button class="btn btn-sm btn-outline-danger">حذف آمن</button></form>{% else %}<small>{{ p.deletion_reason }}</small>{% endif %}</td>
+                <td>{{ p.receipt_number }}</td><td>{{ p.guardian_name|default:"-" }}</td><td>{{ p.main_student.full_name|default:"-" }}</td><td>{{ p.payment_period_label }}</td><td>{{ p.get_payment_method_display }}</td><td>{{ p.total_amount }}</td><td>{{ p.created_by.profile.full_name|default:p.created_by.username|default:"النظام" }}</td><td>{% if p.is_deleted %}<span class="badge bg-danger">محذوف بأمان</span>{% else %}<span class="badge bg-success">معتمد</span>{% endif %}</td><td>{% if not p.is_deleted %}<a class="btn btn-sm btn-primary" href="{% url 'admissions:fee_payment_receipt' p.pk %}" target="_blank">طباعة</a><form method="post" action="{% url 'admissions:fee_payment_safe_delete' p.pk %}" class="d-inline" onsubmit="return confirm('سيعاد احتساب الأرصدة مع بقاء سجل الإيصال. متابعة؟')">{% csrf_token %}<input name="reason" required placeholder="سبب الحذف" class="form-control form-control-sm d-inline-block" style="width:130px"><button class="btn btn-sm btn-outline-danger">حذف آمن</button></form>{% else %}<small>{{ p.deletion_reason }}</small>{% endif %}</td>
             </tr>
-            {% empty %}<tr><td colspan="8" class="text-center">لا توجد إيصالات دفعات.</td></tr>{% endfor %}
+            {% empty %}<tr><td colspan="9" class="text-center">لا توجد إيصالات دفعات.</td></tr>{% endfor %}
             </tbody>
         </table>
     </div>

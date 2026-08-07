@@ -37,23 +37,29 @@ def has_feature_permission(user, feature, action="view"):
         return False
     if user.is_superuser:
         return True
-    code = role_code(user)
-    field = f"can_{action}"
-    rule = RolePermissionRule.objects.filter(role_code=code, feature=feature, is_active=True).first()
-    if rule is not None:
-        return bool(getattr(rule, field, False))
-    if feature in {"executive", "approvals"}:
+    # These are administrative control surfaces.  Hiding their menu entries is
+    # not enough: direct URLs must not expose an avoidable permission error to
+    # teachers or guardians either.
+    if feature in {"reports", "audit"}:
         return is_management(user)
+    code = role_code(user)
+    # Complaints and suggestions are a guaranteed communication channel for
+    # teachers and guardians.  An old permission-matrix row must not hide the
+    # form or its send button from these two portal roles.
     if feature == "workflow":
         if action == "view":
             return True
         if action == "create":
             return is_management(user) or code in {"teacher", "parent"} or hasattr(user, "teacher_profile") or hasattr(user, "family_account")
         return is_management(user)
-    if feature in {"notifications", "audit"}:
+    field = f"can_{action}"
+    rule = RolePermissionRule.objects.filter(role_code=code, feature=feature, is_active=True).first()
+    if rule is not None:
+        return bool(getattr(rule, field, False))
+    if feature in {"executive", "approvals"}:
+        return is_management(user)
+    if feature == "notifications":
         return action == "view"
-    if feature == "reports":
-        return action in {"view", "export"}
     return False
 
 

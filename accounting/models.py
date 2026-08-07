@@ -72,9 +72,34 @@ class StudentInvoice(models.Model):
     def net_amount(self):
         return max((self.amount or Decimal("0")) - (self.discount_amount or Decimal("0")), Decimal("0"))
 
+    def refresh_from_db(self, *args, **kwargs):
+        """Reload persisted fields and discard the per-instance payment cache."""
+        result = super().refresh_from_db(*args, **kwargs)
+        self.__dict__.pop("_opal_total_paid", None)
+        return result
+
     @property
     def total_paid(self):
-        return sum((p.amount for p in self.payments.filter(status="posted")), Decimal("0"))
+        """Return posted payments while honoring an already-prefetched relation.
+
+        The invoice list and statement pages load payments in bulk.  Calling
+        ``filter()`` on the relation here used to discard that work and issue
+        several database queries per displayed invoice.  The cached value is
+        local to this model instance only; it never changes accounting data.
+        """
+        cached_total = getattr(self, "_opal_total_paid", None)
+        if cached_total is not None:
+            return cached_total
+
+        prefetched = getattr(self, "_prefetched_objects_cache", {}).get("payments")
+        payments = (
+            (payment for payment in prefetched if payment.status == "posted")
+            if prefetched is not None
+            else self.payments.filter(status="posted")
+        )
+        total = sum((payment.amount for payment in payments), Decimal("0"))
+        self._opal_total_paid = total
+        return total
 
     @property
     def remaining(self):
@@ -145,6 +170,10 @@ class StudentPayment(models.Model):
     def save(self, *args, **kwargs):
         self.full_clean()
         result = super().save(*args, **kwargs)
+        # ``clean()`` may have read the invoice balance before this payment was
+        # written.  Discard that per-instance display cache before syncing the
+        # persisted invoice status.
+        self.invoice.__dict__.pop("_opal_total_paid", None)
         self.invoice.sync_status()
         return result
 
@@ -217,14 +246,28 @@ class Installment(models.Model):
     def calculated_status(self):
         if self.status == "cancelled":
             return "cancelled"
-        paid_before_due = sum(
-            (p.amount for p in self.invoice.payments.filter(status="posted", payment_date__lte=self.due_date)),
-            Decimal("0"),
-        )
-        earlier = sum(
-            (i.amount for i in self.invoice.installments.filter(sequence__lt=self.sequence).exclude(status="cancelled")),
-            Decimal("0"),
-        )
+        invoice_cache = getattr(self.invoice, "_prefetched_objects_cache", {})
+        prefetched_payments = invoice_cache.get("payments")
+        if prefetched_payments is None:
+            payments = self.invoice.payments.filter(status="posted", payment_date__lte=self.due_date)
+        else:
+            payments = (
+                payment
+                for payment in prefetched_payments
+                if payment.status == "posted" and payment.payment_date <= self.due_date
+            )
+        paid_before_due = sum((payment.amount for payment in payments), Decimal("0"))
+
+        prefetched_installments = invoice_cache.get("installments")
+        if prefetched_installments is None:
+            installments = self.invoice.installments.filter(sequence__lt=self.sequence).exclude(status="cancelled")
+        else:
+            installments = (
+                installment
+                for installment in prefetched_installments
+                if installment.sequence < self.sequence and installment.status != "cancelled"
+            )
+        earlier = sum((installment.amount for installment in installments), Decimal("0"))
         if paid_before_due >= earlier + self.amount:
             return "paid"
         if self.due_date < timezone.localdate():
@@ -344,15 +387,38 @@ class FinancialYearClosure(models.Model):
 
 
 class FinancialCarryForward(models.Model):
+    STATUS_CHOICES = [
+        ("open", "رصيد سابق قائم"),
+        ("settled", "مسدد"),
+    ]
+
     closure = models.ForeignKey(FinancialYearClosure, on_delete=models.PROTECT, related_name="balances")
     student = models.ForeignKey("students.Student", on_delete=models.PROTECT, related_name="financial_carry_forwards")
     amount = models.DecimalField(max_digits=12, decimal_places=2)
-    target_invoice = models.OneToOneField(StudentInvoice, on_delete=models.PROTECT, related_name="carry_forward_record")
+    source_invoices = models.ManyToManyField(StudentInvoice, related_name="carry_forward_snapshots", blank=True)
+    target_invoice = models.OneToOneField(
+        StudentInvoice,
+        on_delete=models.PROTECT,
+        related_name="carry_forward_record",
+        null=True,
+        blank=True,
+        help_text="مرجع توافق لسجلات الإصدارات السابقة فقط؛ لا تُنشأ فاتورة جديدة عند الترحيل.",
+    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="open", db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ["student__full_name"]
         constraints = [models.UniqueConstraint(fields=["closure", "student"], name="uniq_closure_student_balance")]
+
+    @property
+    def remaining(self):
+        sources = list(self.source_invoices.all())
+        if sources:
+            return sum((invoice.remaining for invoice in sources), Decimal("0"))
+        if self.target_invoice_id:
+            return self.target_invoice.remaining
+        return Decimal("0")
 
 
 class CanteenTransaction(models.Model):

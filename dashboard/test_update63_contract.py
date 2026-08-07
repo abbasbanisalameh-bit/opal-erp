@@ -11,6 +11,6 @@ class Update63ContractTests(SimpleTestCase):
         from pathlib import Path
         template = Path(__file__).parent / "templates" / "dashboard" / "home.html"
         content = template.read_text(encoding="utf-8")
-        self.assertIn("opal-dashboard-compact-grid", content)
+        self.assertIn("opal-fixed-manager-dashboard", content)
         self.assertIn("no_recent_payment_students", content)
         self.assertNotIn('id="attendanceTrendChart"', content)

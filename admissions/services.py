@@ -24,7 +24,9 @@ def active_school():
 
 def current_academic_year(school=None):
     school = school or active_school()
-    return AcademicYear.objects.filter(school=school, is_current=True, is_closed=False).first()
+    from core.academic_context import current_academic_year as resolve_current_year
+
+    return resolve_current_year(school=school)
 
 
 def get_registration_settings(school=None):
@@ -404,7 +406,9 @@ def _create_registration_record(
         guardian_identity_type=data.get("guardian_identity_type") or "national",
         guardian_identity_number=normalize_identifier(data.get("guardian_identity_number") or ""),
         mother_name=data.get("mother_name") or "",
-        photo=data.get("photo"),
+        # The uploaded file was already saved on the canonical Student record.
+        # Reuse its stored path instead of trying to save the same temporary upload twice.
+        photo=(student.photo.name if getattr(student, "photo", None) else None),
         transport_route=data.get("transport_route"),
         transport_type=data.get("transport_type"),
         discount_type=selected_discount_type,

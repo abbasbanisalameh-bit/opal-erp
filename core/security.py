@@ -39,11 +39,31 @@ def csrf_failure(request, reason=""):
         )
         return _no_store(response)
 
+    if request.path.startswith("/learning/"):
+        response = render(
+            request,
+            "learning_platform/error.html",
+            {
+                "status_code": 403,
+                "error_title": "انتهت صلاحية النموذج",
+                "error_message": "حدّث الصفحة ثم أعد المحاولة. لم تُحفظ أي بيانات من الطلب المرفوض.",
+            },
+            status=403,
+        )
+        return _no_store(response)
+
     response = render(request, "403_csrf.html", {"login_url": login_url}, status=403)
     return _no_store(response)
 
 
 def _friendly_error(request, *, status, title, message):
+    if request.path.startswith("/learning/"):
+        return render(
+            request,
+            "learning_platform/error.html",
+            {"status_code": status, "error_title": title, "error_message": message},
+            status=status,
+        )
     return render(
         request,
         "errors/error.html",

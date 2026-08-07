@@ -1,56 +1,12 @@
 {% extends "base/base.html" %}
-{% load l10n %}
-{% block title %}الإشعارات والشكاوى والتنبيهات | OPAL{% endblock %}
-{% block page_title %}الإشعارات والشكاوى والتنبيهات{% endblock %}
-{% block page_subtitle %}إدارة التواصل المدرسي، الشكاوى والاقتراحات، التعاميم، التنبيهات والإعلانات{% endblock %}
+{% block title %}التواصل والمتابعة | OPAL{% endblock %}
+{% block page_title %}التواصل والمتابعة{% endblock %}
+{% block page_subtitle %}تم دمج الملخص التنفيذي للتواصل في لوحة الإدارة{% endblock %}
 {% block content %}
-<div class="opal-enterprise-grid mb-4">
-  <div class="opal-enterprise-kpi danger"><div class="kpi-icon"><i class="bi bi-chat-left-dots"></i></div><div class="kpi-label">شكاوى واقتراحات جديدة</div><div class="kpi-value">{{ new_feedback_count }}</div></div>
-  <div class="opal-enterprise-kpi warning"><div class="kpi-icon"><i class="bi bi-hourglass-split"></i></div><div class="kpi-label">قيد المراجعة</div><div class="kpi-value">{{ review_feedback_count }}</div></div>
-  <div class="opal-enterprise-kpi success"><div class="kpi-icon"><i class="bi bi-check2-circle"></i></div><div class="kpi-label">تمت معالجتها</div><div class="kpi-value">{{ resolved_feedback_count }}</div></div>
-  <div class="opal-enterprise-kpi"><div class="kpi-icon"><i class="bi bi-megaphone"></i></div><div class="kpi-label">تعاميم وتنبيهات فعالة</div><div class="kpi-value">{{ active_broadcasts }}</div></div>
-  <div class="opal-enterprise-kpi warning"><div class="kpi-icon"><i class="bi bi-bell-fill"></i></div><div class="kpi-label">إشعارات غير مقروءة</div><div class="kpi-value">{{ unread_notifications }}</div></div>
-  <div class="opal-enterprise-kpi"><div class="kpi-icon"><i class="bi bi-activity"></i></div><div class="kpi-label">عمليات اليوم</div><div class="kpi-value">{{ audit_today }}</div></div>
-</div>
-
-<section class="opal-enterprise-section opal-satisfaction-mini mb-4">
-  <div class="section-head">
-    <div>
-      <h3 class="section-title"><i class="bi bi-emoji-smile-fill me-2"></i>مؤشرات رضا المستخدمين</h3>
-      <div class="text-secondary small">ملخص جميع تقييمات جودة التدريس والخدمات الإلكترونية.</div>
-    </div>
-    <a href="{% url 'dashboard:home' %}#opal-satisfaction-title" class="btn btn-sm btn-outline-info"><i class="bi bi-speedometer2"></i> العرض التحليلي</a>
-  </div>
-  <div class="opal-satisfaction-mini-grid">
-    <div class="opal-satisfaction-mini-card teaching"><i class="bi bi-mortarboard-fill"></i><div><span>جودة التدريس</span><strong>{{ teaching_rating_average|floatformat:1 }}/5</strong><small>{{ teaching_satisfaction_percent|floatformat:1 }}% رضا</small></div><div class="opal-mini-progress"><span style="width:{{ teaching_satisfaction_percent|default:0|unlocalize }}%"></span></div></div>
-    <div class="opal-satisfaction-mini-card electronic"><i class="bi bi-laptop-fill"></i><div><span>الخدمات الإلكترونية</span><strong>{{ electronic_rating_average|floatformat:1 }}/5</strong><small>{{ electronic_satisfaction_percent|floatformat:1 }}% رضا</small></div><div class="opal-mini-progress"><span style="width:{{ electronic_satisfaction_percent|default:0|unlocalize }}%"></span></div></div>
-    <div class="opal-satisfaction-mini-card overall is-{{ feedback_satisfaction_level }}"><i class="bi bi-heart-pulse-fill"></i><div><span>الرضا العام</span><strong>{{ overall_satisfaction_percent|floatformat:1 }}%</strong><small>{{ feedback_satisfaction_label }} · {{ feedback_total }} مشاركة</small></div><div class="opal-mini-progress"><span style="width:{{ overall_satisfaction_percent|default:0|unlocalize }}%"></span></div></div>
-  </div>
+<section class="opal-card text-center py-5">
+  <i class="bi bi-layout-text-window-reverse display-5 text-info"></i>
+  <h2 class="h4 mt-3">مركز التواصل أصبح جزءًا من لوحة الإدارة التنفيذية</h2>
+  <p class="text-secondary">تفتح بطاقات الشكاوى والتعاميم والإعلانات صفحاتها التشغيلية الحالية دون تكرار.</p>
+  <a class="btn btn-info" href="{% url 'dashboard:home' %}#opal-communication-actions">فتح لوحة الإدارة</a>
 </section>
-
-<div class="opal-module-grid mb-4">
-  <a class="opal-module-card" href="{% url 'enterprise_ops:feedback_list' %}"><i class="bi bi-chat-square-text-fill"></i><div><h3>الشكاوى والاقتراحات</h3><p>استقبال الرسائل، مراجعتها والرد عليها مع تقييمين منفصلين.</p></div></a>
-  <a class="opal-module-card" href="{% url 'enterprise_ops:broadcast_list' %}"><i class="bi bi-megaphone-fill"></i><div><h3>التعاميم والتنبيهات</h3><p>إرسال تعميم للمعلمين أو أولياء الأمور أو الجميع، وتنبيه معلم محدد.</p></div></a>
-  <a class="opal-module-card" href="{% url 'announcements:list' %}"><i class="bi bi-badge-ad-fill"></i><div><h3>إدارة الإعلانات</h3><p>إضافة الإعلان الظاهر أعلى النظام أو تعديله أو إيقافه أو حذفه.</p></div></a>
-  <a class="opal-module-card" href="{% url 'enterprise_ops:notification_list' %}"><i class="bi bi-bell-fill"></i><div><h3>الإشعارات</h3><p>عرض الإشعارات والتنبيهات الصوتية الخاصة بالحساب.</p></div></a>
-  <a class="opal-module-card" href="{% url 'enterprise_ops:report_center' %}"><i class="bi bi-file-earmark-bar-graph-fill"></i><div><h3>التقارير</h3><p>تقارير حسب دور المستخدم وصلاحياته.</p></div></a>
-  <a class="opal-module-card" href="{% url 'enterprise_ops:audit_log' %}"><i class="bi bi-shield-check"></i><div><h3>سجل العمليات</h3><p>متابعة العمليات المسجلة داخل النظام.</p></div></a>
-</div>
-
-<div class="row g-4">
-  <div class="col-lg-7">
-    <section class="opal-enterprise-section h-100">
-      <div class="section-head"><h3 class="section-title"><i class="bi bi-chat-left-text me-2"></i>أحدث الشكاوى والاقتراحات</h3><a href="{% url 'enterprise_ops:feedback_list' %}" class="btn btn-sm btn-outline-info">عرض الكل</a></div>
-      <div class="table-responsive"><table class="table opal-enterprise-table align-middle"><thead><tr><th>#</th><th>النوع والعنوان</th><th>المرسل</th><th>التقييمان</th><th>الحالة</th><th></th></tr></thead><tbody>
-      {% for item in recent_feedback %}<tr><td>{{ item.id }}</td><td><strong>{{ item.get_kind_display }}: {{ item.title }}</strong><div class="small text-secondary">{{ item.created_at|date:"Y-m-d H:i" }}</div></td><td>{{ item.sender.get_full_name|default:item.sender.username|default:"-" }}</td><td><span title="جودة التدريس">تدريس {{ item.teaching_quality_rating }}/5</span><br><span title="الخدمات الإلكترونية">إلكترونية {{ item.electronic_services_rating }}/5</span></td><td><span class="opal-status-badge is-{{ item.status }}">{{ item.get_status_display }}</span></td><td><a href="{{ item.get_absolute_url }}" class="btn btn-sm btn-outline-info">فتح</a></td></tr>{% empty %}<tr><td colspan="6"><div class="opal-empty-state"><i class="bi bi-inbox"></i>لا توجد شكاوى أو اقتراحات بعد.</div></td></tr>{% endfor %}
-      </tbody></table></div>
-    </section>
-  </div>
-  <div class="col-lg-5">
-    <section class="opal-enterprise-section h-100">
-      <div class="section-head"><h3 class="section-title"><i class="bi bi-megaphone me-2"></i>أحدث التعاميم والتنبيهات</h3><a href="{% url 'enterprise_ops:broadcast_list' %}" class="btn btn-sm btn-outline-info">إدارة</a></div>
-      <div class="section-body p-0">{% for item in recent_broadcasts %}<div class="opal-notification-item"><div class="d-flex justify-content-between gap-2"><div class="fw-semibold">{{ item.get_message_type_display }}: {{ item.title }}</div>{% if item.is_active %}<span class="badge bg-success">فعال</span>{% else %}<span class="badge bg-secondary">متوقف</span>{% endif %}</div><div class="text-secondary mt-1">{{ item.message|truncatechars:110 }}</div><div class="opal-notification-meta mt-1">المستلمون: {{ item.recipients_count }} · {{ item.created_at|date:"Y-m-d H:i" }}</div></div>{% empty %}<div class="opal-empty-state"><i class="bi bi-megaphone"></i>لا توجد تعاميم أو تنبيهات.</div>{% endfor %}</div>
-    </section>
-  </div>
-</div>
 {% endblock %}

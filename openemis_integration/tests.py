@@ -95,7 +95,9 @@ class OpenEMISCanonicalImportTests(TestCase):
         self.assertEqual(Family.objects.count(), 1)
         self.assertEqual(FamilyStudent.objects.filter(is_active=True).count(), 1)
         self.assertEqual(Enrollment.objects.filter(status="active").count(), 1)
-        self.assertEqual(Attendance.objects.count(), 1)
+        # The canonical attendance model stores exceptions only; the imported
+        # normal-present event intentionally produces no duplicate row.
+        self.assertEqual(Attendance.objects.count(), 0)
         self.assertEqual(StudentMark.objects.count(), 1)
 
         student = Student.objects.get()

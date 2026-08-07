@@ -7,19 +7,32 @@ from .models import StudentInvoice, StudentPayment
 ZERO = Decimal("0.00")
 
 
-def build_student_statement_context(student):
+def build_student_statement_context(student, *, academic_year=None):
     """Build the canonical read-only student statement context.
 
     The function preserves the current invoice/payment rules while giving the
     accounting workflow one explicit entry point for the statement page.
     """
+    invoice_scope = StudentInvoice.objects.filter(student=student)
+    payment_scope = StudentPayment.objects.filter(invoice__student=student, status="posted")
+    if academic_year is not None:
+        invoice_scope = (
+            invoice_scope.filter(academic_year=academic_year)
+            .exclude(carry_forward_record__source_invoices__isnull=False)
+            .distinct()
+        )
+        payment_scope = (
+            payment_scope.filter(invoice__academic_year=academic_year)
+            .exclude(invoice__carry_forward_record__source_invoices__isnull=False)
+            .distinct()
+        )
     invoices = list(
-        StudentInvoice.objects.filter(student=student)
+        invoice_scope
         .select_related("fee_category")
         .prefetch_related("payments", "installments")
     )
     payments = list(
-        StudentPayment.objects.filter(invoice__student=student, status="posted")
+        payment_scope
         .select_related("invoice")
     )
     total_invoice = sum(
@@ -34,4 +47,5 @@ def build_student_statement_context(student):
         "total_invoice": total_invoice,
         "total_payment": total_payment,
         "remaining": max(total_invoice - total_payment, ZERO),
+        "academic_year": academic_year,
     }

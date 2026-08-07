@@ -23,9 +23,10 @@ class CanonicalTeacherEntryTests(TestCase):
         self.section = Section.objects.create(
             academic_year=self.year, branch=self.branch, grade=self.grade, name="أ"
         )
-        self.subject = Subject.objects.create(name="رياضيات", grade=self.grade)
+        self.subject = Subject.objects.create(academic_year=self.year, name="رياضيات", grade=self.grade, weekly_periods=5)
         self.teacher = Teacher.objects.create(
-            school=self.school, branch=self.branch, employee_number="T-CAN-1", full_name="معلم موحد"
+            school=self.school, branch=self.branch, employee_number="T-CAN-1", full_name="معلم موحد",
+            weekly_teaching_load=30,
         )
 
     def test_teacher_form_does_not_link_user_account(self):
@@ -51,6 +52,10 @@ class CanonicalTeacherEntryTests(TestCase):
                 "subject": self.subject.pk,
                 "is_primary": True,
                 "is_active": True,
+                "weekly_teaching_load": 30,
+                "free_period_policy": "auto",
+                "daily_free_periods": 0,
+                "weekly_free_periods": 0,
             },
             teacher=self.teacher,
         )

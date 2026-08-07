@@ -12,7 +12,7 @@
 @media(max-width:767px){.opal-topbar-ribbon{align-items:stretch;flex-direction:column;gap:2px;padding:4px 12px}.opal-topbar-event{max-width:100%;border:0;padding:0}.opal-topbar-main{flex-wrap:wrap;padding:8px 12px}.opal-global-search-wrap{order:2;min-width:100%}.opal-dashboard-compact-grid,.opal-detail-stat-grid{grid-template-columns:1fr}.opal-crystal-card{padding:13px!important}}
 
 /* OPAL Update 66 — unified topbar, search and notifications */
-.opal-topbar-shell{position:relative;z-index:1030;border-bottom:1px solid rgba(157,211,255,.10);background:linear-gradient(180deg,rgba(9,27,47,.78),rgba(9,27,47,.58));backdrop-filter:blur(18px)}
+.opal-topbar-shell{position:relative;z-index:1045;isolation:isolate;border-bottom:1px solid rgba(157,211,255,.10);background:linear-gradient(180deg,rgba(9,27,47,.78),rgba(9,27,47,.58));backdrop-filter:blur(18px)}
 .opal-topbar-ribbon{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:16px;min-height:32px;padding:3px 18px;border-bottom:1px solid rgba(216,173,79,.16);background:rgba(255,255,255,.012)}
 .opal-ribbon-stream{min-width:0;overflow:hidden}.opal-topbar-announcement{height:26px}.opal-topbar-announcement>i{font-size:.86rem;color:#a7d8f5}.opal-topbar-ticker span{line-height:26px}
 .opal-topbar-event{max-width:430px;min-width:0;height:26px;padding-inline:14px 0;border-inline-start:1px solid rgba(216,173,79,.28);color:#ebc65f}.opal-topbar-event i{flex:0 0 auto}.opal-topbar-event strong{font-size:.78rem;font-weight:800}.opal-topbar-event #opal-event-countdown{font-size:.7rem;background:rgba(216,173,79,.08)}
@@ -21,3 +21,50 @@
 .opal-notification-menu{width:min(380px,calc(100vw - 24px));border:1px solid rgba(157,211,255,.15)!important;border-radius:16px!important;background:rgba(10,28,47,.96)!important;box-shadow:0 24px 70px rgba(0,0,0,.34)!important;backdrop-filter:blur(20px)}
 @media(max-width:991px){.opal-topbar-main{gap:9px}.opal-gold-clock{display:none}.opal-profile-copy{display:none}.opal-profile-link{padding:3px!important}.opal-topbar-event{max-width:340px}}
 @media(max-width:767px){.opal-topbar-ribbon{grid-template-columns:1fr;gap:1px;padding:3px 12px}.opal-topbar-event{max-width:100%;height:24px;padding:0;border:0}.opal-topbar-event strong{font-size:.74rem}.opal-topbar-main{padding:8px 12px}.opal-topbar-actions{margin-inline-start:auto}.opal-global-search-wrap{order:2;width:100%;max-width:none}.opal-global-search-box{height:40px;border-radius:12px}.opal-global-search-box kbd{display:none}}
+
+/* OPAL Update 111 — global topbar overlay contract
+   Page-sticky controls stop at 1040. The topbar owns 1045, so its search and
+   notification surfaces always paint above module navigation, while Bootstrap
+   modals and the mobile sidebar remain above it. */
+.opal-topbar-shell,
+.opal-topbar-main,
+.opal-topbar-actions,
+.opal-notification-dropdown {
+  overflow: visible !important;
+}
+.opal-notification-dropdown {
+  position: relative;
+  z-index: 1;
+}
+.opal-notification-dropdown.show {
+  z-index: 3;
+}
+.opal-notification-menu {
+  z-index: 4 !important;
+}
+
+/* OPAL Update 116 — announcement text only in gold, multicolour icon */
+.opal-topbar-announcement,
+.opal-topbar-announcement .opal-topbar-ticker,
+.opal-topbar-announcement .opal-topbar-ticker span,
+.opal-topbar-announcement .opal-topbar-ticker strong{
+  color:#e7bd54!important;
+}
+.opal-topbar-announcement>i{
+  color:transparent!important;
+  background:linear-gradient(135deg,#38bdf8 8%,#facc15 48%,#fb7185 88%);
+  -webkit-background-clip:text;
+  background-clip:text;
+  filter:drop-shadow(0 0 7px rgba(250,204,21,.22));
+}
+html[data-opal-theme="light"] .opal-topbar-announcement,
+html[data-opal-theme="light"] .opal-topbar-announcement .opal-topbar-ticker span,
+html[data-opal-theme="light"] .opal-topbar-announcement .opal-topbar-ticker strong{
+  color:#956b12!important;
+}
+.opal-topbar-announcement>i::before{
+  color:transparent!important;
+  background:linear-gradient(135deg,#38bdf8 8%,#facc15 48%,#fb7185 88%);
+  -webkit-background-clip:text;
+  background-clip:text;
+}

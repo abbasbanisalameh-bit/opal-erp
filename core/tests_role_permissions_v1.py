@@ -26,7 +26,7 @@ class RolePermissionWorkflowTests(TestCase):
         self.other_teacher = Teacher.objects.create(user=self.other_teacher_user, employee_number="TP-2", full_name="معلم آخر", school=self.school, branch=self.branch)
         self.section = Section.objects.create(academic_year=self.year, branch=self.branch, grade=self.grade, name="أ", homeroom_teacher=self.teacher)
         self.other_section = Section.objects.create(academic_year=self.year, branch=self.branch, grade=self.grade, name="ب", homeroom_teacher=self.other_teacher)
-        self.subject = Subject.objects.create(name="رياضيات", grade=self.grade)
+        self.subject = Subject.objects.create(academic_year=self.year, name="رياضيات", grade=self.grade)
         self.assignment = TeacherAssignment.objects.create(teacher=self.teacher, academic_year=self.year, section=self.section, subject=self.subject)
         self.other_assignment = TeacherAssignment.objects.create(teacher=self.teacher, academic_year=self.year, section=self.other_section, subject=self.subject)
         self.student = Student.objects.create(student_number="PS-1", full_name="طالب أول", grade=self.grade.name)
@@ -53,11 +53,13 @@ class RolePermissionWorkflowTests(TestCase):
         response = self.client.post(reverse("exams:exam_action", args=[self.exam.pk]), {"action": "approve"})
         self.assertEqual(response.status_code, 302)
         self.exam.refresh_from_db()
-        self.assertEqual(self.exam.status, "published")
+        # Approving marks publishes them and closes the finalised exam so the
+        # official result cannot be changed afterwards.
+        self.assertEqual(self.exam.status, "closed")
         self.assertTrue(self.exam.is_locked)
         self.assertEqual(OpenEMISSyncLog.objects.filter(operation="sync_marks", status="pending").count(), 2)
         self.client.force_login(self.parent_user)
-        response = self.client.get(reverse("parent_portal:marks"))
+        response = self.client.get(reverse("parent_portal:marks"), {"student": self.student.pk})
         self.assertContains(response, "18")
 
     def test_attendance_is_homeroom_only(self):
@@ -70,7 +72,7 @@ class RolePermissionWorkflowTests(TestCase):
     def test_homework_visible_to_parent(self):
         Homework.objects.create(assignment=self.assignment, title="حل الأسئلة", description="صفحة 10", due_date=date.today() + timedelta(days=2), created_by=self.teacher_user)
         self.client.force_login(self.parent_user)
-        response = self.client.get(reverse("parent_portal:homework"))
+        response = self.client.get(reverse("parent_portal:homework"), {"student": self.student.pk})
         self.assertContains(response, "حل الأسئلة")
 
     def test_parent_personal_edit_cannot_change_official_fields(self):

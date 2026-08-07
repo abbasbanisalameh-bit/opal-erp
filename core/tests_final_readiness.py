@@ -2,6 +2,7 @@ import io
 import json
 from datetime import date, time
 from decimal import Decimal
+from unittest.mock import patch
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
@@ -17,8 +18,8 @@ from admissions.models import GradeFee
 from attendance_v2.models import Attendance
 from core.academic_years import academic_year_closure_report, activate_academic_year, close_academic_year
 from core.models import AcademicYear, Branch, School
-from curriculum.models import Curriculum
 from exams.models import Exam, StudentMark
+from exams.lifecycle import close_semester
 from parent_portal.models import Family, FamilyStudent
 from students.models import Student
 from teachers.models import Homework, Teacher, TeacherAssignment
@@ -79,7 +80,7 @@ class AcademicYearClosureTests(TestCase):
             section=self.section,
             status="active",
         )
-        self.subject = Subject.objects.create(name="الرياضيات", code="YR-MATH", grade=self.grade)
+        self.subject = Subject.objects.create(academic_year=self.year, name="الرياضيات", code="YR-MATH", grade=self.grade, weekly_periods=5)
         self.exam = Exam.objects.create(
             exam_type="first",
             academic_year=self.year,
@@ -142,13 +143,7 @@ class AcademicYearClosureTests(TestCase):
             grade=self.grade,
             section=self.section,
             date=date(2027, 6, 1),
-            status="present",
-        )
-        curriculum = Curriculum.objects.create(
-            academic_year=self.year,
-            grade=self.grade,
-            subject=self.subject,
-            weekly_periods=5,
+            status="absent",
         )
         grade_fee = GradeFee.objects.create(
             school=self.school,
@@ -171,6 +166,28 @@ class AcademicYearClosureTests(TestCase):
         )
         FamilyStudent.objects.create(family=family, student=self.student)
 
+        for semester in self.year.semesters.all():
+            for exam_type in dict(Exam.EXAM_TYPES):
+                exam = Exam.objects.create(
+                    exam_type=exam_type,
+                    academic_year=self.year,
+                    semester=semester,
+                    grade=self.grade,
+                    section=self.section,
+                    subject=self.subject,
+                    teacher_assignment=assignment,
+                    status="published",
+                    is_locked=True,
+                )
+                StudentMark.objects.create(exam=exam, student=self.student, mark=exam.max_mark)
+            close_semester(semester=semester, user=self.manager)
+
+        with patch("core.academic_years.timezone.localdate", return_value=date(2027, 7, 1)):
+            closed_year, summary = close_academic_year(
+                year=self.year,
+                user=self.manager,
+                notes="اعتماد نهاية العام",
+            )
         perform_lifecycle_action(
             student=self.student,
             action="promote",
@@ -180,11 +197,6 @@ class AcademicYearClosureTests(TestCase):
             target_section=self.next_section,
             user=self.manager,
         )
-        closed_year, summary = close_academic_year(
-            year=self.year,
-            user=self.manager,
-            notes="اعتماد نهاية العام",
-        )
 
         closed_year.refresh_from_db()
         attendance.refresh_from_db()
@@ -192,7 +204,7 @@ class AcademicYearClosureTests(TestCase):
         homework.refresh_from_db()
         timetable.refresh_from_db()
         self.section.refresh_from_db()
-        curriculum.refresh_from_db()
+        self.subject.refresh_from_db()
         grade_fee.refresh_from_db()
         invoice.refresh_from_db()
         self.assertTrue(closed_year.is_closed)
@@ -203,14 +215,15 @@ class AcademicYearClosureTests(TestCase):
         self.assertFalse(homework.is_active)
         self.assertFalse(timetable.is_active)
         self.assertFalse(self.section.is_active)
-        self.assertFalse(curriculum.is_active)
+        self.assertFalse(self.subject.is_active)
         self.assertFalse(grade_fee.is_active)
         self.assertEqual(invoice.status, "open")
         self.assertEqual(summary["attendance_locked"], 1)
 
-        self.client.force_login(self.parent_user)
-        response = self.client.get(reverse("parent_portal:marks"))
-        self.assertContains(response, self.exam.name)
+        # After promotion, the parent portal correctly defaults to the new
+        # academic year; verify the previous year's published result remains
+        # stored rather than assuming it appears in the new-year matrix.
+        self.assertTrue(StudentMark.objects.filter(exam=self.exam, student=self.student).exists())
 
         self.section.is_active = True
         with self.assertRaises(ValidationError):
@@ -221,7 +234,8 @@ class AcademicYearClosureTests(TestCase):
         self.year.refresh_from_db()
         self.assertTrue(activated.is_current)
         self.assertFalse(self.year.is_current)
-        self.assertEqual(activated.semesters.filter(is_current=True).count(), 1)
+        # No semester is made active outside its official date boundaries.
+        self.assertEqual(activated.semesters.filter(is_current=True).count(), 0)
 
         AcademicYear.objects.filter(pk=self.year.pk).update(is_closed=True, is_current=False)
         self.year.refresh_from_db()
@@ -260,8 +274,8 @@ class AcademicYearViewFlowTests(TestCase):
             {
                 "name": "2028/2029",
                 "start_date": "2028-09-01",
-                "midyear_break_start": "2029-01-16",
-                "midyear_break_end": "2029-01-31",
+                "first_semester_end": "2029-01-15",
+                "second_semester_start": "2029-02-01",
                 "end_date": "2029-06-30",
                 "is_current": "on",
             },

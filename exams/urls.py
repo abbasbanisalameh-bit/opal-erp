@@ -6,9 +6,10 @@ app_name = "exams"
 
 urlpatterns = [
     path("", views.gradebook, name="exam_list"),
-    path("gradebook/", views.gradebook, name="gradebook"),
+    path("gradebook/", views.legacy_gradebook, name="gradebook"),
     path("definitions/", views.exam_definitions, name="exam_definitions"),
     path("dashboard/", views.exam_dashboard, name="exam_dashboard"),
+    path("cycles/", views.exam_cycle_center, name="exam_cycle_center"),
     path("scope-options/", views.exam_scope_options, name="exam_scope_options"),
     path("add/", views.exam_create, name="exam_create"),
     path("marks/", views.mark_list, name="mark_list"),

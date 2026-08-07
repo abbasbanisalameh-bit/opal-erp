@@ -1,7 +1,9 @@
 from __future__ import annotations
 
-from datetime import date, time, timedelta
+from collections import Counter
+from datetime import date, datetime, time, timedelta
 from decimal import Decimal
+import random
 
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import Group, User
@@ -10,6 +12,52 @@ from django.utils import timezone
 
 
 DEFAULT_ACCOUNT_PASSWORD = "Opal@12345"
+
+DEMO_STUDENT_COUNT = 500
+DEMO_GUARDIAN_COUNT = 300
+DEMO_TEACHER_COUNT = 19
+DEMO_TEACHER_WEEKLY_LOAD = 25
+DEMO_TEACHER_DAILY_TARGET = 5
+DEMO_ASSIGNMENT_SEED = 1139
+
+
+def _subject_plan_for_grade(grade_order):
+    """Return the exact weekly plan requested for the acceptance data set."""
+    plan = [
+        ("اللغة العربية", 1),
+        ("الرياضيات", 1),
+        ("التربية الرياضية", 3),
+        ("اللغة الإنجليزية", 1),
+        ("التربية المهنية", 2),
+        ("التربية الإسلامية", 1),
+        ("الحاسوب", 1),
+        ("التربية الفنية", 1),
+        ("الثقافة المالية", 1),
+    ]
+    if grade_order <= 9:
+        plan.append(("العلوم", 4))
+    else:
+        plan.extend([
+            ("الفيزياء", 1),
+            ("الكيمياء", 1),
+            ("الأحياء", 1),
+            ("علوم الأرض", 1),
+        ])
+    if grade_order <= 3:
+        plan.append(("الاجتماعيات", 3))
+    else:
+        plan.extend([
+            ("التاريخ", 1),
+            ("الجغرافيا", 1),
+            ("التربية الوطنية", 1),
+        ])
+    return plan
+
+
+def _teacher_specialization_label(subject_loads):
+    ordered = sorted(subject_loads.items(), key=lambda item: (-item[1], item[0]))
+    names = [name for name, _ in ordered[:3]]
+    return " / ".join(names) if names else "متعدد المواد"
 
 
 def _delete_all(model):
@@ -20,32 +68,47 @@ def _delete_all(model):
 
 @transaction.atomic
 def reset_all_operational_data(*, keep_user=None):
-    """Delete all school-operational records while preserving system access/config."""
+    """Delete operational records while preserving the current superuser and permission structure."""
+    if keep_user is None or not keep_user.pk or not keep_user.is_superuser:
+        raise ValueError("يجب تحديد حساب المدير الأعلى الحالي قبل تنفيذ التصفير الشامل.")
     from academics.models import Enrollment, Grade, Section, StudentDocument, StudentLifecycleEvent, Subject
     from accounting.models import (
-        DiscountRequest, ExpenseEntry, FeeCategory, FinancialCarryForward,
-        FinancialYearClosure, Installment, MonthlyFinancialTarget, Receipt,
+        CanteenTransaction, DiscountRequest, ExpenseEntry, FeeCategory,
+        FinancialCarryForward, FinancialYearClosure, Installment,
+        MonthlyFinancialStatement, MonthlyFinancialTarget, Receipt,
         StudentInvoice, StudentPayment,
     )
     from admissions.models import (
-        AdmissionApplication, FeePayment, FeePaymentAllocation, GradeFee,
-        RegistrationSettings, StudentRegistration, TransportRoute,
+        FeePayment, FeePaymentAllocation, GradeFee, RegistrationSettings,
+        StudentRegistration, TransportRoute,
     )
     from announcements.models import Announcement
-    from attendance_v2.models import Attendance
-    from core.models import AcademicYear, AuditLog, Branch, DataIntegrityRun, Sequence
-    from curriculum.models import Curriculum
-    from development_center.models import ActivityLog, Bug, Decision, Idea, Module, Notification as DevelopmentNotification, Release, Sprint
+    from attendance_v2.models import Attendance, AttendanceRegister
+    from core.models import (
+        AcademicYear, AuditLog, Branch, DataIntegrityIssue, DataIntegrityRun, School,
+        SemesterStructureSnapshot, Sequence,
+    )
+    from development_center.models import (
+        ActivityLog, Bug, Decision, Idea, Milestone, Module,
+        Notification as DevelopmentNotification, Release, Sprint,
+        SprintDailySnapshot, Task,
+    )
     from documents.models import DocumentSettings, DocumentTemplate, IssuedDocument, StudentIssuedDocument
     from enterprise_ops.models import (
-        ApprovalAction, BroadcastMessage, FeedbackTicket, Notification,
+        ApprovalAction, BroadcastMessage, FeedbackTicket, MonthlyServiceEvaluation, Notification,
         ReportPreset, WorkflowRequest,
     )
-    from exams.models import Exam, StudentMark
+    from exams.models import (
+        AnnualStudentResult, AnnualSubjectResult, Exam, ExamCycle,
+        SemesterSubjectResult, StudentMark,
+    )
     from openemis_integration.models import OpenEMISSyncLog
-    from parent_portal.models import Family, FamilyStudent
+    from parent_portal.models import Family, FamilyStudent, TeacherMonthlyEvaluation
     from students.models import Student
-    from teachers.models import Homework, Teacher, TeacherAssignment, TeacherDocument
+    from teachers.models import (
+        Homework, Teacher, TeacherAdvance, TeacherAssignment,
+        TeacherDocument, TeacherPayroll, TeacherPerformanceSnapshot,
+    )
     from timetable.models import (
         ClassCoverage, SchoolDayEvent, SchoolScheduleSettings, TeacherAbsence,
         TimeSlot, TimetableEntry,
@@ -58,6 +121,8 @@ def reset_all_operational_data(*, keep_user=None):
     }
 
     # Protected and transactional financial chains are removed from leaf to root.
+    _delete_all(MonthlyFinancialStatement)
+    _delete_all(CanteenTransaction)
     _delete_all(FinancialCarryForward)
     _delete_all(FinancialYearClosure)
     _delete_all(Receipt)
@@ -77,8 +142,13 @@ def reset_all_operational_data(*, keep_user=None):
     _delete_all(DocumentSettings)
     _delete_all(DocumentTemplate)
 
+    _delete_all(AnnualStudentResult)
+    _delete_all(AnnualSubjectResult)
+    _delete_all(SemesterSubjectResult)
     _delete_all(StudentMark)
     _delete_all(Exam)
+    _delete_all(ExamCycle)
+    _delete_all(AttendanceRegister)
     _delete_all(Attendance)
     _delete_all(ClassCoverage)
     _delete_all(TeacherAbsence)
@@ -88,6 +158,10 @@ def reset_all_operational_data(*, keep_user=None):
     _delete_all(TimeSlot)
 
     _delete_all(Homework)
+    _delete_all(TeacherPerformanceSnapshot)
+    _delete_all(TeacherPayroll)
+    _delete_all(TeacherAdvance)
+    _delete_all(TeacherMonthlyEvaluation)
     _delete_all(TeacherAssignment)
     _delete_all(TeacherDocument)
     _delete_all(Teacher)
@@ -98,42 +172,51 @@ def reset_all_operational_data(*, keep_user=None):
     _delete_all(StudentDocument)
     _delete_all(Enrollment)
     _delete_all(Student)
-    _delete_all(Curriculum)
 
-    _delete_all(AdmissionApplication)
     _delete_all(GradeFee)
     _delete_all(TransportRoute)
     _delete_all(RegistrationSettings)
     _delete_all(Section)
     _delete_all(Subject)
     _delete_all(Grade)
+    _delete_all(SemesterStructureSnapshot)
+
+    # A prepared academic year may protect its source year through a nullable
+    # self-reference. Detach that operational link before deleting all years.
+    AcademicYear.objects.exclude(preparation_source=None).update(preparation_source=None)
     _delete_all(AcademicYear)
     _delete_all(Branch)
+    _delete_all(School)
 
     _delete_all(ApprovalAction)
+    _delete_all(MonthlyServiceEvaluation)
     _delete_all(FeedbackTicket)
     _delete_all(BroadcastMessage)
     _delete_all(WorkflowRequest)
     _delete_all(Notification)
     _delete_all(ReportPreset)
+    # RolePermissionRule is part of the permission structure and must survive reset.
     _delete_all(Announcement)
     _delete_all(OpenEMISSyncLog)
-    _delete_all(Module)
-    _delete_all(Sprint)
+    _delete_all(SprintDailySnapshot)
+    _delete_all(ActivityLog)
+    _delete_all(DevelopmentNotification)
+    _delete_all(Task)
+    _delete_all(Milestone)
     _delete_all(Release)
+    _delete_all(Sprint)
+    _delete_all(Module)
     _delete_all(Idea)
     _delete_all(Decision)
     _delete_all(Bug)
-    _delete_all(ActivityLog)
-    _delete_all(DevelopmentNotification)
+    _delete_all(DataIntegrityIssue)
     _delete_all(DataIntegrityRun)
     _delete_all(AuditLog)
     _delete_all(Sequence)
 
-    # Preserve every superuser so the installation never locks its owner out.
-    removable_users = User.objects.filter(is_superuser=False)
-    if keep_user and keep_user.pk:
-        removable_users = removable_users.exclude(pk=keep_user.pk)
+    # Preserve only the manager account that explicitly launched the reset.
+    # All other users, including other superusers, are operational data here.
+    removable_users = User.objects.exclude(pk=keep_user.pk)
     counts["users"] = removable_users.count()
     removable_users.delete()
     return counts
@@ -173,14 +256,15 @@ def _month_28(base_date, offset):
 
 def _structure(school):
     from academics.models import Grade, Section, Subject
+    from academics.subject_identity import default_subject_colour, normalize_subject_key
     from admissions.models import GradeFee, RegistrationSettings, TransportRoute
     from core.models import AcademicYear, Branch
     from documents.models import DocumentSettings
     from timetable.models import SchoolDayEvent, SchoolScheduleSettings, TimeSlot
 
     branch = Branch.objects.create(
-        school=school, name="الفرع الرئيسي", phone="065555555",
-        address="عمّان", is_main=True, is_active=True,
+        school=school, name="الفرع الرئيسي", phone="027555555",
+        address="إربد", is_main=True, is_active=True,
     )
     start_year = timezone.localdate().year
     year = AcademicYear.objects.create(
@@ -198,10 +282,6 @@ def _structure(school):
         "الصف الخامس", "الصف السادس", "الصف السابع", "الصف الثامن",
         "الصف التاسع", "الصف العاشر", "الصف الحادي عشر", "الصف الثاني عشر",
     ]
-    subjects = [
-        "اللغة العربية", "الرياضيات", "العلوم", "اللغة الإنجليزية",
-        "التربية الإسلامية", "الحاسوب",
-    ]
     grades = [Grade(school=school, name=name, order=index) for index, name in enumerate(grade_names, 1)]
     Grade.objects.bulk_create(grades)
     grades = list(Grade.objects.filter(school=school).order_by("order"))
@@ -209,42 +289,108 @@ def _structure(school):
         GradeFee(school=school, academic_year=year, grade=grade, tuition_fee=Decimal("900") + grade.order * Decimal("75"))
         for grade in grades
     ])
+
     sections = []
     subject_rows = []
+    all_subject_names = []
     for grade in grades:
-        for section_name in ("أ", "ب"):
+        section_names = ("أ", "ب", "ج") if grade.order == 1 else ("أ", "ب")
+        for section_name in section_names:
             sections.append(Section(
                 academic_year=year, branch=branch, grade=grade,
-                name=section_name, capacity=30, is_active=True,
+                name=f"شعبة {section_name}", capacity=30, is_active=True,
             ))
-        for index, subject_name in enumerate(subjects, 1):
+        for subject_name, _ in _subject_plan_for_grade(grade.order):
+            if subject_name not in all_subject_names:
+                all_subject_names.append(subject_name)
+
+    colour_by_key = {}
+    for subject_name in all_subject_names:
+        canonical_key = normalize_subject_key(subject_name)
+        colour_by_key[canonical_key] = default_subject_colour(canonical_key, colour_by_key.values())
+
+    for grade in grades:
+        for index, (subject_name, weekly_periods) in enumerate(_subject_plan_for_grade(grade.order), 1):
+            canonical_key = normalize_subject_key(subject_name)
             subject_rows.append(Subject(
-                grade=grade, name=subject_name,
-                code=f"G{grade.order:02d}-S{index:02d}", is_active=True,
+                academic_year=year, grade=grade, name=subject_name,
+                code=f"G{grade.order:02d}-S{index:02d}",
+                weekly_periods=weekly_periods,
+                is_required=True, canonical_key=canonical_key,
+                color=colour_by_key[canonical_key], is_active=True,
             ))
+
     Section.objects.bulk_create(sections)
     Subject.objects.bulk_create(subject_rows)
-    sections = list(Section.objects.filter(academic_year=year).select_related("grade").order_by("grade__order", "name"))
+    sections = list(
+        Section.objects.filter(academic_year=year)
+        .select_related("grade")
+        .order_by("grade__order", "name")
+    )
     subjects_by_grade = {
-        grade.pk: list(Subject.objects.filter(grade=grade).order_by("name")) for grade in grades
+        grade.pk: list(Subject.objects.filter(academic_year=year, grade=grade).order_by("code"))
+        for grade in grades
     }
 
+    # Eight periods remain available so the manager can add future assignments
+    # and so the three staggered break groups keep valid non-overlapping windows.
     slots = []
-    for index, (hour, minute) in enumerate(((8, 0), (8, 50), (9, 40), (10, 40), (11, 30), (12, 20), (13, 10)), 1):
-        start = time(hour, minute)
-        end = (timezone.datetime.combine(date.today(), start) + timedelta(minutes=45)).time()
-        slots.append(TimeSlot(name=f"الحصة {index}", start_time=start, end_time=end, order=index, is_active=True))
+    cursor = datetime.combine(date.today(), time(8, 0))
+    for index in range(1, 9):
+        start = cursor.time()
+        end_dt = cursor + timedelta(minutes=40)
+        slots.append(TimeSlot(
+            name=f"الحصة {index}", start_time=start, end_time=end_dt.time(),
+            order=index, is_active=True,
+        ))
+        cursor = end_dt + timedelta(minutes=5)
     TimeSlot.objects.bulk_create(slots)
-    SchoolScheduleSettings.objects.create(school=school, weekend_days="thursday,friday", alert_minutes_before_end=5)
+    SchoolScheduleSettings.objects.create(
+        school=school,
+        weekend_days="friday,saturday",
+        alert_minutes_before_end=5,
+    )
+
     SchoolDayEvent.objects.bulk_create([
-        SchoolDayEvent(school=school, name="الطابور الصباحي", event_type="assembly", start_time=time(7, 40), end_time=time(7, 55), order=1),
-        SchoolDayEvent(school=school, name="الاستراحة", event_type="break", start_time=time(10, 25), end_time=time(10, 40), order=2),
-        SchoolDayEvent(school=school, name="نهاية الدوام", event_type="dismissal", start_time=time(13, 55), end_time=time(14, 5), order=3),
+        SchoolDayEvent(
+            school=school, name="الطابور الصباحي", event_type="assembly",
+            start_time=time(7, 40), end_time=time(7, 55),
+            days="sunday,monday,tuesday,wednesday,thursday", order=1,
+        ),
+        SchoolDayEvent(
+            school=school, name="نهاية الدوام", event_type="dismissal",
+            start_time=time(14, 5), end_time=time(14, 15),
+            days="sunday,monday,tuesday,wednesday,thursday", order=8,
+        ),
+        SchoolDayEvent(
+            school=school, name="النشاط المدرسي الأسبوعي", event_type="other",
+            start_time=time(14, 15), end_time=time(14, 55),
+            days="thursday", order=9,
+        ),
     ])
+
+    break_definitions = (
+        ("استراحة الصفوف الأساسية الدنيا", range(1, 5), 2),
+        ("استراحة الصفوف الأساسية العليا", range(5, 9), 3),
+        ("استراحة الصفوف الثانوية", range(9, 13), 4),
+    )
+    for name, grade_orders, order in break_definitions:
+        event = SchoolDayEvent.objects.create(
+            school=school,
+            name=name,
+            event_type="break",
+            duration_minutes=15,
+            placement_mode="smart",
+            days="sunday,monday,tuesday,wednesday,thursday",
+            order=order,
+            is_active=True,
+        )
+        event.sections.set([section for section in sections if section.grade.order in grade_orders])
+
     RegistrationSettings.objects.create(school=school, first_payment_percent=20)
     TransportRoute.objects.bulk_create([
         TransportRoute(school=school, name=name, full_fee=amount, is_active=True)
-        for name, amount in (("مسار عمّان الشرقية", 350), ("مسار عمّان الغربية", 400), ("مسار الجبيهة", 300), ("مسار شفا بدران", 325))
+        for name, amount in (("مسار إربد المدينة", 300), ("مسار الحصن", 325), ("مسار الرمثا", 350), ("مسار بني عبيد", 300))
     ])
     DocumentSettings.objects.create(
         school=school, manager_name="مدير مدرسة أوبال", manager_title="المدير العام", stamp_label="ختم المدرسة",
@@ -252,38 +398,169 @@ def _structure(school):
     return branch, year, grades, sections, subjects_by_grade
 
 
+def _validate_integrated_academic_demo(*, school, year, sections):
+    """Fail atomically unless the latest plan/workload/break/timetable chain is coherent."""
+    from academics.models import Subject
+    from teachers.models import TeacherAssignment
+    from timetable.models import SchoolDayEvent, TimeSlot, TimetableEntry
+
+    canonical_days = {"sunday", "monday", "tuesday", "wednesday", "thursday"}
+    subject_plans = list(
+        Subject.objects.filter(academic_year=year, is_active=True)
+        .select_related("grade")
+    )
+    assignments = list(
+        TeacherAssignment.objects.filter(academic_year=year, is_active=True)
+        .select_related("teacher", "section__grade", "subject")
+    )
+    entries = list(
+        TimetableEntry.objects.filter(academic_year=year, is_active=True)
+        .select_related("section", "subject", "teacher", "time_slot")
+    )
+    breaks = list(
+        SchoolDayEvent.objects.filter(school=school, event_type="break", is_active=True)
+        .prefetch_related("sections")
+        .order_by("start_time", "order", "pk")
+    )
+    base_slots = list(
+        TimeSlot.objects.filter(is_active=True, generated_for_smart_schedule=False)
+        .order_by("order", "pk")
+    )
+
+    if len(base_slots) != 8:
+        raise ValueError("بيانات الاختبار المترابطة تحتاج ثمانية أوقات حصص أساسية.")
+    if len(breaks) != 3:
+        raise ValueError("يجب أن تتضمن بيانات الاختبار ثلاث مجموعات استراحة مترابطة.")
+    if any(item.placement_mode != "smart" or not item.start_time or not item.end_time for item in breaks):
+        raise ValueError("لم يثبت محرك الجدول أوقات جميع الاستراحات الذكية.")
+
+    section_ids = {section.pk for section in sections}
+    break_membership = Counter()
+    for event in breaks:
+        for section_id in event.sections.values_list("pk", flat=True):
+            if section_id in section_ids:
+                break_membership[section_id] += 1
+    if set(break_membership) != section_ids or any(value != 1 for value in break_membership.values()):
+        raise ValueError("يجب أن ترتبط كل شعبة باستراحة واحدة فقط في بيانات القبول التجريبية.")
+
+    ordered_breaks = sorted(breaks, key=lambda item: (item.start_time, item.end_time))
+    for previous, current in zip(ordered_breaks, ordered_breaks[1:]):
+        if previous.end_time > current.start_time:
+            raise ValueError("الاستراحات التجريبية متداخلة رغم اعتماد ساحة واحدة.")
+
+    plan_map = {(item.grade_id, item.pk): item.weekly_periods for item in subject_plans}
+    assignment_map = {}
+    assigned_by_teacher = Counter()
+    for assignment in assignments:
+        key = (assignment.section_id, assignment.subject_id)
+        if key in assignment_map:
+            raise ValueError("يوجد تكليف تجريبي مكرر للمادة والشعبة نفسها.")
+        assignment_map[key] = assignment
+        required = plan_map.get((assignment.section.grade_id, assignment.subject_id))
+        if required is None:
+            raise ValueError("يوجد تكليف تجريبي لا يقابله بند في الخطة الدراسية.")
+        assigned_by_teacher[assignment.teacher_id] += required
+
+    expected_total = 0
+    entry_counts = Counter((item.section_id, item.subject_id) for item in entries)
+    for section in sections:
+        for subject in subject_plans:
+            if subject.grade_id != section.grade_id:
+                continue
+            key = (section.pk, subject.pk)
+            assignment = assignment_map.get(key)
+            if assignment is None:
+                raise ValueError("خطة المواد التجريبية تحتوي مادة بلا تكليف فعّال.")
+            expected_total += subject.weekly_periods
+            if entry_counts[key] != subject.weekly_periods:
+                raise ValueError("الجدول التجريبي لا يغطي جميع حصص الخطة بدقة.")
+
+    if len(entries) != expected_total:
+        raise ValueError("إجمالي حصص الجدول التجريبي لا يطابق إجمالي الخطة.")
+    if any(item.day not in canonical_days for item in entries):
+        raise ValueError("الجدول التجريبي يجب أن يعمل من الأحد إلى الخميس فقط.")
+    for entry in entries:
+        assignment = assignment_map.get((entry.section_id, entry.subject_id))
+        if assignment is None or assignment.teacher_id != entry.teacher_id:
+            raise ValueError("توجد حصة في الجدول لا تطابق التكليف الرسمي.")
+
+    configured_teachers = 0
+    daily_by_teacher = Counter((entry.teacher_id, entry.day) for entry in entries if entry.teacher_id)
+    for teacher_id, assigned in assigned_by_teacher.items():
+        teacher = next(item.teacher for item in assignments if item.teacher_id == teacher_id)
+        if teacher.weekly_teaching_load != DEMO_TEACHER_WEEKLY_LOAD or assigned != DEMO_TEACHER_WEEKLY_LOAD:
+            raise ValueError("يجب أن يكون نصاب كل معلم تجريبي 25 حصة فعلية بالضبط.")
+        if teacher.free_period_policy != "daily" or teacher.daily_free_periods != 1:
+            raise ValueError("يجب أن يبقى لكل معلم حد أدنى حصة فراغ يومية قابلة للتعديل.")
+        for day in canonical_days:
+            if daily_by_teacher[(teacher_id, day)] != DEMO_TEACHER_DAILY_TARGET:
+                raise ValueError("لم يوزع الجدول نصاب المعلم على خمس حصص يوميًا.")
+        configured_teachers += 1
+
+    for event in breaks:
+        break_sections = set(event.sections.values_list("pk", flat=True))
+        for entry in entries:
+            if entry.section_id not in break_sections or entry.day not in event.day_codes:
+                continue
+            if entry.time_slot.start_time < event.end_time and entry.time_slot.end_time > event.start_time:
+                raise ValueError("توجد حصة تجريبية تتداخل مع استراحة الشعبة.")
+
+    return {
+        "subject_plans": len(subject_plans),
+        "assignments": len(assignments),
+        "base_slots": len(base_slots),
+        "breaks": len(breaks),
+        "day_events": SchoolDayEvent.objects.filter(school=school, is_active=True).count(),
+        "configured_teachers": configured_teachers,
+        "teacher_weekly_load": DEMO_TEACHER_WEEKLY_LOAD,
+        "teacher_daily_target": DEMO_TEACHER_DAILY_TARGET,
+        "timetable_entries": len(entries),
+        "schedule_verified": True,
+    }
+
+
 @transaction.atomic
-def seed_system_data(*, student_count=500, teacher_count=50, guardian_count=300, user=None):
+def seed_system_data(*, student_count=DEMO_STUDENT_COUNT, teacher_count=DEMO_TEACHER_COUNT, guardian_count=DEMO_GUARDIAN_COUNT, user=None):
     from accounts.models import Role, UserProfile
     from academics.models import Enrollment, StudentDocument
     from accounting.models import (
         ExpenseEntry, FeeCategory, MonthlyFinancialTarget, Receipt,
         StudentInvoice, StudentPayment,
     )
-    from admissions.models import AdmissionApplication, FeePayment, FeePaymentAllocation, StudentRegistration
+    from admissions.models import FeePayment, FeePaymentAllocation, StudentRegistration
     from announcements.models import Announcement
-    from attendance_v2.models import Attendance
+    from attendance_v2.models import Attendance, AttendanceRegister
     from core.models import School
-    from curriculum.models import Curriculum
     from documents.defaults import DEFAULT_DOCUMENT_TEMPLATES
     from documents.models import DocumentTemplate, IssuedDocument, StudentIssuedDocument
-    from enterprise_ops.models import BroadcastMessage, FeedbackTicket, Notification, ReportPreset, WorkflowRequest
-    from exams.models import Exam, StudentMark
-    from parent_portal.models import Family, FamilyStudent
+    from enterprise_ops.models import (
+        BroadcastMessage, FeedbackTicket, MonthlyServiceEvaluation, Notification,
+        ReportPreset, WorkflowRequest,
+    )
+    from exams.models import (
+        AnnualStudentResult, AnnualSubjectResult, Exam, ExamCycle,
+        SemesterSubjectResult, StudentMark,
+    )
+    from parent_portal.models import Family, FamilyStudent, TeacherMonthlyEvaluation
     from students.models import Student
-    from teachers.models import Homework, Teacher, TeacherAssignment, TeacherDocument
-    from timetable.models import TimetableEntry
+    from teachers.models import (
+        Homework, Teacher, TeacherAdvance, TeacherAssignment,
+        TeacherDocument, TeacherPayroll,
+    )
+    from timetable.models import TeacherAbsence, TimetableEntry
     from timetable.services import build_smart_timetable
 
     # The button intentionally produces one stable, complete acceptance dataset.
-    student_count, teacher_count, guardian_count = 500, 50, 300
+    if user is None or not user.pk or not user.is_superuser:
+        raise ValueError("يجب تحديد حساب المدير الأعلى الحالي قبل إدخال البيانات التجريبية.")
+    student_count, teacher_count, guardian_count = DEMO_STUDENT_COUNT, DEMO_TEACHER_COUNT, DEMO_GUARDIAN_COUNT
     School.objects.select_for_update().filter(is_active=True).first()
     reset_all_operational_data(keep_user=user)
     school = School.objects.filter(is_active=True).first()
     if school is None:
         school = School.objects.create(
             name="مدرسة أوبال الدولية", official_name="مدرسة أوبال الدولية",
-            phone="065555555", email="info@opal-school.edu", address="عمّان", is_active=True,
+            phone="027555555", email="info@opal-school.edu", address="إربد", is_active=True,
         )
     branch, year, grades, sections, subjects_by_grade = _structure(school)
 
@@ -316,7 +593,6 @@ def seed_system_data(*, student_count=500, teacher_count=50, guardian_count=300,
     teacher_users = {row.username: row for row in User.objects.filter(username__startswith="teacher_")}
     guardian_users = {row.username: row for row in User.objects.filter(username__startswith="guardian_")}
 
-    specializations = ["لغة عربية", "رياضيات", "علوم", "لغة إنجليزية", "تربية إسلامية", "حاسوب"]
     teacher_rows = []
     for index in range(1, teacher_count + 1):
         *_, full_name = generated_name(index, female=index % 2 == 0)
@@ -326,9 +602,11 @@ def seed_system_data(*, student_count=500, teacher_count=50, guardian_count=300,
             national_id=f"2000{index:06d}", gender="male" if index % 2 else "female",
             birth_date=date(1980 + index % 20, (index % 12) + 1, (index % 27) + 1),
             phone=f"078{index:07d}", email=f"teacher{index:03d}@opal-school.edu",
-            address=f"عمّان - الحي {index % 10 + 1}", specialization=specializations[(index - 1) % len(specializations)],
+            address=f"إربد - الحي {index % 10 + 1}", specialization="متعدد المواد",
             qualification="بكالوريوس تربية", hire_date=date(2020 + index % 5, 9, 1),
             school=school, branch=branch, monthly_salary=Decimal("550") + index * Decimal("8"),
+            weekly_teaching_load=DEMO_TEACHER_WEEKLY_LOAD, free_period_policy="daily",
+            daily_free_periods=1, weekly_free_periods=0,
             is_active=True, is_demo=False,
         ))
     Teacher.objects.bulk_create(teacher_rows)
@@ -352,7 +630,7 @@ def seed_system_data(*, student_count=500, teacher_count=50, guardian_count=300,
             guardian_name=name, relation=relation_labels[category], identity_type="national",
             identity_number=f"3000{index:06d}", phone=f"079{index:07d}",
             secondary_phone=f"077{index:07d}", email=f"guardian{index:03d}@mail.com",
-            job_title=("مهندسة" if category == 1 else "موظف"), address=f"عمّان - منطقة {index % 15 + 1}",
+            job_title=("مهندسة" if category == 1 else "موظف"), address=f"إربد - منطقة {index % 15 + 1}",
             family_code=f"G-{index:05d}", is_active=True,
         ))
     Family.objects.bulk_create(family_rows)
@@ -370,35 +648,82 @@ def seed_system_data(*, student_count=500, teacher_count=50, guardian_count=300,
     through = Group.user_set.through
     through.objects.bulk_create([through(user_id=teacher.user_id, group_id=teacher_group.pk) for teacher in teachers], ignore_conflicts=True)
 
-    # Assign teachers, homerooms, curricula, and generate a conflict-free timetable.
-    assignment_rows, curriculum_rows = [], []
-    for section_index, section in enumerate(sections):
-        section.homeroom_teacher = teachers[section_index % len(teachers)]
+    # Build one coherent chain: annual Subject plan -> assignment -> exact 25-period workload -> official timetable.
+    # The requested plan totals 19 periods per section.  Twenty-five sections
+    # therefore produce exactly 475 periods, which is 19 teachers × 25 periods.
+    assignment_tasks = []
+    for section in sections:
+        section.homeroom_teacher = teachers[(section.pk + section.grade.order) % len(teachers)]
         section.save(update_fields=["homeroom_teacher"])
-        for subject_index, subject in enumerate(subjects_by_grade[section.grade_id]):
-            weekly = (3, 3, 2, 2, 2, 2)[subject_index]
-            teacher = teachers[(section_index * 7 + subject_index) % len(teachers)]
-            assignment_rows.append(TeacherAssignment(
-                teacher=teacher, academic_year=year, section=section, subject=subject,
-                weekly_periods=weekly, is_primary=True, is_active=True,
-            ))
-    for grade in grades:
-        for subject_index, subject in enumerate(subjects_by_grade[grade.pk]):
-            curriculum_rows.append(Curriculum(
-                academic_year=year, grade=grade, subject=subject,
-                weekly_periods=(3, 3, 2, 2, 2, 2)[subject_index], is_required=True, is_active=True,
-            ))
+        for subject in subjects_by_grade[section.grade_id]:
+            assignment_tasks.append((section, subject, subject.weekly_periods))
+
+    teacher_loads = {teacher.pk: 0 for teacher in teachers}
+    subject_loads_by_teacher = {teacher.pk: Counter() for teacher in teachers}
+    assignment_rows = []
+
+    # Place multi-period assignments first.  A fixed seed varies equal-load
+    # choices so the smart builder can satisfy all section and teacher conflicts
+    # while keeping the generated data perfectly reproducible.
+    rng = random.Random(DEMO_ASSIGNMENT_SEED)
+    tasks_by_weight = {}
+    for task in assignment_tasks:
+        tasks_by_weight.setdefault(task[2], []).append(task)
+    ordered_tasks = []
+    for weight in sorted(tasks_by_weight, reverse=True):
+        group = list(tasks_by_weight[weight])
+        rng.shuffle(group)
+        ordered_tasks.extend(group)
+
+    for section, subject, periods in ordered_tasks:
+        eligible = [teacher for teacher in teachers if teacher_loads[teacher.pk] + periods <= DEMO_TEACHER_WEEKLY_LOAD]
+        if not eligible:
+            raise ValueError("تعذر توزيع تكليفات البيانات التجريبية ضمن نصاب 25 حصة لكل معلم.")
+        minimum_load = min(teacher_loads[teacher.pk] for teacher in eligible)
+        candidates = [teacher for teacher in eligible if teacher_loads[teacher.pk] == minimum_load]
+        teacher = rng.choice(candidates)
+        teacher_loads[teacher.pk] += periods
+        subject_loads_by_teacher[teacher.pk][subject.name] += periods
+        assignment_rows.append(TeacherAssignment(
+            teacher=teacher, academic_year=year, section=section, subject=subject,
+            is_primary=True, is_active=True,
+        ))
+
+    if set(teacher_loads.values()) != {DEMO_TEACHER_WEEKLY_LOAD}:
+        raise ValueError("لم يصل جميع المعلمين إلى النصاب التجريبي المطلوب وهو 25 حصة أسبوعيًا.")
+
     TeacherAssignment.objects.bulk_create(assignment_rows)
-    Curriculum.objects.bulk_create(curriculum_rows)
-    plan = build_smart_timetable(academic_year=year, apply=False, replace_generated=True)
-    TimetableEntry.objects.bulk_create([
-        TimetableEntry(
-            academic_year=year, section=row["assignment"].section, subject=row["assignment"].subject,
-            teacher=row["assignment"].teacher, day=row["day"], time_slot=row["time_slot"],
-            room=f"R-{row['assignment'].section_id:03d}", is_active=True, generated_automatically=True,
-        ) for row in plan["plan"]
-    ])
-    assignments = list(TeacherAssignment.objects.select_related("teacher", "section", "subject").filter(academic_year=year))
+    for teacher in teachers:
+        teacher.specialization = _teacher_specialization_label(subject_loads_by_teacher[teacher.pk])
+        teacher.weekly_teaching_load = DEMO_TEACHER_WEEKLY_LOAD
+        teacher.free_period_policy = "daily"
+        teacher.daily_free_periods = 1
+        teacher.weekly_free_periods = 0
+    Teacher.objects.bulk_update(
+        teachers,
+        ["specialization", "weekly_teaching_load", "free_period_policy", "daily_free_periods", "weekly_free_periods"],
+        batch_size=100,
+    )
+
+    assignments = list(
+        TeacherAssignment.objects.filter(academic_year=year)
+        .select_related("teacher", "section__grade", "subject")
+        .order_by("teacher_id", "section_id", "subject_id")
+    )
+    schedule_result = build_smart_timetable(
+        academic_year=year,
+        apply=True,
+        replace_generated=True,
+        variant="balanced",
+        enforce_daily_teaching_target=True,
+    )
+    if not schedule_result["can_apply"] or schedule_result["unresolved"]:
+        first_issue = (
+            schedule_result["blockers"][0]["message"]
+            if schedule_result["blockers"]
+            else schedule_result["unresolved"][0]["reason"]
+        )
+        raise ValueError(f"تعذر إنشاء بيانات الجدول المترابطة: {first_issue}")
     Homework.objects.bulk_create([
         Homework(
             assignment=assignment, title=f"واجب {assignment.subject.name}",
@@ -525,47 +850,170 @@ def seed_system_data(*, student_count=500, teacher_count=50, guardian_count=300,
         ) for payment in payments
     ])
 
-    # Ten days of attendance with present/absent/late/departed variety.
-    attendance_rows = []
+    # Ten recent school days using the current exception-only attendance policy.
+    # A submitted register proves the homeroom teacher completed the daily task;
+    # only absent/departed pupils are stored as Attendance rows.
     today = timezone.localdate()
-    enrollment_by_student = {row.student_id: row for row in Enrollment.objects.filter(academic_year=year).select_related("grade", "section")}
+    attendance_dates = []
+    cursor = today
+    while len(attendance_dates) < 10:
+        if cursor.weekday() not in {4, 5}:  # Friday and Saturday are the Jordan weekend.
+            attendance_dates.append(cursor)
+        cursor -= timedelta(days=1)
+
+    def aware_at(day, hour, minute):
+        return timezone.make_aware(
+            datetime.combine(day, time(hour, minute)),
+            timezone.get_current_timezone(),
+        )
+
+    register_rows = []
+    for section in sections:
+        teacher_user = section.homeroom_teacher.user if section.homeroom_teacher_id else user
+        for attendance_date in attendance_dates:
+            submitted_at = aware_at(attendance_date, 8, 20)
+            register_rows.append(AttendanceRegister(
+                academic_year=year, grade=section.grade, section=section, date=attendance_date,
+                is_teacher_locked=True, teacher_locked_at=submitted_at,
+                submitted_by=teacher_user, submitted_at=submitted_at,
+                created_by=teacher_user,
+            ))
+    AttendanceRegister.objects.bulk_create(register_rows, batch_size=500)
+
+    attendance_rows = []
+    enrollment_by_student = {
+        row.student_id: row
+        for row in Enrollment.objects.filter(academic_year=year).select_related("grade", "section", "section__homeroom_teacher__user")
+    }
     for student in students:
         enrollment = enrollment_by_student[student.pk]
-        for offset in range(10):
-            marker = (student.pk + offset) % 20
-            status = "absent" if marker == 0 else ("late" if marker in (1, 2) else ("departed" if marker == 3 else "present"))
+        for day_index, attendance_date in enumerate(attendance_dates):
+            marker = (student.pk + day_index) % 20
+            status = "absent" if marker in {0, 1} else ("departed" if marker == 2 else None)
+            if status is None:
+                continue
             attendance_rows.append(Attendance(
                 student=student, academic_year=year, grade=enrollment.grade, section=enrollment.section,
-                date=today - timedelta(days=offset), status=status,
-                arrival_time=time(8, 10) if status == "late" else None,
+                date=attendance_date, status=status,
                 departure_time=time(12, 30) if status == "departed" else None,
-                recorded_by=user, updated_by=user,
+                recorded_by=enrollment.section.homeroom_teacher.user if enrollment.section.homeroom_teacher_id else user,
+                updated_by=enrollment.section.homeroom_teacher.user if enrollment.section.homeroom_teacher_id else user,
             ))
     Attendance.objects.bulk_create(attendance_rows, batch_size=1000)
 
-    # Four assessments per subject in both semesters, with marks for every student.
+    # Official teacher work-attendance rows support the TPI engine without a parallel model.
+    work_rows = []
+    for teacher_index, teacher in enumerate(teachers, 1):
+        for day_index, attendance_date in enumerate(attendance_dates):
+            marker = (teacher_index + day_index) % 25
+            if marker == 0:
+                status, arrival, departure = "absent", None, None
+            elif marker in {1, 2}:
+                status, arrival, departure = "late", time(8, 15), time(14, 0)
+            elif marker == 3:
+                status, arrival, departure = "early_departure", time(8, 0), time(12, 30)
+            elif marker == 4:
+                status, arrival, departure = "approved_excuse", None, None
+            elif marker == 5:
+                status, arrival, departure = "official_mission", None, None
+            else:
+                continue  # No row means present under the official exception-only policy.
+            approved_exception = status in {"approved_excuse", "official_mission"}
+            work_rows.append(TeacherAbsence(
+                teacher=teacher, date=attendance_date, attendance_status=status,
+                arrival_time=arrival, departure_time=departure,
+                reason=("عذر معتمد" if status == "approved_excuse" else "مهمة رسمية" if status == "official_mission" else ""),
+                absence_type="unexcused" if status == "absent" else "excused",
+                is_approved=approved_exception, approved_by=user if approved_exception else None,
+                payroll_approved=False, recorded_by=user,
+            ))
+    TeacherAbsence.objects.bulk_create(work_rows, batch_size=1000)
+
+    # Current evaluation architecture: per-teacher guardian evaluation plus one
+    # separate monthly school-services evaluation per user.
+    period = today.replace(day=1)
+    teachers_by_id = {teacher.pk: teacher for teacher in teachers}
+    teachers_by_section = {}
+    for assignment in assignments:
+        teachers_by_section.setdefault(assignment.section_id, set()).add(assignment.teacher_id)
+    family_sections = {}
+    for meta in student_meta.values():
+        family_sections.setdefault(meta["family"].pk, set()).add(meta["section"].pk)
+
+    teacher_evaluation_rows = []
+    for family in families:
+        teacher_ids = sorted({
+            teacher_id
+            for section_id in family_sections.get(family.pk, set())
+            for teacher_id in teachers_by_section.get(section_id, set())
+        })[:3]
+        for teacher_id in teacher_ids:
+            teacher_evaluation_rows.append(TeacherMonthlyEvaluation(
+                family=family, teacher=teachers_by_id[teacher_id], period=period,
+                teaching_quality_rating=3 + ((family.pk + teacher_id) % 3),
+            ))
+    TeacherMonthlyEvaluation.objects.bulk_create(teacher_evaluation_rows, batch_size=1000)
+
+    evaluated_at = timezone.now()
+    MonthlyServiceEvaluation.objects.bulk_create([
+        MonthlyServiceEvaluation(
+            user=family.user, school=school, branch=branch, period=period,
+            teaching_quality_rating=3 + (index % 3),
+            electronic_services_rating=3 + ((index + 1) % 3),
+            teaching_quality_submitted_at=evaluated_at,
+            electronic_services_submitted_at=evaluated_at,
+        )
+        for index, family in enumerate(families)
+    ] + [
+        MonthlyServiceEvaluation(
+            user=teacher.user, school=school, branch=branch, period=period,
+            electronic_services_rating=3 + (index % 3),
+            electronic_services_submitted_at=evaluated_at,
+        )
+        for index, teacher in enumerate(teachers)
+    ], batch_size=1000)
+
+    # Four assessments per teaching assignment in both semesters. Linking every
+    # exam to its canonical assignment makes the seeded marks usable by TPI.
+    current_published_at = timezone.now()
     exam_rows = []
-    for grade in grades:
-        for subject in subjects_by_grade[grade.pk]:
-            for semester in year.semesters.all():
-                for exam_type, maximum in Exam.MAX_MARKS.items():
-                    exam_rows.append(Exam(
-                        name=f"{dict(Exam.EXAM_TYPES)[exam_type]} - {subject.name}",
-                        exam_type=exam_type, academic_year=year, semester=semester,
-                        grade=grade, subject=subject, max_mark=maximum, weight=maximum,
-                        pass_percentage=60, exam_date=today, status="published", is_locked=True, is_active=True,
-                    ))
-    Exam.objects.bulk_create(exam_rows)
-    exams = list(Exam.objects.filter(academic_year=year).select_related("grade", "subject", "semester"))
-    students_by_grade = {}
+    for assignment in assignments:
+        for semester in year.semesters.all():
+            published_at = (
+                current_published_at
+                if semester.code == "second"
+                else current_published_at - timedelta(days=35)
+            )
+            exam_date = timezone.localtime(published_at).date()
+            for exam_type, maximum in Exam.MAX_MARKS.items():
+                exam_rows.append(Exam(
+                    name=f"{dict(Exam.EXAM_TYPES)[exam_type]} - {assignment.subject.name} - {assignment.section}",
+                    exam_type=exam_type, academic_year=year, semester=semester,
+                    grade=assignment.section.grade, section=assignment.section,
+                    subject=assignment.subject, teacher_assignment=assignment,
+                    max_mark=maximum, weight=maximum, pass_percentage=60,
+                    exam_date=exam_date, marks_due_date=exam_date, status="published",
+                    submitted_by=assignment.teacher.user, submitted_at=published_at - timedelta(hours=2),
+                    approved_by=user, approved_at=published_at - timedelta(hours=1),
+                    published_at=published_at, is_locked=True, is_active=True,
+                ))
+    Exam.objects.bulk_create(exam_rows, batch_size=1000)
+    exams = list(
+        Exam.objects.filter(academic_year=year)
+        .select_related("grade", "section", "subject", "semester", "teacher_assignment")
+    )
+    students_by_section = {}
     for enrollment in Enrollment.objects.filter(academic_year=year).select_related("student"):
-        students_by_grade.setdefault(enrollment.grade_id, []).append(enrollment.student)
+        students_by_section.setdefault(enrollment.section_id, []).append(enrollment.student)
     mark_rows = []
     for exam in exams:
         maximum = int(exam.max_mark)
-        for student in students_by_grade.get(exam.grade_id, []):
+        for student in students_by_section.get(exam.section_id, []):
             deduction = (student.pk + exam.subject_id + (1 if exam.semester.code == "first" else 3)) % max(2, maximum // 2)
-            mark_rows.append(StudentMark(exam=exam, student=student, mark=Decimal(maximum - deduction), entered_by=user))
+            mark_rows.append(StudentMark(
+                exam=exam, student=student, mark=Decimal(maximum - deduction),
+                entered_by=exam.teacher_assignment.teacher.user if exam.teacher_assignment_id else user,
+            ))
     StudentMark.objects.bulk_create(mark_rows, batch_size=2000)
 
     # Default editable templates plus physical and issued documents.
@@ -604,18 +1052,6 @@ def seed_system_data(*, student_count=500, teacher_count=50, guardian_count=300,
     StudentIssuedDocument.objects.bulk_create([
         StudentIssuedDocument(student=student, issued_document=issued_students[student.pk]) for student in students
     ])
-
-    candidate_rows = []
-    for index in range(1, 31):
-        family = families[(index - 1) % len(families)]
-        grade = grades[(index - 1) % len(grades)]
-        candidate_rows.append(AdmissionApplication(
-            school=school, branch=branch, academic_year=year,
-            application_number=f"ADM-{index:05d}", student_full_name=f"مرشح {male_names[index % len(male_names)]} {family_names[index % len(family_names)]}",
-            gender="male" if index % 2 else "female", guardian_name=family.guardian_name,
-            guardian_phone=family.phone, grade=grade, status="candidate", notes="بانتظار استكمال التسجيل",
-        ))
-    AdmissionApplication.objects.bulk_create(candidate_rows)
 
     ExpenseEntry.objects.bulk_create([
         ExpenseEntry(
@@ -684,12 +1120,17 @@ def seed_system_data(*, student_count=500, teacher_count=50, guardian_count=300,
         ReportPreset(name="تقرير الحضور", category="attendance", code="attendance-overview", is_active=True, created_by=user),
     ])
 
+    academic_demo = _validate_integrated_academic_demo(
+        school=school,
+        year=year,
+        sections=sections,
+    )
     return {
         "students": Student.objects.count(), "teachers": Teacher.objects.count(),
         "families": Family.objects.count(), "sections": len(sections),
         "years": school.academic_years.count(), "semesters": year.semesters.count(),
         "marks": StudentMark.objects.count(), "documents": IssuedDocument.objects.count(),
         "receipts": Receipt.objects.count() + FeePayment.objects.count(),
-        "timetable_entries": TimetableEntry.objects.count(),
         "password": DEFAULT_ACCOUNT_PASSWORD,
+        **academic_demo,
     }

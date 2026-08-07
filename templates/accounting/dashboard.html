@@ -1,16 +1,34 @@
 {% extends "base/base.html" %}
 {% block title %}لوحة متابعة التحصيل{% endblock %}
-{% block page_title %}لوحة متابعة التحصيل للإدارة{% endblock %}
-{% block page_subtitle %}الدورة الحالية من {{ period_start }} إلى {{ period_end }}{% endblock %}
+{% block page_title %}بوابة الرسوم المدرسية{% endblock %}
+{% block page_subtitle %}المدخل الإداري الوحيد للرسوم والدفعات والإيصالات والأقساط والإغلاق السنوي{% endblock %}
 {% block content %}
-<div class="stats-grid mb-4">
-  <div class="stat-card"><span>المتوقع شهريًا</span><h2>{{ expected|floatformat:2 }}</h2></div>
-  <div class="stat-card"><span>الوارد في الدورة</span><h2 class="text-success">{{ income|floatformat:2 }}</h2><small>نسبة التحصيل {{ collection_rate|floatformat:1 }}%</small></div>
-  <div class="stat-card"><span>إجمالي الذمم</span><h2 class="text-danger">{{ receivables|floatformat:2 }}</h2><small>{{ debtors_count }} طالبًا برصيد</small></div>
-  <div class="stat-card"><span>المتأخر</span><h2>{{ overdue|floatformat:2 }}</h2></div>
+<div class="stats-grid mb-4" id="fee-summary">
+  <div class="stat-card"><span>رسوم السنة الحالية{% if current_year %} · {{ current_year.name }}{% endif %}</span><h2>{{ current_fees|floatformat:2 }}</h2></div>
+  <div class="stat-card"><span>مدفوع السنة الحالية</span><h2 class="text-success">{{ current_paid|floatformat:2 }}</h2><small>نسبة التحصيل {{ current_collection_rate|floatformat:1 }}%</small></div>
+  <div class="stat-card"><span>إجمالي المتبقي للسنة الحالية</span><h2 class="text-warning">{{ current_remaining|floatformat:2 }}</h2><small>{{ debtors_count }} طالبًا لديه مبلغ متبقٍ حالي</small></div>
+  <div class="stat-card"><span>متبقيات السنوات السابقة</span><h2 class="text-danger">{{ previous_remaining|floatformat:2 }}</h2><small>{{ previous_students_count }} طالب · {{ previous_guardians_count }} ولي أمر</small></div>
+  <div class="stat-card"><span>الإجمالي المطلوب</span><h2>{{ combined_remaining|floatformat:2 }}</h2></div>
+  <div class="stat-card"><span>متأخر السنة الحالية</span><h2>{{ overdue|floatformat:2 }}</h2></div>
 </div>
-<div class="row g-4">
-  <div class="col-lg-8"><div class="opal-card"><div class="d-flex justify-content-between mb-3"><h3 class="fw-bold">أعلى الأرصدة</h3><a class="btn btn-primary" href="{% url 'admissions:fee_payment_create' %}">تسديد رسوم</a></div><div class="table-responsive"><table class="opal-table"><thead><tr><th>الطالب</th><th>المتبقي</th><th></th></tr></thead><tbody>{% for row in debtors %}<tr><td>{{ row.student.full_name }}</td><td class="text-danger fw-bold">{{ row.remaining|floatformat:2 }}</td><td><a class="btn btn-sm btn-outline-primary" href="{% url 'admissions:fee_payment_create' %}?student={{ row.student.pk }}">تحصيل</a></td></tr>{% empty %}<tr><td colspan="3">لا توجد أرصدة مستحقة.</td></tr>{% endfor %}</tbody></table></div></div></div>
-  <div class="col-lg-4"><div class="opal-card"><h3 class="fw-bold mb-3">ملخص دورة 28</h3><p>المصروف: <strong>{{ expenses|floatformat:2 }}</strong></p><p>الصافي: <strong>{{ net|floatformat:2 }}</strong></p><p>الفرق عن المتوقع: <strong>{{ target_difference|floatformat:2 }}</strong></p><a class="btn btn-outline-primary w-100" href="{% url 'accounting:monthly_report' %}">فتح الكشف التفصيلي</a></div></div>
+
+<section class="opal-card mb-4">
+  <div class="mb-3"><h3 class="fw-bold mb-1">عمليات الرسوم</h3><p class="text-secondary mb-0">كل عملية مالية مدرسية لها زر واحد في هذه البوابة، ولا تتكرر في بطاقة الطالب أو الأسرة أو الأرشيف.</p></div>
+  <div class="opal-settings-actions-grid">
+    <a class="opal-settings-action" href="{% url 'accounting:fee_category_list' %}"><i class="bi bi-tags-fill"></i><strong>فئات الرسوم</strong><small>تعريف أنواع الرسوم وقيمها</small></a>
+    <a class="opal-settings-action" href="{% url 'accounting:invoice_list' %}"><i class="bi bi-file-earmark-spreadsheet-fill"></i><strong>رسوم الطلاب</strong><small>الإصدار والمتابعة والإلغاء</small></a>
+    <a class="opal-settings-action primary" href="{% url 'admissions:fee_payment_create' %}"><i class="bi bi-cash-coin"></i><strong>تسديد الرسوم</strong><small>دفعة طالب أو دفعة جميع الإخوة</small></a>
+    <a class="opal-settings-action" href="{% url 'accounting:previous_debt_list' %}"><i class="bi bi-clock-history"></i><strong>متبقيات السنوات السابقة</strong><small>عرض المتراكم السابق ودفعه من الأقدم</small></a>
+    <a class="opal-settings-action" href="{% url 'admissions:fee_payment_archive' %}"><i class="bi bi-archive-fill"></i><strong>أرشيف التسديد</strong><small>البحث والطباعة والحذف الآمن</small></a>
+    <a class="opal-settings-action" href="{% url 'accounting:installment_list' %}"><i class="bi bi-calendar2-week-fill"></i><strong>الأقساط</strong><small>المواعيد والحالات والاستحقاق</small></a>
+    <a class="opal-settings-action" href="{% url 'accounting:discount_list' %}"><i class="bi bi-percent"></i><strong>طلبات الخصم</strong><small>المراجعة والاعتماد</small></a>
+    <a class="opal-settings-action" href="{% url 'teachers:payroll_center' %}"><i class="bi bi-wallet2"></i><strong>رواتب المعلمين والسلف</strong><small>البطاقات والسلف والخصومات</small></a>
+    <a class="opal-settings-action warning" href="{% url 'accounting:financial_year_close' %}"><i class="bi bi-arrow-left-right"></i><strong>إغلاق العام المالي</strong><small>إغلاق الرسوم وترحيل الأرصدة</small></a>
+  </div>
+</section>
+
+<div class="opal-card" id="outstanding-balances">
+  <div class="mb-3"><h3 class="fw-bold mb-1">أعلى مبالغ السنة الحالية المتبقية</h3><p class="text-secondary mb-0">لا تشمل هذه القائمة متبقيات السنوات السابقة؛ تسجيل الدفعة الحالية يبدأ من زر «تسديد الرسوم» أعلاه.</p></div>
+  <div class="table-responsive"><table class="opal-table"><thead><tr><th>الطالب</th><th>المتبقي</th></tr></thead><tbody>{% for row in debtors %}<tr><td><a href="{% url 'students:student_360' row.student.pk %}">{{ row.student.full_name }}</a></td><td class="text-danger fw-bold">{{ row.remaining|floatformat:2 }}</td></tr>{% empty %}<tr><td colspan="2">لا توجد أرصدة مستحقة.</td></tr>{% endfor %}</tbody></table></div>
 </div>
 {% endblock %}

@@ -15,7 +15,7 @@ from enterprise_ops.models import WorkflowRequest
 from enterprise_ops.services import audit, transition_workflow
 from students.models import Student
 
-from admissions.services import active_school
+from admissions.services import active_school, current_academic_year
 
 from .forms import (
     CanteenTransactionForm, DiscountRequestForm, ExpenseEntryForm, FeeCategoryForm, FinancialYearClosureForm,
@@ -28,9 +28,13 @@ from .financial_services import (
 from .models import CanteenTransaction, DiscountRequest, ExpenseEntry, FeeCategory, FinancialYearClosure, Installment, MonthlyFinancialTarget, Receipt, StudentInvoice, StudentPayment
 from .services import create_discount_workflow, decide_discount
 from .services.pdf import receipt_pdf
+from .previous_debt_services import (
+    previous_debt_guardian_report,
+    resolve_current_year_for_student,
+    student_previous_debt_snapshot,
+)
 from .workflow import (
     build_invoice_list_context,
-    build_receipt_list_queryset,
     build_student_statement_context,
     create_student_invoice,
     create_student_payment_with_receipt,
@@ -41,6 +45,14 @@ from .workflow import (
 @management_required
 def finance_dashboard(request):
     return render(request, "accounting/dashboard.html", collection_dashboard(active_school()))
+
+
+@login_required
+@management_required
+def previous_debt_list(request):
+    school = active_school()
+    report = previous_debt_guardian_report(school=school)
+    return render(request, "accounting/previous_debt_list.html", report)
 
 
 @login_required
@@ -83,10 +95,17 @@ def fee_category_update(request, pk):
 @login_required
 @management_required
 def invoice_list(request):
+    school = active_school()
+    academic_year = current_academic_year(school)
+    period = request.GET.get("period", "current")
+    if academic_year is None and period == "current":
+        period = "all"
     context = build_invoice_list_context(
         status=request.GET.get("status", ""),
         query=request.GET.get("q", ""),
         overdue=request.GET.get("overdue") == "1",
+        academic_year=academic_year,
+        period=period,
     )
     return render(request, "accounting/invoice_list.html", context)
 
@@ -175,10 +194,19 @@ def expense_list(request):
         audit(request, "create", "accounting.CanteenTransaction", item.pk, f"حركة مقصف {item.get_transaction_type_display()}: {item.amount}")
         messages.success(request, "تم تسجيل حركة المقصف بالفاتورة وإدراجها في الكشف الشهري.")
         return redirect("accounting:expense_list")
-    items = ExpenseEntry.objects.filter(school=school, is_deleted=False).select_related("created_by")[:500]
-    canteen_items = CanteenTransaction.objects.filter(school=school, is_deleted=False).select_related("created_by")[:500]
-    canteen_income = canteen_items.filter(transaction_type="income").aggregate(total=Sum("amount"))["total"] or Decimal("0")
-    legacy_canteen_expenses = canteen_items.filter(transaction_type="expense").aggregate(total=Sum("amount"))["total"] or Decimal("0")
+    items = ExpenseEntry.objects.filter(
+        school=school, is_deleted=False
+    ).select_related("created_by").order_by("-created_at", "-pk")[:500]
+    canteen_items_qs = CanteenTransaction.objects.filter(
+        school=school, is_deleted=False
+    ).select_related("created_by")
+    canteen_income = canteen_items_qs.filter(
+        transaction_type="income"
+    ).aggregate(total=Sum("amount"))["total"] or Decimal("0")
+    legacy_canteen_expenses = canteen_items_qs.filter(
+        transaction_type="expense"
+    ).aggregate(total=Sum("amount"))["total"] or Decimal("0")
+    canteen_items = canteen_items_qs.order_by("-created_at", "-pk")[:500]
     canteen_expenses = (ExpenseEntry.objects.filter(school=school, is_deleted=False, source="canteen").aggregate(total=Sum("amount"))["total"] or Decimal("0")) + legacy_canteen_expenses
     return render(request, "accounting/expense_list.html", {
         "form": form, "items": items, "canteen_form": canteen_form, "canteen_items": canteen_items,
@@ -313,9 +341,17 @@ def invoice_cancel(request, invoice_id):
 @login_required
 @management_required
 def installment_list(request):
-    items = Installment.objects.select_related("invoice", "invoice__student").all()
+    items = list(
+        Installment.objects.select_related("invoice", "invoice__student")
+        .prefetch_related("invoice__payments", "invoice__installments")
+        .all()
+    )
     for item in items:
-        item.refresh_status()
+        # Viewing the list must not write to the database.  The calculated
+        # status is shown live from the same payment source and is persisted
+        # only when a deliberate business operation changes a payment.
+        item.display_status = item.calculated_status
+        item.display_status_label = dict(Installment.STATUS_CHOICES)[item.display_status]
     return render(request, "accounting/installment_list.html", {"items": items})
 
 
@@ -375,7 +411,7 @@ def discount_decide(request, pk):
         else:
             decide_discount(item, request.user, approve, note)
     except ValidationError as exc:
-        messages.error(request, exc.message)
+        messages.error(request, exc.messages[0] if getattr(exc, "messages", None) else str(exc))
     else:
         audit(request, "update", "accounting.DiscountRequest", item.pk, f"{'اعتماد' if approve else 'رفض'} طلب الخصم")
         messages.success(request, "تم حفظ قرار الخصم وتحديث الطلب المرتبط.")
@@ -386,10 +422,17 @@ def discount_decide(request, pk):
 @management_required
 def student_statement(request, student_id):
     student = get_object_or_404(Student, pk=student_id)
+    academic_year = resolve_current_year_for_student(student)
+    context = build_student_statement_context(student, academic_year=academic_year)
+    context["previous_debt"] = student_previous_debt_snapshot(
+        student,
+        academic_year=academic_year,
+    )
+    context["combined_remaining"] = context["remaining"] + context["previous_debt"]["total"]
     return render(
         request,
         "accounting/student_statement.html",
-        build_student_statement_context(student),
+        context,
     )
 
 
@@ -399,10 +442,3 @@ def receipt_print(request, receipt_id):
     receipt = get_object_or_404(Receipt, pk=receipt_id)
     audit(request, "print", "accounting.Receipt", receipt.pk, f"طباعة إيصال {receipt.receipt_number}")
     return FileResponse(receipt_pdf(receipt), as_attachment=False, filename=f"{receipt.receipt_number}.pdf")
-
-
-@login_required
-@management_required
-def receipt_list(request):
-    receipts = build_receipt_list_queryset()
-    return render(request, "accounting/receipt_list.html", {"receipts": receipts})

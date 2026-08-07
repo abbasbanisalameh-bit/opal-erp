@@ -1,4 +1,5 @@
 {% extends "base/base.html" %}
+{% load opal_subjects %}
 {% load static l10n %}
 
 {% block title %}لوحة الإدارة التنفيذية | OPAL ERP{% endblock %}
@@ -7,213 +8,214 @@
 {% block page_subtitle %}مؤشرات المدرسة الأكاديمية والمالية والتشغيلية في شاشة واحدة{% endblock %}
 
 {% block content %}
-<div class="opal-command-header mb-3">
-  <div>
-    <span class="opal-section-eyebrow"><i class="bi bi-speedometer2"></i> مركز قيادة المدرسة</span>
-    <h1>الملخص التنفيذي اليومي</h1>
-    <p>أهم مؤشرات الحضور والتحصيل والتشغيل مرتبة حسب أولوية المتابعة.</p>
+<div class="opal-fixed-manager-dashboard" id="opal-fixed-manager-dashboard">
+  <div class="opal-command-header opal-command-header-actions-only" aria-label="تاريخ اللوحة وتصدير الملخص">
+    <div class="opal-command-actions">
+      <span><i class="bi bi-building"></i> {{ dashboard_school|default:"لا توجد مدرسة نشطة" }}</span>
+      <span><i class="bi bi-calendar3"></i> {{ dashboard_academic_year|default:"لا يوجد عام دراسي حالي" }} · {{ today }}</span>
+      <span class="opal-data-truth-badge"><i class="bi bi-database-check"></i> بيانات مباشرة من السجلات المعتمدة</span>
+      <a class="btn btn-outline-info" href="{% url 'dashboard:executive_export_csv' %}"><i class="bi bi-file-earmark-spreadsheet"></i> تصدير الملخص</a>
+    </div>
   </div>
-  <div class="opal-command-actions">
-    <span><i class="bi bi-calendar3"></i> {{ today }}</span>
-    <a class="btn btn-outline-info" href="{% url 'dashboard:executive_export_csv' %}"><i class="bi bi-file-earmark-spreadsheet"></i> تصدير الملخص</a>
-  </div>
+
+  <nav class="opal-manager-quick-row" aria-label="المؤشرات السريعة">
+    <a class="opal-manager-quick-button opal-kpi-students" href="{% url 'students:student_list' %}#student-list" title="فتح بوابة الطلاب">
+      <i class="bi bi-people-fill"></i><span>الطلاب</span><strong>{{ students_count }}</strong><small>نشط {{ active_students }}</small>
+    </a>
+    <a class="opal-manager-quick-button opal-kpi-teachers" href="{% url 'academics:academic_structure' %}#teachers-operation" title="فتح إدارة المعلمين">
+      <i class="bi bi-person-workspace"></i><span>المعلمون</span><strong>{{ teachers_count }}</strong><small>{{ sections_count }} شعبة</small>
+    </a>
+    <a class="opal-manager-quick-button opal-kpi-attendance" href="{% url 'academics:academic_structure' %}#attendance-operation" title="فتح الحضور">
+      <i class="bi bi-calendar2-check-fill"></i><span>الانتظام</span><strong>{% if attendance_data_available %}{{ attendance_percent }}%{% else %}-{% endif %}</strong><small>{% if attendance_data_available %}{{ absent_today }} غائب{% else %}لا يوجد سجل حضور معتمد{% endif %}</small>
+    </a>
+    <a class="opal-manager-quick-button opal-kpi-collection" href="{% url 'accounting:dashboard' %}#fee-summary" title="فتح التحصيل">
+      <i class="bi bi-graph-up-arrow"></i><span>التحصيل</span><strong>{% if finance_data_available %}{{ collection_rate }}%{% else %}-{% endif %}</strong><small>{% if finance_data_available %}{{ paid_amount }} دفعات معتمدة{% else %}لا توجد رسوم للعام الحالي{% endif %}</small>
+    </a>
+    <a class="opal-manager-quick-button opal-kpi-outstanding" href="{% url 'accounting:dashboard' %}#outstanding-balances" title="فتح المتبقي المالي">
+      <i class="bi bi-wallet2"></i><span>المتبقي</span><strong>{% if finance_data_available %}{{ outstanding }}{% else %}-{% endif %}</strong><small>{% if finance_data_available %}{{ overdue_invoices }} رسم متأخر{% else %}لا توجد رسوم للعام الحالي{% endif %}</small>
+    </a>
+    <a class="opal-manager-quick-button opal-kpi-success" href="{% url 'academics:academic_structure' %}#exam-analysis-operation" title="فتح تحليل النتائج">
+      <i class="bi bi-mortarboard-fill"></i><span>العلامات المجتازة</span><strong>{% if academic_data_available %}{{ pass_rate }}%{% else %}-{% endif %}</strong><small>{% if academic_data_available %}{{ marks_count }} علامة رسمية{% else %}لا توجد علامات رسمية{% endif %}</small>
+    </a>
+  </nav>
+
+  <a class="opal-previous-debt-dashboard-bar" href="{% url 'accounting:previous_debt_list' %}">
+    <span><i class="bi bi-exclamation-diamond-fill"></i> إجمالي متبقيات الرسوم السابقة على الطلبة</span>
+    <strong>{{ previous_debt_total|floatformat:2 }} د.أ</strong>
+    <small>{{ previous_debt_guardians_count }} ولي أمر · {{ previous_debt_students_count }} طالب</small>
+    <i class="bi bi-arrow-left-circle"></i>
+  </a>
+
+  <section class="opal-fixed-pair opal-teacher-performance-row" aria-label="أفضل المعلمين ومخطط تقييمهم">
+    <article class="opal-fixed-panel opal-panel-gold">
+      <div class="opal-fixed-panel-head">
+        <div><span class="opal-section-eyebrow"><i class="bi bi-stars"></i> تقييمات أولياء الأمور</span><h2>أفضل المعلمين لهذا الشهر</h2></div>
+        <span class="opal-data-chip">{{ teacher_evaluation_period|date:'Y-m' }}</span>
+      </div>
+      <p class="opal-fixed-note">{% if teacher_evaluation_total %}{{ teacher_evaluation_total }} تقييم ولي أمر · المتوسط العام {{ teacher_evaluation_average|floatformat:1 }}/5{% else %}لا توجد تقييمات معلمين في هذا الشهر.{% endif %}</p>
+      <div class="opal-top-teacher-list">
+        {% for row in top_teacher_evaluations %}
+        <article class="opal-top-teacher-card">
+          <span class="opal-teacher-rank">{{ forloop.counter }}</span>
+          {% if row.teacher.photo %}<img src="{{ row.teacher.photo.url }}" width="42" height="42" class="rounded-circle" style="object-fit:cover" alt="{{ row.teacher.full_name }}">{% else %}<div class="opal-user-photo-frame"><i class="bi bi-person-fill"></i></div>{% endif %}
+          <div><strong>{{ row.teacher.full_name }}</strong><small>{{ row.responses }} ولي أمر · معدل عادل {{ row.adjusted_average|floatformat:2 }}</small></div>
+          <span class="badge bg-warning text-dark">{{ row.adjusted_average|floatformat:2 }}/5</span>
+        </article>
+        {% empty %}<p class="opal-empty-compact">لا توجد تقييمات معلمين لهذا الشهر بعد.</p>{% endfor %}
+      </div>
+    </article>
+    <article class="opal-fixed-panel opal-panel-violet">
+      <div class="opal-fixed-panel-head"><div><span class="opal-section-eyebrow"><i class="bi bi-bar-chart-steps"></i> مقارنة بصرية</span><h2>مخطط تقييم المعلمين</h2></div></div>
+      {% if teacher_evaluation_chart_values %}<div class="chart-box opal-teacher-rating-fixed"><canvas id="teacherEvaluationChart"></canvas></div>{% else %}<p class="opal-empty-compact">لا توجد تقييمات حقيقية لرسم المخطط.</p>{% endif %}
+    </article>
+  </section>
+
+  <section class="opal-fixed-panel opal-panel-gold opal-top-students-panel" aria-labelledby="opal-top-students-title">
+    <div class="opal-fixed-panel-head"><div><span class="opal-section-eyebrow"><i class="bi bi-trophy-fill"></i> النتائج الرسمية</span><h2 id="opal-top-students-title">أوائل الطلبة من الصف الأول حتى الثاني عشر</h2></div><span class="opal-data-chip">{{ top_students_year|default:"العام الحالي" }}</span></div>
+    <div class="opal-top-students-matrix-wrap" tabindex="0" aria-label="مصفوفة أوائل الطلبة حسب الصف">
+      <table class="opal-top-students-matrix">
+        <tbody>
+          <tr>
+            <th scope="row">الصف</th>
+            {% for item in top_students_matrix %}<th scope="col">{{ item.grade.name }}</th>{% endfor %}
+          </tr>
+          <tr>
+            <th scope="row">الأول</th>
+            {% for item in top_students_matrix %}
+            <td>
+              {% for leader in item.leaders %}<strong>{{ leader.student.full_name }}</strong>{% if not forloop.last %}<span class="opal-tie-separator">و</span>{% endif %}{% empty %}<span class="text-secondary">لا توجد نتائج</span>{% endfor %}
+              {% if item.leaders %}<small>{{ item.leaders.0.average }}%</small>{% endif %}
+            </td>
+            {% endfor %}
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="opal-fixed-panel opal-panel-cyan opal-satisfaction-fixed" aria-labelledby="opal-satisfaction-title">
+    <div class="opal-fixed-panel-head"><div><span class="opal-section-eyebrow"><i class="bi bi-emoji-smile-fill"></i> صوت المستخدمين</span><h2 id="opal-satisfaction-title">مؤشرات رضا المستخدمين</h2></div></div>
+    <div class="opal-fixed-pair opal-satisfaction-pair-fixed">
+      <article class="opal-satisfaction-score electronic" style="--opal-score: {{ electronic_satisfaction_percent|default:0|unlocalize }}%;">
+        <div class="opal-score-ring"><div><strong>{% if electronic_data_available %}{{ electronic_rating_average|floatformat:1 }}{% else %}-{% endif %}</strong><span>{% if electronic_data_available %}من 5{% else %}لا بيانات{% endif %}</span></div></div>
+        <div class="opal-score-copy"><div class="opal-score-icon"><i class="bi bi-laptop-fill"></i></div><span>الخدمات الإلكترونية</span><h3>{% if electronic_data_available %}{{ electronic_satisfaction_percent|floatformat:1 }}% رضا{% else %}لا توجد تقييمات{% endif %}</h3><p>{% if electronic_data_available %}{{ electronic_positive_percent|floatformat:1 }}% تقييمات إيجابية.{% else %}لن يعرض النظام صفرًا على أنه نتيجة.{% endif %}</p></div>
+      </article>
+      <article class="opal-satisfaction-score teaching" style="--opal-score: {{ teaching_satisfaction_percent|default:0|unlocalize }}%;">
+        <div class="opal-score-ring"><div><strong>{% if teaching_data_available %}{{ teaching_rating_average|floatformat:1 }}{% else %}-{% endif %}</strong><span>{% if teaching_data_available %}من 5{% else %}لا بيانات{% endif %}</span></div></div>
+        <div class="opal-score-copy"><div class="opal-score-icon"><i class="bi bi-mortarboard-fill"></i></div><span>جودة التدريس</span><h3>{% if teaching_data_available %}{{ teaching_satisfaction_percent|floatformat:1 }}% رضا{% else %}لا توجد تقييمات{% endif %}</h3><p>{% if teaching_data_available %}{{ teaching_positive_percent|floatformat:1 }}% تقييمات إيجابية.{% else %}لن يعرض النظام صفرًا على أنه نتيجة.{% endif %}</p></div>
+      </article>
+    </div>
+    <article class="opal-satisfaction-overview is-{{ feedback_satisfaction_level }}">
+      <div class="opal-overall-top"><div class="opal-score-icon"><i class="bi bi-heart-pulse-fill"></i></div><div><span>مؤشر الرضا العام</span><h3>{{ feedback_satisfaction_label }}</h3></div><strong>{% if feedback_data_available %}{{ overall_satisfaction_percent|floatformat:1 }}%{% else %}-{% endif %}</strong></div>
+      <div class="opal-overview-meter"><span style="width: {% if feedback_data_available %}{{ overall_satisfaction_percent|default:0|unlocalize }}{% else %}0{% endif %}%;"></span></div>
+      <div class="opal-overview-stats"><div><strong>{{ feedback_total }}</strong><span>إجمالي المشاركات</span></div><div><strong>{{ feedback_recent_total }}</strong><span>آخر 30 يومًا</span></div><div><strong>{% if paired_feedback_total %}{{ both_positive_percent|floatformat:1 }}%{% else %}-{% endif %}</strong><span>راضون عن الجانبين (المكتملة)</span></div></div>
+      <div class="opal-satisfaction-trend {% if feedback_trend_delta > 0 %}up{% elif feedback_trend_delta < 0 %}down{% else %}steady{% endif %}">{% if not feedback_trend_available %}<i class="bi bi-dash-circle"></i> لا توجد فترتان مكتملتان للمقارنة{% elif feedback_trend_delta > 0 %}<i class="bi bi-graph-up-arrow"></i> تحسن {{ feedback_trend_delta|floatformat:1 }} نقطة{% elif feedback_trend_delta < 0 %}<i class="bi bi-graph-down-arrow"></i> انخفاض {{ feedback_trend_abs|floatformat:1 }} نقطة{% else %}<i class="bi bi-dash-circle"></i> دون تغير بين الفترتين{% endif %}</div>
+    </article>
+    <article class="opal-rating-chart-card">
+      <div class="opal-chart-title"><div><i class="bi bi-bar-chart-fill"></i><span>توزيع التقييمات</span></div><small>عدد المشاركات لكل درجة من 1 إلى 5</small></div>
+      {% if feedback_rating_observations %}<div class="chart-box opal-rating-chart-box"><canvas id="ratingDistributionChart"></canvas></div>{% else %}<p class="opal-empty-compact">لا توجد تقييمات حقيقية لعرض توزيعها.</p>{% endif %}
+    </article>
+  </section>
+
+  <section class="opal-fixed-pair" aria-label="مصادر التقييم وملخص المتابعة">
+    <article class="opal-fixed-panel opal-panel-blue">
+      <div class="opal-fixed-panel-head"><div><span class="opal-section-eyebrow"><i class="bi bi-people-fill"></i> التحليل</span><h2>مصادر التقييم</h2></div></div>
+      <div class="opal-audience-grid opal-audience-grid-fixed">
+        <div class="opal-audience-row"><span><i class="bi bi-person-workspace"></i> مشاركات المعلمين</span><strong>{{ feedback_teacher_responses }}</strong></div>
+        <div class="opal-audience-row"><span><i class="bi bi-people"></i> مشاركات أولياء الأمور</span><strong>{{ feedback_parent_responses }}</strong></div>
+        <div class="opal-audience-row"><span><i class="bi bi-calendar3"></i> بداية فترة 30 يومًا</span><strong>{{ feedback_period_start }}</strong></div>
+      </div>
+    </article>
+    <article class="opal-fixed-panel opal-panel-amber">
+      <div class="opal-fixed-panel-head"><div><span class="opal-section-eyebrow"><i class="bi bi-shield-exclamation"></i> تنبيهات الإدارة</span><h2>ملخص المتابعة</h2></div></div>
+      <div class="opal-alert-metrics"><div><span>غيابات 30 يومًا</span><strong>{% if attendance_period_data_available %}{{ period_absences }}{% else %}-{% endif %}</strong></div><div><span>مغادرات 30 يومًا</span><strong>{% if attendance_period_data_available %}{{ period_departures }}{% else %}-{% endif %}</strong></div><div><span>سجلات تنتظر الإغلاق اليوم</span><strong>{% if attendance_data_available %}{{ attendance_pending_sections }}{% else %}-{% endif %}</strong></div><div><span>رسوم متأخرة</span><strong>{% if finance_data_available %}{{ overdue_invoices }}{% else %}-{% endif %}</strong></div></div>
+    </article>
+  </section>
+
+  <section class="opal-fixed-pair" aria-label="الإيرادات والمتأخرون عن السداد">
+    <article class="opal-fixed-panel opal-panel-green">
+      <div class="opal-fixed-panel-head"><div><span class="opal-section-eyebrow"><i class="bi bi-graph-up-arrow"></i> التحصيل</span><h2>الإيرادات الشهرية</h2></div></div>
+      {% if monthly_income_values %}<div class="chart-box opal-income-fixed"><canvas id="incomeChart"></canvas></div>{% else %}<p class="opal-empty-compact">لا توجد دفعات معتمدة في العام الدراسي الحالي.</p>{% endif %}
+    </article>
+    <article class="opal-fixed-panel opal-panel-red">
+      <div class="opal-fixed-panel-head"><div><span class="opal-section-eyebrow"><i class="bi bi-wallet2"></i> متابعة الرسوم</span><h2>متأخرون ولم يسددوا خلال 30 يومًا</h2></div><span class="opal-count-pill">{{ no_recent_payment_total }}</span></div>
+      <div class="opal-fixed-scroll-list">{% for row in no_recent_payment_students %}<div class="opal-static-list-row"><span>{{ row.student.full_name }}</span><small>{{ row.grade }}{% if row.section %} — {{ row.section.name }}{% endif %} · متبقي {{ row.outstanding }} · {% if row.last_payment_date %}آخر دفعة: {{ row.last_payment_date }}{% else %}لا توجد دفعة معتمدة{% endif %}</small></div>{% empty %}<p class="opal-empty-compact">لا توجد حالات تحقق الشرط.</p>{% endfor %}</div>
+    </article>
+  </section>
+
+  <section class="opal-fixed-pair opal-live-teachers-fixed" aria-label="المعلمون المشغولون والمتفرغون">
+    <article class="opal-fixed-panel opal-panel-amber">
+      <div class="opal-fixed-panel-head"><h2><i class="bi bi-person-video3 text-warning"></i> المعلمون المشغولون الآن</h2><span class="badge bg-warning text-dark">{{ opal_live_schedule.busy_teachers }}</span></div>
+      <div class="opal-fixed-scroll-list opal-busy-teacher-list">{% for row in opal_live_schedule.busy_rows %}<div class="opal-live-teacher-row"><div><strong>{{ row.teacher.full_name }}</strong>{% if row.is_substitute %}<span class="badge bg-success ms-1">بديل</span>{% endif %}<small>{{ row.entry.section.grade.name }} — {{ row.entry.section.name }} · {{ row.entry.time_slot.name }}</small></div><span class="opal-subject-chip" style="{% subject_style row.entry.subject %}">{{ row.entry.subject.name }}</span></div>{% empty %}<p class="opal-empty-compact">لا يوجد معلم مشغول بحصة في هذه اللحظة.</p>{% endfor %}</div>
+    </article>
+    <article class="opal-fixed-panel opal-panel-green">
+      <div class="opal-fixed-panel-head"><h2><i class="bi bi-person-check-fill text-success"></i> المعلمون المتفرغون الآن</h2><span class="badge bg-success">{{ opal_live_schedule.free_teachers_count }}</span></div>
+      <div class="opal-fixed-scroll-list">{% for teacher in opal_live_schedule.free_teachers %}<div class="opal-static-list-row"><i class="bi bi-person-fill-check"></i><span>{{ teacher.full_name }}</span><small>{{ teacher.specialization|default:"معلم" }}</small></div>{% empty %}<p class="opal-empty-compact">{% if opal_live_schedule.teacher_state_active %}لا يوجد معلمون متفرغون في هذه اللحظة.{% else %}خارج وقت الدوام؛ لا تُعرض قائمة المتفرغين.{% endif %}</p>{% endfor %}</div>
+    </article>
+  </section>
+
+  <section class="opal-fixed-panel opal-panel-cyan" aria-labelledby="opal-live-operation-title">
+    <div class="opal-fixed-panel-head">
+      <div><span class="opal-section-eyebrow"><i class="bi bi-broadcast-pin"></i> التشغيل المدرسي الآن</span><h2 id="opal-live-operation-title">الأحداث الجارية لكل صف وشعبة</h2><p class="opal-fixed-note">{{ opal_live_schedule.message }}</p></div>
+      <div class="opal-live-events-meta"><span class="opal-data-chip"><i class="bi bi-clock-history"></i> <span data-opal-official-clock="time">{{ opal_server_now|time:'H:i:s' }}</span> — {{ opal_time_zone_label }}</span>{% if opal_live_schedule.next %}<span class="opal-data-chip">التالي: {{ opal_live_schedule.next.name }} — {{ opal_live_schedule.next.start|time:'H:i' }}</span>{% endif %}</div>
+    </div>
+    {% if opal_live_schedule.grade_columns %}
+    <div class="opal-live-events-matrix-wrap" data-live-seconds="{{ opal_live_schedule.seconds_remaining|default_if_none:'' }}" tabindex="0">
+      <table class="opal-live-events-matrix"><tbody>
+        <tr class="opal-live-grade-row"><th class="opal-live-axis-cell" scope="row">الصف</th>{% for column in opal_live_schedule.grade_columns %}<th class="opal-live-grade-cell" scope="colgroup" colspan="{{ column.section_count }}">{{ column.grade.name }}</th>{% endfor %}</tr>
+        <tr class="opal-live-section-row"><th class="opal-live-axis-cell" scope="row">الشعبة</th>{% for column in opal_live_schedule.grade_columns %}{% for item in column.sections %}<th class="opal-live-section-cell" scope="col">{{ item.short_name }}</th>{% endfor %}{% endfor %}</tr>
+        <tr class="opal-live-event-row"><th class="opal-live-axis-cell" scope="row">الحدث الجاري</th>{% for column in opal_live_schedule.grade_columns %}{% for item in column.sections %}<td class="opal-live-event-cell is-{{ item.state_code }}"{% if item.subject_color %} style="{% subject_style item.subject_color %}"{% endif %}><strong{% if item.subject_color %} class="opal-subject-chip opal-dashboard-subject-chip"{% endif %}>{{ item.label }}</strong>{% if item.meta %}<small>{{ item.meta }}</small>{% endif %}</td>{% endfor %}{% endfor %}</tr>
+      </tbody></table>
+    </div>
+    {% else %}<div class="opal-empty-state py-4"><i class="bi bi-calendar2-x"></i> لا توجد صفوف أو شعب نشطة في العام الدراسي الحالي.</div>{% endif %}
+  </section>
+
+  <section class="opal-dashboard-action-grid opal-actions-fixed-row" aria-label="إجراءات التواصل والمتابعة">
+    <a class="opal-dashboard-action-card complaints" href="{% url 'enterprise_ops:feedback_list' %}"><span class="opal-action-icon"><i class="bi bi-chat-square-text-fill"></i></span><span class="opal-action-copy"><strong>الشكاوى والاقتراحات</strong><small>استقبال الرسائل ومراجعتها والرد عليها.</small></span><span class="opal-action-arrow"><i class="bi bi-arrow-left"></i></span>{% if new_feedback_count %}<span class="opal-action-badge">{{ new_feedback_count }}</span>{% endif %}{% if review_feedback_count %}<span class="opal-action-meta">{{ review_feedback_count }} قيد المراجعة</span>{% endif %}</a>
+    <a class="opal-dashboard-action-card broadcasts" href="{% url 'enterprise_ops:broadcast_list' %}"><span class="opal-action-icon"><i class="bi bi-megaphone-fill"></i></span><span class="opal-action-copy"><strong>التعاميم والتنبيهات</strong><small>إرسال التعميم أو التنبيه ومتابعة المستلمين.</small></span><span class="opal-action-arrow"><i class="bi bi-arrow-left"></i></span><span class="opal-action-meta">{{ active_broadcasts }} فعال في النظام</span></a>
+    <a class="opal-dashboard-action-card announcements" href="{% url 'announcements:list' %}"><span class="opal-action-icon"><i class="bi bi-badge-ad-fill"></i></span><span class="opal-action-copy"><strong>إدارة الإعلانات</strong><small>إضافة الإعلان أو تعديله أو إيقافه.</small></span><span class="opal-action-arrow"><i class="bi bi-arrow-left"></i></span><span class="opal-action-meta">{{ active_announcements }} ظاهر في النظام</span></a>
+  </section>
+
+  <section class="opal-fixed-pair" aria-label="غياب الطلبة والمعلمين اليوم">
+    <article class="opal-fixed-panel opal-panel-blue">
+      <div class="opal-fixed-panel-head"><div><span class="opal-section-eyebrow"><i class="bi bi-person-check-fill"></i> الطلبة اليوم</span><h2>غياب الطلبة اليوم</h2></div><span class="opal-data-chip">{{ absent_today }} غائب</span></div>
+      {% if attendance_data_available %}<div class="opal-attendance-numbers"><div><strong>{{ present_today }}</strong><span>حاضر تلقائيًا</span></div><div class="danger"><strong>{{ absent_today }}</strong><span>غائب</span></div><div><strong>{{ departed_today }}</strong><span>مغادر</span></div></div>
+      <div class="opal-mini-list">{% for row in absent_students_today|slice:":5" %}<div class="opal-static-list-row"><span>{{ row.student.full_name }}</span><small>{{ row.grade|default:"-" }}{% if row.section %} — {{ row.section.name }}{% endif %}</small></div>{% empty %}<p class="opal-empty-compact">لا يوجد غياب ضمن سجلات الحضور المعتمدة اليوم.</p>{% endfor %}</div>{% else %}<p class="opal-empty-compact">لم تُعتمد سجلات حضور الشعب اليوم؛ لذلك لا يعرض النظام أرقامًا صفرية مضللة.</p>{% endif %}
+    </article>
+    <article class="opal-fixed-panel opal-panel-red">
+      <div class="opal-fixed-panel-head"><div><span class="opal-section-eyebrow"><i class="bi bi-person-workspace"></i> المعلمون اليوم</span><h2>غياب المعلمين اليوم</h2></div><span class="opal-data-chip">{{ absent_teachers_today|length }} غائب</span></div>
+      <div class="opal-attendance-numbers teacher"><div><strong>{{ teachers_count }}</strong><span>المعلمون النشطون</span></div><div class="danger"><strong>{{ absent_teachers_today|length }}</strong><span>غائب</span></div></div>
+      <div class="opal-mini-list">{% for row in absent_teachers_today|slice:":5" %}<div class="opal-static-list-row"><span>{{ row.teacher.full_name }}</span><small>{{ row.reason|default:"دون سبب مسجل" }}</small></div>{% empty %}<p class="opal-empty-compact">لا يوجد غياب معلمين مسجل اليوم.</p>{% endfor %}</div>
+    </article>
+  </section>
+
+  <section class="opal-fixed-panel opal-panel-violet" aria-labelledby="opal-latest-students-title">
+    <div class="opal-fixed-panel-head"><div><span class="opal-section-eyebrow"><i class="bi bi-person-plus-fill"></i> التسجيل</span><h2 id="opal-latest-students-title">آخر 10 طلاب مسجلين وصفوفهم</h2></div><span class="opal-count-pill">{{ latest_students|length }}</span></div>
+    <div class="opal-latest-students-grid">{% for row in latest_students %}<article><span class="opal-latest-rank">{{ forloop.counter }}</span><div><strong>{{ row.student.full_name }}</strong><small>{{ row.grade|default:"دون صف" }}{% if row.section %} — {{ row.section.name }}{% endif %}</small></div><span>{{ row.student.student_number }}</span></article>{% empty %}<p class="opal-empty-compact">لا يوجد طلاب مسجلون.</p>{% endfor %}</div>
+  </section>
 </div>
-<section class="dashboard-grid opal-executive-kpis" aria-label="المؤشرات التنفيذية">
-    <div class="dashboard-card"><span>إجمالي الطلاب</span><h2>{{ students_count }}</h2><small>نشط: {{ active_students }}</small></div>
-    <div class="dashboard-card"><span>المعلمون النشطون</span><h2>{{ teachers_count }}</h2><small>الشعب: {{ sections_count }}</small></div>
-    <div class="dashboard-card"><span>الحضور اليوم</span><h2>{{ attendance_percent }}%</h2><small>حاضر {{ present_today }} · غائب {{ absent_today }}</small></div>
-    <div class="dashboard-card"><span>نسبة التحصيل</span><h2>{{ collection_rate }}%</h2><small>المحصّل {{ paid_amount }}</small></div>
-    <div class="dashboard-card opal-kpi-secondary"><span>المستحقات</span><h2>{{ outstanding }}</h2><small>فواتير متأخرة: {{ overdue_invoices }}</small></div>
-    <div class="dashboard-card"><span>نسبة النجاح</span><h2>{{ pass_rate }}%</h2><small>عدد العلامات: {{ marks_count }}</small></div>
-    <div class="dashboard-card opal-kpi-secondary"><span>الوثائق المصدرة</span><h2>{{ issued_documents }}</h2><small>وثائق رسمية محفوظة</small></div>
-    <a class="dashboard-card text-decoration-none opal-kpi-secondary" href="{% url 'admissions:candidate_list' %}"><span>طلبة مرشحون للقبول</span><h2>{{ candidate_students }}</h2><small>لا يعدّون طلابًا مسجلين</small></a>
-    <div class="dashboard-card opal-kpi-secondary"><span>امتحانات النظام</span><h2>{{ exams_count }}</h2><small>متوسط العلامات: {{ academic_average|floatformat:1 }}</small></div>
-</section>
-
-<section class="opal-dashboard-compact-grid mt-3">
-    <article class="dashboard-panel opal-crystal-card opal-attendance-summary">
-        <div class="opal-compact-head">
-            <div><span class="opal-section-eyebrow"><i class="bi bi-person-check-fill"></i> الطلبة اليوم</span><h3>الحضور والغياب</h3></div>
-            <a class="btn btn-sm btn-outline-warning" href="{% url 'dashboard:attendance_detail' %}">تفاصيل</a>
-        </div>
-        <div class="opal-attendance-numbers"><div><strong>{{ present_today }}</strong><span>حاضر</span></div><div class="danger"><strong>{{ absent_today }}</strong><span>غائب</span></div></div>
-        <div class="opal-mini-list">
-            {% for row in absent_students_today|slice:":5" %}<a href="{% url 'students:student_360' row.student_id %}"><span>{{ row.student.full_name }}</span><small>{{ row.grade|default:"-" }}{% if row.section %} — {{ row.section.name }}{% endif %}</small></a>{% empty %}<p class="opal-empty-compact">لا يوجد طلبة غائبون اليوم.</p>{% endfor %}
-        </div>
-    </article>
-
-    <article class="dashboard-panel opal-crystal-card opal-attendance-summary">
-        <div class="opal-compact-head">
-            <div><span class="opal-section-eyebrow"><i class="bi bi-person-workspace"></i> المعلمون اليوم</span><h3>غياب المعلمين</h3></div>
-            <a class="btn btn-sm btn-outline-warning" href="{% url 'timetable:absence_center' %}">تفاصيل</a>
-        </div>
-        <div class="opal-attendance-numbers teacher"><div><strong>{{ teachers_count }}</strong><span>المعلمون النشطون</span></div><div class="danger"><strong>{{ absent_teachers_today|length }}</strong><span>غائب</span></div></div>
-        <div class="opal-mini-list">
-            {% for row in absent_teachers_today|slice:":5" %}<a href="{% url 'teachers:teacher_detail' row.teacher_id %}"><span>{{ row.teacher.full_name }}</span><small>{{ row.reason|default:"دون سبب مسجل" }}</small></a>{% empty %}<p class="opal-empty-compact">لا يوجد معلمون غائبون اليوم.</p>{% endfor %}
-        </div>
-    </article>
-
-    <article class="dashboard-panel opal-crystal-card opal-compact-chart-card">
-        <div class="opal-compact-head"><div><span class="opal-section-eyebrow"><i class="bi bi-graph-up-arrow"></i> التحصيل</span><h3>الإيرادات الشهرية</h3></div></div>
-        <div class="chart-box"><canvas id="incomeChart"></canvas></div>
-    </article>
-
-    <article class="dashboard-panel opal-crystal-card opal-dropdown-card">
-        <div class="opal-compact-head"><div><span class="opal-section-eyebrow"><i class="bi bi-wallet2"></i> متابعة الرسوم</span><h3>لم يسددوا خلال آخر 30 يومًا</h3></div><span class="opal-count-pill">{{ no_recent_payment_students|length }}</span></div>
-        <details class="opal-crystal-dropdown">
-            <summary>عرض أسماء الطلبة</summary>
-            <div>{% for student in no_recent_payment_students %}<a href="{% url 'students:student_360' student.pk %}"><span>{{ student.full_name }}</span><small>{% if student.last_payment_date %}آخر دفعة: {{ student.last_payment_date }}{% else %}لا توجد دفعة معتمدة{% endif %}</small></a>{% empty %}<p>لا توجد حالات متابعة.</p>{% endfor %}</div>
-        </details>
-    </article>
-
-    <article class="dashboard-panel opal-crystal-card opal-dropdown-card">
-        <div class="opal-compact-head"><div><span class="opal-section-eyebrow"><i class="bi bi-person-plus-fill"></i> التسجيل</span><h3>آخر الطلبة المضافين</h3></div><span class="opal-count-pill">{{ latest_students|length }}</span></div>
-        <details class="opal-crystal-dropdown">
-            <summary>عرض القائمة</summary>
-            <div>{% for student in latest_students %}<a href="{% url 'students:student_360' student.pk %}"><span>{{ student.full_name }}</span><small>{{ student.student_number }} — {{ student.grade|default:"دون صف" }}</small></a>{% empty %}<p>لا يوجد طلاب.</p>{% endfor %}</div>
-        </details>
-    </article>
-
-    <article class="dashboard-panel opal-crystal-card opal-admin-alerts">
-        <div class="opal-compact-head"><div><span class="opal-section-eyebrow"><i class="bi bi-shield-exclamation"></i> تنبيهات الإدارة</span><h3>ملخص المتابعة</h3></div></div>
-        <div class="opal-alert-metrics"><div><span>غيابات 30 يومًا</span><strong>{{ period_absences }}</strong></div><div><span>تأخر 30 يومًا</span><strong>{{ period_late }}</strong></div><div><span>فواتير متأخرة</span><strong>{{ overdue_invoices }}</strong></div><div><span>طلاب غير نشطين</span><strong>{{ inactive_students }}</strong></div></div>
-    </article>
-</section>
-
-<details class="opal-dashboard-expandable mt-3">
-  <summary><span><i class="bi bi-person-video3"></i> حالة المعلمين والحصص الآن</span><small>عرض المشغولين والمتفرغين</small></summary>
-  <div class="opal-dashboard-expandable-body">
-<section class="opal-live-teachers-grid mb-3">
-  <div class="opal-card">
-    <div class="d-flex justify-content-between align-items-center mb-2"><h3 class="mb-0"><i class="bi bi-person-video3 text-warning"></i> المعلمون المشغولون الآن</h3><span class="badge bg-warning text-dark">{{ opal_live_schedule.busy_teachers }}</span></div>
-    <div class="table-responsive"><table class="opal-table" data-opal-instant-table><thead><tr><th>المعلم</th><th>الصف والشعبة</th><th>المادة</th><th>الحصة</th></tr></thead><tbody>{% for entry in opal_live_schedule.current_entries %}{% if entry.teacher %}<tr><td class="fw-bold">{{ entry.teacher.full_name }}</td><td>{{ entry.section.grade.name }} — {{ entry.section.name }}</td><td>{{ entry.subject.name }}</td><td>{{ entry.time_slot.name }}<small class="d-block text-secondary">{{ entry.time_slot.start_time }} - {{ entry.time_slot.end_time }}</small></td></tr>{% endif %}{% empty %}<tr><td colspan="4" class="text-center text-secondary">لا توجد حصة جارية الآن.</td></tr>{% endfor %}</tbody></table></div>
-  </div>
-  <div class="opal-card">
-    <div class="d-flex justify-content-between align-items-center mb-2"><h3 class="mb-0"><i class="bi bi-person-check-fill text-success"></i> المعلمون المتفرغون الآن</h3><span class="badge bg-success">{{ opal_live_schedule.free_teachers_count }}</span></div>
-    <div class="opal-free-teacher-list">{% for teacher in opal_live_schedule.free_teachers %}<a href="{% url 'teachers:teacher_detail' teacher.pk %}" title="فتح ملف المعلم"><i class="bi bi-person-fill-check"></i><span>{{ teacher.full_name }}</span><small>{{ teacher.specialization|default:"معلم" }}</small></a>{% empty %}<p class="text-secondary mb-0">لا يوجد معلمون متفرغون في هذه اللحظة.</p>{% endfor %}</div>
-  </div>
-</section>
-
-  </div>
-</details>
-
-<details class="opal-dashboard-expandable mt-3">
-  <summary><span><i class="bi bi-emoji-smile-fill"></i> رضا المستخدمين والتحليلات</span><small>عرض المؤشرات والتوزيعات التفصيلية</small></summary>
-  <div class="opal-dashboard-expandable-body">
-<section class="opal-satisfaction-board" aria-labelledby="opal-satisfaction-title">
-    <div class="opal-satisfaction-head">
-        <div>
-            <span class="opal-section-eyebrow"><i class="bi bi-emoji-smile-fill"></i> صوت المستخدمين</span>
-            <h2 id="opal-satisfaction-title">مؤشر رضا المستخدمين</h2>
-            <p>قراءة مباشرة لتقييمات جودة التدريس والخدمات الإلكترونية من الشكاوى والاقتراحات المرسلة.</p>
-        </div>
-        <a class="btn btn-outline-info" href="{% url 'enterprise_ops:feedback_list' %}"><i class="bi bi-chat-square-heart-fill"></i> عرض التقييمات والتفاصيل</a>
-    </div>
-
-    <div class="opal-satisfaction-summary">
-        <article class="opal-satisfaction-score teaching" style="--opal-score: {{ teaching_satisfaction_percent|default:0|unlocalize }}%;">
-            <div class="opal-score-ring">
-                <div><strong>{{ teaching_rating_average|floatformat:1 }}</strong><span>من 5</span></div>
-            </div>
-            <div class="opal-score-copy">
-                <div class="opal-score-icon"><i class="bi bi-mortarboard-fill"></i></div>
-                <span>جودة التدريس</span>
-                <h3>{{ teaching_satisfaction_percent|floatformat:1 }}% رضا</h3>
-                <p>{{ teaching_positive_percent|floatformat:1 }}% من التقييمات إيجابية (4 أو 5 نجوم).</p>
-            </div>
-        </article>
-
-        <article class="opal-satisfaction-score electronic" style="--opal-score: {{ electronic_satisfaction_percent|default:0|unlocalize }}%;">
-            <div class="opal-score-ring">
-                <div><strong>{{ electronic_rating_average|floatformat:1 }}</strong><span>من 5</span></div>
-            </div>
-            <div class="opal-score-copy">
-                <div class="opal-score-icon"><i class="bi bi-laptop-fill"></i></div>
-                <span>الخدمات الإلكترونية</span>
-                <h3>{{ electronic_satisfaction_percent|floatformat:1 }}% رضا</h3>
-                <p>{{ electronic_positive_percent|floatformat:1 }}% من التقييمات إيجابية (4 أو 5 نجوم).</p>
-            </div>
-        </article>
-
-        <article class="opal-satisfaction-overview is-{{ feedback_satisfaction_level }}">
-            <div class="opal-overall-top">
-                <div class="opal-score-icon"><i class="bi bi-heart-pulse-fill"></i></div>
-                <div><span>الرضا العام</span><h3>{{ feedback_satisfaction_label }}</h3></div>
-                <strong>{{ overall_satisfaction_percent|floatformat:1 }}%</strong>
-            </div>
-            <div class="opal-overview-meter"><span style="width: {{ overall_satisfaction_percent|default:0|unlocalize }}%;"></span></div>
-            <div class="opal-overview-stats">
-                <div><strong>{{ feedback_total }}</strong><span>إجمالي المشاركات</span></div>
-                <div><strong>{{ feedback_recent_total }}</strong><span>آخر 30 يومًا</span></div>
-                <div><strong>{{ both_positive_percent|floatformat:1 }}%</strong><span>راضون عن الجانبين</span></div>
-            </div>
-            <div class="opal-satisfaction-trend {% if feedback_trend_delta > 0 %}up{% elif feedback_trend_delta < 0 %}down{% else %}steady{% endif %}">
-                {% if feedback_trend_delta > 0 %}<i class="bi bi-graph-up-arrow"></i> تحسن بمقدار {{ feedback_trend_delta|floatformat:1 }} نقطة
-                {% elif feedback_trend_delta < 0 %}<i class="bi bi-graph-down-arrow"></i> انخفاض بمقدار {{ feedback_trend_abs|floatformat:1 }} نقطة
-                {% else %}<i class="bi bi-dash-circle"></i> لا يوجد تغير قابل للمقارنة حاليًا{% endif %}
-            </div>
-        </article>
-    </div>
-
-    <div class="opal-satisfaction-details">
-        <div class="opal-rating-chart-card">
-            <div class="opal-chart-title">
-                <div><i class="bi bi-bar-chart-fill"></i><span>توزيع التقييمات</span></div>
-                <small>عدد المشاركات لكل درجة من 1 إلى 5</small>
-            </div>
-            <div class="chart-box opal-rating-chart-box"><canvas id="ratingDistributionChart"></canvas></div>
-        </div>
-        <div class="opal-audience-card">
-            <div class="opal-chart-title"><div><i class="bi bi-people-fill"></i><span>مصادر التقييم</span></div></div>
-            <div class="opal-audience-row"><span><i class="bi bi-person-workspace"></i> المعلمون</span><strong>{{ feedback_teacher_responses }}</strong></div>
-            <div class="opal-audience-row"><span><i class="bi bi-people"></i> أولياء الأمور</span><strong>{{ feedback_parent_responses }}</strong></div>
-            <div class="opal-audience-row"><span><i class="bi bi-calendar3"></i> بداية فترة الاتجاه</span><strong>{{ feedback_period_start }}</strong></div>
-            <a href="{% url 'enterprise_ops:report_export_csv' 'feedback' %}" class="btn btn-success w-100 mt-3"><i class="bi bi-file-earmark-spreadsheet-fill"></i> تصدير تقرير التقييمات</a>
-        </div>
-    </div>
-</section>
-
-  </div>
-</details>
-
 
 {{ monthly_income_labels|json_script:"income-labels" }}
 {{ monthly_income_values|json_script:"income-values" }}
 {{ teaching_rating_distribution|json_script:"teaching-rating-distribution" }}
 {{ electronic_rating_distribution|json_script:"electronic-rating-distribution" }}
+{{ teacher_evaluation_chart_labels|json_script:"teacher-evaluation-chart-labels" }}
+{{ teacher_evaluation_chart_values|json_script:"teacher-evaluation-chart-values" }}
 {% endblock %}
 
 {% block extra_js %}
 <script src="{% static 'vendor/chartjs/chart.umd.min.js' %}?v=4.5.1"></script>
 <script>
 if (typeof Chart !== "undefined") {
-const incomeLabels = JSON.parse(document.getElementById("income-labels")?.textContent || "[]");
-const incomeValues = JSON.parse(document.getElementById("income-values")?.textContent || "[]");
-const teachingRatingDistribution = JSON.parse(document.getElementById("teaching-rating-distribution")?.textContent || "[]");
-const electronicRatingDistribution = JSON.parse(document.getElementById("electronic-rating-distribution")?.textContent || "[]");
-
-new Chart(document.getElementById("incomeChart"), {type:"bar",data:{labels:incomeLabels.length?incomeLabels:["لا توجد بيانات"],datasets:[{label:"الإيرادات",data:incomeValues.length?incomeValues:[0],backgroundColor:"rgba(20,184,166,.85)",borderRadius:10}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:"#dbeafe"}}},scales:{x:{ticks:{color:"#dbeafe"},grid:{color:"#1e334f"}},y:{ticks:{color:"#dbeafe"},grid:{color:"#1e334f"}}}}});
-const ratingCanvas = document.getElementById("ratingDistributionChart");
-if (ratingCanvas) {
-    new Chart(ratingCanvas, {
-        type: "bar",
-        data: {
-            labels: ["1 نجمة", "2 نجمتان", "3 نجوم", "4 نجوم", "5 نجوم"],
-            datasets: [
-                {label: "جودة التدريس", data: teachingRatingDistribution, backgroundColor: "rgba(139,92,246,.82)", borderRadius: 9},
-                {label: "الخدمات الإلكترونية", data: electronicRatingDistribution, backgroundColor: "rgba(34,211,238,.82)", borderRadius: 9}
-            ]
-        },
-        options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: {legend: {position: "bottom", labels: {color: "#dbeafe", usePointStyle: true}}},
-            scales: {
-                x: {ticks: {color: "#dbeafe"}, grid: {display: false}},
-                y: {beginAtZero: true, ticks: {color: "#dbeafe", precision: 0}, grid: {color: "#1e334f"}}
-            }
-        }
-    });
-}
+  const readJson = (id) => JSON.parse(document.getElementById(id)?.textContent || "[]");
+  const chartText = "#dbeafe";
+  const chartGrid = "rgba(148,163,184,.16)";
+  const incomeCanvas = document.getElementById("incomeChart");
+  if (incomeCanvas) new Chart(incomeCanvas,{type:"bar",data:{labels:readJson("income-labels"),datasets:[{label:"الإيرادات",data:readJson("income-values"),backgroundColor:"rgba(52,211,153,.78)",borderColor:"rgba(216,173,79,.9)",borderWidth:1,borderRadius:10}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:chartText}}},scales:{x:{ticks:{color:chartText},grid:{color:chartGrid}},y:{ticks:{color:chartText},grid:{color:chartGrid}}}}});
+  const ratingCanvas = document.getElementById("ratingDistributionChart");
+  if (ratingCanvas) new Chart(ratingCanvas,{type:"bar",data:{labels:["1 نجمة","2 نجمتان","3 نجوم","4 نجوم","5 نجوم"],datasets:[{label:"جودة التدريس",data:readJson("teaching-rating-distribution"),backgroundColor:"rgba(167,139,250,.76)",borderRadius:8},{label:"الخدمات الإلكترونية",data:readJson("electronic-rating-distribution"),backgroundColor:"rgba(34,211,238,.72)",borderRadius:8}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{color:chartText,usePointStyle:true}}},scales:{x:{ticks:{color:chartText},grid:{display:false}},y:{beginAtZero:true,ticks:{color:chartText,precision:0},grid:{color:chartGrid}}}}});
+  const teacherCanvas = document.getElementById("teacherEvaluationChart");
+  if (teacherCanvas) new Chart(teacherCanvas,{type:"bar",data:{labels:readJson("teacher-evaluation-chart-labels"),datasets:[{label:"المعدل العادل من 5",data:readJson("teacher-evaluation-chart-values"),backgroundColor:"rgba(216,173,79,.82)",borderRadius:8}]},options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{min:0,max:5,ticks:{color:chartText,stepSize:1},grid:{color:chartGrid}},y:{ticks:{color:chartText},grid:{display:false}}}}});
 }
 </script>
 {% endblock %}

@@ -11,7 +11,6 @@ def new_template_code():
 class DocumentTemplate(models.Model):
     AUDIENCE_CHOICES = [
         ("student", "الطالب"),
-        ("candidate", "المرشح للقبول"),
         ("teacher", "المعلم"),
         ("guardian", "ولي الأمر"),
     ]
@@ -55,7 +54,6 @@ class IssuedDocument(models.Model):
     student = models.ForeignKey("students.Student", on_delete=models.SET_NULL, null=True, blank=True)
     teacher = models.ForeignKey("teachers.Teacher", on_delete=models.SET_NULL, null=True, blank=True, related_name="issued_documents")
     guardian = models.ForeignKey("parent_portal.Family", on_delete=models.SET_NULL, null=True, blank=True, related_name="issued_documents")
-    candidate = models.ForeignKey("admissions.AdmissionApplication", on_delete=models.SET_NULL, null=True, blank=True, related_name="issued_documents")
     applicant_name = models.CharField(max_length=200, blank=True)
     document_number = models.CharField(max_length=50, unique=True)
     verification_code = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)

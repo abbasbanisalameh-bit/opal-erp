@@ -6,9 +6,7 @@ from django.utils import timezone
 
 class Attendance(models.Model):
     STATUS = [
-        ("present", "حاضر"),
         ("absent", "غائب"),
-        ("late", "متأخر"),
         ("departed", "مغادر"),
     ]
 
@@ -39,7 +37,7 @@ class Attendance(models.Model):
         related_name="attendance_records",
     )
     date = models.DateField()
-    status = models.CharField(max_length=20, choices=STATUS, default="present")
+    status = models.CharField(max_length=20, choices=STATUS, default="absent")
     arrival_time = models.TimeField(null=True, blank=True)
     departure_time = models.TimeField(null=True, blank=True)
     excuse_reason = models.TextField(blank=True)
@@ -87,3 +85,63 @@ class Attendance(models.Model):
             self.departure_time = None
         self.full_clean(exclude=["recorded_by", "updated_by"])
         return super().save(*args, **kwargs)
+
+
+class AttendanceRegister(models.Model):
+    """سجل إداري يومي للشعبة؛ لا ينشئ سجلات للطلاب الحاضرين."""
+
+    academic_year = models.ForeignKey(
+        "core.AcademicYear", on_delete=models.CASCADE, related_name="attendance_registers"
+    )
+    grade = models.ForeignKey(
+        "academics.Grade", on_delete=models.SET_NULL, null=True, blank=True, related_name="attendance_registers"
+    )
+    section = models.ForeignKey(
+        "academics.Section", on_delete=models.CASCADE, related_name="attendance_registers"
+    )
+    date = models.DateField()
+    is_teacher_locked = models.BooleanField(default=False)
+    teacher_locked_at = models.DateTimeField(null=True, blank=True)
+    submitted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="submitted_attendance_registers",
+    )
+    submitted_at = models.DateTimeField(null=True, blank=True)
+    is_admin_closed = models.BooleanField(default=False)
+    admin_closed_at = models.DateTimeField(null=True, blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="created_attendance_registers",
+    )
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="reviewed_attendance_registers",
+    )
+    reopened_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="reopened_attendance_registers",
+    )
+    reopen_reason = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-date", "section__grade__order", "section__name"]
+        constraints = [
+            models.UniqueConstraint(fields=["section", "date"], name="uniq_attendance_register_section_date")
+        ]
+        indexes = [
+            # This name is already part of migration 0005.  Keeping it explicit
+            # aligns the model state with the deployed schema and prevents Django
+            # from generating a spurious RenameIndex migration on every Git push.
+            models.Index(
+                fields=["date", "is_teacher_locked", "is_admin_closed"],
+                name="attendance_v_date_84e196_idx",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.section} - {self.date}"

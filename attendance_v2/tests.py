@@ -18,13 +18,13 @@ class AttendanceModelTest(TestCase):
 
     def test_departure_must_be_after_arrival(self):
         record = Attendance(
-            student=self.student, date=date.today(), status="present", arrival_time=time(9, 0), departure_time=time(8, 0)
+            student=self.student, date=date.today(), status="absent", arrival_time=time(9, 0), departure_time=time(8, 0)
         )
         with self.assertRaises(ValidationError):
             record.full_clean()
 
     def test_unique_daily_record(self):
-        Attendance.objects.create(student=self.student, date=date.today(), status="present")
+        Attendance.objects.create(student=self.student, date=date.today(), status="absent")
         duplicate = Attendance(student=self.student, date=date.today(), status="absent")
         with self.assertRaises(ValidationError):
             duplicate.full_clean()

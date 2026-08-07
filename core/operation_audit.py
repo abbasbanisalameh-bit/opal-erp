@@ -17,11 +17,10 @@ def _issue(code, label, count, description, route, *, severity="warning"):
 
 
 def build_operation_audit():
-    from academics.models import Enrollment
+    from academics.models import Enrollment, Subject
     from accounting.models import StudentInvoice
     from admissions.models import StudentRegistration
     from core.models import AcademicYear, School
-    from curriculum.models import Curriculum
     from attendance_v2.models import Attendance
     from exams.models import Exam, StudentMark
     from parent_portal.models import Family
@@ -33,7 +32,7 @@ def build_operation_audit():
     active_teachers = Teacher.objects.filter(is_active=True)
     active_assignments = TeacherAssignment.objects.filter(is_active=True)
     active_entries = TimetableEntry.objects.filter(is_active=True)
-    active_curriculum = Curriculum.objects.filter(is_active=True)
+    active_subject_plans = Subject.objects.filter(is_active=True)
 
     students_without_enrollment = active_students.exclude(
         enrollments__status="active"
@@ -81,24 +80,24 @@ def build_operation_audit():
         has_assignment=Exists(matching_assignments)
     ).filter(has_assignment=False).count()
 
-    curriculum_assignment = TeacherAssignment.objects.filter(
+    subject_plan_assignment = TeacherAssignment.objects.filter(
         academic_year_id=OuterRef("academic_year_id"),
-        subject_id=OuterRef("subject_id"),
+        subject_id=OuterRef("pk"),
         section__grade_id=OuterRef("grade_id"),
         is_active=True,
     )
-    curriculum_without_assignment = active_curriculum.annotate(
-        has_assignment=Exists(curriculum_assignment)
+    subject_plan_without_assignment = active_subject_plans.annotate(
+        has_assignment=Exists(subject_plan_assignment)
     ).filter(has_assignment=False).count()
 
-    curriculum_timetable = TimetableEntry.objects.filter(
+    subject_plan_timetable = TimetableEntry.objects.filter(
         academic_year_id=OuterRef("academic_year_id"),
-        subject_id=OuterRef("subject_id"),
+        subject_id=OuterRef("pk"),
         section__grade_id=OuterRef("grade_id"),
         is_active=True,
     )
-    curriculum_without_timetable = active_curriculum.annotate(
-        has_timetable=Exists(curriculum_timetable)
+    subject_plan_without_timetable = active_subject_plans.annotate(
+        has_timetable=Exists(subject_plan_timetable)
     ).filter(has_timetable=False).count()
 
     attendance_without_academic_context = Attendance.objects.filter(
@@ -122,14 +121,14 @@ def build_operation_audit():
         _issue("TEACHER_ACCOUNT", "معلمون نشطون دون حساب دخول", active_teachers_without_account, "حساب المعلم مطلوب للوصول إلى الجدول والحضور والعلامات والواجبات.", "teachers:dashboard"),
         _issue("FAMILY_ACCOUNT", "أسر لها أبناء دون حساب ولي أمر", active_families_without_account, "أنشئ حسابًا موحدًا للأسرة ليصل ولي الأمر إلى جميع أبنائه.", "parent_portal:family_management"),
         _issue("TEACHER_ASSIGNMENT", "معلمون نشطون دون تكليف", active_teachers_without_assignment, "التكليف هو المصدر الذي يربط المعلم بالمادة والشعبة والجدول والعلامات.", "teachers:dashboard"),
-        _issue("ASSIGNMENT_TIMETABLE", "تكليفات غير ممثلة في الجدول", assignments_without_timetable, "شغّل منشئ الجدول أو أضف الحصص حتى يطابق الجدول التكليفات.", "timetable:smart_builder"),
+        _issue("ASSIGNMENT_TIMETABLE", "تكليفات غير ممثلة في الجدول", assignments_without_timetable, "شغّل منشئ الجدول أو أضف الحصص حتى يطابق الجدول التكليفات.", "timetable:dashboard"),
         _issue("TIMETABLE_ASSIGNMENT", "حصص دون تكليف مطابق", timetable_without_assignment, "لا ينبغي أن توجد حصة لمعلم خارج تكليفه الأكاديمي.", "timetable:dashboard", severity="danger"),
-        _issue("CURRICULUM_ASSIGNMENT", "بنود خطة دون تكليف معلم", curriculum_without_assignment, "كل مادة فعالة في الخطة تحتاج تكليفًا في شعب الصف قبل إنشاء الجدول.", "curriculum:curriculum_list"),
-        _issue("CURRICULUM_TIMETABLE", "بنود خطة غير ممثلة في الجدول", curriculum_without_timetable, "راجع الخطة والتكليفات ثم شغّل منشئ الجدول الذكي.", "timetable:smart_builder"),
+        _issue("SUBJECT_PLAN_ASSIGNMENT", "مواد خطة دون تكليف معلم", subject_plan_without_assignment, "كل مادة فعالة في خطة العام تحتاج تكليفًا في شعب الصف قبل إنشاء الجدول.", "academics:subject_list"),
+        _issue("SUBJECT_PLAN_TIMETABLE", "مواد خطة غير ممثلة في الجدول", subject_plan_without_timetable, "راجع المواد والتكليفات ثم افتح قسم إنشاء أو تحديث الجدول.", "timetable:dashboard"),
         _issue("ATTENDANCE_CONTEXT", "حضور ناقص السياق الأكاديمي", attendance_without_academic_context, "سجل الحضور يجب أن يحمل العام والصف والشعبة لسلامة التقارير.", "attendance_v2:report"),
         _issue("INVOICE_YEAR", "رسوم دون عام دراسي", invoices_without_year, "ربط الرسم بالعام ضروري للإغلاق والترحيل والتقارير.", "accounting:dashboard"),
         _issue("PUBLISHED_EXAM_MARKS", "امتحانات منشورة بلا علامات", published_exams_without_marks, "لا تنشر الامتحان قبل اكتمال العلامات ومراجعتها.", "exams:exam_list"),
-        _issue("MARK_ENTERER", "علامات دون مسجل معروف", marks_without_enterer, "وجود المستخدم المسجل ضروري للمساءلة وسجل العمليات.", "exams:mark_list"),
+        _issue("MARK_ENTERER", "علامات دون مسجل معروف", marks_without_enterer, "وجود المستخدم المسجل ضروري للمساءلة وسجل العمليات.", "exams:exam_list"),
     ]
 
     total_checks = len(issues)
@@ -156,6 +155,6 @@ def build_operation_audit():
             "enrollments": Enrollment.objects.filter(status="active").count(),
             "assignments": active_assignments.count(),
             "timetable_entries": active_entries.count(),
-            "curriculum_items": active_curriculum.count(),
+            "subject_plan_items": active_subject_plans.count(),
         },
     }

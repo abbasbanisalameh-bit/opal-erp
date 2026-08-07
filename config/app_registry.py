@@ -5,6 +5,7 @@ for initialization and template/static discovery precedence.
 """
 
 BASE_INSTALLED_APPS = (
+    "learning_platform.apps.LearningPlatformConfig",
     "attendance_v2",
     "parent_portal",
     "openemis_integration",

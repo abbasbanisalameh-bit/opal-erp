@@ -2,20 +2,23 @@
 {% load static %}
 {% block title %}تفاصيل الحضور والغياب | OPAL ERP{% endblock %}
 {% block page_title %}متابعة الحضور والغياب{% endblock %}
-{% block page_subtitle %}تفاصيل اليوم واتجاه الحضور خلال سبعة أيام وحالات المتابعة{% endblock %}
+{% block page_subtitle %}الحضور مشتق من سجلات الشعب المرسلة، والاستثناءات المخزنة هي الغياب والمغادرة فقط{% endblock %}
 {% block content %}
 <div class="opal-detail-stat-grid mb-3">
-  <div class="dashboard-card"><span>نسبة الحضور اليوم</span><h2>{{ attendance_percent }}%</h2></div>
-  <div class="dashboard-card"><span>حاضر</span><h2>{{ present_today }}</h2></div>
+  <div class="dashboard-card"><span>نسبة الانتظام اليوم</span><h2>{% if attendance_data_available %}{{ attendance_percent }}%{% else %}-{% endif %}</h2></div>
+  <div class="dashboard-card"><span>حاضر تلقائيًا</span><h2>{{ present_today }}</h2></div>
   <div class="dashboard-card"><span>غائب</span><h2>{{ absent_today }}</h2></div>
-  <div class="dashboard-card"><span>متأخر / مغادر</span><h2>{{ late_today }} / {{ departed_today }}</h2></div>
+  <div class="dashboard-card"><span>مغادر</span><h2>{{ departed_today }}</h2></div>
+  <div class="dashboard-card"><span>السجلات المرسلة / المعلقة</span><h2>{{ attendance_submitted_sections }} / {{ attendance_pending_sections }}</h2></div>
 </div>
+{% if not attendance_data_available %}<div class="alert alert-warning">لم يُرسل أي سجل حضور لهذا اليوم، لذلك لا تُحتسب نسبة غير موثقة.</div>{% endif %}
+{% if attendance_unregistered_exceptions %}<div class="alert alert-info">توجد {{ attendance_unregistered_exceptions }} حالة قديمة غير مرتبطة بسجل شعبة معتمد؛ لا تدخل في النسبة اليومية وتبقى ظاهرة في سجل الطالب الفردي.</div>{% endif %}
 <div class="row g-3">
-  <div class="col-lg-7"><div class="dashboard-panel opal-crystal-card h-100"><h3>اتجاه الحضور خلال 7 أيام</h3><div class="chart-box"><canvas id="attendanceTrendChart"></canvas></div></div></div>
+  <div class="col-lg-7"><div class="dashboard-panel opal-crystal-card h-100"><h3>اتجاه الانتظام خلال 7 أيام</h3><div class="chart-box"><canvas id="attendanceTrendChart"></canvas></div></div></div>
   <div class="col-lg-5"><div class="dashboard-panel opal-crystal-card h-100"><h3>الطلبة الغائبون اليوم</h3><div class="opal-mini-list">{% for row in absent_students_today %}<a href="{% url 'students:student_360' row.student_id %}"><span>{{ row.student.full_name }}</span><small>{{ row.grade|default:"-" }}{% if row.section %} — {{ row.section.name }}{% endif %}</small></a>{% empty %}<p class="opal-empty-compact">لا يوجد غياب اليوم.</p>{% endfor %}</div></div></div>
-  <div class="col-lg-7"><div class="dashboard-panel opal-crystal-card"><h3>متابعة الغياب والتأخر خلال 30 يومًا</h3><div class="table-responsive"><table class="opal-table"><thead><tr><th>الطالب</th><th>رقم الطالب</th><th>الحالات</th></tr></thead><tbody>{% for row in attendance_watch %}<tr><td><a href="{% url 'students:student_360' row.student_id %}">{{ row.student__full_name }}</a></td><td>{{ row.student__student_number }}</td><td>{{ row.risk_events }}</td></tr>{% empty %}<tr><td colspan="3">لا توجد حالات متابعة.</td></tr>{% endfor %}</tbody></table></div></div></div>
+  <div class="col-lg-7"><div class="dashboard-panel opal-crystal-card"><h3>متابعة الغياب والمغادرة خلال 30 يومًا</h3><div class="table-responsive"><table class="opal-table"><thead><tr><th>الطالب</th><th>رقم الطالب</th><th>الحالات</th></tr></thead><tbody>{% for row in attendance_watch %}<tr><td><a href="{% url 'students:student_360' row.student_id %}">{{ row.student__full_name }}</a></td><td>{{ row.student__student_number }}</td><td>{{ row.risk_events }}</td></tr>{% empty %}<tr><td colspan="3">لا توجد حالات متابعة.</td></tr>{% endfor %}</tbody></table></div></div></div>
   <div class="col-lg-5"><div class="dashboard-panel opal-crystal-card"><h3>غياب المعلمين اليوم</h3><div class="opal-mini-list">{% for row in absent_teachers_today %}<a href="{% url 'teachers:teacher_detail' row.teacher_id %}"><span>{{ row.teacher.full_name }}</span><small>{{ row.reason|default:"دون سبب مسجل" }}</small></a>{% empty %}<p class="opal-empty-compact">لا يوجد غياب للمعلمين اليوم.</p>{% endfor %}</div></div></div>
 </div>
 {{ attendance_trend|json_script:"attendance-trend" }}
 {% endblock %}
-{% block extra_js %}<script src="{% static 'vendor/chartjs/chart.umd.min.js' %}?v=4.5.1"></script><script>const data=JSON.parse(document.getElementById('attendance-trend')?.textContent||'[]');if(typeof Chart!=='undefined'){new Chart(document.getElementById('attendanceTrendChart'),{type:'line',data:{labels:data.map(x=>x.date),datasets:[{label:'نسبة الحضور %',data:data.map(x=>x.percent),tension:.35,fill:true,borderColor:'#d8ad4f',backgroundColor:'rgba(216,173,79,.14)'}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{min:0,max:100}}}});}</script>{% endblock %}
+{% block extra_js %}<script src="{% static 'vendor/chartjs/chart.umd.min.js' %}?v=4.5.1"></script><script>const data=JSON.parse(document.getElementById('attendance-trend')?.textContent||'[]');if(typeof Chart!=='undefined'){new Chart(document.getElementById('attendanceTrendChart'),{type:'line',data:{labels:data.map(x=>x.date),datasets:[{label:'نسبة الانتظام %',data:data.map(x=>x.has_data?x.percent:null),tension:.35,fill:true,borderColor:'#d8ad4f',backgroundColor:'rgba(216,173,79,.14)'}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{min:0,max:100}}}});}</script>{% endblock %}

@@ -3,7 +3,17 @@
 {% block page_title %}مركز الوثائق الأكاديمية{% endblock %}
 {% block page_subtitle %}بحث وتتبع وطباعة الوثائق والشهادات الصادرة{% endblock %}
 {% block content %}
-{% if request.user.is_staff %}<div class="mb-3 d-flex gap-2"><a href="{% url 'documents:template_list' %}" class="btn btn-outline-primary">إدارة قوالب الوثائق</a><a href="{% url 'documents:settings' %}" class="btn btn-outline-primary">التوقيع والختم</a></div>{% endif %}
+{% if request.user.is_staff %}
+<section class="opal-card mb-4">
+  <div class="mb-3"><h3 class="fw-bold mb-1">عمليات الوثائق والتقارير</h3><p class="text-secondary mb-0">هذه الصفحة هي البوابة الإدارية الوحيدة للأرشيف والقوالب والإعدادات والتقارير وسجل العمليات.</p></div>
+  <div class="opal-settings-actions-grid">
+    <a href="{% url 'documents:template_list' %}" class="opal-settings-action"><i class="bi bi-file-earmark-richtext-fill"></i><strong>قوالب الوثائق</strong><small>النصوص والصيغ الافتراضية</small></a>
+    <a href="{% url 'documents:settings' %}" class="opal-settings-action"><i class="bi bi-pen-fill"></i><strong>التوقيع والختم</strong><small>بيانات المدير والختم الرسمي</small></a>
+    <a href="{% url 'enterprise_ops:report_center' %}" class="opal-settings-action"><i class="bi bi-file-earmark-bar-graph-fill"></i><strong>مركز التقارير</strong><small>التقارير الإدارية والتصدير</small></a>
+    <a href="{% url 'enterprise_ops:audit_log' %}" class="opal-settings-action"><i class="bi bi-shield-check"></i><strong>سجل العمليات</strong><small>التدقيق والتتبع الإداري</small></a>
+  </div>
+</section>
+{% endif %}
 <div class="opal-card mb-4"><form method="get" class="row g-2 align-items-end"><div class="col-lg-7"><label class="form-label">بحث</label><input type="text" name="q" value="{{ q }}" class="form-control" placeholder="رقم الوثيقة أو اسم المستفيد"></div><div class="col-lg-3"><label class="form-label">النوع</label><select name="type" class="form-select"><option value="">كل الأنواع</option>{% for code,label in document_types %}<option value="{{ code }}" {% if selected_type == code %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div><div class="col-lg-2"><label class="form-label">الحالة</label><select name="status" class="form-select"><option value="">الكل</option>{% for code,label in statuses %}<option value="{{ code }}" {% if selected_status == code %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div><div class="col-12"><button class="btn btn-primary">بحث</button></div></form></div>
 <div class="row g-3 mb-4"><div class="col-md-4"><div class="opal-card text-center"><span class="text-secondary">الوثائق المعروضة</span><h3 class="fw-bold mt-2">{{ documents|length }}</h3></div></div></div>
 <div class="opal-card"><div class="table-responsive"><table class="opal-table"><thead><tr><th>#</th><th>رقم الوثيقة</th><th>العنوان</th><th>الطالب</th><th>النوع</th><th>أصدرها</th><th>التاريخ</th><th>الحالة</th><th></th></tr></thead><tbody>{% for doc in documents %}<tr><td>{{ forloop.counter }}</td><td class="fw-bold">{{ doc.document_number }}</td><td>{{ doc.title }}</td><td>{{ doc.student|default:doc.applicant_name }}</td><td>{{ doc.template.get_document_type_display|default:"عام" }}</td><td>{{ doc.issued_by|default:"-" }}</td><td>{{ doc.issued_at|date:"Y-m-d H:i" }}</td><td>{{ doc.get_status_display }}</td><td><a href="{% url 'documents:document_detail' doc.id %}" class="btn btn-sm btn-outline-primary">فتح</a></td></tr>{% empty %}<tr><td colspan="9" class="text-center text-secondary">لا توجد وثائق مطابقة</td></tr>{% endfor %}</tbody></table></div></div>

@@ -6,6 +6,7 @@ prefixes, namespaces, and feature flags remain controlled by ``config.urls``.
 from django.urls import include, path
 
 PRIMARY_URLPATTERNS = [
+    path("learning/", include("learning_platform.urls")),
     path("students/", include("students.urls")),
     path("parent/", include("parent_portal.urls")),
 ]

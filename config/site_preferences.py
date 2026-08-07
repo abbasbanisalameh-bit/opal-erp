@@ -1,9 +1,12 @@
 """Stable site-level preferences for localization, authentication, and sessions."""
 
+import os
+
 
 def build_localization():
-    """Return localization values in the same order used by Django settings."""
-    return "ar", "Asia/Amman", True, True
+    """Use the school authority clock; Irbid defaults to Jordan official time."""
+    time_zone = os.environ.get("OPAL_TIME_ZONE", "Asia/Amman").strip() or "Asia/Amman"
+    return "ar", time_zone, True, True
 
 
 def build_auth_navigation():

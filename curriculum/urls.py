@@ -1,3 +1,10 @@
+"""One-release URL compatibility only.
+
+LEGACY / DEPRECATED — all paths below redirect to the canonical Subject plan
+screens and must be removed in OPAL Update 132.  They are intentionally absent
+from navigation, workflow indexes, notifications and new code.
+"""
+
 from django.urls import path
 
 from . import views

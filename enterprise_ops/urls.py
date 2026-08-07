@@ -11,6 +11,7 @@ urlpatterns = [
     path("feedback/", views.feedback_list, name="feedback_list"),
     path("feedback/new/", views.feedback_create, name="feedback_create"),
     path("feedback/<int:pk>/", views.feedback_detail, name="feedback_detail"),
+    path("monthly-evaluation/submit/", views.submit_monthly_evaluations, name="submit_monthly_evaluations"),
 
     # Administration circulars and direct teacher alerts.
     path("broadcasts/", views.broadcast_list, name="broadcast_list"),
@@ -25,6 +26,7 @@ urlpatterns = [
 
     path("notifications/", views.notification_list, name="notification_list"),
     path("notifications/status/", views.notification_status, name="notification_status"),
+    path("notifications/<int:pk>/open/", views.notification_open, name="notification_open"),
     path("notifications/<int:pk>/read/", views.notification_read, name="notification_read"),
     path("notifications/read-all/", views.notification_read_all, name="notification_read_all"),
     path("audit/", views.audit_log, name="audit_log"),

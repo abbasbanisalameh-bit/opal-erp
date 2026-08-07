@@ -30,7 +30,8 @@ class CanonicalOperationFlowTests(TestCase):
         self.assertContains(response, "فئات الرسوم")
         self.assertContains(response, "الأقساط")
         self.assertContains(response, "فحص تكامل الوحدات")
-        self.assertContains(response, reverse("admissions:direct_registration"))
+        self.assertNotContains(response, reverse("admissions:direct_registration"))
+        self.assertContains(response, "من بوابة الدور")
 
     def test_topbar_search_is_backed_by_role_aware_catalog(self):
         self.client.force_login(self.manager)
@@ -73,7 +74,7 @@ class CanonicalOperationFlowTests(TestCase):
             ("accounting:invoice_list", "رسوم الطلاب"),
             ("accounting:installment_list", "الأقساط"),
             ("accounting:discount_list", "طلبات الخصم"),
-            ("curriculum:curriculum_list", "الخطة الدراسية"),
+            ("academics:subject_list", "المواد والخطة الدراسية"),
         ):
             response = self.client.get(reverse(route))
             self.assertEqual(response.status_code, 200, route)
@@ -94,7 +95,7 @@ class CanonicalOperationFlowTests(TestCase):
         section = Section.objects.create(
             academic_year=year, branch=self.branch, grade=grade, name="أ"
         )
-        subject = Subject.objects.create(grade=grade, name="الرياضيات", code="MATH-4")
+        subject = Subject.objects.create(academic_year=year, grade=grade, name="الرياضيات", code="MATH-4")
         teacher = Teacher.objects.create(
             employee_number="FLOW-T-TABLE", full_name="معلم الجدول",
             school=self.school, branch=self.branch,

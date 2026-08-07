@@ -12,7 +12,6 @@ from admissions.services import active_school
 
 from .models import DocumentTemplate, IssuedDocument
 from .services.generation import (
-    candidate_values,
     create_issued_document,
     guardian_payload,
     guardian_values,
@@ -26,7 +25,7 @@ from .services.generation import (
 def build_document_list_context(*, query="", document_type="", status=""):
     """Build the canonical archive context without changing current filters."""
     documents = IssuedDocument.objects.select_related(
-        "student", "teacher", "guardian", "candidate", "issued_by", "template"
+        "student", "teacher", "guardian", "issued_by", "template"
     ).all()
     query = (query or "").strip()
     document_type = (document_type or "").strip()
@@ -38,7 +37,6 @@ def build_document_list_context(*, query="", document_type="", status=""):
             | Q(student__full_name__icontains=query)
             | Q(teacher__full_name__icontains=query)
             | Q(guardian__guardian_name__icontains=query)
-            | Q(candidate__student_full_name__icontains=query)
             | Q(applicant_name__icontains=query)
         )
     if document_type:
@@ -60,9 +58,6 @@ def build_target_data(*, audience, target, extras=None):
     if audience == "student":
         school, enrollment, values = student_values(target, extras)
         return school or active_school(), values, enrollment
-    if audience == "candidate":
-        school, values = candidate_values(target, extras)
-        return school, values, None
     if audience == "teacher":
         school, values = teacher_values(target, extras)
         return school, values, None
@@ -149,11 +144,53 @@ def cancel_issued_document(*, document, reason, user):
     return "cancelled"
 
 
+
+@transaction.atomic
+def issue_teacher_termination_document(*, teacher, user):
+    """Issue the canonical termination letter after service termination.
+
+    The template is created lazily so existing installations need no data
+    migration.  The issued document is an immutable snapshot linked to the
+    teacher and remains in the archive if the teacher is later reactivated.
+    """
+    from .defaults import DEFAULT_DOCUMENT_TEMPLATES
+
+    definition = next(
+        item for item in DEFAULT_DOCUMENT_TEMPLATES
+        if item["code"] == "teacher-termination"
+    )
+    template, _ = DocumentTemplate.objects.get_or_create(
+        code=definition["code"],
+        defaults={
+            "audience": definition["audience"],
+            "document_type": definition["document_type"],
+            "name": definition["name"],
+            "title": definition["title"],
+            "body": definition["body"],
+            "is_active": True,
+        },
+    )
+    school, values = teacher_values(teacher)
+    return create_issued_document(
+        template=template,
+        teacher=teacher,
+        title=template.title,
+        content=render_body(template, values),
+        payload={
+            "kind": "teacher_termination",
+            "teacher_id": teacher.pk,
+            "employee_number": teacher.employee_number,
+            "end_date": str(teacher.end_date or ""),
+            "reason": teacher.end_reason,
+        },
+        user=user,
+        school=school,
+    )
+
 def resolve_document_school(document):
     return (
         getattr(document.teacher, "school", None)
         or getattr(document.guardian, "school", None)
-        or getattr(document.candidate, "school", None)
         or (student_values(document.student)[0] if document.student_id else None)
         or active_school()
     )
@@ -167,7 +204,6 @@ def reissue_document(*, original, user):
         student=original.student,
         teacher=original.teacher,
         guardian=original.guardian,
-        candidate=original.candidate,
         title=original.title,
         content=original.content,
         payload=original.payload,
@@ -185,6 +221,7 @@ __all__ = [
     "build_target_data",
     "cancel_issued_document",
     "issue_document_from_form",
+    "issue_teacher_termination_document",
     "reissue_document",
     "resolve_document_school",
 ]

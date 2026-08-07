@@ -1,1 +1,48 @@
-{% extends "base/base.html" %}{% block title %}{{ title }}{% endblock %}{% block content %}<h2 class="mb-1">{{ title }}</h2><p class="text-muted">{{ teacher.full_name }}</p><div class="opal-card p-4"><form method="post">{% csrf_token %}<div class="row g-3">{% for field in form %}<div class="col-md-6"><label class="form-label">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>{% endfor %}</div><button class="btn btn-primary mt-4">حفظ</button><a class="btn btn-light mt-4" href="{% url 'teachers:teacher_detail' teacher.pk %}">إلغاء</a></form></div>{% endblock %}
+{% extends "base/base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block page_subtitle %}التكليف يحدد المعلم والمادة والشعبة، والخطة الدراسية تحدد عدد الحصص الأسبوعية{% endblock %}
+{% block content %}
+<div class="opal-card mb-4">
+  <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+    <div><h3 class="mb-1">{{ teacher.full_name }}</h3><p class="text-secondary mb-0">إعداد النصاب والفراغ من صفحة التكليفات الحالية فقط.</p></div>
+    {% if workload.academic_year %}<span class="badge bg-light text-dark border">{{ workload.academic_year }}</span>{% endif %}
+  </div>
+  <div class="row g-3 mt-1">
+    <div class="col-lg-3 col-6"><div class="stat-card"><span>النصاب المعتمد</span><h2>{{ workload.load|default_if_none:"—" }}</h2></div></div>
+    <div class="col-lg-3 col-6"><div class="stat-card"><span>الحصص المسندة</span><h2>{{ workload.assigned }}</h2></div></div>
+    <div class="col-lg-3 col-6"><div class="stat-card"><span>المتبقي</span><h2>{{ workload.remaining|default_if_none:"—" }}</h2></div></div>
+    <div class="col-lg-3 col-6"><div class="stat-card"><span>الفراغ</span><h2 class="fs-5">{{ workload.free_label }}</h2></div></div>
+  </div>
+</div>
+<div class="opal-card p-4">
+  <form method="post">{% csrf_token %}
+    {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+    <div class="row g-3">
+      {% for field in form %}
+      <div class="col-md-6{% if field.name == 'weekly_teaching_load' or field.name == 'free_period_policy' or field.name == 'daily_free_periods' or field.name == 'weekly_free_periods' %} opal-workload-field{% endif %}">
+        <label class="form-label">{{ field.label }}</label>{{ field }}
+        {% if field.help_text %}<small class="d-block text-secondary mt-1">{{ field.help_text }}</small>{% endif %}
+        {% for error in field.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+    <div class="alert alert-info mt-4 mb-0"><strong>قاعدة البناء:</strong> لا يسمح النظام بتكليف يرفع الحصص المسندة فوق النصاب. عدد الحصص الأسبوعية يؤخذ تلقائيًا من الخطة الدراسية.</div>
+    <button class="btn btn-primary mt-4">حفظ التكليف والنصاب</button>
+    <a class="btn btn-light mt-4" href="{% url 'teachers:teacher_detail' teacher.pk %}">إلغاء</a>
+  </form>
+</div>
+<script>
+(function(){
+  const policy = document.getElementById('id_free_period_policy');
+  const daily = document.getElementById('id_daily_free_periods')?.closest('.col-md-6');
+  const weekly = document.getElementById('id_weekly_free_periods')?.closest('.col-md-6');
+  function sync(){
+    if (!policy) return;
+    if (daily) daily.hidden = policy.value !== 'daily';
+    if (weekly) weekly.hidden = policy.value !== 'weekly';
+  }
+  policy?.addEventListener('change', sync); sync();
+})();
+</script>
+{% endblock %}

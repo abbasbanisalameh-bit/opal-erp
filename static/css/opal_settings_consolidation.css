@@ -31,3 +31,19 @@
 @media (max-width:991.98px){.opal-settings-tabs{position:relative;top:auto}.opal-settings-actions-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.opal-section-heading{flex-direction:column}.opal-section-actions{justify-content:flex-start}}
 @media (max-width:575.98px){.opal-settings-section{padding:.9rem}.opal-settings-actions-grid{grid-template-columns:1fr}.opal-settings-action{min-height:80px}.opal-settings-tab{font-size:.82rem}.opal-section-actions,.opal-section-actions .btn{width:100%}.opal-section-actions .btn{justify-content:center}.opal-form-footer .btn{width:100%}}
 @media print{.opal-settings-tabs,.opal-section-actions,.opal-danger-zone{display:none!important}.opal-settings-section{box-shadow:none!important;break-inside:avoid}}
+
+
+/* OPAL Update 79: collapsible system settings sections */
+.opal-settings-accordion{overflow:hidden;padding:0!important;}
+.opal-settings-accordion>summary{list-style:none;}
+.opal-settings-accordion>summary::-webkit-details-marker{display:none;}
+.opal-settings-summary{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1.15rem 1.35rem;cursor:pointer;user-select:none;border-radius:inherit;}
+.opal-settings-summary>span{display:grid;grid-template-columns:auto 1fr;align-items:center;column-gap:.8rem;row-gap:.18rem;}
+.opal-settings-summary>span>i{grid-row:1/3;font-size:1.35rem;}
+.opal-settings-summary strong{font-size:1.03rem;}
+.opal-settings-summary small{display:block;color:var(--opal-muted,#64748b);font-weight:400;}
+.opal-settings-chevron{transition:transform .2s ease;}
+.opal-settings-accordion[open] .opal-settings-chevron{transform:rotate(180deg);}
+.opal-settings-accordion[open]>.opal-settings-summary{border-bottom:1px solid rgba(148,163,184,.22);}
+.opal-settings-body{padding:1.25rem 1.35rem 1.4rem;}
+@media(max-width:767.98px){.opal-settings-summary{padding:1rem}.opal-settings-summary small{font-size:.78rem}.opal-settings-body{padding:1rem}}

@@ -111,3 +111,46 @@
   .opal-entity-360 .nav-pills,.opal-entity-360 .btn,.opal-entity-360 form{display:none!important}
   .opal-entity-360 .tab-pane{display:block!important;opacity:1!important}
 }
+
+/* OPAL Update 131.7 R3 — Student 360 mobile width containment.
+   Wide tab content (tables and timetable matrices) must scroll inside its own
+   wrapper and must never enlarge the complete page or move controls off-screen. */
+.opal-student-360,
+.opal-student-360 > *,
+.opal-student-360 .opal-student-360-tab-content,
+.opal-student-360 .opal-student-360-tab-content > .tab-pane,
+.opal-student-360 .opal-student-360-tab-content > .tab-pane > .opal-card,
+.opal-student-360 .opal-student-360-tab-content .row,
+.opal-student-360 .opal-student-360-tab-content [class*="col-"] {
+  min-width:0;
+  max-width:100%;
+}
+.opal-student-360 {
+  width:100%;
+  overflow-x:hidden;
+}
+@supports (overflow:clip) {
+  .opal-student-360 { overflow-x:clip; }
+}
+.opal-student-360 .opal-student-360-tab-content,
+.opal-student-360 .opal-student-360-tab-content > .tab-pane,
+.opal-student-360 .opal-student-360-tab-content > .tab-pane > .opal-card {
+  width:100%;
+}
+.opal-student-360 .opal-student-360-tab-content .table-responsive,
+.opal-student-360 .opal-student-360-tab-content .opal-table-wrap,
+.opal-student-360 .opal-student-360-tab-content .opal-timetable-matrix-wrap {
+  display:block;
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  overflow-x:auto!important;
+  overscroll-behavior-inline:contain;
+  contain:inline-size;
+}
+.opal-student-360 .opal-student-360-tab-content .table-responsive > table,
+.opal-student-360 .opal-student-360-tab-content .opal-table-wrap > table,
+.opal-student-360 .opal-student-360-tab-content .opal-timetable-matrix-wrap > table {
+  max-width:none;
+}
+

@@ -1,2 +1,20 @@
-{% extends "base/base.html" %}{% block title %}الحضور والغياب{% endblock %}{% block page_title %}الحضور والغياب{% endblock %}{% block page_subtitle %}متابعة الحضور اليومي والغياب والتأخر{% endblock %}
-{% block content %}<div class="stats-grid mb-4"><div class="stat-card"><span>التاريخ</span><h2>{{ today }}</h2></div><div class="stat-card"><span>المسجلون</span><h2>{{ total_today }}</h2></div><div class="stat-card"><span>الحاضرون</span><h2>{{ present_today }}</h2></div><div class="stat-card"><span>الغائبون</span><h2>{{ absent_today }}</h2></div><div class="stat-card"><span>المتأخرون</span><h2>{{ late_today }}</h2></div><div class="stat-card"><span>المغادرون</span><h2>{{ departed_today }}</h2></div></div><div class="opal-card"><p class="mb-0 text-secondary">مربي الصف يسجل الحالات من بوابة المعلم، والإدارة تتابع التقرير وتقفل السجلات.</p></div>{% endblock %}
+{% extends "base/base.html" %}
+{% block title %}الغياب والمغادرة{% endblock %}
+{% block page_title %}الغياب والمغادرة{% endblock %}
+{% block page_subtitle %}الحضور ضمني ويُحتسب من سجلات الشعب المرسلة؛ لا تُخزن إلا حالات الغياب والمغادرة{% endblock %}
+{% block content %}
+<div class="stats-grid mb-4">
+  <div class="stat-card"><span>التاريخ</span><h2>{{ today }}</h2></div>
+  <div class="stat-card"><span>الطلبة في السجلات</span><h2>{{ total_today }}</h2></div>
+  <div class="stat-card"><span>حاضر تلقائيًا</span><h2 class="text-success">{{ present_today }}</h2></div>
+  <div class="stat-card"><span>الغائبون</span><h2 class="text-danger">{{ absent_today }}</h2></div>
+  <div class="stat-card"><span>المغادرون</span><h2 class="text-info">{{ departed_today }}</h2></div>
+  <div class="stat-card"><span>نسبة الانتظام</span><h2>{{ attendance_percent }}%</h2></div>
+</div>
+{% if has_data %}
+<div class="opal-card"><p class="mb-0 text-secondary">تم إرسال {{ submitted_sections }} سجل شعبة، منها {{ pending_sections }} بانتظار الإغلاق الإداري. مربي الصف يسجل الغياب أو المغادرة فقط.</p></div>
+{% else %}
+<div class="alert alert-warning mb-0">لم يُرسل أي سجل حضور لهذا اليوم بعد؛ لذلك لا يعرض النظام نسبة حضور تقديرية غير موثقة.</div>
+{% endif %}
+{% if unregistered_exceptions %}<div class="alert alert-info mt-3 mb-0">توجد {{ unregistered_exceptions }} حالة قديمة غير مرتبطة بسجل شعبة معتمد؛ بقيت محفوظة في السجل الفردي ولا تدخل في نسبة الانتظام اليومية.</div>{% endif %}
+{% endblock %}

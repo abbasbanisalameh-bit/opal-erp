@@ -62,7 +62,10 @@ def system_updates(request):
                 )
                 messages.success(
                     request,
-                    f"{result.message} النسخة: {result.version_name}. نسخة الأمان: {result.safety_snapshot}. اضغط Reload من صفحة Web.",
+                    f"{result.message} النسخة: {result.version_name}. "
+                    f"نسخة أمان الكود: {result.safety_snapshot}. "
+                    f"نقطة أمان قاعدة البيانات: {result.database_safety_snapshot}. "
+                    "اضغط Reload من صفحة Web.",
                 )
             elif action == "push_github":
                 result = push_current_system_to_github(username=username)
@@ -83,7 +86,10 @@ def system_updates(request):
                 )
                 messages.success(
                     request,
-                    f"{result.message} نسخة GitHub: {result.version_name}. نسخة الأمان: {result.safety_snapshot}. اضغط Reload من صفحة Web.",
+                    f"{result.message} نسخة GitHub: {result.version_name}. "
+                    f"نسخة أمان الكود: {result.safety_snapshot}. "
+                    f"نقطة أمان قاعدة البيانات: {result.database_safety_snapshot}. "
+                    "اضغط Reload من صفحة Web.",
                 )
                 tab = "github"
             else:

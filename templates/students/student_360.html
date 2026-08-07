@@ -1,4 +1,5 @@
 {% extends "base/base.html" %}
+{% load opal_subjects %}
 {% block title %}بطاقة الطالب | {{ student.full_name }}{% endblock %}
 {% block page_title %}بطاقة الطالب{% endblock %}
 {% block page_subtitle %}مركز موحد لبيانات الطالب الأكاديمية والمالية والسلوكية وبيانات ولي الأمر{% endblock %}
@@ -13,20 +14,26 @@
         <div class="text-muted">{{ student.student_number }} · {{ student.grade }}{% if student.section %} / {{ student.section }}{% endif %}</div>
         <div class="mt-2 d-flex flex-wrap gap-1">
           <span class="badge bg-{% if student.is_active %}success{% else %}secondary{% endif %}">{{ student.get_status_display }}</span>
-          <span class="badge bg-{{ finance.status_class }}">{{ finance.status_label }}</span>
+          <span class="badge bg-{{ finance.status_class }}">رسوم السنة الحالية: {{ finance.status_label }}</span>
           <span class="badge bg-{{ risk.class }}">مستوى المتابعة: {{ risk.label }}</span>
         </div>
       </div>
     </div>
-    <div class="d-flex flex-wrap gap-2">
+    <div class="opal-compact-action-row" style="--opal-action-count:4">
       <a href="{% url 'students:student_update' student.pk %}" class="btn btn-warning"><i class="bi bi-pencil"></i> تعديل</a>
-      <a href="{% url 'admissions:fee_payment_create' %}?student={{ student.pk }}" class="btn btn-success"><i class="bi bi-cash-coin"></i> تسديد رسوم</a>
       <a href="{% url 'admissions:student_financial_record' student.pk %}" class="btn btn-primary"><i class="bi bi-wallet2"></i> السجل المالي</a>
-      <a href="{% url 'students:student_360_print' student.pk %}" target="_blank" class="btn btn-outline-dark"><i class="bi bi-printer"></i> طباعة</a>
-      <a href="{% url 'students:student_list' %}" class="btn btn-secondary">رجوع</a>
+      <a href="{% url 'students:student_360_print' student.pk %}" target="_blank" class="btn btn-info"><i class="bi bi-printer-fill"></i> طباعة</a>
+      <a href="{% url 'students:student_list' %}" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> رجوع</a>
     </div>
   </div>
 </div>
+
+{% if previous_debt.has_debt %}
+<div class="opal-previous-debt-alert mb-4" role="alert">
+  <div><span class="opal-previous-debt-pulse">عليه متبقيات رسوم سابقة بقيمة {{ previous_debt.total|floatformat:2 }} د.أ عن {{ previous_debt.years_text }}</span></div>
+  <a class="btn btn-danger btn-sm" href="{% url 'admissions:previous_debt_payment' student.pk %}"><i class="bi bi-cash-coin"></i> دفعة من متبقيات الرسوم السابقة</a>
+</div>
+{% endif %}
 
 {% if alerts %}
 <div class="row g-2 mb-4">
@@ -34,29 +41,31 @@
 </div>
 {% endif %}
 
-<div class="row g-3 mb-4">
-  <div class="col-6 col-xl-2"><div class="opal-card h-100"><div class="text-muted small">إجمالي الرسوم</div><div class="fs-4 fw-bold">{{ finance.total|floatformat:2 }}</div></div></div>
-  <div class="col-6 col-xl-2"><div class="opal-card h-100"><div class="text-muted small">المدفوع</div><div class="fs-4 fw-bold text-success">{{ finance.paid|floatformat:2 }}</div></div></div>
-  <div class="col-6 col-xl-2"><div class="opal-card h-100"><div class="text-muted small">المتبقي</div><div class="fs-4 fw-bold text-danger">{{ finance.remaining|floatformat:2 }}</div></div></div>
-  <div class="col-6 col-xl-2"><div class="opal-card h-100"><div class="text-muted small">الحضور</div><div class="fs-4 fw-bold">{{ attendance_rate }}%</div></div></div>
-  <div class="col-6 col-xl-2"><div class="opal-card h-100"><div class="text-muted small">التحصيل</div><div class="fs-4 fw-bold">{{ percentage_average }}%</div></div></div>
-  <div class="col-6 col-xl-2"><div class="opal-card h-100"><div class="text-muted small">اكتمال البيانات</div><div class="fs-4 fw-bold">{{ data_completeness }}%</div></div></div>
+<div class="opal-compact-metric-grid mb-4">
+  <div class="opal-card opal-compact-metric-card"><span class="opal-metric-label">رسوم {{ current_enrollment.academic_year.name|default:"السنة الحالية" }}</span><strong class="opal-metric-value">{{ finance.total|floatformat:2 }}</strong></div>
+  <div class="opal-card opal-compact-metric-card"><span class="opal-metric-label">مدفوع السنة الحالية</span><strong class="opal-metric-value text-success">{{ finance.paid|floatformat:2 }}</strong></div>
+  <div class="opal-card opal-compact-metric-card"><span class="opal-metric-label">متبقي السنة الحالية</span><strong class="opal-metric-value text-warning">{{ finance.remaining|floatformat:2 }}</strong></div>
+  <div class="opal-card opal-compact-metric-card"><span class="opal-metric-label">متبقيات السنوات السابقة</span><strong class="opal-metric-value text-danger">{{ finance.previous_remaining|floatformat:2 }}</strong></div>
+  <div class="opal-card opal-compact-metric-card"><span class="opal-metric-label">الإجمالي المطلوب</span><strong class="opal-metric-value">{{ finance.combined_remaining|floatformat:2 }}</strong></div>
+  <div class="opal-card opal-compact-metric-card"><span class="opal-metric-label">الحضور</span><strong class="opal-metric-value">{{ attendance_rate }}%</strong></div>
+  <div class="opal-card opal-compact-metric-card"><span class="opal-metric-label">التحصيل</span><strong class="opal-metric-value">{{ percentage_average }}%</strong></div>
+  <div class="opal-card opal-compact-metric-card"><span class="opal-metric-label">اكتمال البيانات</span><strong class="opal-metric-value">{{ data_completeness }}%</strong></div>
 </div>
 
-<ul class="nav nav-pills mb-3 gap-2" id="student360Tabs" role="tablist">
-  <li class="nav-item"><button class="nav-link active" data-bs-toggle="pill" data-bs-target="#overview">الملخص</button></li>
-  <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#activity">سجل النشاط</button></li>
-  <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#academic">الأكاديمي</button></li>
-  <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#finance">المالية</button></li>
-  <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#attendance">الحضور</button></li>
-  <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#marks">العلامات</button></li>
-  <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#family">ولي الأمر</button></li>
-  <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#documents">الوثائق</button></li>
-  <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#timetable">الجدول</button></li>
-  {% if opal_openemis_enabled %}<li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#openemis">OpenEMIS</button></li>{% endif %}
+<ul class="nav nav-pills mb-3 opal-compact-tabs" id="student360Tabs" role="tablist">
+  <li class="nav-item"><button class="nav-link active" data-bs-toggle="pill" data-bs-target="#overview"><i class="bi bi-speedometer2"></i>الملخص</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#activity"><i class="bi bi-clock-history"></i>سجل النشاط</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#academic"><i class="bi bi-mortarboard-fill"></i>الأكاديمي</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#finance"><i class="bi bi-wallet2"></i>المالية</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#attendance"><i class="bi bi-calendar-check"></i>الحضور</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#marks"><i class="bi bi-bar-chart-fill"></i>العلامات</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#family"><i class="bi bi-people-fill"></i>ولي الأمر</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#documents"><i class="bi bi-file-earmark-text"></i>الوثائق</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#timetable"><i class="bi bi-calendar3"></i>الجدول</button></li>
+  {% if opal_openemis_enabled %}<li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#openemis"><i class="bi bi-cloud-arrow-up"></i>OpenEMIS</button></li>{% endif %}
 </ul>
 
-<div class="tab-content">
+<div class="tab-content opal-student-360-tab-content">
   <div class="tab-pane fade show active" id="overview">
     <div class="row g-3">
       <div class="col-lg-7"><div class="opal-card h-100"><h4 class="fw-bold mb-3">البيانات الأساسية</h4><div class="row g-3">
@@ -70,7 +79,7 @@
       <div class="col-lg-5"><div class="opal-card h-100"><h4 class="fw-bold mb-3">مؤشرات المتابعة</h4>
         <div class="d-flex justify-content-between py-2 border-bottom"><span>التسجيل الحالي</span><strong>{% if current_enrollment %}{{ current_enrollment.grade }} / {{ current_enrollment.section|default:"-" }}{% else %}غير متوفر{% endif %}</strong></div>
         <div class="d-flex justify-content-between py-2 border-bottom"><span>الغياب</span><strong class="text-danger">{{ absent_count }}</strong></div>
-        <div class="d-flex justify-content-between py-2 border-bottom"><span>التأخير</span><strong class="text-warning">{{ late_count }}</strong></div>
+        <div class="d-flex justify-content-between py-2 border-bottom"><span>المغادرة</span><strong class="text-info">{{ departed_count }}</strong></div>
         <div class="d-flex justify-content-between py-2 border-bottom"><span>الإخوة</span><strong>{{ siblings|length }}</strong></div>
         <div class="d-flex justify-content-between py-2"><span>الوثائق</span><strong>{{ documents|length }}</strong></div>
       </div></div>
@@ -81,17 +90,28 @@
 
   <div class="tab-pane fade" id="academic"><div class="opal-card"><h4 class="fw-bold mb-3">السجل الأكاديمي</h4><div class="table-responsive"><table class="table align-middle"><thead><tr><th>العام</th><th>الصف</th><th>الشعبة</th><th>الحالة</th><th>تاريخ الالتحاق</th></tr></thead><tbody>{% for row in enrollments %}<tr><td>{{ row.academic_year }}</td><td>{{ row.grade|default:"-" }}</td><td>{{ row.section|default:"-" }}</td><td>{{ row.get_status_display }}</td><td>{{ row.joined_at|default:"-" }}</td></tr>{% empty %}<tr><td colspan="5" class="text-center text-muted">لا يوجد سجل أكاديمي.</td></tr>{% endfor %}</tbody></table></div></div></div>
 
-  <div class="tab-pane fade" id="finance"><div class="opal-card mb-3"><div class="d-flex flex-wrap justify-content-between gap-2 mb-3"><h4 class="fw-bold mb-0">الفواتير</h4><span class="badge bg-{{ finance.status_class }}">نسبة السداد {{ finance.payment_rate }}%</span></div><div class="progress mb-3" style="height:8px"><div class="progress-bar" role="progressbar" style="width:{{ finance.payment_rate }}%"></div></div><div class="table-responsive"><table class="table"><thead><tr><th>البند</th><th>القيمة</th><th>المدفوع</th><th>المتبقي</th><th>الاستحقاق</th></tr></thead><tbody>{% for inv in invoices %}<tr><td>{{ inv.fee_category.name }}</td><td>{{ inv.amount|floatformat:2 }}</td><td>{{ inv.total_paid|floatformat:2 }}</td><td>{{ inv.remaining|floatformat:2 }}</td><td>{{ inv.due_date }}</td></tr>{% empty %}<tr><td colspan="5" class="text-center text-muted">لا توجد فواتير.</td></tr>{% endfor %}</tbody></table></div></div><div class="opal-card"><h4 class="fw-bold mb-3">آخر الدفعات</h4><div class="table-responsive"><table class="table"><thead><tr><th>الإيصال</th><th>التاريخ</th><th>المبلغ</th><th>قبل</th><th>بعد</th></tr></thead><tbody>{% for row in allocations %}<tr><td><a href="{% url 'admissions:fee_payment_receipt' row.fee_payment.pk %}">{{ row.fee_payment.receipt_number }}</a></td><td>{{ row.created_at|date:"Y-m-d" }}</td><td>{{ row.amount|floatformat:2 }}</td><td>{{ row.remaining_before|floatformat:2 }}</td><td>{{ row.remaining_after|floatformat:2 }}</td></tr>{% empty %}<tr><td colspan="5" class="text-center text-muted">لا توجد دفعات.</td></tr>{% endfor %}</tbody></table></div></div></div>
+  <div class="tab-pane fade" id="finance">
+    <div class="opal-card mb-3">
+      <div class="d-flex flex-wrap justify-content-between gap-2 mb-3"><h4 class="fw-bold mb-0">رسوم السنة الحالية — {{ current_enrollment.academic_year.name|default:"غير محددة" }}</h4><span class="badge bg-{{ finance.status_class }}">نسبة السداد الحالية {{ finance.payment_rate }}%</span></div>
+      <div class="progress mb-3" style="height:8px"><div class="progress-bar" role="progressbar" style="width:{{ finance.payment_rate }}%"></div></div>
+      <div class="table-responsive"><table class="table"><thead><tr><th>البند</th><th>صافي الرسوم</th><th>المدفوع</th><th>المتبقي</th><th>الاستحقاق</th></tr></thead><tbody>{% for inv in current_invoices %}<tr><td>{{ inv.fee_category.name }}</td><td>{{ inv.net_amount|floatformat:2 }}</td><td>{{ inv.total_paid|floatformat:2 }}</td><td>{{ inv.remaining|floatformat:2 }}</td><td>{{ inv.due_date }}</td></tr>{% empty %}<tr><td colspan="5" class="text-center text-muted">لا توجد رسوم للسنة الحالية.</td></tr>{% endfor %}</tbody></table></div>
+    </div>
+    <div class="opal-card mb-3">
+      <div class="d-flex flex-wrap justify-content-between gap-2 mb-3"><h4 class="fw-bold mb-0">رسوم السنوات السابقة</h4><span class="badge bg-danger">متبقي {{ previous_debt.total|floatformat:2 }} د.أ</span></div>
+      <div class="table-responsive"><table class="table"><thead><tr><th>العام</th><th>البند</th><th>صافي الرسوم</th><th>المدفوع</th><th>المتبقي</th></tr></thead><tbody>{% for inv in previous_invoices %}<tr><td>{{ inv.academic_year.name }}</td><td>{{ inv.fee_category.name }}</td><td>{{ inv.net_amount|floatformat:2 }}</td><td>{{ inv.total_paid|floatformat:2 }}</td><td class="text-danger">{{ inv.remaining|floatformat:2 }}</td></tr>{% empty %}<tr><td colspan="5" class="text-center text-muted">لا توجد رسوم من سنوات سابقة.</td></tr>{% endfor %}</tbody></table></div>
+    </div>
+    <div class="opal-card"><h4 class="fw-bold mb-3">آخر الدفعات</h4><div class="table-responsive"><table class="table"><thead><tr><th>الإيصال</th><th>التاريخ</th><th>الفترة المالية</th><th>المبلغ</th><th>قبل</th><th>بعد</th></tr></thead><tbody>{% for row in allocations %}<tr><td><a href="{% url 'admissions:fee_payment_receipt' row.fee_payment.pk %}">{{ row.fee_payment.receipt_number }}</a></td><td>{{ row.created_at|date:"Y-m-d" }}</td><td>{{ row.fee_payment.payment_period_label }}</td><td>{{ row.amount|floatformat:2 }}</td><td>{{ row.remaining_before|floatformat:2 }}</td><td>{{ row.remaining_after|floatformat:2 }}</td></tr>{% empty %}<tr><td colspan="6" class="text-center text-muted">لا توجد دفعات.</td></tr>{% endfor %}</tbody></table></div></div>
+  </div>
 
-  <div class="tab-pane fade" id="attendance"><div class="opal-card"><h4 class="fw-bold mb-3">سجل الحضور</h4><div class="d-flex flex-wrap gap-2 mb-3"><span class="badge bg-success">حاضر: {{ attendance_counts.present|default:0 }}</span><span class="badge bg-danger">غائب: {{ attendance_counts.absent|default:0 }}</span><span class="badge bg-warning text-dark">متأخر: {{ attendance_counts.late|default:0 }}</span><span class="badge bg-info text-dark">مغادر: {{ attendance_counts.departed|default:0 }}</span></div><div class="table-responsive"><table class="table"><thead><tr><th>التاريخ</th><th>الحالة</th><th>ساعة المغادرة</th></tr></thead><tbody>{% for row in attendance_recent %}<tr><td>{{ row.date }}</td><td>{{ row.get_status_display }}</td><td>{{ row.departure_time|time:'H:i'|default:"-" }}</td></tr>{% empty %}<tr><td colspan="3" class="text-center text-muted">لا توجد سجلات.</td></tr>{% endfor %}</tbody></table></div></div></div>
+  <div class="tab-pane fade" id="attendance"><div class="opal-card"><div class="d-flex flex-wrap justify-content-between gap-2 mb-3"><h4 class="fw-bold mb-0">سجل الغياب والمغادرة</h4><span class="badge bg-primary">نسبة الانتظام {{ attendance_rate }}%</span></div><div class="d-flex flex-wrap gap-2 mb-3"><span class="badge bg-secondary">الأيام المحتسبة: {{ attendance_total }}</span><span class="badge bg-success">حاضر تلقائيًا: {{ attendance_counts.present|default:0 }}</span><span class="badge bg-danger">غائب: {{ attendance_counts.absent|default:0 }}</span><span class="badge bg-info text-dark">مغادر: {{ attendance_counts.departed|default:0 }}</span></div><p class="text-secondary small">الحضور لا يُخزن كسجل مستقل؛ يُشتق من سجلات الشعب المرسلة بعد طرح الغياب والمغادرة.</p><div class="table-responsive"><table class="table"><thead><tr><th>التاريخ</th><th>الحالة</th><th>ساعة المغادرة</th></tr></thead><tbody>{% for row in attendance_recent %}<tr><td>{{ row.date }}</td><td>{{ row.get_status_display }}</td><td>{{ row.departure_time|time:'H:i'|default:"-" }}</td></tr>{% empty %}<tr><td colspan="3" class="text-center text-muted">لا توجد حالات غياب أو مغادرة.</td></tr>{% endfor %}</tbody></table></div></div></div>
 
-  <div class="tab-pane fade" id="marks"><div class="opal-card"><div class="d-flex justify-content-between mb-3"><h4 class="fw-bold mb-0">العلامات والنتائج</h4><span class="badge bg-primary">المتوسط {{ percentage_average }}%</span></div><div class="table-responsive"><table class="table"><thead><tr><th>الامتحان</th><th>المادة</th><th>العلامة</th><th>النسبة</th><th>التقدير</th></tr></thead><tbody>{% for row in marks %}<tr><td>{{ row.exam.name }}</td><td>{{ row.exam.subject }}</td><td>{{ row.mark }} / {{ row.exam.max_mark }}</td><td>{{ row.percentage }}%</td><td>{{ row.grade_letter }}</td></tr>{% empty %}<tr><td colspan="5" class="text-center text-muted">لا توجد علامات.</td></tr>{% endfor %}</tbody></table></div></div></div>
+  <div class="tab-pane fade" id="marks"><div class="opal-card"><div class="d-flex justify-content-between mb-3"><h4 class="fw-bold mb-0">العلامات والنتائج</h4><span class="badge bg-primary">المتوسط {{ percentage_average }}%</span></div><div class="table-responsive"><table class="table"><thead><tr><th>الامتحان</th><th>المادة</th><th>العلامة</th><th>النسبة</th><th>التقدير</th></tr></thead><tbody>{% for row in marks %}<tr><td>{{ row.exam.name }}</td><td><span class="opal-subject-chip" style="{% subject_style row.exam.subject %}">{{ row.exam.subject }}</span></td><td>{{ row.mark }} / {{ row.exam.max_mark }}</td><td>{{ row.percentage }}%</td><td>{{ row.grade_letter }}</td></tr>{% empty %}<tr><td colspan="5" class="text-center text-muted">لا توجد علامات.</td></tr>{% endfor %}</tbody></table></div></div></div>
 
   <div class="tab-pane fade" id="family"><div class="row g-3"><div class="col-lg-6"><div class="opal-card h-100"><h4 class="fw-bold mb-3">حساب ولي الأمر</h4>{% if family %}<p><strong>ولي الأمر:</strong> {{ family.guardian_name|default:"-" }}</p><p><strong>الرقم الوطني/الشخصي لولي الأمر:</strong> {{ family.identity_number|default:"-" }}</p><p><strong>الهاتف:</strong> {{ family.phone|default:"-" }}</p><p><strong>رقم ملف ولي الأمر:</strong> {{ family.family_code|default:"-" }}</p><p><strong>اسم المستخدم:</strong> {% if family.user %}{{ family.user.username }}{% else %}-{% endif %}</p><a href="{% url 'parent_portal:family_detail' family.pk %}" class="btn btn-primary">فتح حساب ولي الأمر</a>{% else %}<div class="alert alert-warning">الطالب غير مرتبط بملف ولي أمر رسمي.</div>{% endif %}<hr><h6 class="fw-bold">أولياء الأمور المرتبطون</h6>{% for link in guardian_links %}<div class="d-flex justify-content-between border-bottom py-2"><span>{{ link.family.guardian_name }}</span>{% if link.is_active %}<span class="badge bg-primary">فعال</span>{% endif %}</div>{% empty %}<p class="text-muted">لا توجد روابط أولياء أمور.</p>{% endfor %}</div></div><div class="col-lg-6"><div class="opal-card h-100"><h4 class="fw-bold mb-3">الإخوة</h4>{% for sibling in siblings %}<a href="{% url 'students:student_360' sibling.pk %}" class="d-flex justify-content-between border-bottom py-2 text-decoration-none"><span>{{ sibling.full_name }}</span><span>{{ sibling.grade }}</span></a>{% empty %}<p class="text-muted">لا يوجد إخوة مرتبطون.</p>{% endfor %}</div></div></div></div>
 
   <div class="tab-pane fade" id="documents"><div class="opal-card"><div class="d-flex justify-content-between align-items-center mb-3"><h4 class="fw-bold mb-0">الوثائق الصادرة</h4><a href="{% url 'documents:issue_student' student.id %}" class="btn btn-sm btn-primary">إصدار وثيقة من ملف الطالب</a></div><div class="table-responsive"><table class="table"><thead><tr><th>رقم الوثيقة</th><th>العنوان</th><th>التاريخ</th></tr></thead><tbody>{% for row in documents %}<tr><td><a href="{% url 'documents:document_detail' row.issued_document.id %}">{{ row.issued_document.document_number }}</a></td><td>{{ row.issued_document.title }}</td><td>{{ row.created_at|date:"Y-m-d" }}</td></tr>{% empty %}<tr><td colspan="3" class="text-center text-muted">لا توجد وثائق.</td></tr>{% endfor %}</tbody></table></div></div></div>
 
-  <div class="tab-pane fade" id="timetable"><div class="opal-card"><h4 class="fw-bold mb-3">الجدول الحالي</h4><div class="table-responsive"><table class="table"><thead><tr><th>اليوم</th><th>الحصة</th><th>المادة</th><th>المعلم</th><th>القاعة</th></tr></thead><tbody>{% for row in timetable %}<tr><td>{{ row.get_day_display }}</td><td>{{ row.time_slot }}</td><td>{{ row.subject }}</td><td>{{ row.teacher|default:"-" }}</td><td>{{ row.room|default:"-" }}</td></tr>{% empty %}<tr><td colspan="5" class="text-center text-muted">لا يوجد جدول مطابق للتسجيل الحالي.</td></tr>{% endfor %}</tbody></table></div></div></div>
+  <div class="tab-pane fade" id="timetable"><div class="opal-card"><h4 class="fw-bold mb-3">الجدول الحالي</h4><div class="table-responsive opal-timetable-matrix-wrap"><table class="table opal-timetable-grid timetable-grid opal-keep-grid"><thead><tr><th class="opal-timetable-day-col">اليوم / الحصة</th>{% for period in timetable_matrix.periods %}<th><strong>{{ period.name }}</strong>{% for range in period.time_labels %}<small>{{ range.label }}{% if range.sections_label %}<br>{{ range.sections_label }}{% endif %}</small>{% endfor %}</th>{% endfor %}</tr></thead><tbody>{% for day in timetable_matrix.rows %}<tr{% if day.is_today %} class="opal-timetable-today-row"{% endif %}><th class="opal-timetable-day-col">{{ day.label }}{% if day.is_today %}<small class="opal-timetable-today-badge">اليوم</small>{% endif %}</th>{% for cell in day.cells %}<td{% if cell.is_current %} class="opal-timetable-current-cell"{% endif %}>{% for item in cell.entries %}<div class="opal-timetable-entry opal-subject-surface{% if item.is_current_lesson %} is-current{% endif %}" style="{% subject_style item.subject %}">{% if item.is_current_lesson %}<span class="opal-current-lesson-badge">الحصة الجارية</span>{% endif %}<strong>{{ item.subject }}</strong><span>{{ item.teacher|default:'—' }}</span><small>{% if item.room %}{{ item.room }}{% endif %}</small>{% if item.teacher_state_code != 'available' %}<span class="badge {% if item.teacher_state_code == 'substitute' %}bg-success{% else %}bg-danger{% endif %}">{{ item.teacher_state_label }}</span>{% endif %}</div>{% empty %}<span class="opal-timetable-empty">—</span>{% endfor %}{% for event in cell.break_events %}<div class="opal-timetable-break"><strong>{{ event.name }}</strong><small>{{ event.time_label }}</small></div>{% endfor %}</td>{% endfor %}</tr>{% endfor %}</tbody></table></div>{% if not timetable_matrix.has_entries %}<p class="text-center text-muted mb-0">لا يوجد جدول مطابق للتسجيل الحالي.</p>{% endif %}</div></div>
 
   {% if opal_openemis_enabled %}
   <div class="tab-pane fade" id="openemis"><div class="opal-card"><h4 class="fw-bold mb-3">OpenEMIS</h4><p class="text-secondary">حالة المزامنة: <strong>{{ student.ministry_sync_status|default:"not_synced" }}</strong>{% if student.ministry_student_id %} — الرقم الوزاري: {{ student.ministry_student_id }}{% endif %}</p><div class="d-flex flex-wrap gap-2 mb-3"><a href="{% url 'openemis:student_push' student.id %}" class="btn btn-secondary">إضافة إلى طابور المزامنة</a></div><form method="post" action="{% url 'openemis:mark_synced' student.id %}" class="row g-2 align-items-end">{% csrf_token %}<div class="col-md-7"><label class="form-label fw-bold">رقم الطالب في الوزارة</label><input name="ministry_student_id" class="form-control" value="{{ student.ministry_student_id }}"></div><div class="col-md-5"><button class="btn btn-primary w-100">تحديث حالة المزامنة</button></div></form></div></div>

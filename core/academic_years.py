@@ -22,12 +22,16 @@ def academic_year_closure_report(year):
     semester_codes = set(year.semesters.values_list("code", flat=True))
     if semester_codes != EXPECTED_SEMESTER_CODES or year.semesters.count() != 2:
         blockers.append("يجب أن يحتوي العام على الفصلين الرسميين فقط قبل الإغلاق.")
+    open_semesters = year.semesters.filter(is_closed=False).count()
+    if open_semesters:
+        blockers.append(f"يجب إغلاق الفصلين أكاديميًا أولًا؛ ما زال {open_semesters} فصل مفتوحًا.")
 
     enrollments = Enrollment.objects.filter(academic_year=year)
     active_enrollments = enrollments.filter(status="active").count()
-    if active_enrollments:
+    today = timezone.localdate()
+    if today < year.end_date:
         blockers.append(
-            f"يوجد {active_enrollments} قيدًا نشطًا؛ يجب ترفيع الطلاب أو تخريجهم أو إنهاء قيودهم أولًا."
+            f"لا يمكن إغلاق العام قبل انتهاء الفصل الدراسي الثاني في {year.end_date}."
         )
 
     exams = Exam.objects.filter(academic_year=year)
@@ -51,6 +55,8 @@ def academic_year_closure_report(year):
         "active_enrollments": active_enrollments,
         "exams": exam_count,
         "unfinished_exams": unfinished_exams,
+        "open_semesters": open_semesters,
+        "annual_results": year.annual_student_results.count(),
         "attendance_to_lock": Attendance.objects.filter(academic_year=year, is_locked=False).count(),
         "assignments_to_deactivate": TeacherAssignment.objects.filter(academic_year=year, is_active=True).count(),
         "timetable_to_deactivate": TimetableEntry.objects.filter(academic_year=year, is_active=True).count(),
@@ -62,12 +68,12 @@ def academic_year_closure_report(year):
 @transaction.atomic
 def close_academic_year(*, year, user, notes=""):
     """Close a validated year while preserving its historical records."""
-    from academics.models import Section
+    from academics.models import Section, Subject
     from admissions.models import GradeFee
     from attendance_v2.models import Attendance
-    from curriculum.models import Curriculum
     from teachers.models import Homework, TeacherAssignment
     from timetable.models import TimetableEntry
+    from exams.lifecycle import calculate_annual_results
 
     locked_year = AcademicYear.objects.select_for_update().get(pk=year.pk)
     if locked_year.is_closed:
@@ -76,6 +82,8 @@ def close_academic_year(*, year, user, notes=""):
     report = academic_year_closure_report(locked_year)
     if report["blockers"]:
         raise ValidationError(report["blockers"])
+
+    annual_results = calculate_annual_results(locked_year)
 
     locked_year.is_current = False
     locked_year.is_closed = True
@@ -107,7 +115,7 @@ def close_academic_year(*, year, user, notes=""):
         academic_year=locked_year,
         is_active=True,
     ).update(is_active=False)
-    curricula_deactivated = Curriculum.objects.filter(
+    subjects_deactivated = Subject.objects.filter(
         academic_year=locked_year,
         is_active=True,
     ).update(is_active=False)
@@ -117,12 +125,13 @@ def close_academic_year(*, year, user, notes=""):
     ).update(is_active=False)
 
     return locked_year, {
+        "annual_results": annual_results,
         "attendance_locked": attendance_locked,
         "assignments_deactivated": assignments_deactivated,
         "homework_deactivated": homework_deactivated,
         "timetable_deactivated": timetable_deactivated,
         "sections_deactivated": sections_deactivated,
-        "curricula_deactivated": curricula_deactivated,
+        "subjects_deactivated": subjects_deactivated,
         "fees_deactivated": fees_deactivated,
     }
 
@@ -138,12 +147,7 @@ def activate_academic_year(*, year):
     locked_year.save(update_fields=["is_current"])
     locked_year.ensure_semesters()
 
-    today = timezone.localdate()
-    semesters = list(locked_year.semesters.order_by("start_date", "code"))
-    selected = next((item for item in semesters if item.start_date <= today <= item.end_date), None)
-    if selected is None and semesters:
-        selected = semesters[0] if today < semesters[-1].start_date else semesters[-1]
-    locked_year.semesters.update(is_current=False)
-    if selected is not None:
-        type(selected).objects.filter(pk=selected.pk).update(is_current=True)
+    from core.academic_context import resolve_academic_context
+
+    resolve_academic_context(school=locked_year.school, persist=True)
     return locked_year

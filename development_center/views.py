@@ -173,7 +173,9 @@ def gantt_chart(request):
     return render(request, "development_center/gantt.html")
 
 
+@login_required
 def gantt_data(request):
+    """Return Gantt data only after the development-center access gate."""
     return JsonResponse({"tasks": get_gantt_tasks()})
 
 

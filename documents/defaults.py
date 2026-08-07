@@ -5,11 +5,6 @@ DEFAULT_DOCUMENT_TEMPLATES = [
         "body": "لمن يهمه الأمر\n\nتشير سجلات {school_name} إلى أن الطالب/ة {student_name}، الرقم الوطني {national_id}، أحد طلبتها منذ تاريخ {registration_date}، وقد التحق/ت بالمدرسة في الصف {first_grade}، وهو/هي حاليًا على مقاعد الدراسة في الصف {current_grade} للعام الدراسي {academic_year}.\n\nأُعطي هذا الإثبات بناءً على طلب ولي الأمر دون أدنى مسؤولية على المدرسة تجاه الغير.",
     },
     {
-        "code": "candidate-acceptance", "audience": "candidate", "document_type": "acceptance_letter",
-        "name": "كتاب قبول", "title": "كتاب قبول",
-        "body": "لمن يهمه الأمر\n\nبناءً على طلب ولي أمر الطالب/ة {candidate_name}، تفيد {school_name} بموافقتها على قبول الطالب/ة مرشحًا للالتحاق بالصف {candidate_grade} للعام الدراسي {academic_year}، على أن يستكمل ولي الأمر متطلبات التسجيل والوثائق والرسوم المعتمدة.\n\nلا يُعد هذا الكتاب تسجيلًا نهائيًا أو قيدًا دراسيًا ما لم تُستكمل إجراءات التسجيل الرسمية في النظام.",
-    },
-    {
         "code": "student-transfer", "audience": "student", "document_type": "transfer_letter",
         "name": "كتاب انتقال", "title": "كتاب انتقال",
         "body": "لمن يهمه الأمر\n\nبناءً على طلب ولي أمر الطالب/ة {student_name}، الرقم الوطني {national_id}، توافق {school_name} على انتقاله/ا من الصف {current_grade} إلى مدرسة {target_school} للالتحاق بالصف {target_grade}، وذلك بعد استكمال المتطلبات الإدارية والمالية المعتمدة.",
@@ -50,8 +45,13 @@ DEFAULT_DOCUMENT_TEMPLATES = [
         "body": "تشهد {school_name} بأن المعلم/ة {teacher_name} يعمل/ت لديها منذ {hire_date}، ويتقاضى/ت راتبًا شهريًا مسجلًا مقداره {monthly_salary} دينارًا أردنيًا. أُعطي هذا الكتاب بناءً على طلبه/ا دون أدنى مسؤولية على المدرسة تجاه الغير.",
     },
     {
+        "code": "teacher-termination", "audience": "teacher", "document_type": "custom",
+        "name": "كتاب إنهاء خدمة", "title": "كتاب إنهاء خدمة",
+        "body": "التاريخ: {teacher_end_date}\n\nالسيد/ة: {teacher_name}\nالرقم الوظيفي: {employee_number}\nالرقم الوطني: {teacher_national_id}\n\nالموضوع: إنهاء خدمة\n\nتحية طيبة وبعد،\n\nتقرر إنهاء خدمتكم لدى {school_name} اعتبارًا من تاريخ {teacher_end_date}، وذلك للأسباب التالية:\n{teacher_end_reason}\n\nيُرجى استكمال إجراءات التسليم والإخلاء حسب الأنظمة والتعليمات المعتمدة لدى المدرسة. وقد صدر هذا الكتاب بصورة آلية بعد اعتماد إجراء إنهاء الخدمة في نظام OPAL ERP.",
+    },
+    {
         "code": "guardian-statement", "audience": "guardian", "document_type": "guardian_statement",
         "name": "كشف حساب ولي الأمر", "title": "كشف حساب ولي الأمر",
-        "body": "يبين هذا الكشف الالتزامات المالية المسجلة على حساب ولي الأمر {guardian_name} عن أبنائه/ا: {children_names}، خلال العام الدراسي {academic_year}.\n\nإجمالي المبالغ المترتبة: {statement_total} د.أ\nإجمالي المدفوع: {statement_paid} د.أ\nإجمالي المتبقي: {statement_remaining} د.أ",
+        "body": "يبين هذا الكشف الرسوم المسجلة على حساب ولي الأمر {guardian_name} عن أبنائه/ا: {children_names}، مع فصل العام الدراسي {academic_year} عن السنوات السابقة.\n\nرسوم السنة الحالية: {statement_total} د.أ\nمدفوع السنة الحالية: {statement_paid} د.أ\nمتبقي السنة الحالية: {statement_remaining} د.أ\nمتبقيات السنوات السابقة: {statement_previous_remaining} د.أ\nالإجمالي المطلوب: {statement_combined_remaining} د.أ",
     },
 ]

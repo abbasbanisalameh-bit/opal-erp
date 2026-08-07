@@ -3,6 +3,7 @@ from datetime import date
 import unittest
 
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.test import TestCase
 
 if not settings.OPAL_ENABLE_DEVELOPMENT_CENTER:
@@ -64,15 +65,32 @@ class DevelopmentCenterModelsTest(TestCase):
 
 
 class DevelopmentCenterPagesTest(TestCase):
-    def test_public_development_pages_redirect_or_load(self):
-        urls = [
-            "/development/",
-            "/development/sprints/",
-            "/development/backlog/",
-            "/development/sprints/velocity/",
-            "/development/notifications/",
-        ]
+    def setUp(self):
+        user_model = get_user_model()
+        self.superuser = user_model.objects.create_superuser(
+            username="development-superuser",
+            email="development-superuser@example.com",
+            password="test-pass-123",
+        )
+        self.staff = user_model.objects.create_user(
+            username="development-staff",
+            password="test-pass-123",
+            is_staff=True,
+        )
 
-        for url in urls:
+    def test_public_development_endpoints_redirect_to_login(self):
+        for url in ("/development/", reverse("development_center:gantt_data")):
             response = self.client.get(url)
-            self.assertIn(response.status_code, [200, 302])
+            self.assertEqual(response.status_code, 302)
+            self.assertIn(reverse("login"), response.url)
+
+    def test_staff_cannot_open_development_center_or_gantt_data(self):
+        self.client.force_login(self.staff)
+        for url in ("/development/", reverse("development_center:gantt_data")):
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, 403)
+
+    def test_superuser_can_open_development_center_and_gantt_data(self):
+        self.client.force_login(self.superuser)
+        self.assertEqual(self.client.get("/development/").status_code, 200)
+        self.assertEqual(self.client.get(reverse("development_center:gantt_data")).status_code, 200)

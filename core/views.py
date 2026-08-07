@@ -6,12 +6,15 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.shortcuts import get_object_or_404, render, redirect
 from django.urls import reverse
 from django.contrib import messages
+import logging
+
+logger = logging.getLogger(__name__)
 from .models import Branch, School
 from .forms import BranchForm, SchoolSettingsForm
-from enterprise_ops.permissions import management_required
+from enterprise_ops.permissions import is_management, management_required
 
 def can_manage_system(user):
-    return user.is_superuser or user.is_staff
+    return is_management(user)
 
 @login_required
 @user_passes_test(can_manage_system)
@@ -36,24 +39,43 @@ def system_settings(request):
             if not request.user.is_superuser:
                 messages.error(request, "إدخال البيانات الشاملة وتصفيرها متاحان لمدير النظام الأعلى فقط.")
                 return redirect("core:system_settings")
+
             from .system_data import reset_all_operational_data, seed_system_data
-            if action == "seed_system":
-                result = seed_system_data(user=request.user)
-                messages.success(
+
+            if action == "reset_all" and request.POST.get("confirmation", "").strip() != "تصفير":
+                messages.error(request, "تعذر التصفير: اكتب كلمة «تصفير» كما هي.")
+                return redirect("core:system_settings")
+
+            result = {}
+            try:
+                if action == "seed_system":
+                    result = seed_system_data(user=request.user)
+                    messages.success(
+                        request,
+                        f"تم إدخال بيانات مترابطة والتحقق منها: {result['students']} طالب، {result['teachers']} معلم، "
+                        f"{result['assignments']} تكليف، {result['subject_plans']} بند خطة، {result['base_slots']} أوقات حصص، "
+                        f"{result['breaks']} استراحات، {result['timetable_entries']} حصة مجدولة، "
+                        f"{result['marks']} علامة، و{result['receipts']} إيصال. "
+                        f"كلمة مرور الحسابات المنشأة: {result['password']}",
+                    )
+                else:
+                    result = reset_all_operational_data(keep_user=request.user)
+                    messages.success(
+                        request,
+                        f"تم تصفير جميع البيانات التشغيلية: {result['students']} طالب، {result['teachers']} معلم، "
+                        f"{result['families']} ولي أمر، {result['documents']} وثيقة، و{result['receipts']} إيصال.",
+                    )
+            except Exception:
+                event = "seed" if action == "seed_system" else "reset"
+                logger.exception("System data %s failed", event)
+                operation = "إدخال البيانات التجريبية" if action == "seed_system" else "تصفير البيانات"
+                messages.error(
                     request,
-                    f"تم إدخال بيانات شاملة: {result['students']} طالب، {result['teachers']} معلم، "
-                    f"{result['families']} ولي أمر، {result['marks']} علامة، {result['documents']} وثيقة، "
-                    f"و{result['receipts']} إيصال. كلمة مرور الحسابات المنشأة: {result['password']}",
+                    f"تعذر {operation}. لم يُحفظ أي تغيير جزئي، وتم تسجيل السبب للمراجعة.",
                 )
-            elif request.POST.get("confirmation", "").strip() == "تصفير شامل":
-                result = reset_all_operational_data(keep_user=request.user)
-                messages.success(
-                    request,
-                    f"تم تصفير جميع البيانات التشغيلية: {result['students']} طالب، {result['teachers']} معلم، "
-                    f"{result['families']} ولي أمر، {result['documents']} وثيقة، و{result['receipts']} إيصال.",
-                )
-            else:
-                messages.error(request, "تعذر التصفير: اكتب عبارة «تصفير شامل» كما هي.")
+                return redirect("core:system_settings")
+            if action == "seed_system" and result.get("schedule_verified"):
+                return redirect(f"{reverse('academics:academic_structure')}?demo=ready#timetable-operations")
             return redirect("core:system_settings")
 
         if action == "registration_settings":
@@ -209,7 +231,7 @@ def operations_center(request):
                 ("إعدادات المدرسة", "core:system_settings"), ("الفروع", "core:branch_list"),
                 ("العام الدراسي", "academics:academic_year_list"), ("الفصل الحالي", "academics:semester_list"),
                 ("الصفوف والشعب", "academics:academic_structure"), ("المواد", "academics:subject_list"),
-                ("الخطة الدراسية", "curriculum:curriculum_list"),
+                ("المواد والخطة الدراسية", "academics:subject_list"),
             ],
         },
         {
@@ -218,8 +240,7 @@ def operations_center(request):
             "description": "ملف المعلم ثم الحساب والتكليف، وبعدها إنشاء الجدول دون تعارض.",
             "steps": [
                 ("ملف المعلم", "teachers:dashboard"), ("التكليفات", "teachers:dashboard"),
-                ("إعداد الحصص", "timetable:schedule_settings"), ("المنشئ الذكي", "timetable:smart_builder"),
-                ("الجدول النهائي", "timetable:dashboard"),
+                ("إعداد اليوم المدرسي", "timetable:schedule_settings"), ("الجدول والمنشئ الذكي", "timetable:dashboard"),
             ],
         },
         {
@@ -227,7 +248,7 @@ def operations_center(request):
             "icon": "person-plus-fill",
             "description": "إنشاء الطالب والقيد والأسرة والرسم والإيصال ثم المتابعة من بطاقة 360.",
             "steps": [
-                ("المرشحون", "admissions:candidate_list"), ("التسجيل الذكي", "admissions:direct_registration"),
+                ("التسجيل الذكي", "admissions:direct_registration"),
                 ("سجل الطلبة", "admissions:admission_list"), ("قائمة الطلاب", "students:student_list"),
                 ("ملفات الأسر", "parent_portal:family_management"),
             ],
@@ -240,7 +261,7 @@ def operations_center(request):
                 ("فئات الرسوم", "accounting:fee_category_list"), ("رسوم الطلاب", "accounting:invoice_list"),
                 ("التسديد الموحد", "admissions:fee_payment_create"), ("أرشيف التسديد", "admissions:fee_payment_archive"),
                 ("الأقساط", "accounting:installment_list"), ("الخصومات", "accounting:discount_list"),
-                ("الكشف الشهري", "accounting:monthly_report"), ("الإغلاق المالي", "accounting:financial_year_close"),
+                ("الإغلاق المالي السنوي", "accounting:financial_year_close"),
             ],
         },
         {
@@ -249,8 +270,8 @@ def operations_center(request):
             "description": "الحضور والواجبات والامتحانات والعلامات ثم النشر لولي الأمر.",
             "steps": [
                 ("الحضور", "attendance_v2:dashboard"), ("بوابة المعلم", "teachers:portal_dashboard"),
-                ("الامتحانات", "exams:exam_list"), ("العلامات", "exams:mark_list"),
-                ("تحليل النتائج", "exams:exam_dashboard"), ("بوابة ولي الأمر", "parent_portal:dashboard"),
+                ("الدورات الامتحانية", "exams:exam_cycle_center"), ("العلامات والتحليل", "exams:exam_list"),
+                ("بوابة ولي الأمر", "parent_portal:dashboard"),
             ],
         },
         {

@@ -4,23 +4,29 @@
 {% block content %}
 
 <section class="panel">
-    <form method="post">
-        {% csrf_token %}
-        
-<div class="row g-3">
-    {% for field in form %}
-    <div class="col-md-6">
-        <label class="form-label fw-bold">{{ field.label }}</label>
-        {{ field }}
-        {% if field.errors %}
-            <div class="text-danger small mt-1">{{ field.errors }}</div>
-        {% endif %}
+    <div class="alert alert-info mb-3">
+        أدخل تواريخ الفصلين مباشرة. تُحتسب عطلة ما بين الفصلين تلقائيًا من اليوم التالي لنهاية الفصل الأول حتى اليوم السابق لبداية الفصل الثاني.
+        يمكنك كتابة التاريخ يدويًا أو اختياره من التقويم.
     </div>
-    {% endfor %}
-</div>
-
-        <button class="primary-btn" type="submit">حفظ</button>
-        <a class="secondary-btn" href="{% url 'academics:academic_year_list' %}">رجوع</a>
+    <form method="post" novalidate>
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+        {% endif %}
+        <div class="row g-3">
+            {% for field in form %}
+            <div class="col-md-6">
+                <label class="form-label fw-bold">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+                {% if field.errors %}<div class="text-danger small mt-1">{{ field.errors }}</div>{% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        <div class="mt-3 d-flex gap-2 flex-wrap">
+            <button class="primary-btn" type="submit">حفظ التقويم الدراسي</button>
+            <a class="secondary-btn" href="{% url 'academics:academic_year_list' %}">رجوع</a>
+        </div>
     </form>
 </section>
 

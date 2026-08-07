@@ -3,6 +3,7 @@ PAYMENT_METHOD_CHOICES = [
     ("card", "بطاقة بنكية"),
     ("bank_transfer", "تحويل بنكي"),
     ("online", "دفع إلكتروني"),
+    ("wallet", "محفظة إلكترونية"),
     ("cheque", "شيك"),
     ("unspecified", "غير محدد (سجل سابق)"),
 ]

@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 from django.test import SimpleTestCase
+from django.apps import apps
 
 from admissions.financial_services import distribute_amount
 
@@ -232,3 +233,17 @@ class FamilyPaymentDistributionTests(SimpleTestCase):
         self.assertEqual(left, Decimal("0.00"))
         self.assertEqual(sum((row["allocated"] for row in data), Decimal("0.00")), Decimal("10.00"))
         self.assertEqual([row["allocated"] for row in data], [Decimal("3.34"), Decimal("3.33"), Decimal("3.33")])
+
+
+class LegacyAdmissionApplicationRemovalTests(SimpleTestCase):
+    def test_legacy_admission_application_model_is_not_registered(self):
+        with self.assertRaises(LookupError):
+            apps.get_model("admissions", "AdmissionApplication")
+
+    def test_canonical_admission_list_uses_student_registrations_only(self):
+        from pathlib import Path
+        from django.conf import settings
+
+        source = (Path(settings.BASE_DIR) / "admissions" / "views.py").read_text(encoding="utf-8")
+        self.assertNotIn("AdmissionApplication", source)
+        self.assertIn("StudentRegistration.objects", source)

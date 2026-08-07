@@ -3,7 +3,7 @@ import csv
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -13,8 +13,10 @@ from enterprise_ops.permissions import is_management, management_required
 from enterprise_ops.services import audit, notify
 from students.models import Student
 
-from .forms import ExamForm
-from .models import Exam, StudentMark
+from .forms import ExamCycleOpenForm, ExamForm
+from .models import Exam, ExamCycle, StudentMark
+from .lifecycle import open_exam_cycle
+from core.secondary_effects import run_secondary_effect
 from .workflow import (
     build_exam_dashboard_context, build_exam_definitions_context, build_exam_detail_context,
     build_gradebook_context, build_mark_list_queryset, build_mark_rows, build_scope_options_payload,
@@ -22,6 +24,21 @@ from .workflow import (
     resolve_report_year, save_exam_marks,
 )
 
+
+
+def _legacy_redirect(request, fragment=""):
+    """One-release compatibility redirect; remove in OPAL Update 132.0."""
+    target = reverse("exams:exam_list")
+    query = request.GET.urlencode()
+    if query:
+        target += f"?{query}"
+    if fragment:
+        target += f"#{fragment}"
+    response = HttpResponseRedirect(target)
+    response["Deprecation"] = "true"
+    response["Sunset"] = "OPAL Update 132.0"
+    response["Link"] = f'<{reverse("exams:exam_list")}>; rel="successor-version"'
+    return response
 
 def _notify_management_exam_submitted(exam):
     teacher_name = exam.teacher_assignment.teacher.full_name if exam.teacher_assignment_id else "المعلم"
@@ -55,11 +72,26 @@ def _notify_parents_exam_published(exam):
                 "تم نشر نتيجة جديدة",
                 f"تم نشر نتيجة {exam.name} للطالب {student.full_name}.",
                 "success",
-                "/parent/marks/",
+                f"{reverse('parent_portal:marks')}?student={student.pk}",
                 event_key=f"exam:{exam.pk}:student:{student.pk}:user:{user.pk}",
             )
             sent += 1
     return sent
+
+
+def _close_exam_cycle_when_complete(exam):
+    """Close the parent cycle after every generated exam is published and closed."""
+    if not exam.cycle_id:
+        return False
+    cycle = ExamCycle.objects.filter(pk=exam.cycle_id).first()
+    if cycle is None or cycle.status == "closed":
+        return False
+    if cycle.exams.exclude(status="closed", is_locked=True).exists():
+        return False
+    cycle.status = "closed"
+    cycle.closed_at = timezone.now()
+    cycle.save(update_fields=["status", "closed_at"])
+    return True
 
 
 @management_required
@@ -68,12 +100,51 @@ def gradebook(request):
 
 
 @management_required
+def legacy_gradebook(request):
+    return _legacy_redirect(request)
+
+
+@management_required
 def exam_definitions(request):
     return render(request, "exams/exam_list.html", build_exam_definitions_context(request))
 
+
 @management_required
 def exam_dashboard(request):
-    return render(request, "exams/dashboard.html", build_exam_dashboard_context(request))
+    return _legacy_redirect(request, "results-analysis")
+
+
+@management_required
+def exam_cycle_center(request):
+    from admissions.services import active_school
+
+    school = active_school()
+    form = ExamCycleOpenForm(request.POST or None, school=school)
+    if request.method == "POST" and form.is_valid():
+        try:
+            cycle, summary = open_exam_cycle(
+                academic_year=form.cleaned_data["academic_year"],
+                semester=form.cleaned_data["semester"],
+                exam_type=form.cleaned_data["exam_type"],
+                name=form.cleaned_data["name"],
+                notes=form.cleaned_data["notes"],
+                user=request.user,
+            )
+        except Exception as exc:
+            detail = getattr(exc, "messages", [str(exc)])
+            if detail:
+                for item in detail:
+                    form.add_error(None, item)
+            else:
+                form.add_error(None, "تعذر فتح الدورة الامتحانية.")
+        else:
+            audit(request, "create", "exams.ExamCycle", cycle.pk, f"فتح دورة عامة: {summary}")
+            messages.success(request, f"فُتحت الدورة مرة واحدة ووزعت على {summary['assignments']} تكليف؛ أُنشئ {summary['exams_created']} امتحانًا دون إنشاء علامات فارغة.")
+            return redirect("exams:exam_cycle_center")
+    cycles = ExamCycle.objects.filter(academic_year__school=school).select_related(
+        "academic_year", "semester", "opened_by"
+    ).prefetch_related("exams").order_by("-opened_at")
+    return render(request, "exams/exam_cycle_center.html", {"form": form, "cycles": cycles})
 
 @management_required
 @require_GET
@@ -106,12 +177,12 @@ def exam_create(request):
 @management_required
 def mark_create(request):
     messages.info(request, "العلامات تُدخل من الامتحان الذي أنشأته الإدارة فقط.")
-    return redirect("exams:exam_list")
+    return _legacy_redirect(request, "marks-review")
 
 
 @management_required
 def mark_list(request):
-    return render(request, "exams/mark_list.html", {"marks": build_mark_list_queryset()})
+    return _legacy_redirect(request, "marks-review")
 
 
 @login_required
@@ -145,7 +216,12 @@ def exam_marks_bulk(request, exam_id):
                     exam.submitted_by = request.user
                     exam.submitted_at = timezone.now()
                     exam.save(update_fields=["status", "submitted_by", "submitted_at"])
-                    notified = _notify_management_exam_submitted(exam)
+                    notified = run_secondary_effect(
+                        _notify_management_exam_submitted,
+                        exam,
+                        label="exam submission notification",
+                        default=0,
+                    )
                     audit(request, "update", "exams.Exam", exam.pk, f"إرسال {exam.name} للإدارة للمراجعة")
                     messages.success(request, f"تم حفظ العلامات وإرسالها للإدارة للمراجعة. تم تنبيه {notified} من مسؤولي الإدارة.")
                     return redirect("teachers:portal_dashboard")
@@ -234,15 +310,34 @@ def exam_action(request, exam_id):
             messages.error(request, "لا يمكن اعتماد امتحان دون علامات.")
             return redirect("exams:exam_detail", exam_id=exam.id)
         now = timezone.now()
-        exam.status = "published"
+        # Publishing is the final administrative action: publish the result and
+        # lock/close the exam in one atomic workflow state.
+        exam.status = "closed"
         exam.is_locked = True
         exam.approved_by = request.user
         exam.approved_at = now
         exam.published_at = now
         exam.save(update_fields=["status", "is_locked", "approved_by", "approved_at", "published_at"])
-        queued = _queue_exam_marks_for_openemis(exam, request.user)
-        parent_notifications = _notify_parents_exam_published(exam)
-        messages.success(request, f"تم الاعتماد والنشر لولي الأمر ({parent_notifications} إشعارًا) وتجهيز {queued} سجلًا لمزامنة OpenEMIS.")
+        cycle_closed = _close_exam_cycle_when_complete(exam)
+        queued = run_secondary_effect(
+            _queue_exam_marks_for_openemis,
+            exam,
+            request.user,
+            label="OpenEMIS queue",
+            default=0,
+        )
+        parent_notifications = run_secondary_effect(
+            _notify_parents_exam_published,
+            exam,
+            label="parent exam notifications",
+            default=0,
+        )
+        cycle_message = " وأُغلقت الدورة الامتحانية." if cycle_closed else ""
+        messages.success(
+            request,
+            f"تم نشر النتيجة وإغلاق الامتحان ({parent_notifications} إشعارًا لولي الأمر) "
+            f"وتجهيز {queued} سجلًا لمزامنة OpenEMIS.{cycle_message}",
+        )
     elif action == "return":
         exam.status = "open"
         exam.is_locked = False
@@ -269,11 +364,6 @@ def exam_action(request, exam_id):
         exam.submitted_at = None
         exam.save(update_fields=["status", "is_locked", "approved_by", "approved_at", "published_at", "submitted_by", "submitted_at"])
         messages.success(request, "تم فتح الامتحان للمعلم من جديد وإلغاء حالة النشر السابقة.")
-    elif action == "close":
-        exam.status = "closed"
-        exam.is_locked = True
-        exam.save(update_fields=["status", "is_locked"])
-        messages.success(request, "تم إغلاق الامتحان.")
     else:
         messages.error(request, "الإجراء غير معروف.")
         return redirect("exams:exam_detail", exam_id=exam.id)

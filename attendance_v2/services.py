@@ -1,8 +1,9 @@
 from enterprise_ops.services import notify
+from django.urls import reverse
 
 
 def notify_parent_for_attendance(record):
-    if record.status not in {"absent", "late", "departed"}:
+    if record.status not in {"absent", "departed"}:
         return []
     recipients = {}
     for link in record.student.family_links.select_related("family__user").filter(is_active=True):
@@ -17,7 +18,7 @@ def notify_parent_for_attendance(record):
             title,
             message,
             "warning",
-            "/parent/attendance/",
+            f"{reverse('parent_portal:attendance')}?student={record.student_id}&date={record.date.isoformat()}",
             event_key=f"attendance:{record.pk}:{record.status}:user:{user.pk}",
         )
         for user in recipients.values()

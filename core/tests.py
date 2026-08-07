@@ -94,40 +94,66 @@ class SystemDataCenterTests(TestCase):
     def test_superuser_sees_data_center_buttons_without_old_label(self):
         self.client.force_login(self.user)
         response = self.client.get(reverse("core:system_settings"))
-        self.assertContains(response, "إدخال البيانات")
+        self.assertContains(response, "إدخال بيانات مترابطة")
         self.assertContains(response, "تصفير جميع البيانات")
         self.assertNotContains(response, "مختبر البيانات التجريبية")
 
     def test_seed_is_comprehensive_and_reset_removes_all_operational_data(self):
         from core.system_data import reset_all_operational_data, seed_system_data
         from students.models import Student
-        from teachers.models import Teacher, TeacherDocument
+        from teachers.models import Teacher, TeacherDocument, TeacherPerformanceSnapshot
         from accounting.models import Receipt
-        from parent_portal.models import Family
+        from parent_portal.models import Family, TeacherMonthlyEvaluation
         from parent_portal.models import FamilyStudent
-        from academics.models import Grade, Section
-        from admissions.models import AdmissionApplication, FeePayment
+        from academics.models import Grade, Section, Subject
+        from teachers.models import TeacherAssignment
+        from timetable.models import SchoolDayEvent, TimeSlot
+        from admissions.models import FeePayment
         from documents.models import IssuedDocument
-        from exams.models import StudentMark
-        from timetable.models import TimetableEntry
+        from exams.models import Exam, StudentMark
+        from timetable.models import TeacherAbsence, TimetableEntry
+        from attendance_v2.models import Attendance, AttendanceRegister
+        from enterprise_ops.models import MonthlyServiceEvaluation, RolePermissionRule
 
         Student.objects.create(student_number="OLD-WITNESS", full_name="سجل قديم", grade="الأول")
         result = seed_system_data(user=self.user)
         self.assertEqual(result["students"], 500)
-        self.assertEqual(result["teachers"], 50)
+        self.assertEqual(result["teachers"], 19)
         self.assertEqual(result["families"], 300)
         self.assertEqual(Student.objects.filter(is_demo=True).count(), 0)
         self.assertEqual(Teacher.objects.filter(is_demo=True).count(), 0)
-        self.assertEqual(TeacherDocument.objects.count(), 100)
+        self.assertEqual(TeacherDocument.objects.count(), 38)
         self.assertGreater(Receipt.objects.count(), 0)
         self.assertEqual(Family.objects.count(), 300)
         self.assertEqual(Grade.objects.count(), 12)
-        self.assertEqual(Section.objects.count(), 24)
-        self.assertEqual(StudentMark.objects.count(), 24000)
-        self.assertEqual(IssuedDocument.objects.count(), 850)
+        self.assertEqual(Section.objects.count(), 25)
+        self.assertEqual(StudentMark.objects.count(), 52640)
+        self.assertEqual(IssuedDocument.objects.count(), 819)
         self.assertEqual(Receipt.objects.count() + FeePayment.objects.count(), 800)
-        self.assertEqual(AdmissionApplication.objects.filter(status="candidate").count(), 30)
-        self.assertGreaterEqual(TimetableEntry.objects.count(), 250)
+        self.assertEqual(result["schedule_verified"], True)
+        self.assertEqual(Subject.objects.filter(academic_year__is_current=True).count(), 159)
+        self.assertEqual(TeacherAssignment.objects.count(), 329)
+        self.assertEqual(TimeSlot.objects.filter(generated_for_smart_schedule=False).count(), 8)
+        self.assertEqual(SchoolDayEvent.objects.filter(event_type="break").count(), 3)
+        self.assertFalse(SchoolDayEvent.objects.filter(event_type="break", start_time__isnull=True).exists())
+        self.assertEqual(sorted(item.sections.count() for item in SchoolDayEvent.objects.filter(event_type="break")), [8, 8, 9])
+        self.assertEqual(TimetableEntry.objects.count(), 475)
+        self.assertEqual(result["teacher_weekly_load"], 25)
+        self.assertEqual(result["teacher_daily_target"], 5)
+        self.assertFalse(Teacher.objects.exclude(weekly_teaching_load=25).exists())
+        self.assertFalse(Teacher.objects.exclude(free_period_policy="daily").exists())
+        self.assertFalse(Teacher.objects.exclude(daily_free_periods=1).exists())
+        for teacher in Teacher.objects.all():
+            self.assertEqual(
+                sum(assignment.subject.weekly_periods for assignment in teacher.assignments.select_related("subject")),
+                25,
+            )
+        self.assertEqual(AttendanceRegister.objects.count(), 250)
+        self.assertFalse(Attendance.objects.exclude(status__in={"absent", "departed"}).exists())
+        self.assertEqual(TeacherAbsence.objects.count(), 25)
+        self.assertTrue(TeacherMonthlyEvaluation.objects.exists())
+        self.assertEqual(MonthlyServiceEvaluation.objects.count(), 319)
+        self.assertFalse(Exam.objects.filter(teacher_assignment__isnull=True).exists())
         relations = set(FamilyStudent.objects.values_list("relation", flat=True))
         self.assertTrue({"والد", "والدة", "عم ووصي", "الأخ الأكبر", "جد وولي"}.issubset(relations))
         mixed_family = Family.objects.filter(children__relation="والد").filter(children__relation="عم ووصي").distinct()
@@ -139,22 +165,81 @@ class SystemDataCenterTests(TestCase):
         self.assertEqual(child_counts.count(2), 100)
         self.assertEqual(child_counts.count(3), 50)
         self.assertEqual(Student.objects.exclude(national_id="").count(), 500)
-        self.assertEqual(Teacher.objects.exclude(national_id="").count(), 50)
+        self.assertEqual(Teacher.objects.exclude(national_id="").count(), 19)
         self.assertEqual(Student.objects.values("full_name").distinct().count(), 500)
-        self.assertEqual(Teacher.objects.values("full_name").distinct().count(), 50)
+        self.assertEqual(Teacher.objects.values("full_name").distinct().count(), 19)
         self.assertEqual(Family.objects.values("guardian_name").distinct().count(), 300)
         self.assertFalse(Student.objects.filter(student_number="OLD-WITNESS").exists())
+
+        permission_rule = RolePermissionRule.objects.create(
+            role_code="teacher", feature="attendance", can_view=True, is_active=True,
+        )
+        teacher = Teacher.objects.order_by("pk").first()
+        academic_year = AcademicYear.objects.get(is_current=True)
+        TeacherPerformanceSnapshot.objects.create(
+            teacher=teacher, academic_year=academic_year,
+            period=date.today().replace(day=1), score=80,
+            evidence_coverage=100, rank=1, is_closed=True,
+        )
 
         reset_all_operational_data(keep_user=self.user)
         self.assertFalse(Student.objects.exists())
         self.assertFalse(Teacher.objects.exists())
         self.assertFalse(Family.objects.exists())
         self.assertTrue(User.objects.filter(pk=self.user.pk, is_superuser=True).exists())
+        self.assertTrue(RolePermissionRule.objects.filter(pk=permission_rule.pk).exists())
+        self.assertFalse(TeacherPerformanceSnapshot.objects.exists())
+        self.assertFalse(AttendanceRegister.objects.exists())
+        self.assertFalse(MonthlyServiceEvaluation.objects.exists())
+
+
+class SystemDataCenterActionTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_superuser("data_action_owner", "actions@example.test", "x")
+        School.objects.create(name="مدرسة إجراءات البيانات", is_active=True)
+        self.client.force_login(self.user)
+
+    def test_seed_failure_returns_message_instead_of_server_error(self):
+        from unittest.mock import patch
+
+        with patch("core.system_data.seed_system_data", side_effect=RuntimeError("seed failed")):
+            response = self.client.post(
+                reverse("core:system_settings"),
+                {"action": "seed_system"},
+                follow=True,
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "تعذر إدخال البيانات التجريبية")
+
+    def test_reset_failure_returns_message_instead_of_server_error(self):
+        from unittest.mock import patch
+
+        with patch("core.system_data.reset_all_operational_data", side_effect=RuntimeError("reset failed")):
+            response = self.client.post(
+                reverse("core:system_settings"),
+                {"action": "reset_all", "confirmation": "تصفير"},
+                follow=True,
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "تعذر تصفير البيانات")
+
+    def test_reset_requires_exact_confirmation_before_calling_service(self):
+        from unittest.mock import patch
+
+        with patch("core.system_data.reset_all_operational_data") as reset_service:
+            response = self.client.post(
+                reverse("core:system_settings"),
+                {"action": "reset_all", "confirmation": "تصفير شامل"},
+                follow=True,
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "اكتب كلمة «تصفير» كما هي")
+        reset_service.assert_not_called()
 
 
 class DataIntegrityCenterTests(TestCase):
     def setUp(self):
-        from academics.models import Grade, Section
+        from academics.models import Grade, Section, Subject
         from students.models import Student
 
         self.user = User.objects.create_superuser("integrity_owner", "integrity@example.test", "x")
@@ -187,7 +272,7 @@ class DataIntegrityCenterTests(TestCase):
         invoice = StudentInvoice.objects.create(student=self.student, academic_year=self.year, fee_category=category, amount=100, due_date=date.today())
         StudentPayment.objects.create(invoice=invoice, amount=50)
         StudentInvoice.objects.filter(pk=invoice.pk).update(status="open", paid=False)
-        subject = Subject.objects.create(name="رياضيات", grade=self.grade)
+        subject = Subject.objects.create(academic_year=self.year, name="رياضيات", grade=self.grade)
         exam = Exam.objects.create(name="امتحان منشور", exam_type="first", academic_year=self.year, semester=self.year.semesters.get(code="first"), grade=self.grade, subject=subject, status="published", is_locked=False)
         return teacher, teacher_user, invoice, exam
 

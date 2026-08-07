@@ -1,54 +1,36 @@
 {% extends "base/base.html" %}
-{% block title %}سجل العلامات المنظم | أوبال{% endblock %}
-{% block page_title %}الامتحانات وسجل العلامات{% endblock %}
-{% block page_subtitle %}العام والفصل الحاليان افتراضيًا، ثم الصف والشعبة والمادة والمعلم المكلف تلقائيًا{% endblock %}
+{% load opal_subjects %}
+{% block title %}الامتحانات والعلامات | أوبال{% endblock %}
+{% block page_title %}الامتحانات والعلامات{% endblock %}
+{% block page_subtitle %}السجل الإداري الموحد للتعريف والمراجعة والتحليل المعياري{% endblock %}
 {% block content %}
 <div class="opal-card mb-3 opal-gold-separator">
-  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-    <div><h3 class="fw-bold mb-1">سجل العلامات الأفقي</h3><p class="text-secondary mb-0">يعرض الامتحان الأول والثاني والثالث والنهائي والمجموع من 100 لكل طالب.</p></div>
-    <div class="d-flex gap-2 flex-wrap">
-      {% if pending_count %}<a href="{% url 'exams:exam_definitions' %}?status=submitted" class="btn btn-warning"><i class="bi bi-hourglass-split"></i> بانتظار المراجعة: {{ pending_count }}</a>{% endif %}
-      <a href="{% url 'exams:exam_dashboard' %}" class="btn btn-info"><i class="bi bi-graph-up"></i> تحليل النتائج</a>
-      <a href="{% url 'exams:exam_definitions' %}" class="btn btn-outline-primary"><i class="bi bi-list-check"></i> تعريفات الامتحانات</a>
-    </div>
-  </div>
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3"><div><h3 class="fw-bold mb-1">سجل العلامات الأفقي</h3><p class="text-secondary mb-0">يعرض الامتحانات الرسمية لكل طالب، وتبدأ المراجعة والتفاصيل من الصفحة نفسها.</p></div><div class="d-flex gap-2">{% if pending_count %}<a href="{% url 'exams:exam_definitions' %}?status=submitted" class="btn btn-warning">بانتظار المراجعة: {{ pending_count }}</a>{% endif %}<a href="{% url 'exams:exam_definitions' %}" class="btn btn-outline-primary">تعريفات الامتحانات</a><a href="{% url 'exams:exam_cycle_center' %}" class="btn btn-outline-primary">الدورات الامتحانية</a></div></div>
   <form method="get" class="row g-2 align-items-end opal-live-filter-form" data-live-filter="change">
-    <div class="col-xl-2 col-md-4"><label class="form-label">العام الدراسي</label><select name="academic_year" class="form-select" data-exam-scope-field="academic_year"><option value="">اختر</option>{% for item in academic_years %}<option value="{{ item.id }}" {% if filters.year_id == item.id|stringformat:'s' %}selected{% endif %}>{{ item }}{% if item.is_current %} — الحالي{% endif %}</option>{% endfor %}</select></div>
-    <div class="col-xl-2 col-md-4"><label class="form-label">الفصل الدراسي</label><select name="semester" class="form-select" data-exam-scope-field="semester"><option value="">اختر</option>{% for item in semesters %}<option value="{{ item.id }}" {% if filters.semester_id == item.id|stringformat:'s' %}selected{% endif %}>{{ item.get_code_display }}{% if item.is_current %} — الحالي{% endif %}</option>{% endfor %}</select></div>
-    <div class="col-xl-2 col-md-4"><label class="form-label">الصف</label><select name="grade" class="form-select" data-exam-scope-field="grade"><option value="">اختر الصف</option>{% for item in grades %}<option value="{{ item.id }}" {% if filters.grade_id == item.id|stringformat:'s' %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
-    <div class="col-xl-2 col-md-4"><label class="form-label">الشعبة</label><select name="section" class="form-select" data-exam-scope-field="section"><option value="">اختر الشعبة</option>{% for item in sections %}<option value="{{ item.id }}" {% if filters.section_id == item.id|stringformat:'s' %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
-    <div class="col-xl-2 col-md-4"><label class="form-label">المادة</label><select name="subject" class="form-select" data-exam-scope-field="subject"><option value="">اختر المادة</option>{% for item in subjects %}<option value="{{ item.id }}" {% if filters.subject_id == item.id|stringformat:'s' %}selected{% endif %}>{{ item.name }}</option>{% endfor %}</select></div>
-    <div class="col-xl-2 col-md-4 d-grid"><button class="btn btn-primary"><i class="bi bi-funnel-fill"></i> عرض السجل</button></div>
+    <div class="col-xl-2 col-md-4"><label class="form-label">العام</label><select name="academic_year" class="form-select" data-exam-scope-field="academic_year"><option value="">اختر</option>{% for item in academic_years %}<option value="{{ item.id }}" {% if filters.year_id == item.id|stringformat:'s' %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
+    <div class="col-xl-2 col-md-4"><label class="form-label">الفصل</label><select name="semester" class="form-select" data-exam-scope-field="semester"><option value="">اختر</option>{% for item in semesters %}<option value="{{ item.id }}" {% if filters.semester_id == item.id|stringformat:'s' %}selected{% endif %}>{{ item.get_code_display }}</option>{% endfor %}</select></div>
+    <div class="col-xl-2 col-md-4"><label class="form-label">الصف</label><select name="grade" class="form-select" data-exam-scope-field="grade"><option value="">اختر</option>{% for item in grades %}<option value="{{ item.id }}" {% if filters.grade_id == item.id|stringformat:'s' %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
+    <div class="col-xl-2 col-md-4"><label class="form-label">الشعبة</label><select name="section" class="form-select" data-exam-scope-field="section"><option value="">اختر</option>{% for item in sections %}<option value="{{ item.id }}" {% if filters.section_id == item.id|stringformat:'s' %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
+    <div class="col-xl-2 col-md-4"><label class="form-label">المادة</label><select name="subject" class="form-select" data-exam-scope-field="subject"><option value="">كل المواد</option>{% for item in subjects %}<option value="{{ item.id }}" {% if filters.subject_id == item.id|stringformat:'s' %}selected{% endif %}>{{ item.name }}</option>{% endfor %}</select></div>
+    <div class="col-xl-2 col-md-4"><label class="form-label">الطالب</label><select name="student" class="form-select"><option value="">كل الطلاب</option>{% for item in students %}<option value="{{ item.id }}" {% if filters.student_id == item.id|stringformat:'s' %}selected{% endif %}>{{ item.full_name }}</option>{% endfor %}</select></div>
+    <div class="col-xl-2 col-md-4"><label class="form-label">تجميع استعلام الطالب</label><select name="view_by" class="form-select"><option value="subject" {% if filters.view_by == 'subject' %}selected{% endif %}>حسب المادة</option><option value="teacher" {% if filters.view_by == 'teacher' %}selected{% endif %}>حسب المعلم</option></select></div>
+    <div class="col-xl-2 col-md-4 d-grid"><button class="btn btn-primary">عرض</button></div>
   </form>
-  <div class="opal-assignment-summary mt-3" id="opal-exam-teacher-summary" data-scope-url="{% url 'exams:exam_scope_options' %}">
-    <i class="bi bi-person-badge-fill"></i>
-    <span>المعلم المكلف:</span>
-    <strong id="opal-exam-teacher-name">{% if assignment %}{{ assignment.teacher.full_name }}{% else %}اختر الشعبة والمادة{% endif %}</strong>
-  </div>
+  <div class="opal-assignment-summary mt-3" id="opal-exam-teacher-summary" data-scope-url="{% url 'exams:exam_scope_options' %}"><i class="bi bi-person-badge-fill"></i><span>المعلم المكلف:</span><strong id="opal-exam-teacher-name">{% if assignment %}{{ assignment.teacher.full_name }}{% else %}اختر الشعبة والمادة{% endif %}</strong></div>
 </div>
 
-{% if filters.section_id and filters.subject_id %}
-<div class="opal-card mb-3">
-  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-    <h3 class="fw-bold mb-0">امتحانات المادة</h3>
-    <a class="btn btn-primary" href="{% url 'exams:exam_create' %}?academic_year={{ filters.year_id }}&semester={{ filters.semester_id }}&grade={{ filters.grade_id }}&section={{ filters.section_id }}&subject={{ filters.subject_id }}"><i class="bi bi-plus-circle-fill"></i> إضافة امتحان بواسطة المدير</a>
-  </div>
-  <div class="row g-2">
-    <div class="col-md-3 col-6">
-      <div class="opal-mini-status-card"><span>الامتحان الأول</span>{% with e=assessment_exams.first %}{% if e %}<strong>{{ e.get_status_display }}</strong><a href="{% url 'exams:exam_detail' e.id %}">فتح</a>{% else %}<strong class="text-secondary">لم يُنشأ</strong>{% endif %}{% endwith %}</div>
-    </div>
-    <div class="col-md-3 col-6"><div class="opal-mini-status-card"><span>الامتحان الثاني</span>{% with e=assessment_exams.second %}{% if e %}<strong>{{ e.get_status_display }}</strong><a href="{% url 'exams:exam_detail' e.id %}">فتح</a>{% else %}<strong class="text-secondary">لم يُنشأ</strong>{% endif %}{% endwith %}</div></div>
-    <div class="col-md-3 col-6"><div class="opal-mini-status-card"><span>الامتحان الثالث</span>{% with e=assessment_exams.third %}{% if e %}<strong>{{ e.get_status_display }}</strong><a href="{% url 'exams:exam_detail' e.id %}">فتح</a>{% else %}<strong class="text-secondary">لم يُنشأ</strong>{% endif %}{% endwith %}</div></div>
-    <div class="col-md-3 col-6"><div class="opal-mini-status-card"><span>الامتحان النهائي</span>{% with e=assessment_exams.final %}{% if e %}<strong>{{ e.get_status_display }}</strong><a href="{% url 'exams:exam_detail' e.id %}">فتح</a>{% else %}<strong class="text-secondary">لم يُنشأ</strong>{% endif %}{% endwith %}</div></div>
-  </div>
-</div>
-<div class="opal-card">
-  <div class="table-responsive"><table class="opal-table opal-gradebook-table" data-opal-instant-table>
-    <thead><tr><th>#</th><th>اسم الطالب</th><th>الأول /20</th><th>الثاني /20</th><th>الثالث /20</th><th>النهائي /40</th><th>المجموع /100</th></tr></thead>
-    <tbody>{% for row in rows %}<tr><td>{{ forloop.counter }}</td><td class="fw-bold">{{ row.student.full_name }}<small class="d-block text-secondary">{{ row.student.student_number }}</small></td>{% for cell in row.cells %}<td>{% if cell.mark %}<span class="opal-mark-value">{{ cell.value }}</span>{% else %}<span class="text-secondary">—</span>{% endif %}</td>{% endfor %}<td><strong class="opal-total-mark">{{ row.total }}</strong></td></tr>{% empty %}<tr><td colspan="7" class="text-center text-secondary">لا يوجد طلبة نشطون في هذه الشعبة.</td></tr>{% endfor %}</tbody>
-  </table></div>
-</div>
-{% else %}
-<div class="opal-card text-center py-5"><i class="bi bi-table fs-1 text-warning"></i><h3 class="mt-3">اختر الصف والشعبة والمادة</h3><p class="text-secondary">سيظهر المعلم المكلف وقائمة الطلبة والامتحانات الأربع تلقائيًا.</p></div>
-{% endif %}
+{% if selected_student %}
+<section class="opal-card mb-3"><div class="d-flex justify-content-between"><h3>{{ selected_student.full_name }}</h3><span class="opal-data-chip">{{ student_matrix.academic_year }}</span></div>{% for row in student_matrix.by_subject %}<div class="border rounded-3 p-3 mt-2 opal-subject-card" style="{% subject_style row.subject %}"><h4><span class="opal-subject-chip" style="{% subject_style row.subject %}">{{ row.subject.name }}</span></h4>{% for term in row.terms %}<div class="d-flex justify-content-between border-top py-2"><strong>{{ term.semester.get_code_display }}</strong><span>{{ term.total }} / 100</span></div>{% endfor %}</div>{% empty %}<p>لا توجد علامات رسمية لهذا الطالب.</p>{% endfor %}</section>
+{% elif filters.section_id and filters.subject_id %}
+<section class="opal-card mb-3"><div class="d-flex justify-content-between align-items-center mb-3"><h3>امتحانات المادة</h3><a class="btn btn-primary" href="{% url 'exams:exam_create' %}?academic_year={{ filters.year_id }}&semester={{ filters.semester_id }}&grade={{ filters.grade_id }}&section={{ filters.section_id }}&subject={{ filters.subject_id }}">إضافة امتحان</a></div><div class="row g-2">{% for key,label in assessment_exams.items %}<div class="col-md-3"><div class="opal-mini-status-card"><span>{{ label.get_exam_type_display }}</span><strong>{{ label.get_status_display }}</strong><a href="{% url 'exams:exam_detail' label.pk %}">فتح</a></div></div>{% empty %}<div class="col-12 text-secondary">لم تُنشأ امتحانات لهذه المادة.</div>{% endfor %}</div></section>
+<section class="opal-card mb-3"><div class="table-responsive"><table class="opal-table opal-gradebook-table" data-opal-instant-table><thead><tr><th>#</th><th>الطالب</th><th>الأول /20</th><th>الثاني /20</th><th>الثالث /20</th><th>النهائي /40</th><th>المجموع /100</th></tr></thead><tbody>{% for row in rows %}<tr><td>{{ forloop.counter }}</td><td class="fw-bold">{{ row.student.full_name }}</td>{% for cell in row.cells %}<td>{% if cell.mark %}{{ cell.value }}{% else %}—{% endif %}</td>{% endfor %}<td><strong>{{ row.total }}</strong></td></tr>{% empty %}<tr><td colspan="7">لا يوجد طلبة نشطون.</td></tr>{% endfor %}</tbody></table></div></section>
+{% else %}<section class="opal-card text-center py-4"><h3>اختر الصف والشعبة</h3><p class="text-secondary">ثم اختر مادة لعرض سجل الشعبة أو طالبًا للاستعلام الفردي.</p></section>{% endif %}
+
+<section class="opal-card mt-3" id="results-analysis">
+  <div class="mb-3"><h3 class="fw-bold mb-1">تحليل النتائج المعياري</h3><p class="text-secondary mb-0">يُحوّل كل امتحان إلى نسبة مئوية قبل المتوسط. نتائج الطلبة هنا دليل داخل TPI وليست تصنيف أداء مستقلًا.</p></div>
+  <div class="row g-2 mb-3"><div class="col-md-3 col-6"><div class="stat-card"><span>الامتحانات الرسمية</span><h2>{{ analytics_stats.exam_count }}</h2></div></div><div class="col-md-3 col-6"><div class="stat-card"><span>النتائج</span><h2>{{ analytics_stats.mark_count }}</h2></div></div><div class="col-md-3 col-6"><div class="stat-card"><span>المتوسط المعياري</span><h2>{{ analytics_stats.average }}%</h2></div></div><div class="col-md-3 col-6"><div class="stat-card"><span>نسبة النجاح</span><h2>{{ analytics_stats.pass_rate }}%</h2></div></div></div>
+  <div class="table-responsive"><table class="opal-table" data-opal-instant-table><thead><tr><th>المعلم</th><th>المادة</th><th>الصف والشعبة</th><th>النتائج</th><th>المتوسط</th></tr></thead><tbody>{% for row in teacher_results %}<tr><td>{{ row.exam__teacher_assignment__teacher__full_name }}</td><td class="opal-subject-cell" style="--opal-subject-color:{{ row.exam__subject__color|default:'#64748B' }};">{{ row.exam__subject__name }}</td><td>{{ row.class_label }}</td><td>{{ row.results }}</td><td>{{ row.average|floatformat:2 }}%</td></tr>{% empty %}<tr><td colspan="5">لا توجد نتائج رسمية.</td></tr>{% endfor %}</tbody></table></div>
+</section>
+<section class="opal-card mt-3" id="marks-review"><h3 class="fw-bold mb-3">مراجعة العلامات الرسمية</h3><div class="table-responsive"><table class="opal-table" data-opal-instant-table><thead><tr><th>الطالب</th><th>الامتحان</th><th>المادة</th><th>العلامة</th><th>النسبة</th></tr></thead><tbody>{% for mark in recent_marks %}<tr><td>{{ mark.student.full_name }}</td><td><a href="{% url 'exams:exam_detail' mark.exam_id %}">{{ mark.exam.name }}</a></td><td><span class="opal-subject-chip" style="{% subject_style mark.exam.subject %}">{{ mark.exam.subject.name }}</span></td><td>{{ mark.mark }} / {{ mark.exam.max_mark }}</td><td>{{ mark.percentage }}%</td></tr>{% empty %}<tr><td colspan="5">لا توجد علامات رسمية.</td></tr>{% endfor %}</tbody></table></div></section>
+<section class="opal-card mt-3"><h3 class="fw-bold mb-3">تفاصيل الامتحانات</h3><div class="table-responsive"><table class="opal-table" data-opal-instant-table><thead><tr><th>الامتحان</th><th>الشعبة</th><th>الحالة</th><th>النتائج</th><th>المتوسط</th><th>النجاح</th><th></th></tr></thead><tbody>{% for exam in analytics_exams %}<tr><td>{{ exam.name }}</td><td>{{ exam.section|default:'—' }}</td><td>{{ exam.get_status_display }}</td><td>{{ exam.analytics.count }}</td><td>{{ exam.analytics.average_percentage }}%</td><td>{{ exam.analytics.pass_rate }}%</td><td><a class="btn btn-sm btn-outline-primary" href="{% url 'exams:exam_detail' exam.pk %}">فتح</a></td></tr>{% empty %}<tr><td colspan="7">لا توجد امتحانات رسمية.</td></tr>{% endfor %}</tbody></table></div></section>
 {% endblock %}

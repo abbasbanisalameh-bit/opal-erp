@@ -23,9 +23,12 @@ class ParentPortalPermissionsTests(TestCase):
 
     def test_parent_cannot_open_admin_or_management_routes(self):
         self.client.force_login(self.parent)
-        for path in ("/admin/", "/accounting/", "/students/", "/development/"):
+        for path in ("/admin/", "/accounting/", "/students/"):
             response = self.client.get(path)
             self.assertRedirects(response, reverse("parent_portal:dashboard"), fetch_redirect_response=False)
+        # The private development center is denied by the superuser gate before
+        # the ordinary parent-portal redirect middleware can handle the route.
+        self.assertEqual(self.client.get("/development/").status_code, 403)
 
     def test_unlinked_user_cannot_open_parent_portal(self):
         other = User.objects.create_user(username="other", password="pass12345")

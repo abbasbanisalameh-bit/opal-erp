@@ -151,10 +151,16 @@ class FeedbackTicket(models.Model):
     teaching_quality_rating = models.PositiveSmallIntegerField(
         "تقييم جودة التدريس",
         validators=[MinValueValidator(1), MaxValueValidator(5)],
+        null=True,
+        blank=True,
+        help_text="حقل تاريخي محفوظ للرسائل القديمة فقط؛ لا يُستخدم للتقييمات الجديدة.",
     )
     electronic_services_rating = models.PositiveSmallIntegerField(
         "تقييم الخدمات الإلكترونية",
         validators=[MinValueValidator(1), MaxValueValidator(5)],
+        null=True,
+        blank=True,
+        help_text="حقل تاريخي محفوظ للرسائل القديمة فقط؛ لا يُستخدم للتقييمات الجديدة.",
     )
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="new", db_index=True)
     assigned_to = models.ForeignKey(
@@ -181,6 +187,75 @@ class FeedbackTicket(models.Model):
 
     def get_absolute_url(self):
         return reverse("enterprise_ops:feedback_detail", args=[self.pk])
+
+
+class MonthlyServiceEvaluation(models.Model):
+    """The sole current monthly school-satisfaction evaluation.
+
+    A guardian submits two general school ratings: teaching quality and the
+    electronic services.  A teacher submits electronic services only, so its
+    teaching-quality field remains empty.  Per-teacher guardian evaluations
+    remain in ``TeacherMonthlyEvaluation`` for TPI and teacher feedback.
+    """
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="monthly_service_evaluations",
+    )
+    school = models.ForeignKey(
+        "core.School",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="monthly_service_evaluations",
+    )
+    branch = models.ForeignKey(
+        "core.Branch",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="monthly_service_evaluations",
+    )
+    period = models.DateField("شهر التقييم", db_index=True, help_text="يحفظ اليوم الأول من الشهر.")
+    teaching_quality_rating = models.PositiveSmallIntegerField(
+        "تقييم جودة التدريس",
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+        null=True,
+        blank=True,
+        help_text="إلزامي لولي الأمر فقط؛ المعلم لا يقيّم جودة تدريسه.",
+    )
+    electronic_services_rating = models.PositiveSmallIntegerField(
+        "تقييم الخدمات الإلكترونية",
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+        null=True,
+        blank=True,
+        help_text="إلزامي في تقييم الخدمات الإلكترونية المستقل.",
+    )
+    teaching_quality_submitted_at = models.DateTimeField(null=True, blank=True)
+    electronic_services_submitted_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-period", "-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "period"],
+                name="uniq_user_monthly_service_evaluation",
+            ),
+        ]
+        verbose_name = "تقييم شهري لرضا المدرسة"
+        verbose_name_plural = "التقييمات الشهرية لرضا المدرسة"
+
+    def clean(self):
+        super().clean()
+        if self.period and self.period.day != 1:
+            raise ValidationError({"period": "يحفظ التقييم بالشهر عبر اليوم الأول منه."})
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
 
 
 class BroadcastMessage(models.Model):

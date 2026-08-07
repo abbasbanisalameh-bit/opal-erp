@@ -21,15 +21,16 @@ class Student360ContextContractTests(SimpleTestCase):
             finance={"total": 100},
             attendance={
                 "recent": ["attendance"],
-                "counts": {"present": 1},
+                "counts": {"present": 1, "absent": 0, "departed": 0},
                 "total": 1,
                 "rate": 100.0,
                 "absent_count": 0,
-                "late_count": 0,
+                "departed_count": 0,
             },
             marks_profile={"marks": ["mark"], "summary": {"count": 1}, "percentage_average": 90.0},
             documents_profile={"documents": ["document"]},
             timetable=["entry"],
+            timetable_matrix={"rows": ["day-row"]},
             alert_profile={"alerts": ["alert"], "risk": {"label": "منخفض"}},
             data_completeness=88,
             activity_timeline=["event"],
@@ -39,24 +40,26 @@ class Student360ContextContractTests(SimpleTestCase):
         self.assertEqual(context["attendance_rate"], 100.0)
         self.assertEqual(context["percentage_average"], 90.0)
         self.assertEqual(context["data_completeness"], 88)
-        self.assertEqual(len(context), 26)
+        self.assertEqual(context["timetable_matrix"], {"rows": ["day-row"]})
+        self.assertEqual(len(context), 27)
 
     def test_context_public_key_set_is_preserved(self):
         expected = {
             "student", "enrollments", "current_enrollment", "family", "family_link",
             "siblings", "guardian_links", "invoices", "payments", "allocations", "finance",
             "attendance_recent", "attendance_counts", "attendance_total", "attendance_rate",
-            "absent_count", "late_count", "marks", "mark_summary", "percentage_average",
-            "documents", "timetable", "alerts", "risk", "data_completeness", "activity_timeline",
+            "absent_count", "departed_count", "marks", "mark_summary", "percentage_average",
+            "documents", "timetable", "timetable_matrix", "alerts", "risk",
+            "data_completeness", "activity_timeline",
         }
         context = _assemble_student_360_context(
             object(),
             academic_profile={"enrollments": [], "current_enrollment": None},
             family_profile={"family": None, "family_link": None, "siblings": [], "guardian_links": []},
             invoices=[], payments=[], allocations=[], finance={},
-            attendance={"recent": [], "counts": {}, "total": 0, "rate": 0, "absent_count": 0, "late_count": 0},
+            attendance={"recent": [], "counts": {}, "total": 0, "rate": 0, "absent_count": 0, "departed_count": 0},
             marks_profile={"marks": [], "summary": {}, "percentage_average": 0},
-            documents_profile={"documents": []}, timetable=[],
+            documents_profile={"documents": []}, timetable=[], timetable_matrix={},
             alert_profile={"alerts": [], "risk": {}}, data_completeness=0, activity_timeline=[],
         )
         self.assertEqual(set(context), expected)

@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 from .models import (
-    ApprovalAction, BroadcastMessage, FeedbackTicket, Notification,
+    ApprovalAction, BroadcastMessage, FeedbackTicket, MonthlyServiceEvaluation, Notification,
     ReportPreset, RolePermissionRule, WorkflowRequest,
 )
 
@@ -32,9 +32,16 @@ admin.site.register(RolePermissionRule)
 
 @admin.register(FeedbackTicket)
 class FeedbackTicketAdmin(admin.ModelAdmin):
-    list_display = ("id", "kind", "title", "sender", "status", "teaching_quality_rating", "electronic_services_rating", "created_at")
-    list_filter = ("kind", "status", "teaching_quality_rating", "electronic_services_rating")
+    list_display = ("id", "kind", "title", "sender", "status", "created_at")
+    list_filter = ("kind", "status")
     search_fields = ("title", "message", "response", "sender__username")
+
+
+@admin.register(MonthlyServiceEvaluation)
+class MonthlyServiceEvaluationAdmin(admin.ModelAdmin):
+    list_display = ("user", "period", "teaching_quality_rating", "electronic_services_rating", "school", "branch", "created_at")
+    list_filter = ("period", "school", "branch", "teaching_quality_rating", "electronic_services_rating")
+    search_fields = ("user__username", "user__first_name", "user__last_name")
 
 
 @admin.register(BroadcastMessage)

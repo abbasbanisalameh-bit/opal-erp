@@ -1,4 +1,9 @@
-from .grade_names import grade_name_key, normalize_grade_display_name
+from .grade_names import (
+    grade_name_key,
+    normalize_grade_display_name,
+    normalize_section_name,
+    section_name_key,
+)
 from .models import Grade, Section
 
 
@@ -18,19 +23,21 @@ def resolve_grade(*, school, name, defaults=None):
 
 def resolve_section(*, academic_year, branch, grade, name, defaults=None):
     """Resolve or create one section inside the canonical academic structure."""
-    section_name = (name or "").strip()
+    section_name = normalize_section_name(name, grade.name)
     if not section_name:
         raise ValueError("اسم الشعبة مطلوب.")
-    existing = Section.objects.filter(
+    wanted_key = section_name_key(section_name, grade.name)
+    candidates = Section.objects.filter(
         academic_year=academic_year,
         branch=branch,
         grade=grade,
-        name__iexact=section_name,
-    ).order_by("pk").first()
-    if existing:
-        return existing, False
+    ).order_by("pk")
+    for existing in candidates.only("pk", "name", "grade"):
+        if section_name_key(existing.name, grade.name) == wanted_key:
+            return existing, False
     values = {"name": section_name}
     values.update(defaults or {})
+    values["name"] = section_name
     return Section.objects.create(
         academic_year=academic_year,
         branch=branch,

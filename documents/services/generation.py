@@ -7,6 +7,7 @@ from decimal import Decimal
 from core.models import AcademicYear
 from exams.services import annual_report
 from accounting.models import StudentInvoice, StudentPayment
+from accounting.previous_debt_services import student_previous_debt_snapshot
 
 from ..models import DocumentSettings, IssuedDocument, StudentIssuedDocument
 from ..utils import generate_document_number
@@ -47,28 +48,16 @@ def student_values(student, extras=None):
     return school, current, values
 
 
-def candidate_values(candidate, extras=None):
-    school = candidate.school
-    year = candidate.academic_year or _year_for_school(school)
-    values = SafeValues({
-        "school_name": school.official_name or school.name,
-        "candidate_name": candidate.student_full_name,
-        "candidate_grade": getattr(candidate.grade, "name", "غير محدد"),
-        "guardian_name": candidate.guardian_name,
-        "academic_year": getattr(year, "name", "غير محدد"),
-    })
-    values.update(extras or {})
-    return school, values
-
-
 def teacher_values(teacher, extras=None):
     values = SafeValues({
         "school_name": teacher.school.official_name or teacher.school.name,
         "teacher_name": teacher.full_name,
+        "employee_number": teacher.employee_number or "غير مسجل",
         "teacher_national_id": teacher.national_id or "غير مسجل",
         "specialization": teacher.specialization or "التعليم",
         "hire_date": teacher.hire_date or "غير محدد",
         "teacher_end_date": teacher.end_date or timezone.localdate(),
+        "teacher_end_reason": teacher.end_reason or "لم يذكر السبب",
         "monthly_salary": teacher.monthly_salary,
     })
     values.update(extras or {})
@@ -78,10 +67,19 @@ def teacher_values(teacher, extras=None):
 def guardian_values(family, extras=None):
     students = [link.student for link in family.children.filter(is_active=True).select_related("student")]
     year = _year_for_school(family.school)
-    rows = [_student_year_finance(student, year) for student in students]
+    rows = []
+    for student in students:
+        row = _student_year_finance(student, year)
+        row["previous_remaining"] = student_previous_debt_snapshot(
+            student,
+            academic_year=year,
+        )["total"]
+        row["combined_remaining"] = row["remaining"] + row["previous_remaining"]
+        rows.append(row)
     total = sum((row["total"] for row in rows), Decimal("0.00"))
     paid = sum((row["paid"] for row in rows), Decimal("0.00"))
     remaining = sum((row["remaining"] for row in rows), Decimal("0.00"))
+    previous_remaining = sum((row["previous_remaining"] for row in rows), Decimal("0.00"))
     values = SafeValues({
         "school_name": family.school.official_name or family.school.name,
         "guardian_name": family.guardian_name,
@@ -90,6 +88,8 @@ def guardian_values(family, extras=None):
         "statement_total": f"{total:.2f}",
         "statement_paid": f"{paid:.2f}",
         "statement_remaining": f"{remaining:.2f}",
+        "statement_previous_remaining": f"{previous_remaining:.2f}",
+        "statement_combined_remaining": f"{remaining + previous_remaining:.2f}",
     })
     values.update(extras or {})
     return family.school, students, year, values
@@ -116,12 +116,29 @@ def report_payload(student, year):
 
 
 def guardian_payload(family, students, year):
-    rows = [{"student": student.full_name, **{key: str(value) for key, value in _student_year_finance(student, year).items()}} for student in students]
+    rows = []
+    for student in students:
+        current = _student_year_finance(student, year)
+        previous_remaining = student_previous_debt_snapshot(
+            student,
+            academic_year=year,
+        )["total"]
+        rows.append({
+            "student": student.full_name,
+            **{key: str(value) for key, value in current.items()},
+            "previous_remaining": str(previous_remaining),
+            "combined_remaining": str(current["remaining"] + previous_remaining),
+        })
     return {"kind": "guardian_statement", "academic_year": getattr(year, "name", ""), "rows": rows}
 
 
 def _student_year_finance(student, year):
-    invoices = StudentInvoice.objects.filter(student=student).exclude(status="cancelled")
+    invoices = (
+        StudentInvoice.objects.filter(student=student)
+        .exclude(status="cancelled")
+        .exclude(carry_forward_record__source_invoices__isnull=False)
+        .distinct()
+    )
     if year:
         invoices = invoices.filter(academic_year=year)
     invoices = list(invoices)
@@ -132,15 +149,14 @@ def _student_year_finance(student, year):
     return {"total": total, "paid": paid, "remaining": max(total - paid, Decimal("0.00"))}
 
 
-def create_issued_document(*, template, title, content, user, school, student=None, teacher=None, guardian=None, candidate=None, payload=None):
+def create_issued_document(*, template, title, content, user, school, student=None, teacher=None, guardian=None, payload=None):
     settings = document_settings_for(school)
     document = IssuedDocument.objects.create(
         template=template,
         student=student,
         teacher=teacher,
         guardian=guardian,
-        candidate=candidate,
-        applicant_name=(getattr(student, "full_name", "") or getattr(teacher, "full_name", "") or getattr(candidate, "student_full_name", "") or getattr(guardian, "guardian_name", "")),
+        applicant_name=(getattr(student, "full_name", "") or getattr(teacher, "full_name", "") or getattr(guardian, "guardian_name", "")),
         document_number=generate_document_number(),
         title=title,
         content=content,

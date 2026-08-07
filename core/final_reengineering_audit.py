@@ -74,6 +74,20 @@ def audit_official_student_model() -> list[AuditIssue]:
     return issues
 
 
+def audit_removed_admission_application() -> list[AuditIssue]:
+    """Prevent the removed pre-registration/candidate model from returning to runtime."""
+    try:
+        apps.get_model("admissions", "AdmissionApplication")
+    except LookupError:
+        return []
+    return [
+        AuditIssue(
+            "legacy_admission_application_present",
+            "النموذج القديم admissions.AdmissionApplication ما يزال موجودًا رغم اعتماد التسجيل المباشر فقط.",
+        )
+    ]
+
+
 def _walk_urlpatterns(patterns, prefix=""):
     for pattern in patterns:
         if isinstance(pattern, URLResolver):
@@ -146,6 +160,7 @@ def run_final_reengineering_audit(*, include_templates: bool = True) -> dict:
     checks = {
         "python_syntax": audit_python_syntax(),
         "official_student_model": audit_official_student_model(),
+        "removed_admission_application": audit_removed_admission_application(),
         "named_urls": audit_named_urls(),
         "opal_identity": audit_required_identity_files(),
     }

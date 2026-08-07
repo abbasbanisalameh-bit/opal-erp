@@ -36,6 +36,7 @@ class UserProfile(models.Model):
 
     is_online_student = models.BooleanField(default=False)
     is_school_user = models.BooleanField(default=True)
+    dashboard_layout = models.JSONField("تخطيط لوحة التحكم", default=dict, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
 

@@ -4,13 +4,11 @@
 {% block page_subtitle %}النافذة الوحيدة لإدارة الصفوف ورسومها والشعب ومربي الصف{% endblock %}
 
 {% block content %}
+{% if request.GET.demo == "ready" %}<div class="alert alert-success"><strong>بيانات آخر تحديث جاهزة ومترابطة.</strong> تم التحقق من الخطة والتكليفات والنصاب والحصص والاستراحات والأحداث والجدول الرسمي داخل عملية واحدة. استخدم المداخل الرسمية في هذه الصفحة لمراجعة التفاصيل.</div>{% endif %}
 <div class="opal-card mb-4">
-    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
-        <div>
-            <h3 class="fw-bold mb-1">الهيكل الدراسي المعتمد</h3>
-            <p class="text-secondary mb-0">أي رابط قديم لإضافة أو تعديل صف أو شعبة يعيدك إلى هذه الصفحة.</p>
-        </div>
-        <a href="{% url 'academics:academic_year_list' %}" class="btn btn-outline-primary">إدارة الأعوام الدراسية</a>
+    <div>
+        <h3 class="fw-bold mb-1">الهيكل الدراسي المعتمد</h3>
+        <p class="text-secondary mb-0">هذه الصفحة هي البوابة الإدارية الوحيدة للشؤون الأكاديمية، ومنها تبدأ بقية العمليات.</p>
     </div>
     {% if academic_year %}
     <form method="get" class="row g-3 align-items-end mt-1">
@@ -28,6 +26,22 @@
     </form>
     {% endif %}
 </div>
+
+<section class="opal-card mb-4" id="timetable-operations">
+  <div class="mb-3"><h3 class="fw-bold mb-1">عمليات الشؤون الأكاديمية</h3><p class="text-secondary mb-0">كل عملية لها زر واحد هنا؛ صفحات التفاصيل لا تعرض مداخل بديلة.</p></div>
+  <div class="opal-settings-actions-grid">
+    <a class="opal-settings-action" href="{% url 'academics:academic_year_list' %}"><i class="bi bi-calendar-range-fill"></i><strong>الأعوام الدراسية</strong><small>الإنشاء والتنشيط والإغلاق</small></a>
+    <a class="opal-settings-action" href="{% url 'academics:annual_lifecycle_center' %}"><i class="bi bi-arrow-repeat"></i><strong>مركز دورة العام</strong><small>الفصول والترفيع والتخريج</small></a>
+    <a class="opal-settings-action" href="{% url 'academics:subject_list' %}"><i class="bi bi-book-half"></i><strong>المواد والخطة الدراسية</strong><small>تعريف المواد وحصصها الأسبوعية من مصدر واحد</small></a>
+    <a class="opal-settings-action" id="teachers-operation" href="{% url 'teachers:dashboard' %}"><i class="bi bi-person-badge-fill"></i><strong>إدارة المعلمين</strong><small>الملفات والحسابات والتكليفات</small></a>
+    <a class="opal-settings-action" id="timetable-builder-operation" href="{% url 'timetable:dashboard' %}"><i class="bi bi-calendar3"></i><strong>الجدول والمنشئ الذكي</strong><small>العرض والإدارة والطباعة والتوليد من شاشة واحدة</small></a>
+    <a class="opal-settings-action" id="timetable-settings-operation" href="{% url 'timetable:schedule_settings' %}"><i class="bi bi-clock-fill"></i><strong>إعدادات اليوم المدرسي</strong><small>الحصص والاستراحات والتنبيهات</small></a>
+    <a class="opal-settings-action" href="{% url 'timetable:absence_center' %}"><i class="bi bi-person-x-fill"></i><strong>غياب المعلمين والإشغال</strong><small>الغياب وتعيين البديل</small></a>
+    <a class="opal-settings-action" id="attendance-operation" href="{% url 'attendance_v2:dashboard' %}"><i class="bi bi-calendar-check-fill"></i><strong>الغياب والمغادرة</strong><small>التسجيل والمراجعة والإغلاق</small></a>
+    <a class="opal-settings-action" href="{% url 'exams:exam_cycle_center' %}"><i class="bi bi-file-earmark-check-fill"></i><strong>الدورات الامتحانية</strong><small>الفتح والتوزيع والنشر</small></a>
+    <a class="opal-settings-action" id="exam-analysis-operation" href="{% url 'exams:exam_list' %}"><i class="bi bi-graph-up-arrow"></i><strong>العلامات والتحليل</strong><small>المراجعة والنجاح والمتوسطات والتصنيف المعياري</small></a>
+  </div>
+</section>
 
 {% if year_is_closed %}
 <div class="alert alert-dark">هذا العام مغلق. الهيكل معروض كسجل تاريخي ولا يقبل الإضافة أو التعديل.</div>
@@ -114,6 +128,35 @@
         </button>
     </form>
 </div>
+
+{% if edit_section and merge_targets %}
+<div class="opal-card mb-4 border-warning">
+    <h3 class="fw-bold mb-2">دمج الشعبة وأرشفة المصدر</h3>
+    <p class="text-secondary">تظهر المعاينة عند التنفيذ. تُنقل القيود النشطة والتكليفات والجدول ذريًا، وتبقى سجلات الحضور والامتحانات السابقة مرتبطة بالشعبة {{ edit_section.name }}.</p>
+    <form method="post" class="row g-3 align-items-end">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="merge_section">
+        <input type="hidden" name="academic_year" value="{{ academic_year.id }}">
+        <input type="hidden" name="source_section" value="{{ edit_section.id }}">
+        <div class="col-md-4">
+            <label class="form-label fw-bold">الشعبة الهدف</label>
+            <select class="form-select" name="target_section" required>
+                <option value="">— اختر —</option>
+                {% for target in merge_targets %}<option value="{{ target.id }}">{{ target }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label fw-bold">سبب الدمج</label>
+            <input class="form-control" name="reason" required>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label fw-bold">للتأكيد اكتب: دمج الشعبة</label>
+            <input class="form-control" name="confirmation" required>
+        </div>
+        <div class="col-12"><button class="btn btn-warning" onclick="return confirm('سيتم أرشفة الشعبة المصدر ونقل التشغيل النشط إلى الهدف. متابعة؟')">فحص وتنفيذ الدمج الذري</button></div>
+    </form>
+</div>
+{% endif %}
 {% endif %}
 
 <div class="opal-card">

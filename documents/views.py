@@ -7,7 +7,6 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 
-from admissions.models import AdmissionApplication
 from admissions.services import active_school
 from enterprise_ops.permissions import management_required
 from enterprise_ops.services import audit
@@ -127,11 +126,6 @@ def issue_student(request, student_id):
     return _issue_target(request, audience="student", target=student, back_url=reverse("students:student_360", args=[student.pk]))
 
 
-@management_required
-def issue_candidate(request, candidate_id):
-    candidate = get_object_or_404(AdmissionApplication, pk=candidate_id, status="candidate")
-    return _issue_target(request, audience="candidate", target=candidate, back_url=reverse("admissions:candidate_detail", args=[candidate.pk]))
-
 
 @management_required
 def issue_teacher(request, teacher_id):
@@ -149,7 +143,7 @@ def issue_guardian(request, guardian_id):
 def document_detail(request, document_id):
     document = get_object_or_404(
         IssuedDocument.objects.select_related(
-            "student", "teacher", "guardian", "candidate", "issued_by", "template",
+            "student", "teacher", "guardian", "issued_by", "template",
             "cancelled_by", "replaces"
         ), pk=document_id,
     )
@@ -188,7 +182,7 @@ def document_reissue(request, document_id):
 
 def verify_document(request, document_number, verification_code):
     document = get_object_or_404(
-        IssuedDocument.objects.select_related("student", "teacher", "guardian", "candidate", "template"),
+        IssuedDocument.objects.select_related("student", "teacher", "guardian", "template"),
         document_number=document_number, verification_code=verification_code,
     )
     return render(request, "documents/verify.html", {"document": document})

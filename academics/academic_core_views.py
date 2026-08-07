@@ -15,20 +15,16 @@ from .forms import (
     AcademicStructureGradeForm,
     AcademicStructureSectionForm,
     AcademicStructureYearForm,
+    SubjectPlanForm,
 )
 from .models import Grade, Section, Subject
+from .section_management import merge_sections
 from .workflow import (
     academic_school,
     academic_structure_url,
     build_academic_year_list_context,
     build_semester_list_context,
     build_subject_list_context,
-)
-
-
-SubjectForm = modelform_factory(
-    Subject,
-    fields=["name", "code", "grade", "is_active"],
 )
 
 
@@ -134,7 +130,11 @@ def academic_structure(request):
         messages.error(request, "العام مغلق؛ الهيكل الدراسي محفوظ للعرض ولا يقبل تعديلات جديدة.")
         return redirect(_structure_url(academic_year.pk))
     edit_grade_id = request.GET.get("edit_grade") or request.POST.get("grade-grade_id")
-    edit_section_id = request.GET.get("edit_section") or request.POST.get("section-section_id")
+    edit_section_id = (
+        request.GET.get("edit_section")
+        or request.POST.get("section-section_id")
+        or request.POST.get("source_section")
+    )
 
     edit_grade = Grade.objects.filter(pk=edit_grade_id, school=school).first() if edit_grade_id else None
     edit_section = None
@@ -202,6 +202,46 @@ def academic_structure(request):
         prefix="section",
         initial=section_initial,
     )
+
+    if academic_year and action == "merge_section":
+        try:
+            if request.POST.get("confirmation", "").strip() != "دمج الشعبة":
+                raise ValidationError("اكتب العبارة: دمج الشعبة")
+            source_section = get_object_or_404(
+                Section,
+                pk=request.POST.get("source_section"),
+                academic_year=academic_year,
+                branch__school=school,
+            )
+            target_section = get_object_or_404(
+                Section,
+                pk=request.POST.get("target_section"),
+                academic_year=academic_year,
+                branch__school=school,
+            )
+            source_section, target_section, summary = merge_sections(
+                source=source_section,
+                target=target_section,
+                reason=request.POST.get("reason", ""),
+                user=request.user,
+            )
+        except ValidationError as exc:
+            for message in exc.messages:
+                messages.error(request, message)
+        else:
+            audit(
+                request,
+                "update",
+                "academics.Section",
+                source_section.pk,
+                f"دمج الشعبة في {target_section}: {summary}",
+            )
+            messages.success(
+                request,
+                f"تم الدمج ذريًا وأرشفة المصدر: {summary['students_moved']} طالب، "
+                f"{summary['assignments_copied']} تكليف، و{summary['timetable_entries_copied']} حصة.",
+            )
+            return redirect(_structure_url(academic_year.pk))
 
     if action == "create_year" and year_form.is_valid():
         year = year_form.save(commit=False)
@@ -352,6 +392,16 @@ def academic_structure(request):
             "structure_rows": structure_rows,
             "edit_grade": edit_grade,
             "edit_section": edit_section,
+            "merge_targets": (
+                Section.objects.filter(
+                    academic_year=academic_year,
+                    grade=edit_section.grade,
+                    branch=edit_section.branch,
+                    is_active=True,
+                ).exclude(pk=edit_section.pk).order_by("name")
+                if edit_section and academic_year and not academic_year.is_closed
+                else Section.objects.none()
+            ),
             "year_is_closed": bool(academic_year and academic_year.is_closed),
         },
     )
@@ -359,20 +409,21 @@ def academic_structure(request):
 
 @management_required
 def semester_list(request):
-    return render(request, "academics/semester_list.html", build_semester_list_context())
+    messages.info(request, "تُدار تواريخ الفصلين من صفحة الأعوام الدراسية المعتمدة.")
+    return redirect("academics:academic_year_list")
 
 
 @management_required
 def semester_create(request):
-    messages.info(request, "الفصلان الدراسيان يُنشآن تلقائيًا من العام الدراسي وعطلة منتصف العام.")
-    return redirect("academics:academic_structure")
+    messages.info(request, "أنشئ العام والفصلين من صفحة الأعوام الدراسية المعتمدة.")
+    return redirect("academics:academic_year_create")
 
 
 @management_required
 def semester_update(request, pk):
     semester = get_object_or_404(Semester, pk=pk)
-    messages.info(request, "تُعدل تواريخ الفصل من بيانات العام الدراسي وعطلة منتصف العام.")
-    return redirect(_structure_url(semester.academic_year_id))
+    messages.info(request, "تُعدل تواريخ الفصلين من نموذج العام الدراسي الموحد.")
+    return redirect("academics:academic_year_update", pk=semester.academic_year_id)
 
 
 @management_required
@@ -383,26 +434,34 @@ def semester_delete(request, pk):
 
 @management_required
 def subject_list(request):
-    return render(request, "academics/subject_list.html", build_subject_list_context())
+    return render(request, "academics/subject_list.html", build_subject_list_context(request))
 
 
 @management_required
 def subject_create(request):
-    form = _style_form(SubjectForm(request.POST or None))
+    school = _school_for_academics()
+    form = SubjectPlanForm(request.POST or None, school=school)
     if form.is_valid():
-        form.save()
+        subject = form.save()
+        audit(request, "create", "academics.Subject", subject.pk, f"إضافة مادة وخطة: {subject}")
+        messages.success(request, "تمت إضافة المادة وخطتها الأسبوعية.")
         return redirect("academics:subject_list")
-    return render(request, "academics/subject_form.html", {"form": form, "title": "إضافة مادة"})
+    return render(request, "academics/subject_form.html", {"form": form, "title": "إضافة مادة وخطة"})
 
 
 @management_required
 def subject_update(request, pk):
     subject = get_object_or_404(Subject, pk=pk)
-    form = _style_form(SubjectForm(request.POST or None, instance=subject))
-    if form.is_valid():
-        form.save()
+    if subject.academic_year.is_closed:
+        messages.error(request, "العام الدراسي مغلق ولا يمكن تعديل مادته التاريخية.")
         return redirect("academics:subject_list")
-    return render(request, "academics/subject_form.html", {"form": form, "title": "تعديل مادة"})
+    form = SubjectPlanForm(request.POST or None, instance=subject, school=subject.academic_year.school)
+    if form.is_valid():
+        subject = form.save()
+        audit(request, "update", "academics.Subject", subject.pk, f"تعديل مادة وخطة: {subject}")
+        messages.success(request, "تم تحديث المادة وخطتها الأسبوعية.")
+        return redirect("academics:subject_list")
+    return render(request, "academics/subject_form.html", {"form": form, "title": "تعديل مادة وخطة"})
 
 
 @management_required
@@ -472,8 +531,17 @@ def section_delete(request, pk):
     if request.method == "POST":
         if section.academic_year.is_closed:
             messages.error(request, "العام مغلق ولا يمكن حذف شعبه التاريخية.")
-        elif section.enrollments.exists():
-            messages.error(request, "لا يمكن حذف شعبة مرتبطة بقيد طلاب. أوقفها من الهيكل الدراسي بدلًا من الحذف.")
+        elif (
+            section.enrollments.exists()
+            or section.timetable_entries.exists()
+            or section.exams.exists()
+            or section.teacherassignment_set.exists()
+            or section.attendance_records.exists()
+        ):
+            section.is_active = False
+            section.is_default = False
+            section.save(update_fields=["is_active", "is_default"])
+            messages.info(request, "الشعبة مرتبطة بسجل تاريخي؛ تم إيقافها وأرشفتها بدل حذفها.")
         else:
             section.delete()
             messages.success(request, "تم حذف الشعبة غير المرتبطة بأي طالب.")

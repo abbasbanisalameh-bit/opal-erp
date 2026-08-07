@@ -7,8 +7,6 @@
     <div class="panel-header">
         <h2>الأعوام الدراسية</h2>
         <div class="d-flex gap-2 flex-wrap">
-            <a class="secondary-btn" href="{% url 'academics:semester_list' %}">الفصول الدراسية</a>
-            <a class="primary-btn" href="{% url 'academics:academic_structure' %}">إدارة الهيكل الدراسي</a>
             <a class="btn btn-success" href="{% url 'academics:academic_year_create' %}">إضافة عام جديد</a>
         </div>
     </div>
@@ -18,8 +16,10 @@
             <thead>
                 <tr>
                     <th>العام</th>
-                    <th>البداية</th>
-                    <th>النهاية</th>
+                    <th>بداية الفصل الأول</th>
+                    <th>نهاية الفصل الأول</th>
+                    <th>بداية الفصل الثاني</th>
+                    <th>نهاية الفصل الثاني</th>
                     <th>الحالة</th>
                     <th>الإغلاق</th>
                     <th>إجراء</th>
@@ -30,11 +30,11 @@
                 <tr>
                     <td>{{ y.name }}</td>
                     <td>{{ y.start_date }}</td>
+                    <td>{{ y.semesters.all.0.end_date }}</td>
+                    <td>{{ y.semesters.all.1.start_date }}</td>
                     <td>{{ y.end_date }}</td>
                     <td>
-                        {% if y.is_closed %}<span class="badge bg-dark">مغلق</span>
-                        {% elif y.is_current %}<span class="badge bg-success">الحالي</span>
-                        {% else %}<span class="badge bg-info text-dark">مفتوح</span>{% endif %}
+                        <span class="badge {% if y.operational_status == 'current' %}bg-success{% elif y.operational_status == 'financial_archived' %}bg-dark{% elif y.operational_status == 'academic_closed' %}bg-secondary{% else %}bg-info text-dark{% endif %}">{{ y.operational_status_label }}</span>
                     </td>
                     <td>
                         {% if y.is_closed %}
@@ -60,7 +60,7 @@
                     </td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="6">لا توجد أعوام دراسية.</td></tr>
+                <tr><td colspan="8">لا توجد أعوام دراسية.</td></tr>
                 {% endfor %}
             </tbody>
         </table>

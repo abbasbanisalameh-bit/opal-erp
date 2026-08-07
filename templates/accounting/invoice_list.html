@@ -6,21 +6,22 @@
 <div class="opal-card mb-4">
   <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
     <form method="get" class="row g-2 flex-grow-1">
-      <div class="col-md-5"><input class="form-control" name="q" value="{{ filters.q }}" placeholder="اسم الطالب أو رقمه أو رقم الرسم"></div>
-      <div class="col-md-3"><select class="form-select" name="status"><option value="">كل الحالات</option>{% for value,label in statuses %}<option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+      <div class="col-md-4"><input class="form-control" name="q" value="{{ filters.q }}" placeholder="اسم الطالب أو رقمه أو رقم الرسم"></div>
+      <div class="col-md-3"><select class="form-select" name="period"><option value="current" {% if filters.period == 'current' %}selected{% endif %}>رسوم السنة الحالية</option><option value="previous" {% if filters.period == 'previous' %}selected{% endif %}>رسوم السنوات السابقة</option><option value="unassigned" {% if filters.period == 'unassigned' %}selected{% endif %}>رسوم بلا عام محدد</option><option value="all" {% if filters.period == 'all' %}selected{% endif %}>كل السنوات للتدقيق</option></select></div>
+      <div class="col-md-2"><select class="form-select" name="status"><option value="">كل الحالات</option>{% for value,label in statuses %}<option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
       <div class="col-md-2 form-check d-flex align-items-center gap-2 px-4"><input class="form-check-input" type="checkbox" name="overdue" value="1" id="overdue" {% if filters.overdue %}checked{% endif %}><label for="overdue">متأخرة</label></div>
-      <div class="col-md-2"><button class="btn btn-outline-primary w-100"><i class="bi bi-search"></i> بحث</button></div>
+      <div class="col-md-1"><button class="btn btn-outline-primary w-100"><i class="bi bi-search"></i></button></div>
     </form>
     <a class="btn btn-primary" href="{% url 'accounting:invoice_create' %}"><i class="bi bi-plus-circle"></i> إصدار رسم إضافي</a>
   </div>
 </div>
 <div class="opal-card"><div class="table-responsive"><table class="opal-table">
-<thead><tr><th>رقم الرسم</th><th>الطالب</th><th>النوع</th><th>القيمة</th><th>المدفوع</th><th>المتبقي</th><th>الاستحقاق</th><th>الحالة</th><th>الإجراءات</th></tr></thead>
-<tbody>{% for item in invoices %}<tr>
-<td>{{ item.invoice_number }}</td><td><a href="{% url 'students:student_360' item.student_id %}">{{ item.student.full_name }}</a></td><td>{{ item.fee_category.name }}</td>
-<td>{{ item.net_amount|floatformat:2 }}</td><td>{{ item.total_paid|floatformat:2 }}</td><td class="fw-bold">{{ item.remaining|floatformat:2 }}</td><td>{{ item.due_date }}</td>
-<td><span class="badge {% if item.status == 'paid' %}bg-success{% elif item.status == 'cancelled' %}bg-secondary{% elif item.status == 'partial' %}bg-warning text-dark{% else %}bg-danger{% endif %}">{{ item.get_status_display }}</span></td>
-<td><div class="d-flex gap-1 flex-wrap"><a class="btn btn-sm btn-outline-primary" href="{% url 'admissions:student_financial_record' item.student_id %}"><i class="bi bi-eye"></i> الملف المالي</a>{% if item.status != 'cancelled' and not item.total_paid %}<form method="post" action="{% url 'accounting:invoice_cancel' item.pk %}" onsubmit="return confirm('إلغاء هذا الرسم؟')">{% csrf_token %}<input type="hidden" name="reason" value="إلغاء من شاشة رسوم الطلاب"><button class="btn btn-sm btn-outline-danger"><i class="bi bi-x-circle"></i> إلغاء</button></form>{% endif %}</div></td>
-</tr>{% empty %}<tr><td colspan="9" class="text-center text-secondary py-4">لا توجد رسوم مطابقة.</td></tr>{% endfor %}</tbody>
+<thead><tr><th>رقم الرسم</th><th>الطالب</th><th>العام</th><th>النوع</th><th>القيمة</th><th>المدفوع</th><th>المتبقي</th><th>الاستحقاق</th><th>الحالة</th><th>الإجراءات</th></tr></thead>
+<tbody>{% for item in invoices %}{% with finance=item.financial_snapshot %}<tr>
+<td>{{ item.invoice_number }}</td><td><a href="{% url 'students:student_360' item.student_id %}">{{ item.student.full_name }}</a></td><td>{{ item.academic_year.name|default:"غير محدد" }}</td><td>{{ item.fee_category.name }}</td>
+<td>{{ finance.net_amount|floatformat:2 }}</td><td>{{ finance.total_paid|floatformat:2 }}</td><td class="fw-bold">{{ finance.remaining|floatformat:2 }}</td><td>{{ item.due_date }}</td>
+<td><span class="badge {% if finance.status == 'paid' %}bg-success{% elif finance.status == 'cancelled' %}bg-secondary{% elif finance.status == 'partial' %}bg-warning text-dark{% else %}bg-danger{% endif %}">{{ finance.status_label }}</span></td>
+<td><div class="d-flex gap-1 flex-wrap"><a class="btn btn-sm btn-outline-primary" href="{% url 'admissions:student_financial_record' item.student_id %}"><i class="bi bi-eye"></i> الملف المالي</a>{% if finance.status != 'cancelled' and not finance.total_paid %}<form method="post" action="{% url 'accounting:invoice_cancel' item.pk %}" onsubmit="return confirm('إلغاء هذا الرسم؟')">{% csrf_token %}<input type="hidden" name="reason" value="إلغاء من شاشة رسوم الطلاب"><button class="btn btn-sm btn-outline-danger"><i class="bi bi-x-circle"></i> إلغاء</button></form>{% endif %}</div></td>
+</tr>{% endwith %}{% empty %}<tr><td colspan="10" class="text-center text-secondary py-4">لا توجد رسوم مطابقة.</td></tr>{% endfor %}</tbody>
 </table></div></div>
 {% endblock %}

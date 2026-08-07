@@ -5,7 +5,7 @@ from django.utils import timezone
 from .models import Enrollment, StudentLifecycleEvent
 
 
-def _validate_target(target_year, target_grade, target_section):
+def _validate_target(target_year, target_grade, target_section, *, allow_capacity_overflow=False):
     if not target_year or not target_grade:
         raise ValidationError("يجب تحديد العام والصف المستهدفين.")
     if target_year.is_closed:
@@ -15,7 +15,11 @@ def _validate_target(target_year, target_grade, target_section):
             raise ValidationError("الشعبة المستهدفة لا تتبع الصف المحدد.")
         if target_section.academic_year_id and target_section.academic_year_id != target_year.id:
             raise ValidationError("الشعبة المستهدفة لا تتبع العام الدراسي المحدد.")
-        if target_section.capacity and target_section.active_enrollment_count >= target_section.capacity:
+        if (
+            not allow_capacity_overflow
+            and target_section.capacity
+            and target_section.active_enrollment_count >= target_section.capacity
+        ):
             raise ValidationError("الشعبة المستهدفة ممتلئة ولا يوجد فيها مقعد شاغر.")
 
 
@@ -30,6 +34,7 @@ def perform_lifecycle_action(
     target_section=None,
     reason="",
     user=None,
+    allow_capacity_overflow=False,
 ):
     effective_date = effective_date or timezone.localdate()
     current = (
@@ -38,13 +43,25 @@ def perform_lifecycle_action(
         .order_by("-academic_year__start_date")
         .first()
     )
+    from_grade_snapshot = current.grade.name if current and current.grade_id else ""
+    from_section_snapshot = current.section.name if current and current.section_id else ""
     to_enrollment = None
 
-    if current and current.academic_year.is_closed:
-        raise ValidationError("قيد الطالب يتبع عامًا مغلقًا ولا يمكن تعديله.")
+    if current and current.academic_year.is_closed and action not in {"promote", "graduate"}:
+        raise ValidationError("قيد الطالب يتبع عامًا مغلقًا؛ المتاح بعد الإغلاق هو الترفيع أو التخريج فقط.")
+    if action in {"promote", "graduate"}:
+        if not current:
+            raise ValidationError("لا يوجد قيد نشط للطالب.")
+        if not current.academic_year.is_closed:
+            raise ValidationError("لا يمكن ترفيع الطالب أو تخريجه قبل إغلاق العام الدراسي المصدر.")
 
     if action in {"promote", "reenroll", "section_change"}:
-        _validate_target(target_year, target_grade, target_section)
+        _validate_target(
+            target_year,
+            target_grade,
+            target_section,
+            allow_capacity_overflow=allow_capacity_overflow,
+        )
 
     if action == "section_change":
         if not current:
@@ -62,7 +79,11 @@ def perform_lifecycle_action(
             current.status = "completed"
             current.ended_at = effective_date
             current.status_reason = reason or "إغلاق القيد عند الانتقال إلى عام دراسي جديد"
-            current.save(update_fields=["status", "ended_at", "status_reason"])
+            Enrollment.objects.filter(pk=current.pk).update(
+                status=current.status,
+                ended_at=current.ended_at,
+                status_reason=current.status_reason,
+            )
         to_enrollment, _ = Enrollment.objects.update_or_create(
             student=student,
             academic_year=target_year,
@@ -104,7 +125,11 @@ def perform_lifecycle_action(
         current.status = "graduated"
         current.ended_at = effective_date
         current.status_reason = reason
-        current.save(update_fields=["status", "ended_at", "status_reason"])
+        Enrollment.objects.filter(pk=current.pk).update(
+            status=current.status,
+            ended_at=current.ended_at,
+            status_reason=current.status_reason,
+        )
         student.status = "graduated"
         student.is_active = False
 
@@ -123,6 +148,10 @@ def perform_lifecycle_action(
         to_enrollment=to_enrollment,
         effective_date=effective_date,
         reason=reason,
+        from_grade_snapshot=from_grade_snapshot,
+        from_section_snapshot=from_section_snapshot,
+        to_grade_snapshot=to_enrollment.grade.name if to_enrollment and to_enrollment.grade_id else "",
+        to_section_snapshot=to_enrollment.section.name if to_enrollment and to_enrollment.section_id else "",
         performed_by=user,
     )
     return event

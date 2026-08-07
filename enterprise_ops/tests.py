@@ -4,6 +4,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from .models import ApprovalAction, Notification, RolePermissionRule, WorkflowRequest
+from .permissions import has_feature_permission
 from .services import notify, transition_workflow
 
 
@@ -44,3 +45,23 @@ class EnterpriseWorkflowTests(TestCase):
         second = notify(self.requester, "اختبار", "حدث واحد", event_key="payment:1")
         self.assertEqual(first.pk, second.pk)
         self.assertEqual(Notification.objects.filter(recipient=self.requester).count(), 1)
+
+    def test_notification_opens_its_local_event_and_is_retained(self):
+        item = notify(
+            self.requester,
+            "افتح الطلب",
+            "انتقال مباشر",
+            link=reverse("enterprise_ops:workflow_detail", args=[self.workflow.pk]),
+            event_key="workflow:open-test",
+        )
+        self.client.force_login(self.requester)
+        response = self.client.post(reverse("enterprise_ops:notification_read", args=[item.pk]))
+        self.assertRedirects(response, self.workflow.get_absolute_url(), fetch_redirect_response=False)
+        item.refresh_from_db()
+        self.assertTrue(item.is_read)
+        self.assertTrue(Notification.objects.filter(pk=item.pk).exists())
+
+    def test_reports_and_audit_are_management_only(self):
+        self.assertFalse(has_feature_permission(self.requester, "reports", "view"))
+        self.assertFalse(has_feature_permission(self.requester, "audit", "view"))
+        self.assertTrue(has_feature_permission(self.manager, "reports", "view"))

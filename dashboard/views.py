@@ -3,6 +3,7 @@ import csv
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.http import HttpResponse
 from django.shortcuts import render
+from django.views.decorators.http import require_GET
 
 from .workflow import (
     build_attendance_detail_context,
@@ -19,14 +20,21 @@ _executive_snapshot = build_executive_snapshot
 
 @login_required
 @user_passes_test(_is_management_user)
+@require_GET
 def home(request):
-    return render(request, "dashboard/home.html", build_dashboard_context())
+    """Render the fixed canonical manager dashboard.
+
+    Update 131.7 permanently retires per-user dashboard customization.  The
+    historical profile field is intentionally left dormant for safe rollback
+    compatibility, but no runtime path reads or writes it.
+    """
+    return render(request, "dashboard/home.html", build_dashboard_context(request))
 
 
 @login_required
 @user_passes_test(_is_management_user)
 def attendance_detail(request):
-    return render(request, "dashboard/attendance_detail.html", build_attendance_detail_context())
+    return render(request, "dashboard/attendance_detail.html", build_attendance_detail_context(request=request))
 
 
 @login_required
@@ -37,5 +45,5 @@ def executive_export_csv(request):
     response.write("\ufeff")
     writer = csv.writer(response)
     writer.writerow(["المؤشر", "القيمة"])
-    writer.writerows(build_executive_export_rows())
+    writer.writerows(build_executive_export_rows(request=request))
     return response

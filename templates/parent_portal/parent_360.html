@@ -29,8 +29,8 @@
   <div class="stat-card"><span>إجمالي المدفوع</span><h2 class="text-success">{{ totals360.paid|floatformat:2 }}</h2></div>
   <div class="stat-card"><span>إجمالي المتبقي</span><h2 class="text-danger">{{ totals360.remaining|floatformat:2 }}</h2></div>
   <div class="stat-card"><span>نسبة السداد</span><h2>{{ totals360.paid_percentage }}%</h2></div>
+  <div class="stat-card"><span>نسبة الانتظام</span><h2>{{ totals360.attendance_rate }}%</h2></div>
   <div class="stat-card"><span>الغياب</span><h2 class="text-danger">{{ totals360.absent }}</h2></div>
-  <div class="stat-card"><span>التأخر</span><h2 class="text-warning">{{ totals360.late }}</h2></div>
   <div class="stat-card"><span>المغادرة</span><h2 class="text-info">{{ totals360.departed }}</h2></div>
   <div class="stat-card"><span>الوثائق</span><h2>{{ totals360.documents }}</h2></div>
 </div>
@@ -50,7 +50,7 @@
     <div class="col-xl-6">
       <div class="opal-card h-100 border border-{{ item.status_class }}">
         <div class="d-flex justify-content-between gap-3 mb-3">
-          <div><h4 class="fw-bold mb-1">{{ item.student.full_name }}</h4><div class="text-muted">{{ item.student.grade }} · {{ item.student.section|default:"بدون شعبة" }}</div></div>
+          <div><h4 class="fw-bold mb-1">{{ item.student.full_name }}</h4><div class="text-muted">{{ item.student.class_display|default:"بدون صف وشعبة" }}</div></div>
           <span class="badge bg-{{ item.status_class }} align-self-start">{{ item.status_label }}</span>
         </div>
         <div class="row g-2 mb-3">
@@ -60,15 +60,15 @@
         </div>
         <div class="progress mb-3" style="height:10px"><div class="progress-bar" style="width:{{ item.paid_percentage }}%"></div></div>
         <div class="row g-2 mb-3">
-          <div class="col text-center"><small>حاضر</small><div class="fw-bold text-success">{{ item.attendance.present }}</div></div>
+          <div class="col text-center"><small>الأيام المحتسبة</small><div class="fw-bold">{{ item.attendance.days }}</div></div>
+          <div class="col text-center"><small>حاضر تلقائيًا</small><div class="fw-bold text-success">{{ item.attendance.present }}</div></div>
           <div class="col text-center"><small>غائب</small><div class="fw-bold text-danger">{{ item.attendance.absent }}</div></div>
-          <div class="col text-center"><small>متأخر</small><div class="fw-bold text-warning">{{ item.attendance.late }}</div></div>
           <div class="col text-center"><small>مغادر</small><div class="fw-bold text-info">{{ item.attendance.departed }}</div></div>
+          <div class="col text-center"><small>الانتظام</small><div class="fw-bold">{{ item.attendance.rate }}%</div></div>
           <div class="col text-center"><small>المعدل</small><div class="fw-bold">{% if item.average != None %}{{ item.average }}%{% else %}-{% endif %}</div></div>
         </div>
         <div class="d-flex flex-wrap gap-2">
-          <a class="btn btn-sm btn-primary" href="{% url 'parent_portal:student_detail' item.student.pk %}">ملف الطالب</a>
-          <a class="btn btn-sm btn-outline-primary" href="{% url 'students:student_360' item.student.pk %}">بطاقة الطالب</a>
+          <a class="btn btn-sm btn-primary" href="{% url 'parent_portal:student_detail' item.student.pk %}">بيانات الطالب</a>
         </div>
       </div>
     </div>
@@ -79,4 +79,9 @@
 <div class="mb-4">{% include "parent_portal/_guardian_receipt_history.html" %}</div>
 <div class="opal-card"><h3 class="fw-bold mb-3">آخر الوثائق</h3><ul class="mb-0">{% for doc in recent_documents360 %}<li class="mb-2"><strong>{{ doc.student.full_name }}</strong><br><small>{{ doc.issued_document.title }} · {{ doc.created_at|date:"Y-m-d" }}</small></li>{% empty %}<li>لا توجد وثائق صادرة.</li>{% endfor %}</ul></div>
 </div>
+{% endblock %}
+{% block extra_js %}
+<style>
+.opal-parent-360{max-width:100%;overflow-x:hidden}.opal-parent-360 .stats-grid{grid-template-columns:repeat(auto-fit,minmax(145px,1fr))}.opal-parent-360 .stat-card,.opal-parent-360 .opal-card{min-width:0;max-width:100%}.opal-parent-360 h2,.opal-parent-360 h3,.opal-parent-360 h4,.opal-parent-360 .text-muted{overflow-wrap:anywhere}.opal-parent-360 .row{margin-left:0;margin-right:0}@media(max-width:575px){.opal-parent-360 .stats-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.opal-parent-360 .stat-card{padding:14px 10px}.opal-parent-360 .stat-card h2{font-size:1.35rem}.opal-parent-360 .col-xl-6{padding-left:0;padding-right:0}.opal-parent-360 .opal-card{padding:14px}.opal-parent-360 .d-flex{min-width:0}.opal-parent-360 .badge{white-space:normal;text-align:center}}
+</style>
 {% endblock %}

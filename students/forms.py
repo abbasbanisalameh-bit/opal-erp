@@ -10,10 +10,21 @@ class StudentForm(forms.ModelForm):
             "national_id", "full_name", "father_name", "mother_name",
             "gender", "blood_type", "address", "medical_notes", "photo",
         ]
-        widgets = {field: forms.TextInput(attrs={"class": "form-control"}) for field in fields}
-        widgets["gender"] = forms.Select(attrs={"class": "form-select"})
-        widgets["address"] = forms.Textarea(attrs={"class": "form-control", "rows": 3})
-        widgets["medical_notes"] = forms.Textarea(attrs={"class": "form-control", "rows": 3})
+        widgets = {
+            "national_id": forms.TextInput(attrs={"class": "form-control"}),
+            "full_name": forms.TextInput(attrs={"class": "form-control"}),
+            "father_name": forms.TextInput(attrs={"class": "form-control"}),
+            "mother_name": forms.TextInput(attrs={"class": "form-control"}),
+            "gender": forms.Select(attrs={"class": "form-select"}),
+            "blood_type": forms.TextInput(attrs={"class": "form-control"}),
+            "address": forms.Textarea(attrs={"class": "form-control", "rows": 3}),
+            "medical_notes": forms.Textarea(attrs={"class": "form-control", "rows": 3}),
+            "photo": forms.ClearableFileInput(attrs={"class": "form-control", "accept": "image/*"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["photo"].help_text = "الحد الأقصى لحجم الصورة: 1 ميجابايت."
 
     def clean_national_id(self):
         value = (self.cleaned_data.get("national_id") or "").strip()

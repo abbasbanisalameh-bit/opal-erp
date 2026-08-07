@@ -1,5 +1,6 @@
 from datetime import date, datetime, time
 
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.contrib.auth.models import User
 from django.urls import reverse
@@ -25,11 +26,15 @@ class SmartTimetableTests(TestCase):
         )
         grade = Grade.objects.create(school=self.school, name="الأول")
         section = Section.objects.create(academic_year=self.year, branch=self.branch, grade=grade, name="أ")
-        subject = Subject.objects.create(name="رياضيات", grade=grade)
-        teacher = Teacher.objects.create(employee_number="SMART-T", full_name="معلم ذكي", school=self.school)
-        self.assignment = TeacherAssignment.objects.create(
-            teacher=teacher, academic_year=self.year, section=section, subject=subject, weekly_periods=3,
+        subject = Subject.objects.create(academic_year=self.year, name="رياضيات", grade=grade, weekly_periods=3)
+        teacher = Teacher.objects.create(
+            employee_number="SMART-T", full_name="معلم ذكي", school=self.school,
+            weekly_teaching_load=10,
         )
+        self.assignment = TeacherAssignment.objects.create(
+            teacher=teacher, academic_year=self.year, section=section, subject=subject,
+        )
+        self.subject = subject
         TimeSlot.objects.create(name="الحصة الأولى", start_time=time(8), end_time=time(8, 45), order=1)
         TimeSlot.objects.create(name="الحصة الثانية", start_time=time(9), end_time=time(9, 45), order=2)
         self.client.force_login(self.user)
@@ -42,16 +47,26 @@ class SmartTimetableTests(TestCase):
         self.assertEqual(entries.values("section", "day", "time_slot").distinct().count(), 3)
         self.assertEqual(entries.values("teacher", "day", "time_slot").distinct().count(), 3)
 
-    def test_default_thursday_is_weekend(self):
-        thursday = timezone.make_aware(datetime(2026, 7, 23, 9, 0))
-        status = school_live_status(self.school, thursday, guardian=True)
+    def test_default_saturday_is_weekend(self):
+        saturday = timezone.make_aware(datetime(2026, 7, 25, 9, 0))
+        status = school_live_status(self.school, saturday, guardian=True)
         self.assertEqual(status["state"], "weekend")
         self.assertIn("اعتنوا بأبنائنا", status["message"])
 
+    def test_incomplete_plan_is_never_partially_applied(self):
+        self.subject.weekly_periods = 20
+        self.subject.save(update_fields=["weekly_periods"])
+        with self.assertRaises(ValidationError):
+            build_smart_timetable(academic_year=self.year, apply=True)
+        self.assertFalse(TimetableEntry.objects.exists())
+
     def test_smart_management_pages_render(self):
         for url in (
-            reverse("timetable:dashboard"), reverse("timetable:smart_builder"),
-            reverse("timetable:schedule_settings"), reverse("timetable:absence_center"),
+            reverse("timetable:dashboard"), reverse("timetable:schedule_settings"),
+            reverse("timetable:absence_center"),
         ):
             response = self.client.get(url)
             self.assertEqual(response.status_code, 200, url)
+        legacy = self.client.get(reverse("timetable:smart_builder"))
+        self.assertRedirects(legacy, reverse("timetable:dashboard") + "#smart-builder", fetch_redirect_response=False)
+        self.assertEqual(legacy["Sunset"], "OPAL Update 132.0")

@@ -29,7 +29,7 @@ class UnifiedExamWorkflowTests(TestCase):
         self.section = Section.objects.create(
             academic_year=self.year, branch=self.branch, grade=self.grade, name="أ"
         )
-        self.subject = Subject.objects.create(name="اللغة العربية", grade=self.grade)
+        self.subject = Subject.objects.create(academic_year=self.year, name="اللغة العربية", grade=self.grade)
         self.teacher_user = User.objects.create_user("arabic_teacher", password="pass12345")
         self.teacher = Teacher.objects.create(
             user=self.teacher_user,
@@ -111,7 +111,7 @@ class UnifiedExamWorkflowTests(TestCase):
             )
             StudentMark.objects.create(exam=exam, student=self.students[0], mark=Decimal(mark))
         self.client.force_login(self.manager)
-        response = self.client.get(reverse("exams:gradebook"), {
+        response = self.client.get(reverse("exams:exam_list"), {
             "academic_year": self.year.pk,
             "semester": self.semester.pk,
             "grade": self.grade.pk,

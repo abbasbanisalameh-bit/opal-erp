@@ -1,53 +1,21 @@
-<aside class="opal-sidebar">
+<aside id="opal-sidebar" class="opal-sidebar" aria-label="القائمة الرئيسية">
+  <button type="button" class="opal-sidebar-close" id="opal-sidebar-close" aria-label="إغلاق القائمة"><i class="bi bi-x-lg"></i></button>
   <div class="opal-brand opal-school-brand-fixed">
     <div class="opal-logo opal-school-logo-fixed">{% if opal_school and opal_school.logo %}<img src="{{ opal_school.logo.url }}" alt="{{ opal_school.name }}" class="opal-school-logo-img-fixed">{% else %}<i class="bi bi-mortarboard-fill"></i>{% endif %}</div>
     <div class="opal-school-brand-text-fixed"><h3>{{ opal_school.name|default:"OPAL" }}</h3><span>School ERP</span></div>
   </div>
   <nav class="opal-menu" aria-label="القائمة الرئيسية">
-  {% if request.user.is_staff or request.user.is_superuser %}
-    <div class="opal-menu-section">الرئيسية</div>
-    <a href="{% url 'dashboard:home' %}" class="{% if request.resolver_match.namespace == 'dashboard' %}active{% endif %}"><i class="bi bi-grid-1x2-fill"></i><span>لوحة التحكم</span></a>
-
-    <div class="opal-menu-section">العمليات المدرسية</div>
-    <a href="{% url 'students:student_list' %}" class="{% if request.resolver_match.namespace == 'students' or request.resolver_match.namespace == 'parent_portal' or request.resolver_match.namespace == 'documents' %}active{% elif request.resolver_match.namespace == 'admissions' and request.path|slice:':21' != '/admissions/payments/' %}active{% endif %}"><i class="bi bi-people-fill"></i><span>الطلاب والتسجيل</span></a>
-    <a href="{% url 'academics:dashboard' %}" class="{% if request.resolver_match.namespace == 'academics' or request.resolver_match.namespace == 'curriculum' or request.resolver_match.namespace == 'attendance_v2' or request.resolver_match.namespace == 'exams' or request.resolver_match.namespace == 'teachers' or request.resolver_match.namespace == 'timetable' %}active{% endif %}"><i class="bi bi-mortarboard-fill"></i><span>الشؤون الأكاديمية</span></a>
-    <a href="{% url 'accounting:dashboard' %}" class="{% if request.resolver_match.namespace == 'accounting' or request.path|slice:':21' == '/admissions/payments/' %}active{% endif %}"><i class="bi bi-cash-stack"></i><span>الرسوم والدفعات</span></a>
-
-    <div class="opal-menu-section">الإدارة والتواصل</div>
-    <a href="{% url 'enterprise_ops:dashboard' %}" class="{% if request.resolver_match.namespace == 'enterprise_ops' or request.resolver_match.namespace == 'announcements' %}active{% endif %}"><i class="bi bi-bell-fill"></i><span>التواصل والمتابعة</span></a>
-    <a href="{% url 'core:operations_center' %}" class="{% if request.resolver_match.url_name == 'operations_center' %}active{% endif %}"><i class="bi bi-signpost-split-fill"></i><span>دليل العمليات</span></a>
-
-    <div class="opal-menu-section">النظام والتكامل</div>
-    {% if opal_openemis_enabled %}<a href="{% url 'openemis:settings' %}" class="{% if request.resolver_match.namespace == 'openemis' %}active{% endif %}"><i class="bi bi-cloud-arrow-up-fill"></i><span>تكامل OpenEMIS</span></a>{% endif %}
-    {% if opal_development_center_enabled %}<a href="{% url 'development_center:dashboard' %}" class="{% if request.resolver_match.namespace == 'development_center' %}active{% endif %}"><i class="bi bi-tools"></i><span>مركز التطوير</span></a>{% endif %}
-    <a href="{% url 'core:system_settings' %}" class="{% if request.resolver_match.namespace == 'core' and request.resolver_match.url_name != 'operations_center' %}active{% endif %}"><i class="bi bi-gear-fill"></i><span>إعدادات النظام</span></a>
-  {% elif request.user.teacher_profile %}
-    <div class="opal-menu-section">بوابة المعلم</div>
-    <a href="{% url 'teachers:portal_dashboard' %}" class="{% if request.resolver_match.namespace == 'teachers' and request.resolver_match.url_name != 'portal_timetable' %}active{% endif %}"><i class="bi bi-house-door-fill"></i><span>الرئيسية والتكليفات</span></a>
-
-    <div class="opal-menu-section">العمل الأكاديمي</div>
-    <a href="{% url 'teachers:portal_timetable' %}" class="{% if request.resolver_match.url_name == 'portal_timetable' %}active{% endif %}"><i class="bi bi-calendar3"></i><span>الجدول الدراسي</span></a>
-
-    <div class="opal-menu-section">التواصل والمتابعة</div>
-    <a href="{% url 'enterprise_ops:feedback_list' %}" class="{% if request.resolver_match.namespace == 'enterprise_ops' and 'feedback' in request.resolver_match.url_name %}active{% endif %}"><i class="bi bi-chat-square-text"></i><span>الشكاوى والاقتراحات</span></a>
-    <a href="{% url 'enterprise_ops:notification_list' %}" class="{% if request.resolver_match.url_name == 'notification_list' %}active{% endif %}"><i class="bi bi-bell"></i><span>الإشعارات</span></a>
-    <a href="{% url 'enterprise_ops:report_center' %}" class="{% if request.resolver_match.url_name == 'report_center' %}active{% endif %}"><i class="bi bi-bar-chart"></i><span>التقارير</span></a>
-    <a href="{% url 'enterprise_ops:audit_log' %}" class="{% if request.resolver_match.url_name == 'audit_log' %}active{% endif %}"><i class="bi bi-shield-check"></i><span>سجل العمليات</span></a>
-  {% else %}
-    <div class="opal-menu-section">بوابة ولي الأمر</div>
-    <a href="{% url 'parent_portal:dashboard' %}" class="{% if request.resolver_match.namespace == 'parent_portal' and request.resolver_match.url_name != 'timetable' %}active{% endif %}"><i class="bi bi-house-heart-fill"></i><span>الرئيسية</span></a>
-
-    <div class="opal-menu-section">الأبناء</div>
-    <a href="{% url 'parent_portal:timetable' %}" class="{% if request.resolver_match.url_name == 'timetable' %}active{% endif %}"><i class="bi bi-calendar3"></i><span>جداول الأبناء</span></a>
-
-    <div class="opal-menu-section">التواصل والمتابعة</div>
-    <a href="{% url 'enterprise_ops:feedback_list' %}" class="{% if request.resolver_match.namespace == 'enterprise_ops' and 'feedback' in request.resolver_match.url_name %}active{% endif %}"><i class="bi bi-chat-square-text"></i><span>الشكاوى والاقتراحات</span></a>
-    <a href="{% url 'enterprise_ops:notification_list' %}" class="{% if request.resolver_match.url_name == 'notification_list' %}active{% endif %}"><i class="bi bi-bell"></i><span>الإشعارات</span></a>
-    <a href="{% url 'enterprise_ops:report_center' %}" class="{% if request.resolver_match.url_name == 'report_center' %}active{% endif %}"><i class="bi bi-bar-chart"></i><span>التقارير</span></a>
-    <a href="{% url 'enterprise_ops:audit_log' %}" class="{% if request.resolver_match.url_name == 'audit_log' %}active{% endif %}"><i class="bi bi-shield-check"></i><span>سجل العمليات</span></a>
-  {% endif %}
-    <div class="opal-menu-section">الحساب</div>
-    <a href="{% url 'accounts:my_profile' %}" class="{% if request.resolver_match.namespace == 'accounts' and request.resolver_match.url_name == 'my_profile' %}active{% endif %}"><i class="bi bi-person-circle"></i><span>الملف الشخصي</span></a>
+    {% for section in opal_navigation_sections %}
+      <div class="opal-menu-section">{{ section.label }}</div>
+      {% for item in section.items %}
+        <a href="{{ item.url }}"{% if item.active %} class="active"{% endif %}>
+          <i class="bi bi-{{ item.icon }}"></i><span>{{ item.label }}</span>
+        </a>
+      {% endfor %}
+    {% empty %}
+      <div class="opal-menu-section">الحساب</div>
+      <a href="{% url 'accounts:my_profile' %}"><i class="bi bi-person-circle"></i><span>الملف الشخصي</span></a>
+    {% endfor %}
   </nav>
   <form method="post" action="{% url 'accounts:logout' %}" class="opal-logout-form">{% csrf_token %}<button class="btn btn-outline-light w-100"><i class="bi bi-box-arrow-right"></i> تسجيل الخروج</button></form>
 </aside>

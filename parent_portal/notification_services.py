@@ -1,4 +1,5 @@
 from enterprise_ops.services import notify
+from django.urls import reverse
 
 
 def guardian_users_for_student(student):
@@ -26,10 +27,10 @@ def notify_guardians_for_fee_payment(fee_payment):
     for student in students.values():
         notify_guardian_for_student(
             student,
-            "تم تسجيل دفعة رسوم",
-            f"تم تسجيل دفعة بقيمة {fee_payment.total_amount} د.أ وتوزيعها على: {names}. رقم الإيصال {fee_payment.receipt_number}.",
+            f"تم تسجيل {fee_payment.payment_period_label}",
+            f"تم تسجيل دفعة بقيمة {fee_payment.total_amount} د.أ ضمن {fee_payment.payment_period_label} وتوزيعها على: {names}. رقم الإيصال {fee_payment.receipt_number}.",
             event_key=f"fee-payment:{fee_payment.pk}",
-            link="/parent/fees/",
+            link=reverse("parent_portal:student_detail", args=[student.pk]),
         )
 
 
@@ -40,5 +41,5 @@ def notify_guardian_for_registration(registration):
             "تم تسجيل الدفعة الأولى",
             f"تم تسجيل {registration.first_payment} د.أ للطالب {registration.student.full_name}. رقم الإيصال {registration.receipt.receipt_number if registration.receipt else '-'}.",
             event_key=f"registration-payment:{registration.pk}",
-            link="/parent/fees/",
+            link=reverse("parent_portal:student_detail", args=[registration.student.pk]),
         )

@@ -1,13 +1,13 @@
 {% extends "base/base.html" %}
 {% block title %}دليل العمليات الموحد | OPAL ERP{% endblock %}
 {% block page_title %}دليل العمليات الموحد{% endblock %}
-{% block page_subtitle %}كل إجراء له شاشة رسمية واحدة، مع خريطة تكامل وفحص لحالة الترابط بين الوحدات{% endblock %}
+{% block page_subtitle %}مرجع قراءة فقط يوضح ملكية العمليات دون فتحها من مسار ثانٍ{% endblock %}
 {% block content %}
 <section class="opal-operations-hero mb-4">
   <div>
     <span class="opal-eyebrow"><i class="bi bi-signpost-split-fill"></i> المسار الرسمي للنظام</span>
-    <h2>ابحث عن العملية، ثم انتقل مباشرة إلى مكان تنفيذها الوحيد</h2>
-    <p>الروابط الأخرى داخل بطاقات الطلاب والمعلمين والأسرة هي اختصارات سياقية إلى الشاشة الرسمية نفسها، وليست وظائف مكررة.</p>
+    <h2>مرجع العمليات الرسمي دون أزرار تنفيذ مكررة</h2>
+    <p>ابدأ العمل من بوابة الدور الرئيسية فقط. تعرض هذه الصفحة الملكية والترابط للقراءة، ولا تُنشئ مدخلًا آخر لأي وظيفة.</p>
   </div>
   <div class="opal-operations-health is-{{ integration_health_class }}">
     <div class="opal-health-ring" style="--opal-health:{{ integration_health_percent }}%"><span>{{ integration_health_percent }}%</span></div>
@@ -30,11 +30,11 @@
   </header>
   <div class="opal-operation-grid">
     {% for operation in group.operations %}
-    <a class="opal-operation-card is-{{ operation.module_color }}" href="{{ operation.url }}" data-operation-card data-search="{{ operation.search_text|lower }}">
+    <article class="opal-operation-card is-{{ operation.module_color }}" data-operation-card data-search="{{ operation.search_text|lower }}">
       <span class="opal-operation-icon"><i class="bi bi-{{ operation.icon }}"></i></span>
       <span class="opal-operation-copy"><strong>{{ operation.label }}</strong><small>{{ operation.description }}</small></span>
-      <i class="bi bi-arrow-left-circle opal-operation-arrow"></i>
-    </a>
+      <span class="badge bg-secondary">من بوابة الدور</span>
+    </article>
     {% endfor %}
   </div>
 </section>
@@ -44,7 +44,7 @@
 
 <section class="opal-flow-section mb-4">
   <div class="section-head">
-    <div><h3 class="section-title"><i class="bi bi-arrow-left-right me-2"></i>سير العمليات من البداية إلى النهاية</h3><p class="text-secondary mb-0">اتبع الخطوات بالترتيب؛ كل خطوة تقود إلى الشاشة الرسمية الوحيدة للعملية.</p></div>
+    <div><h3 class="section-title"><i class="bi bi-arrow-left-right me-2"></i>سير العمليات من البداية إلى النهاية</h3><p class="text-secondary mb-0">ترتيب إرشادي فقط؛ التنفيذ يبدأ من البوابة الرئيسية الظاهرة في قائمة الدور.</p></div>
   </div>
   <div class="opal-flow-grid">
     {% for flow in operation_flows %}
@@ -52,7 +52,7 @@
       <header><span><i class="bi bi-{{ flow.icon }}"></i></span><div><h4>{{ flow.title }}</h4><p>{{ flow.description }}</p></div></header>
       <div class="opal-flow-steps">
         {% for step in flow.steps %}
-        <a href="{{ step.url }}"><span>{{ forloop.counter }}</span>{{ step.label }}<i class="bi bi-arrow-left"></i></a>
+        <div><span>{{ forloop.counter }}</span>{{ step.label }}</div>
         {% endfor %}
       </div>
     </article>
@@ -63,7 +63,7 @@
 <section class="opal-integration-board mb-4">
   <div class="section-head">
     <div><h3 class="section-title"><i class="bi bi-diagram-3-fill me-2"></i>فحص تكامل الوحدات</h3><p class="text-secondary mb-0">فحص قراءة فقط؛ لا يحذف ولا يعدل أي سجل.</p></div>
-    <a href="{% url 'core:integrity_center' %}" class="btn btn-outline-warning"><i class="bi bi-shield-check"></i> مركز سلامة البيانات</a>
+    <span class="badge bg-secondary">المعالجة من إعدادات النظام</span>
   </div>
   <div class="opal-integration-summary">
     <div><span>طلاب نشطون</span><strong>{{ integration_counts.students }}</strong></div>
@@ -83,7 +83,7 @@
         <td><strong>{{ issue.label }}</strong><div class="small text-secondary">{{ issue.code }}</div></td>
         <td>{% if issue.count %}<span class="badge bg-{{ issue.severity }}">{{ issue.count }}</span>{% else %}<span class="badge bg-success"><i class="bi bi-check2"></i> سليم</span>{% endif %}</td>
         <td>{{ issue.description }}</td>
-        <td>{% if issue.url %}<a class="btn btn-sm btn-outline-primary" href="{{ issue.url }}"><i class="bi bi-box-arrow-up-left"></i> فتح الشاشة الرسمية</a>{% else %}<span class="text-secondary">غير متاح</span>{% endif %}</td>
+        <td><span class="text-secondary">{{ issue.route|default:"من البوابة المالكة" }}</span></td>
       </tr>
       {% endfor %}
       </tbody>

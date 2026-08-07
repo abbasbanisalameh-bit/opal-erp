@@ -79,7 +79,11 @@ class CanonicalEntryRedirectTests(TestCase):
 
     def test_mark_add_route_never_renders_single_mark_form(self):
         response = self.client.get(reverse("exams:mark_create"))
-        self.assertRedirects(response, reverse("exams:exam_list"), fetch_redirect_response=False)
+        self.assertRedirects(
+            response,
+            f"{reverse('exams:exam_list')}#marks-review",
+            fetch_redirect_response=False,
+        )
 
     def test_audit_command_is_read_only(self):
         before = (Student.objects.count(), Grade.objects.count(), Section.objects.count())
@@ -112,7 +116,7 @@ class UnifiedMarkEntryTests(TestCase):
             grade=self.grade,
             name="ب",
         )
-        self.subject = Subject.objects.create(name="رياضيات", code="M7", grade=self.grade)
+        self.subject = Subject.objects.create(academic_year=self.year, name="رياضيات", code="M7", grade=self.grade)
         self.student_a = Student.objects.create(student_number="MARK-A", full_name="طالب أ", grade=self.grade.name)
         self.student_b = Student.objects.create(student_number="MARK-B", full_name="طالب ب", grade=self.grade.name)
         Enrollment.objects.create(

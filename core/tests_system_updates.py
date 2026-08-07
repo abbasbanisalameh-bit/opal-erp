@@ -1,19 +1,25 @@
 from __future__ import annotations
 
+import errno
 import io
 import os
+import sqlite3
 import tempfile
 import zipfile
 from pathlib import Path
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from .system_update_service import (
     GitStatus,
+    _create_database_safety_snapshot,
+    _path_forbidden,
+    _restore_database_safety_snapshot,
     create_current_snapshot,
     inspect_package,
     list_local_versions,
@@ -98,8 +104,20 @@ class PackageTests(TestCase):
         (project / ".env").write_text("SECRET=1\n", encoding="utf-8")
         return project
 
+    def _make_update_upload(self) -> SimpleUploadedFile:
+        memory_file = io.BytesIO()
+        with zipfile.ZipFile(memory_file, "w") as archive:
+            archive.writestr("opal/manage.py", "print('opal')")
+            archive.writestr("opal/core/apps.py", "")
+            archive.writestr("opal/templates/base.html", "")
+        return SimpleUploadedFile(
+            "opal_update.zip",
+            memory_file.getvalue(),
+            content_type="application/zip",
+        )
+
     def test_current_snapshot_excludes_private_data(self):
-        with tempfile.TemporaryDirectory() as temp:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as temp:
             temp_path = Path(temp)
             project = self._make_project(temp_path)
             storage = temp_path / "private"
@@ -119,23 +137,145 @@ class PackageTests(TestCase):
                 self.assertNotIn("opal_school/.env", names)
 
     def test_uploaded_update_is_validated_and_listed(self):
-        with tempfile.TemporaryDirectory() as temp:
-            memory_file = io.BytesIO()
-            with zipfile.ZipFile(memory_file, "w") as archive:
-                archive.writestr("opal/manage.py", "print('opal')")
-                archive.writestr("opal/core/apps.py", "")
-                archive.writestr("opal/templates/base.html", "")
-            upload = SimpleUploadedFile(
-                "opal_update.zip",
-                memory_file.getvalue(),
-                content_type="application/zip",
-            )
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as temp:
+            upload = self._make_update_upload()
             with patch.dict(os.environ, {"OPAL_SYSTEM_STORAGE_DIR": temp}):
                 record = save_uploaded_update(upload, username="tester")
                 self.assertTrue(record.compatible)
                 self.assertEqual(len(list_local_versions()), 1)
                 inspection = inspect_package(Path(temp) / "versions" / record.filename)
                 self.assertTrue(inspection.compatible)
+
+    def test_uploaded_update_remains_successful_when_metadata_write_fails(self):
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as temp:
+            upload = self._make_update_upload()
+            metadata_error = OSError(errno.EDQUOT, "quota exceeded")
+            with patch.dict(
+                os.environ,
+                {"OPAL_SYSTEM_STORAGE_DIR": temp},
+            ), patch(
+                "core.update_engine_runtime._write_metadata",
+                side_effect=metadata_error,
+            ):
+                record = save_uploaded_update(upload, username="tester")
+            archive_path = Path(temp) / "versions" / record.filename
+            self.assertTrue(archive_path.is_file())
+            self.assertTrue(inspect_package(archive_path).compatible)
+
+    def test_upload_quota_failure_has_actionable_storage_code(self):
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as temp:
+            upload = self._make_update_upload()
+            quota_error = OSError(errno.EDQUOT, "quota exceeded")
+            with patch.dict(
+                os.environ,
+                {"OPAL_SYSTEM_STORAGE_DIR": temp},
+            ), patch(
+                "core.update_engine_runtime.tempfile.mkstemp",
+                side_effect=quota_error,
+            ):
+                with self.assertRaises(ValidationError) as captured:
+                    save_uploaded_update(upload, username="tester")
+            message = " ".join(captured.exception.messages)
+            self.assertIn("حصة التخزين", message)
+            self.assertIn("EDQUOT", message)
+
+    def test_git_guard_rejects_generated_and_secret_files_but_allows_template(self):
+        for path in (
+            "db.sqlite3",
+            "backups/production.sqlite3",
+            "logs/system.log",
+            "deliverables/OPAL_UPDATE_108.zip",
+            ".env.production",
+        ):
+            self.assertTrue(_path_forbidden(path), path)
+        self.assertFalse(_path_forbidden(".env.example"))
+        self.assertFalse(_path_forbidden("core/system_update_service.py"))
+
+
+class DatabaseSafetySnapshotTests(TestCase):
+    def test_sqlite_safety_snapshot_restores_the_pre_update_state(self):
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as temp:
+            root = Path(temp)
+            database_path = root / "opal.sqlite3"
+            with sqlite3.connect(database_path) as connection:
+                connection.execute("CREATE TABLE sample (value TEXT)")
+                connection.execute("INSERT INTO sample (value) VALUES ('before')")
+
+            storage = root / "private"
+            with patch(
+                "core.update_engine_runtime._sqlite_database_path",
+                return_value=database_path,
+            ), patch(
+                "core.update_engine_runtime.private_storage_root",
+                return_value=storage,
+            ), patch(
+                "core.update_engine_runtime.connections.close_all",
+            ):
+                snapshot = _create_database_safety_snapshot()
+                with sqlite3.connect(database_path) as connection:
+                    connection.execute("DELETE FROM sample")
+                    connection.execute("INSERT INTO sample (value) VALUES ('after')")
+                _restore_database_safety_snapshot(snapshot)
+                with sqlite3.connect(database_path) as connection:
+                    rows = connection.execute("SELECT value FROM sample").fetchall()
+
+            self.assertEqual(rows, [("before",)])
+            self.assertTrue(snapshot.is_file())
+
+    def test_database_safety_retention_keeps_only_five_latest_snapshots(self):
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as temp:
+            root = Path(temp)
+            database_path = root / "opal.sqlite3"
+            with sqlite3.connect(database_path) as connection:
+                connection.execute("CREATE TABLE sample (value TEXT)")
+                connection.execute("INSERT INTO sample (value) VALUES ('stable')")
+
+            storage = root / "private"
+            snapshots = []
+            with patch(
+                "core.update_engine_runtime._sqlite_database_path",
+                return_value=database_path,
+            ), patch(
+                "core.update_engine_runtime.private_storage_root",
+                return_value=storage,
+            ), patch(
+                "core.update_engine_runtime.connections.close_all",
+            ), patch.dict(
+                os.environ,
+                {"OPAL_DB_SAFETY_KEEP": "5"},
+            ):
+                for _index in range(7):
+                    snapshots.append(_create_database_safety_snapshot())
+
+            retained = sorted((storage / "database_safety").glob("DB_SAFETY_BEFORE_*.sqlite3"))
+            self.assertEqual(len(retained), 5)
+            self.assertFalse(snapshots[0].exists())
+            self.assertFalse(snapshots[1].exists())
+            self.assertTrue(snapshots[-1].exists())
+
+    def test_snapshot_creation_remains_successful_if_retention_cleanup_fails(self):
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as temp:
+            root = Path(temp)
+            database_path = root / "opal.sqlite3"
+            with sqlite3.connect(database_path) as connection:
+                connection.execute("CREATE TABLE sample (value TEXT)")
+
+            storage = root / "private"
+            with patch(
+                "core.update_engine_runtime._sqlite_database_path",
+                return_value=database_path,
+            ), patch(
+                "core.update_engine_runtime.private_storage_root",
+                return_value=storage,
+            ), patch(
+                "core.update_engine_runtime.connections.close_all",
+            ), patch(
+                "core.update_engine_runtime._prune_database_safety_snapshots",
+                side_effect=OSError(errno.EACCES, "permission denied"),
+            ):
+                snapshot = _create_database_safety_snapshot()
+
+            self.assertTrue(snapshot.is_file())
 
 
 class BackupFileActionsTests(TestCase):
@@ -149,7 +289,7 @@ class BackupFileActionsTests(TestCase):
         self.client.force_login(self.superuser)
 
     def test_download_and_delete_version_file(self):
-        with tempfile.TemporaryDirectory() as temp:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as temp:
             root = Path(temp)
             versions = root / "versions"
             versions.mkdir()
@@ -171,8 +311,16 @@ class BackupFileActionsTests(TestCase):
                     reverse("core:updates_download_backup"),
                     {"name": "versions/OPAL_TEST.zip"},
                 )
-                self.assertEqual(download_response.status_code, 200)
-                self.assertEqual(download_response["Content-Type"], "application/zip")
+                try:
+                    self.assertEqual(download_response.status_code, 200)
+                    self.assertEqual(download_response["Content-Type"], "application/zip")
+                finally:
+                    # Close only the archive stream. Calling response.close()
+                    # emits request_finished and can close Django's shared test
+                    # database connection before the following POST request.
+                    file_to_stream = getattr(download_response, "file_to_stream", None)
+                    if file_to_stream is not None and not file_to_stream.closed:
+                        file_to_stream.close()
 
                 delete_response = self.client.post(
                     reverse("core:updates_delete_backup"),

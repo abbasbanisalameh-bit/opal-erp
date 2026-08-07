@@ -10,7 +10,7 @@ from admissions.financial_services import (
     student_finance_snapshot,
 )
 from admissions.models import FeePaymentAllocation
-from attendance_v2.models import Attendance
+from attendance_v2.analytics import build_student_attendance_snapshot
 from documents.models import StudentIssuedDocument
 from exams.models import StudentMark
 from parent_portal.models import FamilyStudent
@@ -122,9 +122,13 @@ def _build_family_profile(student):
         "guardian_links": guardian_links,
     }
 
-def _build_finance_profile(student):
-    """Build the canonical financial summary used by Student 360."""
-    snapshot = student_finance_snapshot(student)
+def _build_finance_profile(student, *, academic_year=None):
+    """Build the current-year financial summary used by Student 360."""
+    snapshot = (
+        student_finance_snapshot(student, academic_year=academic_year)
+        if academic_year is not None
+        else student_finance_snapshot(student)
+    )
     total = snapshot["total"]
     paid = snapshot["paid"]
     remaining = snapshot["remaining"]
@@ -134,6 +138,7 @@ def _build_finance_profile(student):
         "paid": paid,
         "remaining": remaining,
         "status": status,
+        "academic_year": academic_year,
         "status_label": {
             "paid": "مسدد بالكامل",
             "partial": "مسدد جزئيًا",
@@ -150,27 +155,8 @@ def _build_finance_profile(student):
 
 
 def _build_attendance_profile(student):
-    """Build the canonical attendance summary used by Student 360."""
-    attendance_qs = Attendance.objects.filter(student=student)
-    counts = {
-        row["status"]: row["count"]
-        for row in attendance_qs.values("status").annotate(count=Count("id"))
-    }
-    recent = list(attendance_qs.order_by("-date")[:60])
-    total = sum(counts.values())
-    present = counts.get("present", 0)
-    absent = counts.get("absent", 0)
-    late = counts.get("late", 0)
-    rate = round((present / total) * 100, 1) if total else 0
-    return {
-        "recent": recent,
-        "counts": counts,
-        "total": total,
-        "present_count": present,
-        "absent_count": absent,
-        "late_count": late,
-        "rate": rate,
-    }
+    """Build Student 360 attendance from submitted registers and exceptions."""
+    return build_student_attendance_snapshot(student)
 
 def _build_documents_profile(student):
     """Build the canonical issued-document history used by Student 360."""
@@ -220,7 +206,7 @@ def _build_student_alerts_and_risk(
     if not family:
         alerts.append({"level": "warning", "text": "الطالب غير مرتبط بملف ولي أمر رسمي."})
     if remaining and remaining > 0:
-        alerts.append({"level": "warning", "text": f"يوجد رصيد مالي متبقٍ بقيمة {remaining:.2f}."})
+        alerts.append({"level": "warning", "text": f"يوجد متبقٍ من رسوم السنة الحالية بقيمة {remaining:.2f}."})
     if attendance_total >= 5 and attendance_rate < 80:
         alerts.append({"level": "danger", "text": f"نسبة الحضور منخفضة ({attendance_rate}%)."})
     if marks and percentage_average < 60:
@@ -258,7 +244,9 @@ def _build_student_supporting_profile(
     """Build the remaining operational records used by Student 360."""
     invoices = list(
         StudentInvoice.objects.filter(student=student)
-        .select_related("fee_category")
+        .exclude(carry_forward_record__source_invoices__isnull=False)
+        .distinct()
+        .select_related("fee_category", "academic_year")
         .prefetch_related("payments")
         .order_by("-due_date", "-id")
     )
@@ -281,7 +269,7 @@ def _build_student_supporting_profile(
                 academic_year=current_enrollment.academic_year,
                 is_active=True,
             )
-            .select_related("subject", "teacher", "time_slot", "section")
+            .select_related("subject", "teacher", "time_slot", "section__grade")
             .order_by("day", "time_slot__order")
         )
 
@@ -306,11 +294,17 @@ def _build_student_supporting_profile(
         marks_profile["marks"],
         documents_profile["documents"],
     )
+    from timetable.workflow import build_horizontal_schedule_matrix
+
     return {
         "invoices": invoices,
         "payments": payments,
         "allocations": allocations,
         "timetable": timetable,
+        "timetable_matrix": build_horizontal_schedule_matrix(
+            timetable,
+            school=current_enrollment.academic_year.school if current_enrollment else None,
+        ),
         "data_completeness": data_completeness,
         "activity_timeline": activity_timeline,
     }
@@ -328,11 +322,12 @@ def _assemble_student_360_context(
     marks_profile,
     documents_profile,
     timetable,
+    timetable_matrix,
     alert_profile,
     data_completeness,
     activity_timeline,
 ):
-    """Assemble the canonical Student 360 payload without changing its public keys."""
+    """Assemble the canonical Student 360 payload, including its timetable matrix."""
     return {
         "student": student,
         "enrollments": academic_profile["enrollments"],
@@ -350,12 +345,13 @@ def _assemble_student_360_context(
         "attendance_total": attendance["total"],
         "attendance_rate": attendance["rate"],
         "absent_count": attendance["absent_count"],
-        "late_count": attendance["late_count"],
+        "departed_count": attendance["departed_count"],
         "marks": marks_profile["marks"],
         "mark_summary": marks_profile["summary"],
         "percentage_average": marks_profile["percentage_average"],
         "documents": documents_profile["documents"],
         "timetable": timetable,
+        "timetable_matrix": timetable_matrix,
         "alerts": alert_profile["alerts"],
         "risk": alert_profile["risk"],
         "data_completeness": data_completeness,
@@ -373,7 +369,10 @@ def build_student_360_context(student):
     attendance = _build_attendance_profile(student)
     marks_profile = _build_marks_profile(student)
     documents_profile = _build_documents_profile(student)
-    finance = _build_finance_profile(student)
+    finance = _build_finance_profile(
+        student,
+        academic_year=current_enrollment.academic_year if current_enrollment else None,
+    )
 
     supporting_profile = _build_student_supporting_profile(
         student,
@@ -394,7 +393,7 @@ def build_student_360_context(student):
         marks_profile=marks_profile,
     )
 
-    return _assemble_student_360_context(
+    context = _assemble_student_360_context(
         student,
         academic_profile=academic_profile,
         family_profile=family_profile,
@@ -406,7 +405,32 @@ def build_student_360_context(student):
         marks_profile=marks_profile,
         documents_profile=documents_profile,
         timetable=supporting_profile["timetable"],
+        timetable_matrix=supporting_profile["timetable_matrix"],
         alert_profile=alert_profile,
         data_completeness=supporting_profile["data_completeness"],
         activity_timeline=supporting_profile["activity_timeline"],
     )
+    from accounting.previous_debt_services import student_previous_debt_snapshot
+
+    context["previous_debt"] = student_previous_debt_snapshot(
+        student,
+        academic_year=current_enrollment.academic_year if current_enrollment else None,
+    )
+    context["finance"]["previous_remaining"] = context["previous_debt"]["total"]
+    context["finance"]["combined_remaining"] = (
+        context["finance"]["remaining"] + context["previous_debt"]["total"]
+    )
+    current_year = current_enrollment.academic_year if current_enrollment else None
+    context["current_invoices"] = [
+        invoice
+        for invoice in supporting_profile["invoices"]
+        if current_year is not None and invoice.academic_year_id == current_year.pk
+    ]
+    context["previous_invoices"] = [
+        invoice
+        for invoice in supporting_profile["invoices"]
+        if current_year is not None
+        and invoice.academic_year_id
+        and invoice.academic_year.start_date < current_year.start_date
+    ]
+    return context

@@ -1,7 +1,7 @@
 {% extends "base/base.html" %}
 {% block title %}حساب ولي الأمر | OPAL ERP{% endblock %}
 {% block page_title %}حساب ولي الأمر {{ family.guardian_name|default:"" }}{% endblock %}
-{% block page_subtitle %}الأبناء، الرسوم، الدفعات والإيصالات في ملف موحد{% endblock %}
+{% block page_subtitle %}الأبناء ورسوم السنة الحالية والمتراكم السابق والدفعات والإيصالات في ملف موحد{% endblock %}
 {% block content %}
 <div class="opal-card mb-4">
   <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
@@ -16,7 +16,21 @@
     </div>
   </div>
 </div>
-<div class="row g-3 mb-4"><div class="col-6 col-lg-3"><div class="opal-card"><small class="text-muted">عدد الأبناء</small><div class="fs-3 fw-bold">{{ totals.students_count }}</div></div></div><div class="col-6 col-lg-3"><div class="opal-card"><small class="text-muted">إجمالي الرسوم</small><div class="fs-3 fw-bold">{{ totals.total|floatformat:2 }}</div></div></div><div class="col-6 col-lg-3"><div class="opal-card"><small class="text-muted">المدفوع</small><div class="fs-3 fw-bold text-success">{{ totals.paid|floatformat:2 }}</div></div></div><div class="col-6 col-lg-3"><div class="opal-card"><small class="text-muted">المتبقي</small><div class="fs-3 fw-bold text-danger">{{ totals.remaining|floatformat:2 }}</div></div></div></div>
-<div class="opal-card mb-4"><div class="d-flex justify-content-between align-items-center mb-3"><h3 class="fw-bold mb-0">الأبناء</h3>{% if cards %}<a href="{% url 'admissions:fee_payment_create' %}?student={{ cards.0.student.pk }}" class="btn btn-success"><i class="bi bi-cash-coin"></i> تسديد رسوم</a>{% endif %}</div><div class="table-responsive"><table class="table align-middle"><thead><tr><th>الطالب</th><th>الصف</th><th>الرسوم</th><th>المدفوع</th><th>المتبقي</th><th>الحالة</th><th></th></tr></thead><tbody>{% for card in cards %}<tr><td class="fw-bold">{{ card.student.full_name }}</td><td>{{ card.student.grade }} {{ card.student.section }}</td><td>{{ card.total|floatformat:2 }}</td><td class="text-success">{{ card.paid|floatformat:2 }}</td><td class="text-danger">{{ card.remaining|floatformat:2 }}</td><td><span class="badge bg-{{ card.status_class }}">{{ card.status_label }}</span></td><td><a href="{% url 'students:student_360' card.student.pk %}" class="btn btn-sm btn-outline-primary">بطاقة الطالب</a></td></tr>{% empty %}<tr><td colspan="7" class="text-center text-muted">لا يوجد أبناء مرتبطون.</td></tr>{% endfor %}</tbody></table></div></div>
+
+<div class="opal-compact-metric-grid mb-4">
+  <div class="opal-card opal-compact-metric-card"><span class="opal-metric-label">عدد الأبناء</span><strong class="opal-metric-value">{{ totals.students_count }}</strong></div>
+  <div class="opal-card opal-compact-metric-card"><span class="opal-metric-label">رسوم {{ totals.current_year.name|default:"السنة الحالية" }}</span><strong class="opal-metric-value">{{ totals.total|floatformat:2 }}</strong></div>
+  <div class="opal-card opal-compact-metric-card"><span class="opal-metric-label">مدفوع السنة الحالية</span><strong class="opal-metric-value text-success">{{ totals.paid|floatformat:2 }}</strong></div>
+  <div class="opal-card opal-compact-metric-card"><span class="opal-metric-label">متبقي السنة الحالية</span><strong class="opal-metric-value text-warning">{{ totals.remaining|floatformat:2 }}</strong></div>
+  <div class="opal-card opal-compact-metric-card"><span class="opal-metric-label">متبقيات السنوات السابقة</span><strong class="opal-metric-value text-danger">{{ totals.previous_debt|floatformat:2 }}</strong></div>
+  <div class="opal-card opal-compact-metric-card"><span class="opal-metric-label">الإجمالي المطلوب</span><strong class="opal-metric-value">{{ totals.combined_remaining|floatformat:2 }}</strong></div>
+</div>
+
+<div class="opal-card mb-4">
+  <div class="d-flex justify-content-between align-items-center mb-3"><div><h3 class="fw-bold mb-0">الأبناء</h3><small class="text-secondary">التسديد يبدأ من بوابة الرسوم الرئيسية، والمتراكم السابق يبقى مستقلًا.</small></div></div>
+  <div class="table-responsive"><table class="table align-middle"><thead><tr><th>الطالب</th><th>الصف</th><th>رسوم السنة الحالية</th><th>مدفوع السنة الحالية</th><th>متبقي السنة الحالية</th><th>متبقيات السنوات السابقة</th><th>الإجمالي المطلوب</th><th>حالة السنة الحالية</th><th></th></tr></thead><tbody>
+  {% for card in cards %}<tr><td class="fw-bold">{{ card.student.full_name }}</td><td>{{ card.student.class_display }}</td><td>{{ card.total|floatformat:2 }}</td><td class="text-success">{{ card.paid|floatformat:2 }}</td><td class="text-warning">{{ card.remaining|floatformat:2 }}</td><td class="text-danger">{{ card.previous_debt.total|floatformat:2 }}</td><td class="fw-bold">{{ card.combined_remaining|floatformat:2 }}</td><td><span class="badge bg-{{ card.status_class }}">{{ card.status_label }}</span></td><td><a href="{% url 'students:student_360' card.student.pk %}" class="btn btn-sm btn-outline-primary">بطاقة الطالب</a></td></tr>{% empty %}<tr><td colspan="9" class="text-center text-muted">لا يوجد أبناء مرتبطون.</td></tr>{% endfor %}
+  </tbody></table></div>
+</div>
 {% include "parent_portal/_guardian_receipt_history.html" %}
 {% endblock %}

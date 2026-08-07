@@ -4,10 +4,6 @@ from . import views
 app_name = "admissions"
 
 urlpatterns = [
-    path("candidates/", views.candidate_list, name="candidate_list"),
-    path("candidates/add/", views.candidate_create, name="candidate_create"),
-    path("candidates/<int:pk>/", views.candidate_detail, name="candidate_detail"),
-    path("candidates/<int:pk>/edit/", views.candidate_update, name="candidate_update"),
     path("", views.admission_list, name="admission_list"),
     path("register/", views.direct_registration, name="direct_registration"),
     path("settings/", views.registration_settings, name="registration_settings"),
@@ -15,6 +11,7 @@ urlpatterns = [
     path("sibling-check/", views.sibling_check_api, name="sibling_check_api"),
     path("registration/<int:pk>/receipt/", views.registration_receipt, name="registration_receipt"),
     path("payments/new/", views.fee_payment_create, name="fee_payment_create"),
+    path("payments/previous-debt/<int:student_id>/", views.previous_debt_payment, name="previous_debt_payment"),
     path("payments/search/", views.fee_payment_search_api, name="fee_payment_search_api"),
     path("payments/preview/", views.fee_payment_preview_api, name="fee_payment_preview_api"),
     path("payments/<int:pk>/receipt/", views.fee_payment_receipt, name="fee_payment_receipt"),

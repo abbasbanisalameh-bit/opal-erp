@@ -14,6 +14,7 @@ class TeacherPortalAccessMiddleware:
         "/static/",
         "/media/",
         "/enterprise/feedback/",
+        "/enterprise/monthly-evaluation/",
         "/enterprise/reports/",
         "/enterprise/audit/",
         "/enterprise/notifications/",
@@ -23,7 +24,10 @@ class TeacherPortalAccessMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        if is_teacher_user(request.user) and not (request.user.is_staff or request.user.is_superuser):
+        if (
+            not (request.user.is_staff or request.user.is_superuser)
+            and is_teacher_user(request.user)
+        ):
             if request.path == "/":
                 return redirect("teachers:portal_dashboard")
             if not request.path.startswith(self.ALLOWED_PREFIXES):

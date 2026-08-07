@@ -1,11 +1,11 @@
 from django.contrib import messages
-from django.contrib.admin.views.decorators import staff_member_required
 from django.shortcuts import redirect, render
 
+from enterprise_ops.permissions import management_required
 from .workflow import build_attendance_edit_state, save_attendance_edit
 
 
-@staff_member_required
+@management_required
 def attendance_edit(request, pk):
     state = build_attendance_edit_state(request=request, pk=pk)
     record = state["record"]

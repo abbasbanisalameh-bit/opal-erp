@@ -1,4 +1,5 @@
 {% extends 'base/base.html' %}
+{% load opal_subjects %}
 {% block title %}جدولي الدراسي{% endblock %}
 {% block page_title %}الجدول الدراسي للمعلم{% endblock %}
 {% block page_subtitle %}عرض الحصص حسب اليوم أو الصف والشعبة أو المادة التي تدرسها{% endblock %}
@@ -9,5 +10,14 @@
   <div class="col-md-4"><label class="form-label">المادة</label><select class="form-select" name="subject"><option value="">كل المواد</option>{% for item in subjects %}<option value="{{ item.pk }}" {% if filters.subject == item.pk|stringformat:'s' %}selected{% endif %}>{{ item.grade.name }} — {{ item.name }}</option>{% endfor %}</select></div>
   <div class="col-12 d-flex gap-2"><button class="btn btn-primary"><i class="bi bi-funnel"></i> عرض</button><a class="btn btn-outline-secondary" href="{% url 'teachers:portal_timetable' %}">إلغاء التصفية</a></div>
 </form></div>
-<div class="opal-card"><div class="d-flex justify-content-between align-items-center mb-3"><h3 class="mb-0">حصص {{ teacher.full_name }}</h3><a class="btn btn-outline-info" href="{% url 'teachers:portal_dashboard' %}">العودة للبوابة</a></div><div class="table-responsive"><table class="opal-table"><thead><tr><th>اليوم</th><th>الحصة والوقت</th><th>الصف والشعبة</th><th>المادة</th><th>الغرفة</th></tr></thead><tbody>{% for item in entries %}<tr><td>{{ item.get_day_display }}</td><td>{{ item.time_slot.name }}<br><small>{{ item.time_slot.start_time|time:'H:i' }} - {{ item.time_slot.end_time|time:'H:i' }}</small></td><td>{{ item.section }}</td><td>{{ item.subject }}</td><td>{{ item.room|default:'—' }}</td></tr>{% empty %}<tr><td colspan="5" class="text-center text-secondary">لا توجد حصص مطابقة للتصفية.</td></tr>{% endfor %}</tbody></table></div></div>
+<div class="opal-card">
+  <div class="d-flex justify-content-between align-items-center mb-3"><h3 class="mb-0">حصص {{ teacher.full_name }}</h3><a class="btn btn-outline-info" href="{% url 'teachers:portal_dashboard' %}">العودة للبوابة</a></div>
+  <div class="table-responsive opal-timetable-matrix-wrap">
+    <table class="opal-table opal-timetable-grid timetable-grid opal-keep-grid">
+      <thead><tr><th class="opal-timetable-day-col">اليوم / الحصة</th>{% for period in schedule_matrix.periods %}<th><strong>{{ period.name }}</strong>{% for range in period.time_labels %}<small>{{ range.label }}{% if range.sections_label %}<br>{{ range.sections_label }}{% endif %}</small>{% endfor %}</th>{% endfor %}</tr></thead>
+      <tbody>{% for day in schedule_matrix.rows %}<tr{% if day.is_today %} class="opal-timetable-today-row"{% endif %}><th class="opal-timetable-day-col">{{ day.label }}{% if day.is_today %}<small class="opal-timetable-today-badge">اليوم</small>{% endif %}</th>{% for cell in day.cells %}<td{% if cell.is_current %} class="opal-timetable-current-cell"{% endif %}>{% for item in cell.entries %}<div class="opal-timetable-entry opal-subject-surface{% if item.is_current_lesson %} is-current{% endif %}" style="{% subject_style item.subject %}">{% if item.is_current_lesson %}<span class="opal-current-lesson-badge">الحصة الجارية</span>{% endif %}<strong>{{ item.subject }}</strong><span>{{ item.section }}</span><small>{% if item.room %}{{ item.room }}{% endif %}</small>{% if item.teacher_state_code != 'available' %}<span class="badge {% if item.teacher_state_code == 'substitute' %}bg-success{% else %}bg-danger{% endif %}">{{ item.teacher_state_label }}</span>{% endif %}</div>{% empty %}<span class="opal-timetable-empty">—</span>{% endfor %}{% for event in cell.break_events %}<div class="opal-timetable-break"><strong>{{ event.name }}</strong><small>{{ event.time_label }}</small></div>{% endfor %}</td>{% endfor %}</tr>{% endfor %}</tbody>
+    </table>
+  </div>
+  {% if not schedule_matrix.has_entries %}<p class="text-center text-secondary mt-3 mb-0">لا توجد حصص مطابقة للتصفية.</p>{% endif %}
+</div>
 {% endblock %}

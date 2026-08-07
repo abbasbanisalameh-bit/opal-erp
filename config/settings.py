@@ -6,6 +6,10 @@ from pathlib import Path
 
 from .app_registry import build_installed_apps
 from .deployment_security import build_production_security, build_proxy_ssl_header, get_secret_key
+from .email_registry import build_learning_email_settings
+from .learning_ai_registry import build_learning_ai_settings
+from .learning_payment_registry import build_learning_payment_settings
+from .learning_production_registry import build_learning_production_settings
 from .environment import env_bool
 from .operational_registry import (
     build_allowed_hosts,
@@ -110,6 +114,16 @@ SESSION_COOKIE_SAMESITE, CSRF_COOKIE_SAMESITE, CSRF_FAILURE_VIEW = build_session
 CSRF_TRUSTED_ORIGINS = build_csrf_trusted_origins()
 SECURE_PROXY_SSL_HEADER = build_proxy_ssl_header()
 
+
+# Learning-platform password recovery email is disabled until SMTP is configured explicitly.
+globals().update(build_learning_email_settings())
+
+# Learning AI credentials remain environment-only; local reference mode works without them.
+globals().update(build_learning_ai_settings())
+
+# Learning payment secrets and launch controls remain environment-only.
+globals().update(build_learning_payment_settings())
+globals().update(build_learning_production_settings())
 
 # Production hardening is enabled automatically when OPAL_DEBUG=False.
 globals().update(build_production_security(debug=DEBUG))

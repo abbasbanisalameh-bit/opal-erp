@@ -2,7 +2,11 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 
-from .grade_names import grade_name_key, normalize_grade_display_name
+from .grade_names import (
+    class_display_name, grade_name_key, normalize_grade_display_name,
+    normalize_section_name, section_name_key,
+)
+from .subject_identity import ensure_subject_identity
 
 
 class Grade(models.Model):
@@ -74,11 +78,16 @@ class Section(models.Model):
             return None
         return max(self.capacity - self.active_enrollment_count, 0)
 
+    @property
+    def display_name(self):
+        return class_display_name(self.grade.name if self.grade_id else "", self.name)
+
     def __str__(self):
-        return f"{self.grade.name} - {self.name}"
+        return self.display_name
 
     def clean(self):
         super().clean()
+        self.name = normalize_section_name(self.name, self.grade.name if self.grade_id else "")
         errors = {}
         if self.academic_year_id and self.academic_year.is_closed:
             errors["academic_year"] = "العام الدراسي مغلق ولا يقبل تعديل الشعب."
@@ -88,10 +97,18 @@ class Section(models.Model):
             errors["grade"] = "الصف يجب أن يتبع مدرسة الفرع المحدد."
         if self.homeroom_teacher_id and self.branch_id and self.homeroom_teacher.school_id != self.branch.school_id:
             errors["homeroom_teacher"] = "مربي الصف يجب أن يتبع المدرسة نفسها."
+        if self.academic_year_id and self.branch_id and self.grade_id and self.name:
+            wanted_key = section_name_key(self.name, self.grade.name)
+            duplicates = type(self).objects.filter(
+                academic_year_id=self.academic_year_id, branch_id=self.branch_id, grade_id=self.grade_id
+            ).exclude(pk=self.pk).only("name")
+            if any(section_name_key(item.name, self.grade.name) == wanted_key for item in duplicates):
+                errors["name"] = "هذه الشعبة موجودة مسبقًا لهذا الصف في العام الحالي."
         if errors:
             raise ValidationError(errors)
 
     def save(self, *args, **kwargs):
+        self.name = normalize_section_name(self.name, self.grade.name if self.grade_id else "")
         self.full_clean()
         return super().save(*args, **kwargs)
 
@@ -186,6 +203,10 @@ class StudentLifecycleEvent(models.Model):
     )
     effective_date = models.DateField()
     reason = models.TextField(blank=True)
+    from_grade_snapshot = models.CharField("الصف السابق", max_length=100, blank=True)
+    from_section_snapshot = models.CharField("الشعبة السابقة", max_length=100, blank=True)
+    to_grade_snapshot = models.CharField("الصف الجديد", max_length=100, blank=True)
+    to_section_snapshot = models.CharField("الشعبة الجديدة", max_length=100, blank=True)
     performed_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -225,36 +246,65 @@ class StudentDocument(models.Model):
 class Subject(models.Model):
     name = models.CharField(max_length=100)
     code = models.CharField(max_length=30, blank=True)
-    grade = models.ForeignKey(
-        Grade,
-        on_delete=models.CASCADE,
+    academic_year = models.ForeignKey(
+        "core.AcademicYear",
+        on_delete=models.PROTECT,
         related_name="subjects",
     )
+    grade = models.ForeignKey(
+        Grade,
+        on_delete=models.PROTECT,
+        related_name="subjects",
+    )
+    weekly_periods = models.PositiveSmallIntegerField("عدد الحصص أسبوعيًا", default=1)
+    is_required = models.BooleanField("مادة إلزامية", default=True)
+    canonical_key = models.CharField("هوية المادة الموحدة", max_length=140, db_index=True, editable=False)
+    color = models.CharField("لون المادة", max_length=7, blank=True, default="")
     is_active = models.BooleanField(default=True)
 
     class Meta:
         verbose_name = "مادة دراسية"
         verbose_name_plural = "المواد الدراسية"
-        ordering = ["grade__order", "name"]
+        ordering = ["academic_year", "grade__order", "name"]
         constraints = [
-            models.UniqueConstraint(fields=["grade", "name"], name="uniq_subject_name_per_grade"),
             models.UniqueConstraint(
-                fields=["grade", "code"],
+                fields=["academic_year", "grade", "name"],
+                name="uniq_subject_name_per_year_grade",
+            ),
+            models.UniqueConstraint(
+                fields=["academic_year", "grade", "code"],
                 condition=~models.Q(code=""),
-                name="uniq_subject_code_per_grade",
+                name="uniq_subject_code_per_year_grade",
             ),
         ]
 
     def clean(self):
         super().clean()
+        errors = {}
         if self.grade_id and not self.grade.is_active and self.is_active:
-            raise ValidationError({"grade": "لا يمكن تفعيل مادة لصف غير فعال."})
+            errors["grade"] = "لا يمكن تفعيل مادة لصف غير فعال."
+        if self.academic_year_id and self.academic_year.is_closed:
+            errors["academic_year"] = "العام الدراسي مغلق ولا يقبل تعديل المواد أو الخطة."
+        if self.grade_id and self.academic_year_id and self.grade.school_id != self.academic_year.school_id:
+            errors["grade"] = "الصف يجب أن يتبع مدرسة العام الدراسي."
+        if self.weekly_periods is None or not 1 <= self.weekly_periods <= 20:
+            errors["weekly_periods"] = "عدد الحصص الأسبوعية يجب أن يكون بين 1 و20."
+        if errors:
+            raise ValidationError(errors)
+        ensure_subject_identity(self, propagate=False)
 
     def save(self, *args, **kwargs):
         self.name = (self.name or "").strip()
         self.code = (self.code or "").strip().upper()
+        ensure_subject_identity(self, propagate=False)
         self.full_clean()
-        return super().save(*args, **kwargs)
+        result = super().save(*args, **kwargs)
+        ensure_subject_identity(self, propagate=True)
+        return result
+
+    @property
+    def plan_label(self):
+        return f"{self.name} · {self.weekly_periods} حصة أسبوعيًا"
 
     def __str__(self):
         return f"{self.name} - {self.grade}"

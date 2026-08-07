@@ -1,11 +1,11 @@
 from unittest.mock import Mock, patch
 
-from django.test import SimpleTestCase
+from django.test import TestCase
 
 from . import workflow
 
 
-class FinanceWorkflowContractTests(SimpleTestCase):
+class FinanceWorkflowContractTests(TestCase):
     def test_workflow_exports_complete_school_fee_read_api(self):
         self.assertTrue(callable(workflow.build_invoice_financial_snapshot))
         self.assertTrue(callable(workflow.build_invoice_list_context))

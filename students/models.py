@@ -6,6 +6,8 @@ from django.db.models import Q
 
 from core.identifiers import normalize_identifier
 from core.choices import STUDENT_GENDER_CHOICES, normalize_student_gender
+from core.validators import validate_profile_image_size
+from academics.grade_names import class_display_name, normalize_section_name
 
 
 class Student(models.Model):
@@ -50,7 +52,7 @@ class Student(models.Model):
     is_active = models.BooleanField("نشط", default=True)
     is_demo = models.BooleanField("بيانات مُدخلة آليًا (توافق سابق)", default=False, db_index=True, editable=False)
 
-    photo = models.ImageField("صورة الطالب", upload_to="students/photos/", null=True, blank=True)
+    photo = models.ImageField("صورة الطالب", upload_to="students/photos/", null=True, blank=True, validators=[validate_profile_image_size])
 
     created_at = models.DateTimeField("تاريخ الإنشاء", auto_now_add=True)
     updated_at = models.DateTimeField("آخر تحديث", auto_now=True)
@@ -86,7 +88,12 @@ class Student(models.Model):
         self.national_id = normalize_identifier(self.national_id)
         self.ministry_student_id = normalize_identifier(self.ministry_student_id)
         self.gender = normalize_student_gender(self.gender)
+        self.section = normalize_section_name(self.section, self.grade) if self.section else ""
         return super().save(*args, **kwargs)
+
+    @property
+    def class_display(self):
+        return class_display_name(self.grade, self.section)
 
     @property
     def fees_total(self):

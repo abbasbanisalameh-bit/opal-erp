@@ -46,6 +46,7 @@ def decide_discount(discount_request, user, approve, note=""):
             "قرار طلب الخصم",
             f"تم {'اعتماد' if approve else 'رفض'} طلب الخصم للطالب {discount_request.invoice.student.full_name}.",
             "success" if approve else "danger",
-            "/accounting/discounts/",
+            f"/accounting/discounts/#discount-{discount_request.pk}",
+            event_key=f"discount-decision:{discount_request.pk}:{discount_request.status}",
         )
     return discount_request

@@ -18,17 +18,14 @@ from teachers.models import Teacher, TeacherAssignment
 
 from .mark_entry_service import build_mark_rows, resolve_mark_entry_scope, save_exam_marks
 from .models import Exam, StudentMark
-from .services import annual_report, dashboard_statistics, exam_statistics, student_academic_record
+from .services import annual_report, dashboard_statistics, exam_statistics, student_academic_record, student_marks_matrix
 
 
 def current_scope():
-    year = AcademicYear.objects.filter(is_current=True, is_closed=False).first()
-    if year is None:
-        year = AcademicYear.objects.filter(is_closed=False).order_by("-start_date").first()
-    semester = None
-    if year:
-        semester = year.semesters.filter(is_current=True).first() or year.semesters.order_by("code").first()
-    return year, semester
+    from core.academic_context import resolve_academic_context
+
+    context = resolve_academic_context()
+    return context.year, context.semester
 
 
 def selected_scope(request):
@@ -49,6 +46,8 @@ def selected_scope(request):
         "section_id": request.GET.get("section", ""),
         "subject_id": request.GET.get("subject", ""),
         "teacher_id": request.GET.get("teacher", ""),
+        "student_id": request.GET.get("student", ""),
+        "view_by": request.GET.get("view_by", "subject"),
     }
 
 
@@ -62,12 +61,20 @@ def scope_filter_context(scope):
     if year:
         grades = grades.filter(school=year.school)
         sections = sections.filter(academic_year=year)
+        subjects = subjects.filter(academic_year=year)
         teachers = teachers.filter(school=year.school)
     if grade_id:
         sections = sections.filter(grade_id=grade_id)
         subjects = subjects.filter(grade_id=grade_id)
     else:
         subjects = subjects.none()
+    students = Student.objects.none()
+    if year and scope["section_id"]:
+        students = Student.objects.filter(
+            enrollments__academic_year=year,
+            enrollments__section_id=scope["section_id"],
+            enrollments__status="active",
+        ).distinct().order_by("full_name")
     return {
         "academic_years": AcademicYear.objects.all().order_by("-start_date"),
         "semesters": year.semesters.all().order_by("code") if year else Semester.objects.none(),
@@ -75,6 +82,7 @@ def scope_filter_context(scope):
         "sections": sections.order_by("grade__order", "name"),
         "subjects": subjects.order_by("name"),
         "teachers": teachers.order_by("full_name"),
+        "students": students,
         "filters": scope,
     }
 
@@ -85,7 +93,7 @@ def gradebook_rows(scope):
     if not all([year, semester, section_id, subject_id]):
         return [], {}, None
     section = Section.objects.filter(pk=section_id, academic_year=year, is_active=True).select_related("grade").first()
-    subject = Subject.objects.filter(pk=subject_id, grade=section.grade if section else None, is_active=True).first()
+    subject = Subject.objects.filter(pk=subject_id, academic_year=year, grade=section.grade if section else None, is_active=True).first()
     if not section or not subject:
         return [], {}, None
     assignment = TeacherAssignment.objects.filter(
@@ -121,16 +129,68 @@ def gradebook_rows(scope):
     return rows, exams, assignment
 
 
+def selected_student_mark_groups(scope):
+    """Marks for one manager-selected student, grouped by subject or teacher."""
+    year = scope["year"]
+    section_id = scope["section_id"]
+    student_id = scope["student_id"]
+    if not (year and section_id and student_id):
+        return None, []
+    student = Student.objects.filter(
+        pk=student_id,
+        enrollments__academic_year=year,
+        enrollments__section_id=section_id,
+        enrollments__status="active",
+    ).distinct().first()
+    if student is None:
+        return None, []
+    marks = StudentMark.objects.filter(
+        student=student,
+        exam__academic_year=year,
+        exam__section_id=section_id,
+        exam__is_active=True,
+    ).select_related("exam", "exam__subject", "exam__teacher_assignment__teacher").order_by(
+        "exam__subject__name", "exam__exam_date", "exam__name"
+    )
+    if scope["semester"]:
+        marks = marks.filter(exam__semester=scope["semester"])
+    if scope["subject_id"]:
+        marks = marks.filter(exam__subject_id=scope["subject_id"])
+    grouped = {}
+    group_by_teacher = scope["view_by"] == "teacher"
+    for mark in marks:
+        teacher = mark.exam.teacher_assignment.teacher if mark.exam.teacher_assignment_id else None
+        key = (teacher.pk if teacher else 0) if group_by_teacher else mark.exam.subject_id
+        label = teacher.full_name if group_by_teacher and teacher else ("غير محدد" if group_by_teacher else mark.exam.subject.name)
+        group = grouped.setdefault(key, {"label": label, "marks": []})
+        group["marks"].append(mark)
+    return student, list(grouped.values())
+
+
 def build_gradebook_context(request):
     scope = selected_scope(request)
     rows, exams, assignment = gradebook_rows(scope)
     context = scope_filter_context(scope)
+    selected_student, student_mark_groups = selected_student_mark_groups(scope)
+    analytics = build_exam_dashboard_context(request)
     context.update({
         "rows": rows,
         "assessment_exams": exams,
         "assignment": assignment,
         "pending_count": Exam.objects.filter(status="submitted").count(),
         "scope_complete": bool(rows or all([scope["year"], scope["semester"], scope["section_id"], scope["subject_id"]])),
+        "selected_student": selected_student,
+        "student_mark_groups": student_mark_groups,
+        "student_matrix": student_marks_matrix(selected_student, scope["year"]) if selected_student else None,
+        "student_view_mode": request.GET.get("student_view", "subject"),
+        "selected_exam_key": request.GET.get("exam", ""),
+        "analytics_stats": analytics["stats"],
+        "analytics_exams": analytics["recent_exams"],
+        "teacher_results": analytics["teacher_results"],
+        "recent_marks": build_mark_list_queryset().filter(
+            exam__in=_filtered_exams(scope),
+            exam__status__in=["approved", "published", "closed"],
+        ).order_by("-exam__exam_date", "student__full_name")[:100],
     })
     return context
 
@@ -159,38 +219,42 @@ def build_exam_definitions_context(request):
 
 def build_exam_dashboard_context(request):
     scope = selected_scope(request)
-    exams = _filtered_exams(scope)
+    exams = _filtered_exams(scope).filter(status__in=["approved", "published", "closed"], is_active=True)
     if scope["teacher_id"]:
         exams = exams.filter(teacher_assignment__teacher_id=scope["teacher_id"])
     exams = exams.order_by("-exam_date", "name")
     stats = dashboard_statistics(exams)
-    recent_exams = list(exams[:15])
+    recent_exams = list(exams[:30])
     for exam in recent_exams:
         exam.analytics = exam_statistics(exam)
     normalized = ExpressionWrapper(
         F("mark") * Value(Decimal("100.00")) / F("exam__max_mark"),
         output_field=DecimalField(max_digits=7, decimal_places=2),
     )
-    performance_qs = StudentMark.objects.filter(exam__in=exams).exclude(exam__teacher_assignment=None).annotate(
-        normalized=normalized
-    ).values(
-        "exam__teacher_assignment__teacher_id", "exam__teacher_assignment__teacher__full_name",
-        "exam__subject__name", "exam__section__name", "exam__grade__name",
-    ).annotate(average=Avg("normalized"), results=Count("id")).order_by("-average")
-    performance = []
-    for row in performance_qs:
-        avg = Decimal(row["average"] or 0)
-        row["classification"] = "ممتاز" if avg >= 90 else "جيد جدًا" if avg >= 80 else "جيد" if avg >= 70 else "مقبول" if avg >= 60 else "بحاجة متابعة"
-        performance.append(row)
+    teacher_results = list(
+        StudentMark.objects.filter(exam__in=exams).exclude(exam__teacher_assignment=None)
+        .annotate(normalized=normalized)
+        .values(
+            "exam__teacher_assignment__teacher_id", "exam__teacher_assignment__teacher__full_name",
+            "exam__subject__name", "exam__subject__color", "exam__section__name", "exam__grade__name",
+        )
+        .annotate(average=Avg("normalized"), results=Count("id"))
+        .order_by("-average")
+    )
+    from academics.grade_names import class_display_name
+    for row in teacher_results:
+        row["class_label"] = class_display_name(
+            row.get("exam__grade__name", ""), row.get("exam__section__name", "")
+        )
     context = scope_filter_context(scope)
-    context.update({"stats": stats, "recent_exams": recent_exams, "teacher_performance": performance})
+    context.update({"stats": stats, "recent_exams": recent_exams, "teacher_results": teacher_results})
     return context
 
 
 def build_scope_options_payload(*, year_id=None, grade_id=None, section_id=None, subject_id=None):
     semesters = Semester.objects.filter(academic_year_id=year_id).order_by("code") if year_id else Semester.objects.none()
     sections = Section.objects.filter(academic_year_id=year_id, grade_id=grade_id, is_active=True).order_by("name") if year_id and grade_id else Section.objects.none()
-    subjects = Subject.objects.filter(grade_id=grade_id, is_active=True).order_by("name") if grade_id else Subject.objects.none()
+    subjects = Subject.objects.filter(academic_year_id=year_id, grade_id=grade_id, is_active=True).order_by("name") if year_id and grade_id else Subject.objects.none()
     assignment = None
     if year_id and section_id and subject_id:
         assignment = TeacherAssignment.objects.filter(

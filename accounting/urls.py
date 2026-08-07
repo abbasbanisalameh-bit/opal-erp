@@ -10,6 +10,7 @@ urlpatterns = [
     path("fee-categories/", views.fee_category_list, name="fee_category_list"),
     path("fee-categories/<int:pk>/edit/", views.fee_category_update, name="fee_category_update"),
     path("invoices/", views.invoice_list, name="invoice_list"),
+    path("previous-debts/", views.previous_debt_list, name="previous_debt_list"),
     path("invoices/add/", views.invoice_create, name="invoice_create"),
     path("invoices/<int:invoice_id>/cancel/", views.invoice_cancel, name="invoice_cancel"),
     # All payment entry remains centralized in the sibling-aware admissions screen.

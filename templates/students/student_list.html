@@ -3,18 +3,24 @@
 {% block page_title %}إدارة الطلاب{% endblock %}
 {% block page_subtitle %}الطلاب والتسجيلات وملفات أولياء الأمور والوثائق في مكان واحد{% endblock %}
 {% block content %}
-<div class="opal-card">
-  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-    <h2 class="mb-0">قائمة الطلاب</h2>
-    <a href="{% url 'admissions:direct_registration' %}" class="btn btn-primary"><i class="bi bi-person-plus"></i> إضافة طالب</a>
+<section class="opal-card mb-4">
+  <div class="mb-3"><h3 class="mb-1">عمليات الطلاب وأولياء الأمور</h3><p class="text-secondary mb-0">هذه الصفحة هي البوابة الإدارية الوحيدة للتسجيل والسجل والأسرة والحركة الفردية.</p></div>
+  <div class="opal-settings-actions-grid">
+    <a href="{% url 'admissions:direct_registration' %}" class="opal-settings-action primary"><i class="bi bi-person-plus-fill"></i><strong>تسجيل طالب</strong><small>إنشاء الطالب والقيد والرسوم والأسرة</small></a>
+    <a href="{% url 'admissions:admission_list' %}" class="opal-settings-action"><i class="bi bi-card-checklist"></i><strong>سجل التسجيل</strong><small>الطلبات والإيصالات المرتبطة</small></a>
+    <a href="{% url 'parent_portal:family_management' %}" class="opal-settings-action"><i class="bi bi-person-vcard-fill"></i><strong>ملفات أولياء الأمور</strong><small>الحساب والأبناء وكشف الأسرة</small></a>
+    <a href="{% url 'academics:lifecycle_list' %}" class="opal-settings-action"><i class="bi bi-arrow-repeat"></i><strong>حركة الطلاب الفردية</strong><small>النقل والانسحاب وإعادة القيد</small></a>
   </div>
+</section>
+<div class="opal-card" id="student-list">
+  <div class="mb-4"><h2 class="mb-1">قائمة الطلاب</h2><p class="text-secondary mb-0">افتح بطاقة الطالب لإدارة سجله الفردي فقط.</p></div>
   <form method="get" class="row g-2 mb-4">
     <div class="col-md-5"><input name="q" value="{{ q }}" class="form-control" placeholder="بحث بالاسم أو الرقم"></div>
     <div class="col-md-4"><select name="status" class="form-control"><option value="">جميع الحالات</option>{% for value,label in status_choices %}<option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
     <div class="col-md-3"><button class="btn btn-info w-100">بحث</button></div>
   </form>
   <div class="table-responsive"><table class="opal-table"><thead><tr><th>#</th><th>رقم الطالب</th><th>الاسم</th><th>الصف</th><th>الشعبة</th><th>الحالة</th><th>إجراءات</th></tr></thead><tbody>
-  {% for student in students %}<tr><td>{{ forloop.counter }}</td><td>{{ student.student_number }}</td><td>{{ student.full_name }}</td><td>{{ student.grade }}</td><td>{{ student.section }}</td><td>{{ student.get_status_display }}</td><td><a href="{% url 'students:student_360' student.pk %}" class="btn btn-sm btn-dark"><i class="bi bi-person-vcard"></i> بطاقة الطالب</a> <a href="{% url 'students:student_update' student.pk %}" class="btn btn-sm btn-warning">تعديل</a> <a href="{% url 'students:student_archive' student.pk %}" class="btn btn-sm btn-secondary">أرشفة</a></td></tr>
+  {% for student in students %}<tr><td>{{ forloop.counter }}</td><td>{{ student.student_number }}</td><td>{{ student.full_name }}</td><td>{{ student.grade }}</td><td>{{ student.section }}</td><td>{{ student.get_status_display }}</td><td><a href="{% url 'students:student_360' student.pk %}" class="btn btn-sm btn-dark"><i class="bi bi-person-vcard"></i> بطاقة الطالب</a> <a href="{% url 'students:student_archive' student.pk %}" class="btn btn-sm btn-secondary">أرشفة</a></td></tr>
   {% empty %}<tr><td colspan="7" class="text-center">لا يوجد طلاب</td></tr>{% endfor %}
   </tbody></table></div>
 </div>

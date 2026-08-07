@@ -1,7 +1,38 @@
 {% extends "base/base.html" %}
-{% block title %}النتائج{% endblock %}
-{% block page_title %}نتائج الأبناء{% endblock %}
-{% block page_subtitle %}علامات الامتحانات والتقديرات{% endblock %}
+{% load opal_subjects %}
+{% block title %}علامات أبنائي{% endblock %}
+{% block page_title %}علامات أبنائي{% endblock %}
+{% block page_subtitle %}اختر الطالب ثم المادة أو الامتحان، وتظهر النتائج فورًا دون تمرير أفقي.{% endblock %}
 {% block content %}
-<div class="opal-card"><div class="table-responsive"><table class="opal-table"><thead><tr><th>الطالب</th><th>الامتحان</th><th>المادة</th><th>العلامة</th><th>النسبة</th><th>التقدير</th></tr></thead><tbody>{% for m in records %}<tr><td>{{ m.student.full_name }}</td><td>{{ m.exam.name }}</td><td>{{ m.exam.subject }}</td><td>{{ m.mark }} / {{ m.exam.max_mark }}</td><td>{{ m.percentage }}%</td><td>{{ m.grade_letter }}</td></tr>{% empty %}<tr><td colspan="6">لا توجد نتائج.</td></tr>{% endfor %}</tbody></table></div></div>
+<section class="opal-card mb-4">
+<form method="get" class="row g-3 align-items-end" data-live-filter="change">
+  <div class="col-lg-4"><label class="form-label">الابن</label><select name="student" class="form-select"><option value="">اختر أحد أبنائك</option>{% for item in students %}<option value="{{ item.pk }}" {% if student_id == item.pk|stringformat:'s' %}selected{% endif %}>{{ item.full_name }} — {{ item.class_display }}</option>{% endfor %}</select></div>
+  {% if matrix %}
+  <div class="col-lg-4"><label class="form-label">عرض حسب المادة</label><select name="subject" class="form-select"><option value="">اختر المادة</option>{% for item in matrix.subjects %}<option value="{{ item.pk }}" {% if subject_id == item.pk|stringformat:'s' %}selected{% endif %}>{{ item.name }}</option>{% endfor %}</select></div>
+  <div class="col-lg-4"><label class="form-label">أو حسب الامتحان</label><select name="exam" class="form-select"><option value="">اختر الامتحان</option>{% for term in matrix.semesters %}{% for exam in matrix.exam_types %}<option value="{{ term.pk }}:{{ exam.key }}" {% if exam_key == term.pk|stringformat:'s'|add:':'|add:exam.key %}selected{% endif %}>{{ term.get_code_display }} — {{ exam.label }}</option>{% endfor %}{% endfor %}</select></div>
+  {% endif %}
+</form>
+</section>
+
+{% if selected_student %}
+<section class="opal-card mb-3"><h3 class="mb-1">{{ selected_student.full_name }}</h3><span class="text-secondary">{{ selected_student.class_display }}{% if matrix.academic_year %} — {{ matrix.academic_year }}{% endif %}</span></section>
+
+{% if subject_rows %}
+{% for row in subject_rows %}
+<section class="opal-card mb-3 opal-subject-card" style="{% subject_style row.subject %}"><h4 class="mb-3"><span class="opal-subject-chip" style="{% subject_style row.subject %}">{{ row.subject.name }}</span></h4>
+  {% for term in row.terms %}
+  <div class="opal-mark-term mb-3"><div class="d-flex justify-content-between gap-2 mb-2"><strong>{{ term.semester.get_code_display }}</strong><span class="badge {% if term.is_closed %}bg-success{% else %}bg-info text-dark{% endif %}">{% if term.is_closed %}مغلق أكاديميًا — المجموع {{ term.total }} / 100{% else %}حتى لحظة الاستعلام — {{ term.total }} / 100{% endif %}</span></div>
+  <div class="opal-mark-grid">{% for cell in term.cells %}<div class="opal-mark-cell"><small>{{ cell.exam_type.label }}</small><strong>{% if cell.mark %}{{ cell.value }} / {{ cell.exam_type.max_mark }}{% else %}—{% endif %}</strong></div>{% endfor %}</div></div>
+  {% endfor %}
+</section>
+{% endfor %}
+{% elif selected_exam %}
+<section class="opal-card"><h4>{{ selected_exam.semester.get_code_display }} — {{ selected_exam.exam_type.label }}</h4><div class="opal-subject-mark-list">{% for row in exam_rows %}<div class="opal-subject-mark-row opal-subject-surface" style="{% subject_style row.subject %}"><span class="opal-subject-chip" style="{% subject_style row.subject %}">{{ row.subject.name }}</span><strong>{% if row.mark %}{{ row.value }} / {{ selected_exam.exam_type.max_mark }}{% else %}—{% endif %}</strong></div>{% endfor %}</div></section>
+{% else %}
+<section class="opal-card opal-empty-state"><p>اختر مادة لعرض جميع امتحاناتها في الفصلين، أو اختر امتحانًا لعرض علامات جميع المواد.</p></section>
+{% endif %}
+{% else %}<section class="opal-card opal-empty-state"><h4>اختر أحد أبنائك أولًا</h4></section>{% endif %}
 {% endblock %}
+{% block extra_js %}<style>
+.opal-mark-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.opal-mark-cell{min-width:0;border:1px solid rgba(148,163,184,.25);border-radius:12px;padding:10px;text-align:center}.opal-mark-cell small,.opal-mark-cell strong{display:block}.opal-subject-mark-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.opal-subject-mark-row{display:flex;justify-content:space-between;gap:8px;border:1px solid rgba(148,163,184,.25);border-radius:10px;padding:10px}@media(max-width:575px){.opal-mark-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.opal-subject-mark-list{grid-template-columns:1fr}}
+</style>{% endblock %}

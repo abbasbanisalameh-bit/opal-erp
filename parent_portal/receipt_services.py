@@ -76,16 +76,18 @@ def build_guardian_receipt_history(students):
             {"student_name": item.student.full_name, "amount": item.amount}
             for item in payment.guardian_allocations
         ]
+        if payment.payment_period == "previous":
+            payment_type = "دفعة من متبقيات السنوات السابقة"
+        elif payment.scope == "all_siblings":
+            payment_type = "تسديد رسوم السنة الحالية لجميع الأبناء"
+        else:
+            payment_type = "تسديد رسوم السنة الحالية لطالب"
         history.append(
             _row(
                 receipt_number=payment.receipt_number,
                 created_at=payment.created_at,
                 amount=payment.total_amount,
-                payment_type=(
-                    "تسديد رسوم لجميع الأبناء"
-                    if payment.scope == "all_siblings"
-                    else "تسديد رسوم طالب"
-                ),
+                payment_type=payment_type,
                 allocations=allocations,
                 created_by=payment.created_by,
             )

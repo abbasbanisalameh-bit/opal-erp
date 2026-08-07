@@ -1,1 +1,64 @@
-{% extends "base/base.html" %}{% block title %}إعدادات اليوم المدرسي{% endblock %}{% block page_title %}إعدادات اليوم المدرسي والمؤقت{% endblock %}{% block page_subtitle %}تعريف الطابور والاستراحة ونهاية الدوام وأيام العطلة والتنبيه المسبق{% endblock %}{% block content %}<div class="row g-4"><div class="col-lg-5"><div class="opal-card mb-4"><h4>الإعدادات</h4><form method="post">{% csrf_token %}<input type="hidden" name="action" value="settings">{{ settings_form.as_p }}<button class="btn btn-primary">حفظ</button></form></div><div class="opal-card"><h4>إضافة حدث</h4><form method="post">{% csrf_token %}<input type="hidden" name="action" value="event">{{ event_form.as_p }}<button class="btn btn-primary">إضافة الحدث</button></form></div></div><div class="col-lg-7"><div class="opal-card"><h4>أحداث اليوم</h4><table class="table"><thead><tr><th>الحدث</th><th>الوقت</th><th>الأيام</th><th></th></tr></thead><tbody>{% for item in events %}<tr><td>{{ item.name }}</td><td>{{ item.start_time }}–{{ item.end_time }}</td><td>{{ item.days }}</td><td><form method="post" action="{% url 'timetable:event_delete' item.pk %}">{% csrf_token %}<button class="btn btn-sm btn-outline-danger">حذف</button></form></td></tr>{% empty %}<tr><td colspan="4">لا توجد أحداث إضافية. أوقات الحصص تظهر تلقائيًا في المؤقت.</td></tr>{% endfor %}</tbody></table></div></div></div>{% endblock %}
+{% extends "base/base.html" %}
+{% block title %}أوقات الحصص والاستراحات{% endblock %}
+{% block page_title %}أوقات الحصص والاستراحات{% endblock %}
+{% block page_subtitle %}تعريف اليوم المدرسي ومجموعات الاستراحة في الساحة الواحدة بطريقة بسيطة وآمنة{% endblock %}
+{% block content %}
+<style>
+[data-field="sections"] #id_event-sections{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.45rem;max-height:18rem;overflow:auto;padding:.75rem;border:1px solid var(--bs-border-color);border-radius:.75rem}
+[data-field="sections"] #id_event-sections label{display:flex;align-items:center;gap:.4rem;margin:0}
+</style>
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+  <div class="alert alert-info mb-0 py-2"><strong>قاعدة الاستراحة الذكية:</strong> توضع بين الحصص، بعد ساعتين من بدء اليوم وقبل ساعتين من نهايته، ودون تداخل بين المجموعات.</div>
+  <a class="btn btn-outline-primary" href="{% url 'timetable:slot_list' %}"><i class="bi bi-clock-history"></i> أوقات الحصص</a>
+</div>
+<div class="row g-4">
+  <div class="col-lg-5">
+    <div class="opal-card mb-4">
+      <h4>أيام الدوام والتنبيه</h4>
+      <form method="post">{% csrf_token %}<input type="hidden" name="action" value="settings">{{ settings_form.as_p }}<button class="btn btn-primary">حفظ الإعدادات</button></form>
+    </div>
+    <div class="opal-card" id="event-form">
+      <div class="d-flex justify-content-between align-items-center mb-3"><h4 class="mb-0">{% if event_instance %}تعديل الاستراحة أو الحدث{% else %}إضافة استراحة أو حدث{% endif %}</h4>{% if event_instance %}<a class="btn btn-sm btn-light" href="?">إلغاء التعديل</a>{% endif %}</div>
+      <form method="post">{% csrf_token %}<input type="hidden" name="action" value="event">{% if event_instance %}<input type="hidden" name="event_id" value="{{ event_instance.pk }}">{% endif %}
+        {% if event_form.non_field_errors %}<div class="alert alert-danger">{{ event_form.non_field_errors }}</div>{% endif %}
+        {% for field in event_form %}
+        <div class="mb-3 opal-event-field" data-field="{{ field.name }}"><label class="form-label">{{ field.label }}</label>{{ field }}{% if field.help_text %}<small class="d-block text-secondary mt-1">{{ field.help_text }}</small>{% endif %}{% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>
+        {% endfor %}
+        <button class="btn btn-primary">{% if event_instance %}حفظ التعديل{% else %}إضافة{% endif %}</button>
+      </form>
+    </div>
+  </div>
+  <div class="col-lg-7">
+    <div class="opal-card">
+      <div class="mb-3"><h4 class="mb-1">أحداث اليوم ومجموعات الاستراحة</h4><p class="text-secondary mb-0">كل استراحة تحتوي مجموعة الشعب التي اختارتها الإدارة فقط.</p></div>
+      <div class="table-responsive"><table class="table align-middle"><thead><tr><th>الحدث</th><th>الطريقة والمدة</th><th>الوقت</th><th>الشعب</th><th>الأيام</th><th></th></tr></thead><tbody>
+      {% for item in events %}
+      <tr>
+        <td><strong>{{ item.name }}</strong><br><small>{{ item.get_event_type_display }}</small></td>
+        <td>{% if item.event_type == 'break' %}<span class="badge bg-info text-dark">{{ item.get_placement_mode_display }}</span><br><small>{{ item.effective_duration_minutes }} دقيقة</small>{% else %}وقت ثابت{% endif %}</td>
+        <td>{% if item.start_time and item.end_time %}{{ item.start_time|time:'H:i' }}–{{ item.end_time|time:'H:i' }}{% elif item.placement_mode == 'smart' %}<span class="text-secondary">يحدده الاقتراح</span>{% else %}—{% endif %}</td>
+        <td>{% for section in item.sections.all %}<span class="badge bg-light text-dark border mb-1">{{ section }}</span>{% empty %}<span class="text-secondary">حدث عام</span>{% endfor %}</td>
+        <td><small>{{ item.days }}</small></td>
+        <td class="text-nowrap"><a class="btn btn-sm btn-outline-primary" href="?event={{ item.pk }}#event-form">تعديل</a><form method="post" class="d-inline" action="{% url 'timetable:event_delete' item.pk %}" onsubmit="return confirm('حذف الحدث؟')">{% csrf_token %}<button class="btn btn-sm btn-outline-danger">حذف</button></form></td>
+      </tr>
+      {% empty %}<tr><td colspan="6" class="text-center text-secondary">لا توجد أحداث إضافية. أضف الاستراحات وحدد شعب كل مجموعة.</td></tr>{% endfor %}
+      </tbody></table></div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  const type = document.getElementById('id_event-event_type');
+  const mode = document.getElementById('id_event-placement_mode');
+  const byName = name => document.querySelector('[data-field="'+name+'"]');
+  function sync(){
+    const isBreak = type?.value === 'break';
+    const smart = isBreak && mode?.value === 'smart';
+    ['placement_mode','duration_minutes','sections'].forEach(n => { const el=byName(n); if(el) el.hidden=!isBreak; });
+    const startField=byName('start_time'); if(startField) startField.hidden=smart;
+    const endField=byName('end_time'); if(endField) endField.hidden=isBreak;
+  }
+  type?.addEventListener('change', sync); mode?.addEventListener('change', sync); sync();
+})();
+</script>
+{% endblock %}

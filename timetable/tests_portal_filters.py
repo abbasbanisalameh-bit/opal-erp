@@ -27,8 +27,8 @@ class TimetablePortalFilterTests(TestCase):
         self.grade = Grade.objects.create(school=self.school, name="الخامس", order=5)
         self.section_a = Section.objects.create(academic_year=self.year, branch=self.branch, grade=self.grade, name="أ")
         self.section_b = Section.objects.create(academic_year=self.year, branch=self.branch, grade=self.grade, name="ب")
-        self.math = Subject.objects.create(grade=self.grade, name="رياضيات", code="M5")
-        self.arabic = Subject.objects.create(grade=self.grade, name="لغة عربية", code="A5")
+        self.math = Subject.objects.create(academic_year=self.year, grade=self.grade, name="رياضيات", code="M5")
+        self.arabic = Subject.objects.create(academic_year=self.year, grade=self.grade, name="لغة عربية", code="A5")
         self.slot1 = TimeSlot.objects.create(name="الأولى", start_time=time(8), end_time=time(8, 45), order=1)
         self.slot2 = TimeSlot.objects.create(name="الثانية", start_time=time(9), end_time=time(9, 45), order=2)
 
@@ -55,6 +55,9 @@ class TimetablePortalFilterTests(TestCase):
         entries = list(response.context["entries"])
         self.assertEqual(len(entries), 1)
         self.assertEqual(entries[0].subject, self.math)
+        matrix = response.context["schedule_matrix"]
+        self.assertEqual(len(matrix["rows"]), 1)
+        self.assertEqual(matrix["rows"][0]["label"], "الأحد")
 
     def test_parent_filters_by_student_day_and_subject(self):
         self.client.force_login(self.parent_user)
@@ -67,6 +70,8 @@ class TimetablePortalFilterTests(TestCase):
         entries = list(rows[0]["entries"])
         self.assertEqual(len(entries), 1)
         self.assertEqual(entries[0].subject, self.math)
+        self.assertTrue(rows[0]["schedule_matrix"]["has_entries"])
+        self.assertEqual(len(rows[0]["schedule_matrix"]["rows"]), 1)
 
     def test_manager_filters_by_teacher_day_subject_and_grade(self):
         self.client.force_login(self.manager)
@@ -80,3 +85,6 @@ class TimetablePortalFilterTests(TestCase):
         entries = list(response.context["entries"])
         self.assertEqual(len(entries), 1)
         self.assertEqual(entries[0].subject, self.arabic)
+        matrix = response.context["schedule_matrix"]
+        self.assertEqual(len(matrix["rows"]), 1)
+        self.assertEqual(matrix["rows"][0]["label"], "الاثنين")

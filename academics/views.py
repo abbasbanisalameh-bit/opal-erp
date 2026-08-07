@@ -1,12 +1,13 @@
-from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
 
+from enterprise_ops.permissions import management_required
 
-@staff_member_required
+
+@management_required
 def academics_dashboard(request):
-    """Landing page for all academic sub-modules."""
-    return render(request, "academics/dashboard.html")
+    """Compatibility route to the single academic management gateway."""
+    return redirect("academics:academic_structure")
 
 
 @login_required

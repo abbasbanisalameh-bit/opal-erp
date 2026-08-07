@@ -39,6 +39,7 @@ urlpatterns = [
     path("student-lifecycle/", lifecycle_views.lifecycle_list, name="lifecycle_list"),
     path("student-lifecycle/<int:student_id>/action/", lifecycle_views.lifecycle_action, name="lifecycle_action"),
     path("student-lifecycle/promote/", lifecycle_views.promotion_batch, name="promotion_batch"),
+    path("annual-lifecycle/", lifecycle_views.annual_lifecycle_center, name="annual_lifecycle_center"),
 
     path("subjects/", academic_core_views.subject_list, name="subject_list"),
     path("subjects/add/", academic_core_views.subject_create, name="subject_create"),

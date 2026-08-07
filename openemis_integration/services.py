@@ -11,6 +11,10 @@ from academics.models import Enrollment, Grade, Subject
 from academics.canonical_services import resolve_grade, resolve_section
 from attendance_v2.models import Attendance
 from accounting.models import StudentPayment
+from admissions.financial_services import (
+    student_finance_snapshot,
+    student_separated_finance_snapshot,
+)
 from core.identifiers import normalize_identifier
 from core.models import AcademicYear, Branch, School
 from core.choices import normalize_student_gender
@@ -50,6 +54,11 @@ def build_student_payload(student):
     enrollment = _current_enrollment(student)
     family_link = student.family_links.filter(is_active=True).select_related("family").first()
     family = family_link.family if family_link else None
+    all_finance = student_finance_snapshot(student)
+    separated_finance = student_separated_finance_snapshot(
+        student,
+        academic_year=enrollment.academic_year if enrollment else None,
+    )
 
     marks = [
         {
@@ -88,7 +97,9 @@ def build_student_payload(student):
             "remaining": str(row.remaining),
             "due_date": row.due_date.isoformat() if row.due_date else None,
         }
-        for row in student.invoices.select_related("academic_year", "fee_category").all()
+        for row in student.invoices.select_related("academic_year", "fee_category")
+        .exclude(carry_forward_record__source_invoices__isnull=False)
+        .distinct()
     ]
     payments = [
         {
@@ -135,9 +146,17 @@ def build_student_payload(student):
         "attendance": attendance,
         "marks": marks,
         "finance": {
-            "total_fees": str(student.fees_total),
-            "total_paid": str(student.fees_paid),
-            "remaining": str(student.fees_remaining),
+            # Compatibility totals remain available to an eventual official
+            # adapter, while the operational fields are explicitly separated.
+            "total_fees": str(all_finance["total"]),
+            "total_paid": str(all_finance["paid"]),
+            "remaining": str(all_finance["remaining"]),
+            "current_academic_year": getattr(separated_finance["current_year"], "name", ""),
+            "current_year_fees": str(separated_finance["current"]["total"]),
+            "current_year_paid": str(separated_finance["current"]["paid"]),
+            "current_year_remaining": str(separated_finance["current"]["remaining"]),
+            "previous_years_remaining": str(separated_finance["previous"]["total"]),
+            "combined_remaining": str(separated_finance["combined_remaining"]),
             "invoices": invoices,
             "payments": payments,
         },
@@ -289,9 +308,14 @@ def _sync_attendance(student, payload):
         date = parse_date(str(item.get("date") or ""))
         if not date:
             continue
-        status = item.get("status") or "present"
-        if status not in dict(Attendance.STATUS):
-            status = "present"
+        # OPAL stores only attendance exceptions. A normal "present" event
+        # is represented by the absence of an exception row, so importing it
+        # must not create an obsolete parallel record. Unknown external
+        # statuses are left untouched until they are mapped through the
+        # official attendance workflow.
+        status = str(item.get("status") or "present").strip().lower()
+        if status == "present" or status not in dict(Attendance.STATUS):
+            continue
         enrollment = _current_enrollment(student)
         Attendance.objects.update_or_create(
             student=student,
@@ -329,7 +353,12 @@ def _sync_marks(student, payload, school, enrollment=None):
         subject_name = str(item.get("subject") or "").strip()
         if not subject_name:
             continue
-        subject, _ = Subject.objects.get_or_create(grade=grade, name=subject_name)
+        subject, _ = Subject.objects.get_or_create(
+            academic_year=year,
+            grade=grade,
+            name=subject_name,
+            defaults={"weekly_periods": 1, "is_required": True, "is_active": True},
+        )
         exam_type = item.get("exam_type") or "first"
         if exam_type not in dict(Exam.EXAM_TYPES):
             continue

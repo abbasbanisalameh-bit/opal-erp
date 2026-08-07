@@ -25,11 +25,12 @@ class AttendanceWorkflowContractTest(TestCase):
             status="absent",
         )
 
-    def test_dashboard_context_preserves_status_counts(self):
+    def test_dashboard_keeps_unregistered_exception_out_of_authoritative_counts(self):
         context = build_attendance_dashboard_context(target_date=date(2026, 7, 21))
-        self.assertEqual(context["total_today"], 1)
-        self.assertEqual(context["absent_today"], 1)
+        self.assertEqual(context["total_today"], 0)
+        self.assertEqual(context["absent_today"], 0)
         self.assertEqual(context["present_today"], 0)
+        self.assertEqual(context["unregistered_exceptions"], 1)
 
     def test_report_context_preserves_filters_and_results(self):
         params = RequestFactory().get(

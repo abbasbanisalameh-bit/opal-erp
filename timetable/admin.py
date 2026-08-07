@@ -4,9 +4,9 @@ from .models import ClassCoverage, SchoolDayEvent, SchoolScheduleSettings, Teach
 
 @admin.register(TimeSlot)
 class TimeSlotAdmin(admin.ModelAdmin):
-    list_display = ("name", "start_time", "end_time", "order", "is_active")
+    list_display = ("name", "start_time", "end_time", "order", "generated_for_smart_schedule", "is_active")
     search_fields = ("name",)
-    list_filter = ("is_active",)
+    list_filter = ("generated_for_smart_schedule", "is_active",)
 
 
 @admin.register(TimetableEntry)

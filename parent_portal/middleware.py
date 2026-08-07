@@ -17,6 +17,7 @@ class ParentPortalAccessMiddleware:
         "/static/",
         "/media/",
         "/enterprise/feedback/",
+        "/enterprise/monthly-evaluation/",
         "/enterprise/reports/",
         "/enterprise/audit/",
         "/enterprise/notifications/",

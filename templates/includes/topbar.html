@@ -26,6 +26,7 @@
     {% endif %}
 
     <div class="opal-topbar-main">
+        <button type="button" id="opal-sidebar-toggle" class="icon-btn opal-sidebar-toggle" aria-label="فتح القائمة" aria-controls="opal-sidebar" aria-expanded="false"><i class="bi bi-list"></i></button>
         <div class="top-left opal-global-search-wrap">
             <label class="opal-global-search-box" for="opal-global-operation-search">
                 <i class="bi bi-search" aria-hidden="true"></i>
@@ -40,9 +41,6 @@
                 <i class="bi bi-clock-fill" aria-hidden="true"></i>
                 <div><strong id="opal-clock-time">--:--</strong><small id="opal-clock-date">--</small></div>
             </div>
-            {% if opal_is_management %}
-            <a class="icon-btn opal-guide-icon text-decoration-none" href="{% url 'core:operations_center' %}" title="دليل العمليات الموحد" aria-label="دليل العمليات الموحد"><i class="bi bi-signpost-split-fill"></i></a>
-            {% endif %}
             <div class="dropdown opal-notification-dropdown">
                 <button id="opal-notification-bell" class="icon-btn opal-bell-button position-relative" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" aria-label="الإشعارات" data-status-url="{% url 'enterprise_ops:notification_status' %}" data-latest-id="{{ opal_latest_unread_notification_id|default:'' }}">
                     <i class="bi bi-bell-fill"></i>
@@ -52,13 +50,16 @@
                     <div class="opal-notification-menu-head"><div><strong>الإشعارات الجديدة</strong><small>{{ opal_unread_notifications_count|default:0 }} غير مقروء</small></div><a href="{% url 'enterprise_ops:notification_list' %}">عرض الجميع</a></div>
                     <div class="opal-notification-menu-list">
                         {% for item in opal_recent_notifications %}
-                        <form method="post" action="{% url 'enterprise_ops:notification_read' item.id %}" class="m-0">{% csrf_token %}<button type="submit" class="opal-notification-menu-item {% if not item.is_read %}unread{% endif %}"><span class="opal-notification-dot"></span><span><strong>{{ item.title }}</strong><small>{{ item.message|truncatechars:90 }}</small><em>{{ item.created_at|timesince }} مضت</em></span></button></form>
+                        <a href="{% url 'enterprise_ops:notification_open' item.id %}" class="opal-notification-menu-item text-decoration-none {% if not item.is_read %}unread{% endif %}"><span class="opal-notification-dot"></span><span><strong>{{ item.title }}</strong><small>{{ item.message|truncatechars:90 }}</small><em>{{ item.created_at|timesince }} مضت</em></span></a>
                         {% empty %}<div class="opal-empty-state py-4"><i class="bi bi-bell-slash"></i> لا توجد إشعارات.</div>{% endfor %}
                     </div>
                     <div class="opal-notification-menu-foot"><a href="{% url 'enterprise_ops:notification_list' %}"><i class="bi bi-inboxes-fill"></i> فتح مركز الإشعارات الكامل</a></div>
                 </div>
             </div>
-            <a class="profile opal-profile-link text-decoration-none" href="{% url 'accounts:my_profile' %}" title="الملف الشخصي">
+            <button id="opal-theme-toggle" class="icon-btn opal-theme-toggle" type="button" title="تفعيل الوضع النهاري" aria-label="تفعيل الوضع النهاري" aria-pressed="false">
+                <i class="bi bi-moon-stars-fill" aria-hidden="true"></i>
+            </button>
+            <a class="profile opal-profile-link text-decoration-none" href="{% if opal_profile_url %}{{ opal_profile_url }}{% else %}{% url 'accounts:my_profile' %}{% endif %}" title="الملف الشخصي">
                 <div class="opal-user-photo-frame">{% if request.user.is_authenticated and request.user.profile.photo %}<img src="{{ request.user.profile.photo.url }}" alt="{{ request.user.profile.full_name|default:request.user.username }}">{% else %}<i class="bi bi-person-fill"></i>{% endif %}</div>
                 <div class="opal-profile-copy"><strong>{% if request.user.is_authenticated and request.user.profile.full_name %}{{ request.user.profile.full_name }}{% else %}{{ request.user.username }}{% endif %}</strong><small>{% if request.user.is_authenticated and request.user.profile.role %}{{ request.user.profile.role.name }}{% else %}الملف الشخصي{% endif %}</small></div>
             </a>

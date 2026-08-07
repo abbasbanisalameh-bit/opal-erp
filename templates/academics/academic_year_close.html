@@ -29,10 +29,10 @@
     </ul>
 </div>
 <div class="opal-card mb-4">
-    <p class="mb-3">أكمل الحركات الأكاديمية وأغلق الامتحانات، ثم أعد فحص هذه الصفحة.</p>
+    <p class="mb-3">أغلق دورات الامتحانات ثم الفصلين من مركز دورة العام، وبعدها أعد فحص هذه الصفحة. الترفيع والتخريج يأتيان بعد إغلاق العام.</p>
     <div class="d-flex gap-2 flex-wrap">
-        <a href="{% url 'academics:promotion_batch' %}?source_year={{ year.id }}" class="btn btn-success">الترفيع أو التخريج الجماعي</a>
-        <a href="{% url 'exams:exam_list' %}" class="btn btn-outline-primary">مراجعة الامتحانات</a>
+        <a href="{% url 'academics:annual_lifecycle_center' %}?source_year={{ year.id }}" class="btn btn-success">مركز دورة العام</a>
+        <a href="{% url 'exams:exam_cycle_center' %}" class="btn btn-outline-primary">الدورات الامتحانية</a>
     </div>
 </div>
 {% endif %}
@@ -50,6 +50,7 @@
         <li>قفل {{ report.metrics.attendance_to_lock }} سجل حضور غير مقفل.</li>
         <li>إيقاف {{ report.metrics.assignments_to_deactivate }} تكليفًا تدريسيًا و{{ report.metrics.timetable_to_deactivate }} حصة فعالة.</li>
         <li>حفظ الصفوف والشعب والعلامات كسجلات تاريخية للقراءة والتقارير.</li>
+        <li>حساب وحفظ المعدل السنوي لكل مادة ثم المعدل العام للطالب.</li>
         <li>الإبقاء على تحصيل الرسوم غير المسددة دون تغيير أرصدتها.</li>
     </ul>
     <form method="post" class="mt-4">
