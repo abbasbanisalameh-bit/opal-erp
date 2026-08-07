@@ -2,6 +2,7 @@ from django.urls import path
 from . import views
 from . import system_update_views
 from . import webapp_reload
+from . import production_reset_views
 
 app_name = "core"
 
@@ -9,6 +10,8 @@ urlpatterns = [
     path("system/", views.system_settings, name="system_settings"),
     path("operations/", views.operations_center, name="operations_center"),
     path("integrity/", views.integrity_center, name="integrity_center"),
+    path("production-launch/", production_reset_views.production_launch_preparation, name="production_launch_preparation"),
+    path("production-launch/reports/<int:pk>/", production_reset_views.production_reset_report, name="production_reset_report"),
     path("branches/", views.branch_list, name="branch_list"),
     path("branches/<int:pk>/edit/", views.branch_update, name="branch_update"),
     path("updates/", system_update_views.system_updates, name="system_updates"),

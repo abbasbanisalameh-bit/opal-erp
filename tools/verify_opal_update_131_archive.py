@@ -11,7 +11,7 @@ import zipfile
 from pathlib import PurePosixPath, Path
 
 EXPECTED_VERSION = "131.7"
-MIN_PACKAGE_REVISION = 28
+MIN_PACKAGE_REVISION = 31
 REQUIRED = {
     "manage.py",
     "requirements.txt",
@@ -226,6 +226,28 @@ REQUIRED = {
     "OPAL_UPDATE_131_7_R25_CORE_TEST_STABILITY_LEGACY_CONTRACT_FIX_RELEASE_NOTES_AR.md",
     "OPAL_UPDATE_131_7_R25_VALIDATION_REPORT_AR.md",
     "OPAL_UPDATE_131_7_R25_CHANGED_FILES.txt",
+    "config/settings_test_low_memory.py",
+    "core/test_update131_7_r26_core_snapshot_test_isolation_contract.py",
+    "INSTALL_OPAL_UPDATE_131_7_R26_CORE_SNAPSHOT_TEST_ISOLATION_FIX_AR.md",
+    "OPAL_UPDATE_131_7_R26_CORE_SNAPSHOT_TEST_ISOLATION_FIX_RELEASE_NOTES_AR.md",
+    "OPAL_UPDATE_131_7_R26_VALIDATION_REPORT_AR.md",
+    "OPAL_UPDATE_131_7_R26_CHANGED_FILES.txt",
+    "core/test_update131_7_r27_file_response_test_connection_fix_contract.py",
+    "INSTALL_OPAL_UPDATE_131_7_R27_FILE_RESPONSE_TEST_CONNECTION_ISOLATION_FIX_AR.md",
+    "OPAL_UPDATE_131_7_R27_FILE_RESPONSE_TEST_CONNECTION_ISOLATION_FIX_RELEASE_NOTES_AR.md",
+    "OPAL_UPDATE_131_7_R27_VALIDATION_REPORT_AR.md",
+    "OPAL_UPDATE_131_7_R27_CHANGED_FILES.txt",
+    "core/production_reset.py",
+    "core/production_reset_views.py",
+    "core/migrations/0014_productiondataresetrun.py",
+    "core/test_update131_7_r28_production_data_reset.py",
+    "core/test_update131_7_r28_production_launch_preparation_contract.py",
+    "templates/core/production_launch_preparation.html",
+    "templates/core/production_reset_report.html",
+    "INSTALL_OPAL_UPDATE_131_7_R28_PRODUCTION_DATA_RESET_LAUNCH_PREPARATION_AR.md",
+    "OPAL_UPDATE_131_7_R28_PRODUCTION_DATA_RESET_LAUNCH_PREPARATION_RELEASE_NOTES_AR.md",
+    "OPAL_UPDATE_131_7_R28_VALIDATION_REPORT_AR.md",
+    "OPAL_UPDATE_131_7_R28_CHANGED_FILES.txt",
 }
 FORBIDDEN_PARTS = {
     ".git", ".venv", "venv", "env", "media", "uploads", "staticfiles",
@@ -321,7 +343,7 @@ def verify(path: Path) -> dict[str, object]:
             errors.append("manifest لا يثبت أن الحزمة code-only.")
         revision = manifest.get("package_revision")
         if not isinstance(revision, int) or revision < MIN_PACKAGE_REVISION:
-            errors.append("مراجعة الحزمة الحالية يجب أن تكون 28 أو أحدث لتحديث 131.7.")
+            errors.append("مراجعة الحزمة الحالية يجب أن تكون 31 أو أحدث لتحديث 131.7.")
 
     unique_errors = list(dict.fromkeys(errors))
     return {

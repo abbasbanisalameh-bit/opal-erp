@@ -1,1 +1,1 @@
-OPAL Update 131.7 R27 - FileResponse Test Connection Isolation Fix
+OPAL Update 131.7 R28 - Production Data Reset and Launch Preparation

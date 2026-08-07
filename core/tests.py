@@ -91,11 +91,12 @@ class SystemDataCenterTests(TestCase):
         self.user = User.objects.create_superuser("data_owner", "owner@example.test", "x")
         self.school = School.objects.create(name="مدرسة المختبر", is_active=True)
 
-    def test_superuser_sees_data_center_buttons_without_old_label(self):
+    def test_superuser_sees_production_launch_preparation_entry(self):
         self.client.force_login(self.user)
         response = self.client.get(reverse("core:system_settings"))
-        self.assertContains(response, "إدخال بيانات مترابطة")
-        self.assertContains(response, "تصفير جميع البيانات")
+        self.assertContains(response, "تهيئة التشغيل الفعلي")
+        self.assertContains(response, reverse("core:production_launch_preparation"))
+        self.assertNotContains(response, 'name="action" value="reset_all"')
         self.assertNotContains(response, "مختبر البيانات التجريبية")
 
     def test_seed_is_comprehensive_and_reset_removes_all_operational_data(self):
@@ -199,41 +200,31 @@ class SystemDataCenterActionTests(TestCase):
         School.objects.create(name="مدرسة إجراءات البيانات", is_active=True)
         self.client.force_login(self.user)
 
-    def test_seed_failure_returns_message_instead_of_server_error(self):
+    def test_legacy_seed_action_is_blocked_and_redirected_to_safe_workflow(self):
         from unittest.mock import patch
 
-        with patch("core.system_data.seed_system_data", side_effect=RuntimeError("seed failed")):
+        with patch("core.system_data.seed_system_data") as seed_service:
             response = self.client.post(
                 reverse("core:system_settings"),
                 {"action": "seed_system"},
                 follow=True,
             )
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "تعذر إدخال البيانات التجريبية")
+        self.assertContains(response, "تم إيقاف التصفير المباشر")
+        self.assertContains(response, "تهيئة التشغيل الفعلي")
+        seed_service.assert_not_called()
 
-    def test_reset_failure_returns_message_instead_of_server_error(self):
+    def test_legacy_reset_action_is_blocked_without_calling_service(self):
         from unittest.mock import patch
 
-        with patch("core.system_data.reset_all_operational_data", side_effect=RuntimeError("reset failed")):
+        with patch("core.system_data.reset_all_operational_data") as reset_service:
             response = self.client.post(
                 reverse("core:system_settings"),
                 {"action": "reset_all", "confirmation": "تصفير"},
                 follow=True,
             )
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "تعذر تصفير البيانات")
-
-    def test_reset_requires_exact_confirmation_before_calling_service(self):
-        from unittest.mock import patch
-
-        with patch("core.system_data.reset_all_operational_data") as reset_service:
-            response = self.client.post(
-                reverse("core:system_settings"),
-                {"action": "reset_all", "confirmation": "تصفير شامل"},
-                follow=True,
-            )
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "اكتب كلمة «تصفير» كما هي")
+        self.assertContains(response, "تم إيقاف التصفير المباشر")
         reset_service.assert_not_called()
 
 

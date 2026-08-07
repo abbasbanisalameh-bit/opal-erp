@@ -18,7 +18,7 @@ from pathlib import Path
 
 UPDATE = "131.7"
 NEXT_UPDATE = "132.0"
-MIN_PACKAGE_REVISION = 30
+MIN_PACKAGE_REVISION = 31
 
 
 def read(root: Path, relative: str) -> str:
@@ -93,7 +93,7 @@ def main() -> int:
         and manifest.get("code_only") is True
         and isinstance(manifest.get("package_revision"), int)
         and manifest.get("package_revision") >= MIN_PACKAGE_REVISION,
-        "OPAL_UPDATE_MANIFEST.json must match the source release name and identify a code-only verified package at revision 28 or later.",
+        "OPAL_UPDATE_MANIFEST.json must match the source release name and identify a code-only verified package at revision 31 or later.",
         path="OPAL_UPDATE_MANIFEST.json",
     )
     require_file("INSTALL_OPAL_UPDATE_131_7_R4_1_FEE_BALANCES_CONTRACT_FIX_AR.md")
@@ -1237,6 +1237,60 @@ def main() -> int:
         and "CoreSnapshotTestIsolationContractTests" in core_snapshot_contract_r26,
         "R26 must isolate SQLite safety-snapshot tests from the shared Django test connection and ship low-memory test settings.",
         path="core/tests_system_updates.py",
+    )
+
+    # R28 production data reset and launch preparation.
+    production_reset_service_r28 = require_file("core/production_reset.py")
+    production_reset_views_r28 = require_file("core/production_reset_views.py")
+    production_reset_model_r28 = require_file("core/models.py")
+    production_reset_migration_r28 = require_file("core/migrations/0014_productiondataresetrun.py")
+    production_reset_template_r28 = require_file("templates/core/production_launch_preparation.html")
+    production_reset_report_r28 = require_file("templates/core/production_reset_report.html")
+    production_reset_tests_r28 = require_file("core/test_update131_7_r28_production_data_reset.py")
+    production_reset_contract_r28 = require_file("core/test_update131_7_r28_production_launch_preparation_contract.py")
+    system_settings_r28 = require_file("templates/core/system_settings.html")
+    core_urls_r28 = require_file("core/urls.py")
+    require_file("INSTALL_OPAL_UPDATE_131_7_R28_PRODUCTION_DATA_RESET_LAUNCH_PREPARATION_AR.md")
+    require_file("OPAL_UPDATE_131_7_R28_PRODUCTION_DATA_RESET_LAUNCH_PREPARATION_RELEASE_NOTES_AR.md")
+    require_file("OPAL_UPDATE_131_7_R28_VALIDATION_REPORT_AR.md")
+    require_file("OPAL_UPDATE_131_7_R28_CHANGED_FILES.txt")
+    add_check(
+        "r28_production_reset_service",
+        "PRODUCTION_RESET_CONFIRMATION" in production_reset_service_r28
+        and "collect_production_reset_preview" in production_reset_service_r28
+        and "execute_production_data_reset" in production_reset_service_r28
+        and "transaction.atomic" in production_reset_service_r28
+        and "PREVIEW_TOKEN_MAX_AGE_SECONDS" in production_reset_service_r28
+        and '"core.School"' in production_reset_service_r28
+        and '"core.Branch"' in production_reset_service_r28
+        and '"learning_platform.LearningAISettings"' in production_reset_service_r28
+        and '"learning_platform.LearningAccount"' in production_reset_service_r28,
+        "R28 must provide a signed-preview, atomic production reset that preserves configuration and removes platform operations.",
+        path="core/production_reset.py",
+    )
+    add_check(
+        "r28_production_reset_ui",
+        "production_launch_preparation" in production_reset_views_r28
+        and "production_reset_report" in production_reset_views_r28
+        and "preview_token" in production_reset_template_r28
+        and "المتبقي" in production_reset_report_r28
+        and "production-launch/" in core_urls_r28
+        and "تهيئة التشغيل الفعلي" in system_settings_r28
+        and 'name="action" value="reset_all"' not in system_settings_r28,
+        "R28 must replace the direct reset button with a dedicated preview, confirmation, and report workflow.",
+        path="templates/core/production_launch_preparation.html",
+    )
+    add_check(
+        "r28_production_reset_audit",
+        "class ProductionDataResetRun" in production_reset_model_r28
+        and 'name="ProductionDataResetRun"' in production_reset_migration_r28
+        and "preview_counts" in production_reset_migration_r28
+        and "deleted_counts" in production_reset_migration_r28
+        and "remaining_counts" in production_reset_migration_r28
+        and "ProductionDataResetServiceTests" in production_reset_tests_r28
+        and "ProductionLaunchPreparationContractTests" in production_reset_contract_r28,
+        "R28 must persist auditable reset reports and ship runtime/source regression coverage.",
+        path="core/migrations/0014_productiondataresetrun.py",
     )
 
     result = {

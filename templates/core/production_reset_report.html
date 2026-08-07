@@ -1,0 +1,17 @@
+{% extends "base/base.html" %}
+{% block title %}تقرير تهيئة التشغيل الفعلي | OPAL ERP{% endblock %}
+{% block page_title %}تقرير تهيئة التشغيل الفعلي #{{ run.pk }}{% endblock %}
+{% block page_subtitle %}نتيجة العملية المنفذة وحالة البيانات المتبقية{% endblock %}
+{% block content %}
+<div class="alert {% if run.status == 'succeeded' %}alert-success{% elif run.status == 'failed' %}alert-danger{% else %}alert-secondary{% endif %} border-0 shadow-sm">
+  <h4 class="fw-bold mb-2">{{ run.get_status_display }}</h4>
+  <p class="mb-0">المدير: {{ run.requested_by|default:"-" }} — بدأ: {{ run.started_at|default:run.created_at }} — انتهى: {{ run.finished_at|default:"-" }}</p>
+  {% if run.error_message %}<hr><pre class="mb-0 text-wrap">{{ run.error_message }}</pre>{% endif %}
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-6"><div class="opal-card h-100"><h4 class="fw-bold mb-3">السجلات المحذوفة</h4><div class="table-responsive"><table class="table mb-0"><thead><tr><th>النطاق</th><th class="text-center">العدد</th></tr></thead><tbody>{% for row in deleted_rows %}<tr><td>{{ row.label }}</td><td class="text-center"><span class="badge bg-danger">{{ row.count }}</span></td></tr>{% empty %}<tr><td colspan="2" class="text-secondary">لا توجد نتيجة حذف مسجلة.</td></tr>{% endfor %}</tbody></table></div></div></div>
+  <div class="col-lg-6"><div class="opal-card h-100"><h4 class="fw-bold mb-3">التحقق بعد التنفيذ</h4><div class="table-responsive"><table class="table mb-0"><thead><tr><th>النطاق</th><th class="text-center">المتبقي</th></tr></thead><tbody>{% for row in remaining_rows %}<tr><td>{{ row.label }}</td><td class="text-center"><span class="badge {% if row.count %}bg-danger{% else %}bg-success{% endif %}">{{ row.count }}</span></td></tr>{% empty %}<tr><td colspan="2" class="text-secondary">لا توجد نتيجة تحقق مسجلة.</td></tr>{% endfor %}</tbody></table></div></div></div>
+</div>
+<div class="mt-4 d-flex gap-2"><a class="btn btn-primary" href="{% url 'core:production_launch_preparation' %}">العودة إلى مركز التهيئة</a><a class="btn btn-outline-secondary" href="{% url 'core:system_settings' %}">إعدادات النظام</a></div>
+{% endblock %}

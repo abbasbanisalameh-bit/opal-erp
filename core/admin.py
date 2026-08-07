@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import School, Branch, AcademicYear, Semester, AuditLog, Sequence
+from .models import School, Branch, AcademicYear, Semester, AuditLog, Sequence, ProductionDataResetRun
 
 
 @admin.register(School)
@@ -41,3 +41,21 @@ class AuditLogAdmin(admin.ModelAdmin):
 class SequenceAdmin(admin.ModelAdmin):
     list_display = ("key", "prefix", "current_number", "padding", "yearly_reset")
     search_fields = ("key", "prefix")
+
+
+@admin.register(ProductionDataResetRun)
+class ProductionDataResetRunAdmin(admin.ModelAdmin):
+    list_display = ("id", "status", "requested_by", "started_at", "finished_at", "created_at")
+    list_filter = ("status", "created_at")
+    search_fields = ("requested_by__username", "error_message")
+    readonly_fields = (
+        "requested_by", "status", "preview_counts", "deleted_counts",
+        "remaining_counts", "preserved_summary", "error_message",
+        "started_at", "finished_at", "created_at",
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False

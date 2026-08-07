@@ -36,47 +36,11 @@ def system_settings(request):
         action = request.POST.get("action", "school_settings")
 
         if action in {"seed_system", "reset_all"}:
-            if not request.user.is_superuser:
-                messages.error(request, "إدخال البيانات الشاملة وتصفيرها متاحان لمدير النظام الأعلى فقط.")
-                return redirect("core:system_settings")
-
-            from .system_data import reset_all_operational_data, seed_system_data
-
-            if action == "reset_all" and request.POST.get("confirmation", "").strip() != "تصفير":
-                messages.error(request, "تعذر التصفير: اكتب كلمة «تصفير» كما هي.")
-                return redirect("core:system_settings")
-
-            result = {}
-            try:
-                if action == "seed_system":
-                    result = seed_system_data(user=request.user)
-                    messages.success(
-                        request,
-                        f"تم إدخال بيانات مترابطة والتحقق منها: {result['students']} طالب، {result['teachers']} معلم، "
-                        f"{result['assignments']} تكليف، {result['subject_plans']} بند خطة، {result['base_slots']} أوقات حصص، "
-                        f"{result['breaks']} استراحات، {result['timetable_entries']} حصة مجدولة، "
-                        f"{result['marks']} علامة، و{result['receipts']} إيصال. "
-                        f"كلمة مرور الحسابات المنشأة: {result['password']}",
-                    )
-                else:
-                    result = reset_all_operational_data(keep_user=request.user)
-                    messages.success(
-                        request,
-                        f"تم تصفير جميع البيانات التشغيلية: {result['students']} طالب، {result['teachers']} معلم، "
-                        f"{result['families']} ولي أمر، {result['documents']} وثيقة، و{result['receipts']} إيصال.",
-                    )
-            except Exception:
-                event = "seed" if action == "seed_system" else "reset"
-                logger.exception("System data %s failed", event)
-                operation = "إدخال البيانات التجريبية" if action == "seed_system" else "تصفير البيانات"
-                messages.error(
-                    request,
-                    f"تعذر {operation}. لم يُحفظ أي تغيير جزئي، وتم تسجيل السبب للمراجعة.",
-                )
-                return redirect("core:system_settings")
-            if action == "seed_system" and result.get("schedule_verified"):
-                return redirect(f"{reverse('academics:academic_structure')}?demo=ready#timetable-operations")
-            return redirect("core:system_settings")
+            messages.error(
+                request,
+                "تم إيقاف التصفير المباشر. استخدم صفحة تهيئة التشغيل الفعلي التي تبدأ بالمعاينة والتأكيد.",
+            )
+            return redirect("core:production_launch_preparation")
 
         if action == "registration_settings":
             registration_form = RegistrationSettingsForm(

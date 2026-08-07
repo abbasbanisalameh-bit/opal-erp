@@ -375,3 +375,39 @@ class DataIntegrityIssue(models.Model):
 
     def __str__(self):
         return f"{self.code}: {self.description[:80]}"
+
+
+class ProductionDataResetRun(models.Model):
+    """Auditable preview/execution record for the production data reset workflow."""
+
+    class Status(models.TextChoices):
+        PREVIEWED = "previewed", "تمت المعاينة"
+        RUNNING = "running", "قيد التنفيذ"
+        SUCCEEDED = "succeeded", "مكتمل"
+        FAILED = "failed", "فشل"
+
+    requested_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="production_data_reset_runs",
+        verbose_name="المدير المنفذ",
+    )
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PREVIEWED, db_index=True)
+    preview_counts = models.JSONField(default=dict, blank=True)
+    deleted_counts = models.JSONField(default=dict, blank=True)
+    remaining_counts = models.JSONField(default=dict, blank=True)
+    preserved_summary = models.JSONField(default=dict, blank=True)
+    error_message = models.TextField(blank=True)
+    started_at = models.DateTimeField(null=True, blank=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+        verbose_name = "سجل تهيئة التشغيل الفعلي"
+        verbose_name_plural = "سجلات تهيئة التشغيل الفعلي"
+
+    def __str__(self):
+        return f"تهيئة التشغيل الفعلي #{self.pk or '-'} — {self.get_status_display()}"

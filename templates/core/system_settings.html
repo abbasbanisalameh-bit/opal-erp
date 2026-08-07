@@ -137,6 +137,7 @@
     {% if request.user.is_superuser %}
     <a href="{% url 'core:system_updates' %}" class="opal-settings-action primary" title="المدخل الوحيد لتحديث النظام والنسخ الاحتياطية"><i class="bi bi-arrow-repeat"></i><strong>تحديثات النظام</strong><small>رفع التحديث والنسخ والاستعادة</small></a>
     <a href="{% url 'core:integrity_center' %}" class="opal-settings-action warning" title="فحص تناسق وترابط البيانات"><i class="bi bi-database-check"></i><strong>سلامة البيانات</strong><small>فحص وإصلاح آمن</small></a>
+    <a href="{% url 'core:production_launch_preparation' %}" class="opal-settings-action warning" title="معاينة وتنظيف البيانات التجريبية قبل التشغيل الفعلي"><i class="bi bi-rocket-takeoff-fill"></i><strong>تهيئة التشغيل الفعلي</strong><small>تنظيف آمن مع إبقاء المدير والإعدادات</small></a>
     {% endif %}
     {% if opal_openemis_enabled and request.user.is_staff %}
     <a href="{% url 'openemis:settings' %}" class="opal-settings-action" title="إعداد التكامل الوزاري عند توفر الواجهة الرسمية"><i class="bi bi-cloud-arrow-up-fill"></i><strong>OpenEMIS</strong><small>الإعداد واختبار الاتصال</small></a>
@@ -146,17 +147,12 @@
   </div>
 
   {% if request.user.is_superuser %}
-  <details class="opal-danger-zone mt-4">
-    <summary><i class="bi bi-database-gear"></i> بيانات التجربة والتصفير</summary>
-    <div class="row g-3 mt-1">
-      <div class="col-lg-6">
-        <form method="post" class="opal-system-data-form" data-confirm="سيتم استبدال البيانات التشغيلية الحالية ثم إدخال بيانات مترابطة للخطة والتكليفات والنصاب والحصص والاستراحات والأحداث والجدول. متابعة؟">{% csrf_token %}<input type="hidden" name="action" value="seed_system"><button type="submit" class="btn btn-success w-100" data-busy-label="جارٍ بناء البيانات المترابطة..."><i class="bi bi-stars"></i> إدخال بيانات مترابطة واختبار آخر تحديث</button><small class="d-block text-secondary mt-2">ينشئ 500 طالب و19 معلمًا ببيانات مكتملة، ويضبط لكل معلم 25 حصة أسبوعيًا وخمس حصص يوميًا مع حد أدنى فراغ يومي، ثم يتحقق ذريًا من الخطة والاستراحات والجدول.</small></form>
-      </div>
-      <div class="col-lg-6">
-        <form method="post" class="opal-system-data-form" data-confirm="سيتم حذف جميع البيانات والحسابات نهائيًا، مع إبقاء حساب المدير الحالي فقط. متابعة؟">{% csrf_token %}<input type="hidden" name="action" value="reset_all"><div class="input-group"><input class="form-control" name="confirmation" required autocomplete="off" placeholder="اكتب: تصفير"><button type="submit" class="btn btn-outline-danger" data-busy-label="جارٍ التصفير..."><i class="bi bi-arrow-counterclockwise"></i> تصفير جميع البيانات</button></div></form>
-      </div>
+  <div class="alert alert-warning mt-4 mb-0">
+    <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap">
+      <div><strong><i class="bi bi-shield-exclamation"></i> حذف البيانات نُقل إلى مسار مستقل وآمن.</strong><div class="small mt-1">تبدأ العملية بمعاينة تفصيلية، ثم تأكيد صريح، وتصدر تقريرًا نهائيًا دون حذف إعدادات المدرسة أو حساب المدير.</div></div>
+      <a class="btn btn-warning" href="{% url 'core:production_launch_preparation' %}">فتح تهيئة التشغيل الفعلي</a>
     </div>
-  </details>
+  </div>
   {% endif %}
 </div>
 </details>
