@@ -1,0 +1,42 @@
+{% extends "learning_platform/base.html" %}
+
+{% block title %}التقارير التشغيلية | أوبال{% endblock %}
+{% block body_class %}learning-manager-mode{% endblock %}
+
+{% block content %}
+<section class="learning-page-hero manager-page"><div class="learning-container"><span>إدارة المنصة</span><h1>التقارير التشغيلية</h1><p>مؤشرات التسجيل والتقدم والاشتراك والتقييم ضمن الفترة والمادة والدورة المحددة.</p></div></section>
+<section class="learning-section learning-manager-page-section"><div class="learning-container">
+    {% include "learning_platform/_manager_nav.html" %}
+    <form method="get" class="learning-report-filter">
+        {% for field in form %}<div class="learning-field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<small class="learning-error">{{ error }}</small>{% endfor %}</div>{% endfor %}
+        <div class="learning-report-filter-actions"><button class="learning-button learning-button-small" type="submit">تطبيق التقرير</button><a class="learning-button learning-button-small learning-button-ghost" href="{% url 'learning_platform:manager_report_center' %}">آخر 30 يومًا</a></div>
+    </form>
+    <div class="learning-report-actions"><a class="learning-button learning-button-small" href="{% url 'learning_platform:manager_report_export_csv' %}?{{ request.GET.urlencode }}">تصدير التسجيلات CSV</a></div>
+
+    <div class="learning-manager-stat-grid report-grid">
+        <article><span>＋</span><strong>{{ account_count }}</strong><small>حسابات جديدة</small></article>
+        <article><span>↗</span><strong>{{ enrollment_count }}</strong><small>تسجيلات جديدة</small></article>
+        <article><span>✓</span><strong>{{ completed_count }}</strong><small>دورات مكتملة</small></article>
+        <article><span>%</span><strong>{{ completion_rate }}%</strong><small>معدل الإكمال</small></article>
+        <article><span>◔</span><strong>{{ average_progress }}%</strong><small>متوسط التقدم</small></article>
+        <article><span>#</span><strong>{{ active_subscription_count }}</strong><small>اشتراكات فعالة الآن</small></article>
+        <article><span>✎</span><strong>{{ pending_submission_count }}</strong><small>واجبات تنتظر التصحيح</small></article>
+        <article><span>★</span><strong>{{ assessment_pass_rate }}%</strong><small>نسبة نجاح المحاولات المصححة</small></article>
+    </div>
+
+    <div class="learning-dashboard-heading"><div><span>الأداء حسب الدورة</span><h2>التسجيل والإكمال والتقييم</h2></div></div>
+    {% if course_rows %}<div class="learning-manager-table-wrap"><table class="learning-manager-table">
+        <thead><tr><th>الدورة</th><th>التسجيلات</th><th>المكتملة</th><th>الإكمال</th><th>متوسط التقدم</th><th>بانتظار التصحيح</th><th>نجاح التقييم</th></tr></thead>
+        <tbody>{% for row in course_rows %}<tr><td><strong>{{ row.course.title }}</strong><small>{{ row.course.subject.name }} · {{ row.course.teacher.full_name }}</small></td><td>{{ row.enrollments }}</td><td>{{ row.completed }}</td><td>{{ row.completion_rate }}%</td><td>{{ row.average_progress }}%</td><td>{{ row.pending_submissions }}</td><td>{{ row.pass_rate }}%</td></tr>{% endfor %}</tbody>
+    </table></div>{% else %}<div class="learning-inline-empty"><span>لا توجد دورات ضمن المرشح المحدد.</span></div>{% endif %}
+
+    <div class="learning-manager-columns report-columns">
+        <section><div class="learning-dashboard-heading"><div><span>تنبيه تشغيلي</span><h2>اشتراكات تنتهي خلال 7 أيام</h2></div></div>
+            {% if expiring_cards %}<div class="learning-manager-list">{% for card in expiring_cards %}<article><span>#</span><div><strong>{{ card.redeemed_by.full_name }}</strong><small>{{ card.code }} · {{ card.expires_at|date:"Y-m-d H:i" }}</small></div><b>{{ card.get_duration_display }}</b></article>{% endfor %}</div>{% else %}<div class="learning-inline-empty"><span>لا توجد اشتراكات قريبة الانتهاء ضمن المرشح.</span></div>{% endif %}
+        </section>
+        <section><div class="learning-dashboard-heading"><div><span>التدقيق</span><h2>أحدث الأحداث</h2></div></div>
+            {% if recent_events %}<div class="learning-manager-list">{% for event in recent_events %}<article><span>•</span><div><strong>{{ event.get_action_display }}</strong><small>{% if event.account %}{{ event.account.full_name }} · {% endif %}{{ event.created_at|date:"Y-m-d H:i" }}</small></div><b>{{ event.entity_type|default:"نظام" }}</b></article>{% endfor %}</div>{% else %}<div class="learning-inline-empty"><span>لا توجد أحداث ضمن الفترة.</span></div>{% endif %}
+        </section>
+    </div>
+</div></section>
+{% endblock %}

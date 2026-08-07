@@ -1,0 +1,11 @@
+{% extends "learning_platform/base.html" %}
+{% block title %}خطط الاشتراك | أوبال{% endblock %}
+{% block body_class %}learning-manager-mode{% endblock %}
+{% block content %}
+<section class="learning-section"><div class="learning-container">
+{% include "learning_platform/_manager_nav.html" %}
+<div class="learning-dashboard-heading"><div><span>التسعير</span><h1>خطط الاشتراك</h1><p>الخطط التي تُستخدم لإنشاء أوامر الدفع وتفعيل بطاقات الوصول.</p></div><a class="learning-button learning-button-small" href="{% url 'learning_platform:manager_plan_create' %}">إنشاء خطة</a></div>
+<div class="learning-manager-notice"><div><strong>حالة الدفع</strong><p>{% if payment_status.configured %}مزود {{ payment_status.provider }} مهيأ.{% else %}الدفع الفعلي غير مهيأ بعد. يمكن اعتماد الطلبات يدويًا فقط إذا كان ذلك مسموحًا في البيئة.{% endif %}</p></div><a class="learning-button learning-button-small learning-button-ghost" href="{% url 'learning_platform:manager_payment_list' %}">طلبات الدفع</a></div>
+{% if plans %}<div class="learning-data-table-wrap"><table class="learning-data-table"><thead><tr><th>الخطة</th><th>المدة</th><th>السعر</th><th>النطاق</th><th>الحالة</th><th></th></tr></thead><tbody>{% for plan in plans %}<tr><td><strong>{{ plan.name }}</strong><small>{{ plan.slug }}</small></td><td>{{ plan.get_duration_display }}</td><td>{{ plan.price }} {{ plan.currency }}</td><td>{% if plan.grants_all_subjects %}جميع المواد{% else %}{% for subject in plan.subjects.all %}{{ subject.name }}{% if not forloop.last %}، {% endif %}{% empty %}لا مواد{% endfor %}{% endif %}</td><td>{% if plan.is_active %}<span class="learning-table-status status-active">فعالة</span>{% else %}<span class="learning-table-status status-cancelled">موقوفة</span>{% endif %}</td><td><a href="{% url 'learning_platform:manager_plan_update' plan.pk %}">تعديل</a></td></tr>{% endfor %}</tbody></table></div>{% else %}<div class="learning-inline-empty">لا توجد خطط اشتراك.</div>{% endif %}
+</div></section>
+{% endblock %}

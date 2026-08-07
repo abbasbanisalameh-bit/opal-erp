@@ -1,0 +1,70 @@
+{% extends "learning_platform/base.html" %}
+
+{% block title %}{{ lesson.title }} | {{ course.title }}{% endblock %}
+
+{% block content %}
+<section class="learning-page-hero lesson-page">
+    <div class="learning-container">
+        <span>{{ course.subject.name }} · {{ course.title }}</span>
+        <h1>{{ lesson.title }}</h1>
+        <p>الدرس {{ lesson.order }} من {{ lessons|length }} · {% if lesson.duration_minutes %}{{ lesson.duration_minutes }} دقيقة{% else %}مدة مرنة{% endif %}</p>
+    </div>
+</section>
+
+<section class="learning-section learning-lesson-page-section">
+    <div class="learning-container learning-lesson-layout">
+        <aside class="learning-lesson-sidebar">
+            <div class="learning-lesson-progress-card">
+                <span>تقدم الدورة</span>
+                <strong>{{ enrollment.progress_percent }}%</strong>
+                <i><em style="width:{{ enrollment.progress_percent }}%"></em></i>
+            </div>
+            <nav aria-label="دروس الدورة">
+                {% for item in lessons %}
+                    <a class="{% if item.pk == lesson.pk %}active{% endif %} {% if item.learning_completed %}completed{% endif %}" href="{% url 'learning_platform:lesson_detail' course.slug item.slug %}">
+                        <span>{{ item.order|stringformat:"02d" }}</span>
+                        <b>{{ item.title }}</b>
+                        <i>{% if item.learning_completed %}✓{% else %}▷{% endif %}</i>
+                    </a>
+                {% endfor %}
+            </nav>
+        </aside>
+
+        <article class="learning-lesson-content-card">
+            {% if lesson.video_url %}
+                <div class="learning-video-link">
+                    <span>▶</span>
+                    <div><strong>فيديو الدرس</strong><small>يفتح الرابط في نافذة جديدة.</small></div>
+                    <a href="{{ lesson.video_url }}" target="_blank" rel="noopener noreferrer">فتح الفيديو</a>
+                </div>
+            {% endif %}
+
+            <div class="learning-lesson-copy">
+                {% if lesson.content %}
+                    {{ lesson.content|linebreaks }}
+                {% else %}
+                    <div class="learning-inline-empty"><span>لا يوجد نص إضافي لهذا الدرس.</span></div>
+                {% endif %}
+            </div>
+
+            <div class="learning-lesson-completion">
+                {% if progress.completed_at %}
+                    <span class="learning-completed-badge">✓ مكتمل</span>
+                    <small>تم الإكمال في {{ progress.completed_at|date:"Y/m/d H:i" }}</small>
+                {% else %}
+                    <form method="post" action="{% url 'learning_platform:lesson_complete' course.slug lesson.slug %}">
+                        {% csrf_token %}
+                        <button class="learning-button" type="submit">تحديد الدرس كمكتمل</button>
+                    </form>
+                {% endif %}
+            </div>
+
+            <nav class="learning-lesson-pagination" aria-label="التنقل بين الدروس">
+                {% if previous_lesson %}<a href="{% url 'learning_platform:lesson_detail' course.slug previous_lesson.slug %}">→ الدرس السابق</a>{% else %}<span></span>{% endif %}
+                <a href="{% url 'learning_platform:course_detail' course.slug %}">محتوى الدورة</a>
+                {% if next_lesson %}<a href="{% url 'learning_platform:lesson_detail' course.slug next_lesson.slug %}">الدرس التالي ←</a>{% else %}<span></span>{% endif %}
+            </nav>
+        </article>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends "learning_platform/base.html" %}
+
+{% block title %}دروس {{ course.title }} | أوبال{% endblock %}
+{% block body_class %}learning-manager-mode{% endblock %}
+
+{% block content %}
+<section class="learning-page-hero manager-page"><div class="learning-container"><span>{{ course.subject.name }}</span><h1>دروس: {{ course.title }}</h1><p>المدرّس: {{ course.teacher.full_name }} · حالة الدورة: {{ course.get_status_display }}</p></div></section>
+<section class="learning-section learning-manager-page-section"><div class="learning-container">
+    {% include "learning_platform/_manager_nav.html" %}
+    <div class="learning-manager-toolbar"><div class="learning-manager-actions"><a class="learning-button learning-button-ghost learning-button-small" href="{% url 'learning_platform:manager_course_list' %}">العودة للدورات</a><a class="learning-button learning-button-ghost learning-button-small" href="{% url 'learning_platform:manager_assessment_list' course.pk %}">التقييمات</a></div><a class="learning-button learning-button-small" href="{% url 'learning_platform:manager_lesson_create' course.pk %}">إضافة درس</a></div>
+    {% if lessons %}
+        <div class="learning-manager-lesson-list">
+            {% for lesson in lessons %}
+                <article>
+                    <span>{{ lesson.order }}</span>
+                    <div><small>{% if lesson.video_url %}فيديو · {% endif %}{{ lesson.duration_minutes }} دقيقة</small><h2>{{ lesson.title }}</h2><p>{{ lesson.content|striptags|truncatechars:150|default:"لا يوجد وصف نصي." }}</p></div>
+                    <b class="learning-state {% if lesson.is_published %}active{% else %}inactive{% endif %}">{% if lesson.is_published %}منشور{% else %}غير منشور{% endif %}</b>
+                    <a href="{% url 'learning_platform:manager_lesson_update' lesson.pk %}">تعديل</a>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="learning-empty"><span>▶</span><strong>لا توجد دروس في هذه الدورة</strong><p>أضف درسًا واحدًا على الأقل وانشره قبل نشر الدورة.</p><a class="learning-button learning-button-small" href="{% url 'learning_platform:manager_lesson_create' course.pk %}">إضافة أول درس</a></div>
+    {% endif %}
+</div></section>
+{% endblock %}

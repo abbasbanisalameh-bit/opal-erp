@@ -1,0 +1,16 @@
+OPAL_VERSION.txt
+OPAL_UPDATE_MANIFEST.json
+README.md
+core/apps.py
+core/checks.py
+core/context_processors.py
+core/request_scope.py
+core/runtime_contracts.py
+core/test_update122_final_stability_contract.py
+core/management/commands/audit_final_stability.py
+core/management/commands/verify_core_readiness.py
+timetable/context_processors.py
+templates/base/base.html
+INSTALL_OPAL_UPDATE_122_FINAL_STABILITY_GATE_AR.md
+OPAL_UPDATE_122_FINAL_STABILITY_GATE_RELEASE_NOTES_AR.md
+OPAL_UPDATE_122_CHANGED_FILES.txt

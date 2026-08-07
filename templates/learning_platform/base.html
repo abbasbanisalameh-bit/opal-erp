@@ -1,0 +1,105 @@
+{% load static %}
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <meta name="theme-color" content="#6f52d4">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="manifest" href="{% url 'learning_platform:mobile_manifest' %}">
+    <link rel="icon" href="{% static 'learning_platform/icons/opal-learning-icon.svg' %}" type="image/svg+xml">
+    <title>{% block title %}منصة أوبال التعليمية{% endblock %}</title>
+    <meta name="description" content="منصة أوبال التعليمية للدورات والتعلم الرقمي والاشتراكات المستقلة.">
+    <link rel="stylesheet" href="{% static 'learning_platform/css/platform.css' %}?v=20260805-r20-production-release">
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="learning-body {% block body_class %}{% endblock %}">
+    <a class="learning-skip" href="#learning-main">تجاوز إلى المحتوى</a>
+
+    <header class="learning-header">
+        <div class="learning-container learning-header-inner">
+            <a class="learning-brand" href="{% url 'learning_platform:landing' %}" aria-label="منصة أوبال التعليمية">
+                <span class="learning-brand-mark" aria-hidden="true">O</span>
+                <span><strong>أوبال</strong><small>المنصة التعليمية</small></span>
+            </a>
+
+            <button class="learning-menu-toggle" type="button" aria-expanded="false" aria-controls="learning-nav" aria-label="فتح القائمة">
+                <i></i><i></i><i></i>
+            </button>
+
+            <nav id="learning-nav" class="learning-nav" aria-label="القائمة الرئيسية للمنصة التعليمية">
+                <a href="{% url 'learning_platform:landing' %}">الرئيسية</a>
+                <a href="{% url 'learning_platform:course_list' %}">الدورات</a>
+                {% if platform_manager_mode or erp_manager and not learning_account %}
+                    <a href="{% url 'learning_platform:manager_dashboard' %}">لوحة الإدارة</a>
+                {% elif learning_account %}
+                    <a href="{% url 'learning_platform:dashboard' %}">لوحتي</a>
+                    {% if learning_account.role == 'learner' %}
+                        <a href="{% url 'learning_platform:subscriptions' %}">اشتراكاتي</a>
+                        <a href="{% url 'learning_platform:learner_ai_assistant' %}">مساعد المحتوى</a>
+                    {% elif learning_account.role == 'teacher' %}
+                        <a href="{% url 'learning_platform:teacher_ai_workspace' %}">أدوات إعداد المحتوى</a>
+                    {% endif %}
+                    <a class="learning-notification-link" href="{% url 'learning_platform:notification_list' %}">الإشعارات{% if unread_notifications_count %}<span>{{ unread_notifications_count }}</span>{% endif %}</a>
+                {% endif %}
+            </nav>
+
+            <div class="learning-account-actions">
+                {% if platform_manager_mode or erp_manager and not learning_account %}
+                    <a class="learning-account-name" href="{% url 'learning_platform:manager_dashboard' %}">
+                        <span>{{ erp_manager_name|slice:":1" }}</span>
+                        <b>{{ erp_manager_name }}</b>
+                    </a>
+                    <a class="learning-login-link" href="{% url 'dashboard:home' %}">العودة إلى OPAL ERP</a>
+                {% elif learning_account %}
+                    <a class="learning-account-name" href="{% url 'learning_platform:dashboard' %}">
+                        <span>{{ learning_account.full_name|slice:":1" }}</span>
+                        <b>{{ learning_account.full_name }}</b>
+                    </a>
+                    <form method="post" action="{% url 'learning_platform:logout' %}">
+                        {% csrf_token %}
+                        <button class="learning-link-button" type="submit">خروج</button>
+                    </form>
+                {% else %}
+                    <a class="learning-login-link" href="{% url 'learning_platform:login' %}">تسجيل الدخول</a>
+                    <a class="learning-button learning-button-small" href="{% url 'learning_platform:register' %}">إنشاء حساب</a>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+
+    {% if messages %}
+        <div class="learning-messages learning-container" aria-live="polite">
+            {% for message in messages %}
+                <div class="learning-message learning-message-{{ message.tags|default:'info' }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <main id="learning-main" tabindex="-1">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="learning-footer">
+        <div class="learning-container learning-footer-grid">
+            <div>
+                <a class="learning-brand learning-brand-light" href="{% url 'learning_platform:landing' %}">
+                    <span class="learning-brand-mark" aria-hidden="true">O</span>
+                    <span><strong>أوبال</strong><small>المنصة التعليمية</small></span>
+                </a>
+                <p>تعلّم عربي واضح، في وقتك ومن أي مكان.</p>
+            </div>
+            <div><strong>المنصة</strong><a href="{% url 'learning_platform:course_list' %}">الدورات</a>{% if platform_manager_mode or erp_manager and not learning_account %}<a href="{% url 'learning_platform:manager_dashboard' %}">لوحة الإدارة</a>{% elif learning_account %}<a href="{% url 'learning_platform:dashboard' %}">لوحتي</a>{% endif %}</div>
+            <div><strong>الحساب</strong>{% if platform_manager_mode or erp_manager and not learning_account %}<a href="{% url 'dashboard:home' %}">العودة إلى OPAL ERP</a>{% elif learning_account %}{% if learning_account.role == 'learner' %}<a href="{% url 'learning_platform:subscriptions' %}">الاشتراكات</a>{% endif %}<a href="{% url 'learning_platform:notification_list' %}">الإشعارات</a>{% else %}<a href="{% url 'learning_platform:register' %}">إنشاء حساب</a><a href="{% url 'learning_platform:login' %}">تسجيل الدخول</a>{% endif %}<a href="{% url 'learning_platform:terms' %}">شروط الاستخدام</a><a href="{% url 'learning_platform:privacy' %}">الخصوصية</a></div>
+        </div>
+        <div class="learning-container learning-footer-bottom">© 2026 منصة أوبال التعليمية</div>
+    </footer>
+
+    <script src="{% static 'learning_platform/js/platform.js' %}?v=20260805-r20-production-release" defer></script>
+    <script>if ('serviceWorker' in navigator) { window.addEventListener('load', function(){ navigator.serviceWorker.register('{% url "learning_platform:mobile_service_worker" %}').catch(function(){}); }); }</script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

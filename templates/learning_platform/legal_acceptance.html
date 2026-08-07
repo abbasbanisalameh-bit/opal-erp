@@ -1,0 +1,29 @@
+{% extends "learning_platform/base.html" %}
+{% block title %}الموافقة على السياسات | منصة أوبال التعليمية{% endblock %}
+{% block content %}
+<section class="learning-section">
+    <div class="learning-container learning-narrow">
+        <div class="learning-form-card">
+            <span>إجراء مطلوب مرة واحدة</span>
+            <h1>شروط الاستخدام والخصوصية</h1>
+            <p>قبل متابعة استخدام الحساب، اقرأ السياسات ثم سجل موافقتك بنفسك. لا تسجل المنصة موافقة نيابة عن المستخدمين السابقين.</p>
+            <div class="learning-manager-notice">
+                <div><strong>شروط الاستخدام</strong><p>تنظم الحساب والاشتراك والتقييمات والشهادات والدفع.</p></div>
+                <a href="{% url 'learning_platform:terms' %}" target="_blank" rel="noopener">قراءة الشروط</a>
+            </div>
+            <div class="learning-manager-notice">
+                <div><strong>سياسة الخصوصية</strong><p>توضح البيانات المعالجة، وسجلات الأمان، والمساعد التعليمي.</p></div>
+                <a href="{% url 'learning_platform:privacy' %}" target="_blank" rel="noopener">قراءة السياسة</a>
+            </div>
+            <form method="post" class="learning-form">
+                {% csrf_token %}
+                {% for field in form %}
+                    <label class="learning-confirm-box">{{ field }}<span>{{ field.label }}</span></label>
+                    {% for error in field.errors %}<small class="learning-error">{{ error }}</small>{% endfor %}
+                {% endfor %}
+                <button class="learning-button learning-button-wide" type="submit">تسجيل الموافقة والمتابعة</button>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends "learning_platform/base.html" %}
+
+{% block title %}دورات المنصة | أوبال{% endblock %}
+{% block body_class %}learning-manager-mode{% endblock %}
+
+{% block content %}
+<section class="learning-page-hero manager-page"><div class="learning-container"><span>إدارة المحتوى</span><h1>الدورات والدروس</h1><p>أنشئ الدورة كمسودة، أضف الدروس، ثم انشرها بعد اكتمال المحتوى.</p></div></section>
+<section class="learning-section learning-manager-page-section"><div class="learning-container">
+    {% include "learning_platform/_manager_nav.html" %}
+    <div class="learning-manager-toolbar">
+        <form method="get" class="learning-manager-filter">
+            <input class="learning-input" type="search" name="q" value="{{ query }}" placeholder="بحث في الدورات أو المدرّسين">
+            <select class="learning-input" name="status"><option value="">كل الحالات</option>{% for value,label in course_statuses %}<option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+            <button class="learning-button learning-button-small" type="submit">بحث</button>
+        </form>
+        <a class="learning-button learning-button-small" href="{% url 'learning_platform:manager_course_create' %}">إنشاء دورة</a>
+    </div>
+    {% if courses %}
+        <div class="learning-manager-course-grid">
+        {% for course in courses %}
+            <article>
+                <div class="learning-manager-course-cover" style="--course-color:{{ course.cover_color }}"><span>{{ course.subject.name|slice:":1" }}</span><b>{{ course.get_status_display }}</b></div>
+                <div class="learning-manager-course-body">
+                    <small>{{ course.subject.name }} · {{ course.teacher.full_name }}</small>
+                    <h2>{{ course.title }}</h2>
+                    <p>{{ course.summary|default:"لا يوجد ملخص للدورة."|truncatechars:120 }}</p>
+                    <div class="learning-manager-course-stats"><span>{{ course.lesson_count }} درس</span><span>{{ course.published_lesson_count }} منشور</span><span>{{ course.assessment_count }} تقييم</span><span>{{ course.learner_count }} متعلم</span></div>
+                    <div class="learning-manager-course-actions">
+                        <a href="{% url 'learning_platform:manager_lesson_list' course.pk %}">الدروس</a>
+                        <a href="{% url 'learning_platform:manager_assessment_list' course.pk %}">التقييمات</a>
+                        <a href="{% url 'learning_platform:manager_course_update' course.pk %}">تعديل</a>
+                        {% if course.status == 'published' %}<a href="{% url 'learning_platform:course_detail' course.slug %}">عرض عام</a>{% endif %}
+                    </div>
+                    <div class="learning-manager-status-actions">
+                        {% if course.status != 'published' %}<form method="post" action="{% url 'learning_platform:manager_course_status' course.pk %}">{% csrf_token %}<input type="hidden" name="action" value="publish"><button type="submit" class="success">نشر</button></form>{% endif %}
+                        {% if course.status != 'draft' %}<form method="post" action="{% url 'learning_platform:manager_course_status' course.pk %}">{% csrf_token %}<input type="hidden" name="action" value="draft"><button type="submit">إعادة لمسودة</button></form>{% endif %}
+                        {% if course.status != 'archived' %}<form method="post" action="{% url 'learning_platform:manager_course_status' course.pk %}">{% csrf_token %}<input type="hidden" name="action" value="archive"><button type="submit" class="danger">أرشفة</button></form>{% endif %}
+                    </div>
+                </div>
+            </article>
+        {% endfor %}
+        </div>
+    {% else %}
+        <div class="learning-empty"><span>◇</span><strong>لا توجد دورات مطابقة</strong><p>أنشئ مدرّسًا ومادة أولًا، ثم أضف الدورة.</p></div>
+    {% endif %}
+</div></section>
+{% endblock %}

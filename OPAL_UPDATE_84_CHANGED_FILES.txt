@@ -1,0 +1,9 @@
+OPAL UPDATE 84 — OPAL identity restoration
+
+- static/css/opal_identity_cards.css
+- templates/base/base.html
+- OPAL_VERSION.txt
+- OPAL_UPDATE_84_RELEASE_NOTES_AR.md
+- INSTALL_OPAL_UPDATE_84_AR.md
+
+No database migrations, Models, URLs, Views, permissions or data operations are changed.

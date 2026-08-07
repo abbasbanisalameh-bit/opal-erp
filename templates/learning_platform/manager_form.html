@@ -1,0 +1,43 @@
+{% extends "learning_platform/base.html" %}
+
+{% block title %}{{ page_title }} | منصة أوبال التعليمية{% endblock %}
+{% block body_class %}learning-manager-mode{% endblock %}
+
+{% block content %}
+<section class="learning-page-hero manager-page">
+    <div class="learning-container">
+        <span>إدارة المنصة</span>
+        <h1>{{ page_title }}</h1>
+        <p>{{ page_intro }}</p>
+    </div>
+</section>
+<section class="learning-section learning-manager-page-section">
+    <div class="learning-container">
+        {% include "learning_platform/_manager_nav.html" %}
+        <div class="learning-manager-form-card">
+            <form method="post" novalidate>
+                {% csrf_token %}
+                {% if form.non_field_errors %}<div class="learning-form-errors">{{ form.non_field_errors }}</div>{% endif %}
+                <div class="learning-manager-form-grid">
+                    {% for field in form %}
+                        <div class="learning-field {% if field.name == 'summary' or field.name == 'content' %}full{% endif %}">
+                            {% if field.field.widget.input_type == 'checkbox' %}
+                                <label class="learning-checkbox-row">{{ field }} <span>{{ field.label }}</span></label>
+                            {% else %}
+                                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                {{ field }}
+                            {% endif %}
+                            {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+                            {% for error in field.errors %}<em>{{ error }}</em>{% endfor %}
+                        </div>
+                    {% endfor %}
+                </div>
+                <div class="learning-manager-form-actions">
+                    <button class="learning-button" type="submit">{{ submit_label }}</button>
+                    <a class="learning-button learning-button-ghost" href="{{ cancel_url }}">إلغاء والعودة</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}

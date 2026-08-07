@@ -1,0 +1,28 @@
+{% extends "learning_platform/base.html" %}
+
+{% block title %}لوحة المدرّس | منصة أوبال التعليمية{% endblock %}
+
+{% block content %}
+<section class="learning-dashboard-hero teacher"><div class="learning-container"><span>مساحة المدرّس</span><h1>مرحبًا، {{ learning_account.full_name }}</h1><p>تابع دوراتك المنشورة ومحتواها وتقدم المتعلمين المسجلين.</p></div></section>
+<section class="learning-section learning-dashboard-section"><div class="learning-container">{% if not learning_account.email_verified_at %}<div class="learning-manager-notice"><div><strong>البريد الإلكتروني غير موثق</strong><p>وثّق بريدك لتفعيل الشراء وتسجيل تطبيق الموبايل واستعادة الحساب ذاتيًا.</p></div><form method="post" action="{% url 'learning_platform:email_verification_resend' %}">{% csrf_token %}<button class="learning-button learning-button-small" type="submit">إرسال رابط التوثيق</button></form></div>{% endif %}
+    <div class="learning-dashboard-heading"><div><span>مساعدة المحتوى</span><h2>أدوات المدرّس</h2></div><a href="{% url 'learning_platform:teacher_ai_workspace' %}">إنشاء مسودة تعليمية ←</a></div>
+    <div class="learning-dashboard-heading"><div><span>محتواي</span><h2>الدورات التي أديرها</h2></div></div>
+    {% if courses %}
+        <div class="learning-teacher-course-list">
+            {% for course in courses %}
+                <article>
+                    <span class="learning-teacher-course-symbol" style="--course-color:{{ course.cover_color }}">{{ course.subject.name|slice:":1" }}</span>
+                    <div><small>{{ course.subject.name }} · {{ course.get_status_display }}</small><h3>{{ course.title }}</h3><p>{{ course.lesson_count }} درسًا · {{ course.assessment_count }} تقييمًا · {{ course.learner_count }} متعلمًا</p></div>
+                    <div class="learning-teacher-actions">
+                        <a href="{% url 'learning_platform:teacher_course_learners' course.pk %}">المتعلمون والتقدم</a>
+                        <a href="{% url 'learning_platform:teacher_submission_list' course.pk %}">التسليمات{% if course.pending_submission_count %} ({{ course.pending_submission_count }}){% endif %}</a>
+                        {% if course.status == 'published' %}<a href="{% url 'learning_platform:course_detail' course.slug %}">عرض الدورة</a>{% endif %}
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="learning-empty"><span>◇</span><strong>لا توجد دورة مرتبطة بحسابك</strong><p>ينشئ مدير المنصة الدورات ويربطها بحساب المدرّس المستقل.</p></div>
+    {% endif %}
+</div></section>
+{% endblock %}

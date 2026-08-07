@@ -1,0 +1,90 @@
+{% extends "learning_platform/base.html" %}
+
+{% block title %}إدارة المنصة التعليمية | أوبال{% endblock %}
+{% block body_class %}learning-manager-mode{% endblock %}
+
+{% block content %}
+<section class="learning-dashboard-hero manager">
+    <div class="learning-container">
+        <span>دخول موحّد عبر OPAL ERP</span>
+        <h1>إدارة منصة أوبال التعليمية</h1>
+        <p>مرحبًا، {{ erp_manager_name }}. هذه الجلسة هي جلسة مدير OPAL ERP ولا تنشئ حسابًا تعليميًا موازيًا.</p>
+    </div>
+</section>
+
+<section class="learning-section learning-dashboard-section">
+    <div class="learning-container">
+        {% include "learning_platform/_manager_nav.html" %}
+
+        <div class="learning-manager-notice">
+            <div><strong>فصل الحسابات محفوظ</strong><p>المتعلمون والمدرّسون يدخلون من صفحة المنصة المستقلة، بينما الإدارة فقط تدخل من OPAL ERP.</p></div>
+            <div class="learning-manager-actions">
+                <a class="learning-button learning-button-small" href="{% url 'learning_platform:manager_teacher_create' %}">إضافة مدرّس</a>
+                <a class="learning-button learning-button-small" href="{% url 'learning_platform:manager_course_create' %}">إنشاء دورة</a>
+                <a class="learning-button learning-button-small" href="{% url 'learning_platform:manager_subscription_generate' %}">إنشاء بطاقات</a>
+                <a class="learning-button learning-button-small learning-button-ghost" href="{% url 'learning_platform:manager_report_center' %}">التقارير التشغيلية</a>
+                <a class="learning-button learning-button-small learning-button-ghost" href="{% url 'learning_platform:manager_payment_list' %}">الخطط والدفع</a>
+                <a class="learning-button learning-button-small learning-button-ghost" href="{% url 'learning_platform:manager_readiness_center' %}">جاهزية التشغيل</a>
+                <a class="learning-button learning-button-small learning-button-ghost" href="{% url 'learning_platform:manager_password_reset_requests' %}">طلبات الاستعادة</a>
+                <a class="learning-button learning-button-small learning-button-ghost" href="{% url 'learning_platform:landing' %}">عرض واجهة المنصة</a>
+                <a class="learning-button learning-button-small learning-button-ghost" href="{% url 'dashboard:home' %}">العودة إلى OPAL ERP</a>
+            </div>
+        </div>
+
+        <div class="learning-dashboard-heading"><div><span>الحالة الحالية</span><h2>ملخص تشغيل المنصة</h2></div></div>
+        <div class="learning-manager-stat-grid">
+            <article><span>👥</span><strong>{{ stats.accounts }}</strong><small>إجمالي الحسابات</small></article>
+            <article><span>🎓</span><strong>{{ stats.learners }}</strong><small>متعلمين فعالين</small></article>
+            <article><span>🧑‍🏫</span><strong>{{ stats.teachers }}</strong><small>مدرّسين فعالين</small></article>
+            <article><span>📚</span><strong>{{ stats.courses }}</strong><small>إجمالي الدورات</small></article>
+            <article><span>✓</span><strong>{{ stats.published_courses }}</strong><small>دورات منشورة</small></article>
+            <article><span>▶</span><strong>{{ stats.published_lessons }}</strong><small>دروس منشورة</small></article>
+            <article><span>؟</span><strong>{{ stats.published_assessments }}</strong><small>تقييمات منشورة</small></article>
+            <article><span>✎</span><strong>{{ stats.pending_submissions }}</strong><small>بانتظار التصحيح</small></article>
+            <article><span>▣</span><strong>{{ stats.certificates }}</strong><small>شهادات فعالة</small></article>
+            <article><span>↗</span><strong>{{ stats.enrollments }}</strong><small>تسجيلات فعالة</small></article>
+            <article><span>#</span><strong>{{ stats.active_subscriptions }}</strong><small>اشتراكات فعالة</small></article>
+            <article><span>＋</span><strong>{{ stats.available_subscriptions }}</strong><small>بطاقات متاحة</small></article>
+            <article><span>↺</span><strong>{{ stats.open_password_resets }}</strong><small>طلبات استعادة مفتوحة</small></article>
+            <article><span>●</span><strong>{{ stats.unread_notifications }}</strong><small>إشعارات غير مقروءة</small></article>
+            <article><span>@</span><strong>{{ stats.unverified_accounts }}</strong><small>بريد غير موثق</small></article>
+            <article><span>¤</span><strong>{{ stats.subscription_plans }}</strong><small>خطط اشتراك</small></article>
+            <article><span>…</span><strong>{{ stats.pending_payments }}</strong><small>دفعات معلقة</small></article>
+            <article><span>✓</span><strong>{{ stats.paid_orders }}</strong><small>طلبات مدفوعة</small></article>
+        </div>
+
+        <div class="learning-manager-columns">
+            <section>
+                <div class="learning-dashboard-heading"><div><span>الحسابات</span><h2>أحدث مستخدمي المنصة</h2></div><a href="{% url 'learning_platform:manager_account_list' %}">إدارة الحسابات ←</a></div>
+                {% if recent_accounts %}
+                    <div class="learning-manager-list">
+                        {% for account in recent_accounts %}
+                            <article><span>{{ account.full_name|slice:":1" }}</span><div><strong>{{ account.full_name }}</strong><small>{{ account.get_role_display }} · {{ account.email }}</small></div><b class="{% if account.is_active %}active{% else %}inactive{% endif %}">{% if account.is_active %}فعال{% else %}موقوف{% endif %}</b></article>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="learning-inline-empty"><span>لم تُنشأ حسابات تعليمية بعد.</span><a href="{% url 'learning_platform:manager_teacher_create' %}">إنشاء أول مدرّس</a></div>
+                {% endif %}
+            </section>
+
+            <section>
+                <div class="learning-dashboard-heading"><div><span>المحتوى</span><h2>أحدث الدورات</h2></div><a href="{% url 'learning_platform:manager_course_list' %}">إدارة الدورات ←</a></div>
+                {% if recent_courses %}
+                    <div class="learning-manager-list courses">
+                        {% for course in recent_courses %}
+                            <article><span style="--course-color:{{ course.cover_color }}">{{ course.subject.name|slice:":1" }}</span><div><strong>{{ course.title }}</strong><small>{{ course.subject.name }} · {{ course.teacher.full_name }}</small></div><b>{{ course.get_status_display }}</b></article>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="learning-inline-empty"><span>لا توجد دورات بعد.</span><a href="{% url 'learning_platform:manager_course_create' %}">إنشاء أول دورة</a></div>
+                {% endif %}
+            </section>
+        </div>
+
+        <div class="learning-foundation-note {% if readiness.overall == 'production_ready' %}success{% endif %}">
+            <strong>{% if readiness.overall == 'production_ready' %}اجتازت المنصة فحص الجاهزية البرمجي{% elif readiness.overall == 'pilot_ready' %}المنصة جاهزة لتجربة محدودة مع تحذيرات{% else %}توجد متطلبات مانعة للإطلاق العام{% endif %}</strong>
+            <p>الأعطال المانعة: {{ readiness.blocking_failures }} · التحذيرات: {{ readiness.warnings }}. افتح مركز الجاهزية للتفاصيل.</p>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,75 @@
+{% extends "learning_platform/base.html" %}
+
+{% block title %}منصة أوبال التعليمية | تعلّم أذكى أينما كنت{% endblock %}
+
+{% block content %}
+<section class="learning-hero">
+    <div class="learning-hero-grid" aria-hidden="true"></div>
+    <div class="learning-container learning-hero-layout">
+        <div class="learning-hero-copy">
+            <span class="learning-eyebrow"><i>✦</i> منصة مستقلة لكل متعلم</span>
+            <h1>كل ما تحتاجه لتتعلّم، <span>في مكان واحد.</span></h1>
+            <p>دروس واضحة، مدرّسون متخصصون، واشتراكات مرنة. افتح حسابك التعليمي المستقل وتعلّم من أي مكان.</p>
+            <div class="learning-hero-actions">
+                <a class="learning-button" href="{% url 'learning_platform:course_list' %}">استكشف الدورات <span>←</span></a>
+                {% if learning_account %}
+                    <a class="learning-button learning-button-ghost" href="{% url 'learning_platform:dashboard' %}">افتح لوحتي</a>
+                {% else %}
+                    <a class="learning-button learning-button-ghost" href="{% url 'learning_platform:register' %}">أنشئ حسابًا مجانيًا</a>
+                {% endif %}
+            </div>
+            <div class="learning-benefits"><span>✓ حساب تعليمي مستقل</span><span>✓ يعمل على الهاتف</span><span>✓ تقدم محفوظ</span></div>
+        </div>
+        <div class="learning-hero-card" aria-label="معاينة تجربة الطالب">
+            <div class="learning-preview-head"><span><i>O</i> مساري التعليمي</span><small>اليوم</small></div>
+            <div class="learning-preview-welcome"><span>أكمل من حيث توقفت</span><strong>رحلتك مستمرة بخطوة صغيرة كل يوم.</strong></div>
+            <div class="learning-preview-course">
+                <div class="learning-preview-symbol">∑</div>
+                <div><small>الرياضيات</small><strong>درس جديد بانتظارك</strong><span><i style="width:68%"></i></span><em>68% مكتمل</em></div>
+            </div>
+            <div class="learning-preview-stats"><div><strong>12</strong><span>درسًا</span></div><div><strong>4</strong><span>اختبارات</span></div><div><strong>7</strong><span>أيام متتالية</span></div></div>
+        </div>
+    </div>
+</section>
+
+<section class="learning-trust-strip">
+    <div class="learning-container"><span><b>دورات منظّمة</b><small>محتوى واضح ومتدرج</small></span><span><b>مدرّسون متخصصون</b><small>أدوات نشر ومتابعة</small></span><span><b>اشتراكات مرنة</b><small>شهري وفصلي وسنوي</small></span><span><b>من أي مكان</b><small>ويب وموبايل لاحقًا</small></span></div>
+</section>
+
+<section class="learning-section learning-path-section">
+    <div class="learning-container">
+        <div class="learning-section-heading"><span>رحلتك في ثلاث خطوات</span><h2>ابدأ ببساطة، وتقدّم بثقة.</h2><p>التسجيل في المنصة التعليمية منفصل، ولا يحتاج إلى أن تكون طالبًا في المدرسة.</p></div>
+        <div class="learning-steps">
+            <article><i>01</i><span class="violet">⌕</span><h3>اختر دورتك</h3><p>ابحث حسب المادة والمستوى والمدرّس واعرف محتوى الدورة قبل الاشتراك.</p></article>
+            <article class="featured"><i>02</i><span class="mint">▷</span><h3>تعلّم في وقتك</h3><p>شاهد الدروس وتابع تقدمك من حسابك التعليمي المستقل.</p></article>
+            <article><i>03</i><span class="amber">◇</span><h3>فعّل اشتراكك</h3><p>استخدم بطاقة شهرية أو فصلية أو سنوية للمادة أو الباقة المخصصة لك.</p></article>
+        </div>
+    </div>
+</section>
+
+<section class="learning-section learning-courses-section">
+    <div class="learning-container">
+        <div class="learning-heading-row"><div><span>الدورات المنشورة</span><h2>ابدأ من المادة المناسبة.</h2></div><a href="{% url 'learning_platform:course_list' %}">عرض جميع الدورات ←</a></div>
+        {% if courses %}
+            <div class="learning-course-grid">
+                {% for course in courses %}
+                    {% include "learning_platform/_course_card.html" with course=course %}
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="learning-empty"><span>◇</span><strong>يتم تجهيز أول مجموعة من الدورات</strong><p>ستظهر هنا الدورات التي ينشرها المدرّسون بعد اعتمادها.</p></div>
+        {% endif %}
+    </div>
+</section>
+
+<section class="learning-section learning-future-section">
+    <div class="learning-container learning-future-grid">
+        <article><span>✦</span><div><small>المرحلة القادمة</small><h2>مساعد أوبال الذكي</h2><p>شرح مرتبط بمحتوى الدورة، وأمثلة وأسئلة تحقق تحت إشراف المدرّس.</p></div></article>
+        <article><span>▣</span><div><small>تجربة موحدة</small><h2>تطبيق الموبايل</h2><p>نفس الحساب والدورات والتقدم على Android وiOS عبر واجهات API مستقلة.</p></div></article>
+    </div>
+</section>
+
+<section class="learning-cta-section">
+    <div class="learning-container learning-cta-card"><span>✦</span><h2>حسابك التعليمي يبدأ من هنا.</h2><p>التسجيل متاح لأي متعلم ولا يرتبط بتسجيل المدرسة.</p>{% if learning_account %}<a class="learning-button learning-button-light" href="{% url 'learning_platform:dashboard' %}">افتح لوحتي</a>{% else %}<a class="learning-button learning-button-light" href="{% url 'learning_platform:register' %}">إنشاء حساب تعليمي</a>{% endif %}</div>
+</section>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "learning_platform/base.html" %}
+
+{% block title %}أدوات إعداد المحتوى | منصة أوبال التعليمية{% endblock %}
+
+{% block content %}
+<section class="learning-page-hero teacher ai-page"><div class="learning-container"><span>مساحة المدرّس</span><h1>أدوات إعداد المحتوى</h1><p>أنشئ ملخصات وخطط دروس وأسئلة مراجعة وواجبات بالاستناد إلى محتوى دوراتك، ثم راجعها يدويًا قبل أي نشر.</p></div></section>
+<section class="learning-section learning-ai-section"><div class="learning-container learning-ai-layout teacher-layout">
+    <aside class="learning-ai-sidebar">
+        <div class="learning-ai-usage"><span>الاستخدام اليومي</span><strong>{{ usage.used }} / {{ usage.limit }}</strong><i><em style="width:{% widthratio usage.used usage.limit 100 %}%"></em></i><small>متبقٍ {{ usage.remaining }} طلبًا</small></div>
+        <div class="learning-ai-mode {% if provider.configured and governance.external_provider_enabled %}external{% else %}local{% endif %}"><strong>{% if provider.configured and governance.external_provider_enabled %}مزود خارجي منضبط{% else %}مرجع محلي من المحتوى{% endif %}</strong><small>كل ناتج يُحفظ كمسودة ولا يُنشر تلقائيًا.</small></div>
+        <div class="learning-ai-history"><h2>المسودات</h2>{% for draft in drafts %}<a class="{% if selected_draft.pk == draft.pk %}active{% endif %}" href="{% url 'learning_platform:teacher_ai_workspace' %}?draft={{ draft.pk }}"><strong>{{ draft.title }}</strong><span>{{ draft.course.title }} · {{ draft.get_status_display }}</span><small>{{ draft.updated_at|date:"m/d H:i" }}</small></a>{% empty %}<p>لم تُنشأ مسودات بعد.</p>{% endfor %}</div>
+    </aside>
+
+    <div class="learning-ai-main">
+        {% if not governance.teacher_tools_enabled %}<div class="learning-form-alert neutral">أدوات المدرّس معطلة حاليًا من إدارة المنصة.</div>{% endif %}
+        <form method="post" class="learning-ai-form" novalidate>
+            {% csrf_token %}
+            <div><span>مسودة جديدة</span><h2>أنشئ مادة قابلة للمراجعة</h2><p>لا تُحوّل المسودة إلى درس أو اختبار أو واجب تلقائيًا.</p></div>
+            {% if form.non_field_errors %}<div class="learning-form-errors">{{ form.non_field_errors }}</div>{% endif %}
+            <div class="learning-manager-form-grid">{% for field in form %}<div class="learning-field {% if field.name == 'prompt' %}full{% endif %}"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{% for error in field.errors %}<em>{{ error }}</em>{% endfor %}</div>{% endfor %}</div>
+            <button class="learning-button" type="submit" {% if not governance.teacher_tools_enabled or usage.remaining == 0 %}disabled{% endif %}>إنشاء وحفظ المسودة</button>
+        </form>
+
+        {% if selected_draft %}
+        <article class="learning-ai-answer learning-ai-draft">
+            <header><div><span>{{ selected_draft.course.title }}</span><h2>{{ selected_draft.title }}</h2></div><b class="status-{{ selected_draft.status }}">{{ selected_draft.get_status_display }}</b></header>
+            <section class="learning-ai-response"><div>{{ selected_draft.content|linebreaksbr }}</div></section>
+            {% if selected_draft.interaction.source_labels %}<footer><div><strong>المراجع الداخلية</strong><ul>{% for label in selected_draft.interaction.source_labels %}<li>{{ label }}</li>{% endfor %}</ul></div></footer>{% endif %}
+            <form method="post" action="{% url 'learning_platform:teacher_ai_draft_status' selected_draft.pk %}" class="learning-ai-draft-actions">{% csrf_token %}{% if selected_draft.status != 'accepted' %}<button class="learning-button learning-button-small" type="submit" name="action" value="accept">اعتماد للمراجعة اليدوية</button>{% endif %}{% if selected_draft.status != 'discarded' %}<button class="learning-button learning-button-small learning-button-ghost" type="submit" name="action" value="discard">استبعاد</button>{% else %}<button class="learning-button learning-button-small learning-button-ghost" type="submit" name="action" value="restore">إعادة للمراجعة</button>{% endif %}</form>
+            <p class="learning-ai-disclaimer">الاعتماد هنا لا ينشر المسودة. انسخها بعد مراجعتها إلى شاشة الدرس أو التقييم المناسبة.</p>
+        </article>
+        {% endif %}
+    </div>
+</div></section>
+{% endblock %}

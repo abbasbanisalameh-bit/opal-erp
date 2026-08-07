@@ -1,0 +1,12 @@
+<article class="learning-course-card">
+    <a class="learning-course-cover" href="{% url 'learning_platform:course_detail' course.slug %}" style="--course-color:{{ course.cover_color|default:'#7254d8' }}">
+        <span>{{ course.subject.name|slice:":1" }}</span>
+        {% if course.grade_label %}<small>{{ course.grade_label }}</small>{% endif %}
+    </a>
+    <div class="learning-course-body">
+        <span>{{ course.subject.name }}</span>
+        <h3><a href="{% url 'learning_platform:course_detail' course.slug %}">{{ course.title }}</a></h3>
+        <p>بإشراف {{ course.teacher.full_name }}</p>
+        <div><small>{{ course.lesson_count|default:0 }} درسًا</small><a href="{% url 'learning_platform:course_detail' course.slug %}">تفاصيل الدورة ←</a></div>
+    </div>
+</article>

@@ -1,0 +1,3 @@
+{% extends "learning_platform/base.html" %}
+{% block title %}توثيق البريد | أوبال{% endblock %}
+{% block content %}<section class="learning-section"><div class="learning-container learning-narrow"><div class="learning-form-card">{% if invalid_verification_link %}<span>تعذر التوثيق</span><h1>الرابط منتهي أو مستخدم</h1><p>اطلب رابطًا جديدًا من لوحة الحساب.</p>{% else %}<span>تم التوثيق</span><h1>بريدك الإلكتروني موثق</h1><p>{{ verified_account.email }}</p><a class="learning-button" href="{% url 'learning_platform:dashboard' %}">الانتقال إلى لوحتي</a>{% endif %}</div></div></section>{% endblock %}

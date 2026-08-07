@@ -1,0 +1,30 @@
+{% extends "learning_platform/base.html" %}
+
+{% block title %}متعلمات ومتعلمو {{ course.title }} | منصة أوبال{% endblock %}
+
+{% block content %}
+<section class="learning-page-hero teacher-page"><div class="learning-container"><span>{{ course.subject.name }}</span><h1>المتعلمون في {{ course.title }}</h1><p>متابعة حالة التسجيل ونسبة الإنجاز لكل متعلم.</p></div></section>
+<section class="learning-section learning-manager-page-section"><div class="learning-container">
+    <div class="learning-manager-toolbar"><a class="learning-button learning-button-small learning-button-ghost" href="{% url 'learning_platform:dashboard' %}">العودة إلى لوحة المدرّس</a><a class="learning-button learning-button-small" href="{% url 'learning_platform:teacher_submission_list' course.pk %}">التسليمات والتصحيح</a></div>
+    {% if enrollments %}
+        <div class="learning-data-table-wrap">
+            <table class="learning-data-table">
+                <thead><tr><th>المتعلم</th><th>الحالة</th><th>التقدم</th><th>الدروس المكتملة</th><th>آخر نشاط</th></tr></thead>
+                <tbody>
+                    {% for enrollment in enrollments %}
+                        <tr>
+                            <td><strong>{{ enrollment.learner.full_name }}</strong><small>{{ enrollment.learner.email }}</small></td>
+                            <td><span class="learning-table-status status-{{ enrollment.status }}">{{ enrollment.get_status_display }}</span></td>
+                            <td><div class="learning-table-progress"><i><em style="width:{{ enrollment.progress_percent }}%"></em></i><b>{{ enrollment.progress_percent }}%</b></div></td>
+                            <td>{{ enrollment.completed_lessons }}</td>
+                            <td>{% if enrollment.last_activity_at %}{{ enrollment.last_activity_at|date:"Y/m/d H:i" }}{% else %}لم يبدأ{% endif %}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="learning-empty"><span>👥</span><strong>لا يوجد متعلمون مسجلون بعد</strong><p>ستظهر التسجيلات هنا بعد أن يفعّل المتعلم اشتراكًا ويسجل في الدورة.</p></div>
+    {% endif %}
+</div></section>
+{% endblock %}

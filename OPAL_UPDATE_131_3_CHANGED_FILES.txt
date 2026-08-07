@@ -1,0 +1,29 @@
+OPAL Update 131.3 - Capacity Dataset and Jordan Time
+
+MODIFIED  OPAL_VERSION.txt
+MODIFIED  OPAL_RELEASE_NAME.txt
+MODIFIED  OPAL_UPDATE_MANIFEST.json
+MODIFIED  config/site_preferences.py
+ADDED     core/capacity_timezone_contracts.py
+MODIFIED  core/checks.py
+MODIFIED  core/context_processors.py
+MODIFIED  core/demo_data.py
+MODIFIED  core/management/commands/seed_demo_school.py
+MODIFIED  core/system_data.py
+MODIFIED  core/test_update129_horizontal_timetable_contract.py
+MODIFIED  core/test_update130_production_stability_contract.py
+ADDED     core/test_update131_3_capacity_timezone_contract.py
+MODIFIED  core/test_update131_safe_consolidation_contract.py
+MODIFIED  core/tests.py
+MODIFIED  static/js/opal_erp.js
+MODIFIED  templates/base/base.html
+MODIFIED  templates/core/system_settings.html
+MODIFIED  timetable/services.py
+MODIFIED  tools/validate_opal_update_131_source.py
+MODIFIED  tools/verify_opal_update_131_archive.py
+ADDED     INSTALL_OPAL_UPDATE_131_3_CAPACITY_TIMEZONE_AR.md
+ADDED     OPAL_UPDATE_131_3_CAPACITY_TIMEZONE_RELEASE_NOTES_AR.md
+ADDED     OPAL_UPDATE_131_3_VALIDATION_REPORT_AR.md
+ADDED     OPAL_UPDATE_131_3_CHANGED_FILES.txt
+
+No model, route, page, migration, database, media, environment, or secret file added.

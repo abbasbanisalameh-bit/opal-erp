@@ -1,0 +1,8 @@
+{% extends "learning_platform/base.html" %}
+{% block title %}شراء اشتراك | أوبال{% endblock %}
+{% block content %}
+<section class="learning-section"><div class="learning-container learning-narrow">
+<div class="learning-form-card"><span>اشتراك آمن</span><h1>إنشاء طلب دفع</h1><p>{% if payment_status.external and payment_status.configured %}سيتم تحويلك إلى بوابة الدفع الآمنة ولا تُخزن بيانات البطاقة داخل أوبال.{% elif payment_status.configured %}سيُنشأ طلب دفع للمراجعة اليدوية من الإدارة.{% else %}الدفع غير مهيأ حاليًا ولن يُخصم أي مبلغ.{% endif %}</p>
+<form method="post">{% csrf_token %}<input type="hidden" name="idempotency_key" value="{{ idempotency_key }}">{{ form.non_field_errors }}{% for field in form %}<div class="learning-field">{{ field.label_tag }}{{ field }}{{ field.errors }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}</div>{% endfor %}<button class="learning-button" type="submit" {% if not payment_status.configured %}disabled{% endif %}>متابعة الدفع</button></form></div>
+</div></section>
+{% endblock %}

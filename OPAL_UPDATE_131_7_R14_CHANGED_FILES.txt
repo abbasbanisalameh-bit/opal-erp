@@ -1,0 +1,24 @@
+OPAL Update 131.7 R14 — Changed Files
+
+OPAL_RELEASE_NAME.txt
+OPAL_UPDATE_MANIFEST.json
+learning_platform/forms.py
+learning_platform/views.py
+learning_platform/urls.py
+learning_platform/tests.py
+templates/learning_platform/base.html
+templates/learning_platform/manager_dashboard.html
+templates/learning_platform/_manager_nav.html
+templates/learning_platform/manager_form.html
+templates/learning_platform/manager_account_list.html
+templates/learning_platform/manager_subject_list.html
+templates/learning_platform/manager_course_list.html
+templates/learning_platform/manager_lesson_list.html
+static/learning_platform/css/platform.css
+core/test_update131_7_r14_learning_platform_content_management_contract.py
+tools/validate_opal_update_131_source.py
+tools/verify_opal_update_131_archive.py
+INSTALL_OPAL_UPDATE_131_7_R14_LEARNING_PLATFORM_CONTENT_MANAGEMENT_AR.md
+OPAL_UPDATE_131_7_R14_LEARNING_PLATFORM_CONTENT_MANAGEMENT_RELEASE_NOTES_AR.md
+OPAL_UPDATE_131_7_R14_VALIDATION_REPORT_AR.md
+OPAL_UPDATE_131_7_R14_CHANGED_FILES.txt

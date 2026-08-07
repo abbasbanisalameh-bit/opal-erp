@@ -1,0 +1,11 @@
+templates/base/base.html
+static/js/opal_erp.js
+static/css/opal_erp.css
+dashboard/templates/dashboard/home.html
+core/test_update120_unified_ux_contract.py
+OPAL_UPDATE_MANIFEST.json
+OPAL_VERSION.txt
+README.md
+INSTALL_OPAL_UPDATE_120_UNIFIED_UX_AR.md
+OPAL_UPDATE_120_UNIFIED_UX_FEEDBACK_RELEASE_NOTES_AR.md
+OPAL_UPDATE_120_CHANGED_FILES.txt

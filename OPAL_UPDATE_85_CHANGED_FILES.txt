@@ -1,0 +1,51 @@
+OPAL UPDATE 85 — role UX, targeted notifications, monthly teacher evaluations
+
+- static/css/opal_identity_cards.css
+- static/js/opal_erp.js
+- templates/base/base.html
+- templates/includes/topbar.html
+- templates/includes/sidebar.html
+- templates/teachers/payroll_center.html
+- templates/teachers/portal_payroll.html
+- templates/teachers/portal_payroll_statement.html
+- templates/teachers/portal_workspace.html
+- templates/parent_portal/_nav.html
+- templates/parent_portal/attendance.html
+- templates/parent_portal/homework.html
+- templates/parent_portal/marks.html
+- templates/parent_portal/teacher_evaluations.html
+- templates/exams/gradebook.html
+- dashboard/templates/dashboard/home.html
+- core/validators.py
+- core/tests_role_permissions_v1.py
+- core/tests_final_readiness.py
+- enterprise_ops/permissions.py
+- enterprise_ops/services.py
+- enterprise_ops/views.py
+- enterprise_ops/tests.py
+- attendance_v2/services.py
+- exams/views.py
+- exams/workflow.py
+- students/models.py
+- students/forms.py
+- students/migrations/0011_student_photo_size_limit.py
+- teachers/models.py
+- teachers/forms.py
+- teachers/views.py
+- teachers/urls.py
+- teachers/payroll_services.py
+- teachers/payroll_views.py
+- teachers/migrations/0011_teacher_photo_size_limit.py
+- parent_portal/models.py
+- parent_portal/views.py
+- parent_portal/urls.py
+- parent_portal/notification_services.py
+- parent_portal/evaluation_services.py
+- parent_portal/migrations/0012_teacher_monthly_evaluation.py
+- dashboard/workflow.py
+- OPAL_VERSION.txt
+- OPAL_UPDATE_MANIFEST.json
+- OPAL_UPDATE_85_RELEASE_NOTES_AR.md
+- INSTALL_OPAL_UPDATE_85_AR.md
+
+Includes database migrations. No database, media, environment or virtual-environment files are included.

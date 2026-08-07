@@ -1,0 +1,15 @@
+{% extends "learning_platform/base.html" %}
+{% block title %}{{ assessment.title }} | منصة أوبال{% endblock %}
+{% block content %}
+<section class="learning-page-hero assessment-page"><div class="learning-container"><span>{{ course.title }}</span><h1>{{ assessment.title }}</h1><p>{{ assessment.get_assessment_type_display }} · العلامة القصوى {{ assessment.max_score }} · النجاح {{ assessment.pass_score }}</p></div></section>
+<section class="learning-section learning-assessment-page-section"><div class="learning-container learning-assessment-layout">
+    <aside class="learning-assessment-summary"><a href="{% url 'learning_platform:course_detail' course.slug %}">← العودة إلى الدورة</a><div><span>المحاولات المتبقية</span><strong>{{ attempts_remaining }}</strong></div><div><span>الحالة</span><strong>{% if passed %}ناجح{% elif submissions.0.status == 'submitted' %}بانتظار التصحيح{% else %}قيد الإنجاز{% endif %}</strong></div>{% if assessment.due_at %}<div><span>آخر موعد</span><strong>{{ assessment.due_at|date:"Y/m/d H:i" }}</strong></div>{% endif %}</aside>
+    <div>
+        <article class="learning-assessment-card"><span>{{ assessment.get_assessment_type_display }}</span><h2>التعليمات</h2><div>{{ assessment.instructions|linebreaks|default:"أجب عن جميع البنود ثم أرسل محاولتك." }}</div></article>
+        {% if passed %}<div class="learning-result-banner success"><strong>تم اجتياز التقييم بنجاح</strong><p>أفضل نتيجة مسجلة: {% for item in submissions %}{% if item.is_passed %}{{ item.score }} / {{ assessment.max_score }}{% endif %}{% endfor %}</p></div>
+        {% elif form %}<form method="post" class="learning-assessment-form">{% csrf_token %}{% if form.non_field_errors %}<div class="learning-form-errors">{{ form.non_field_errors }}</div>{% endif %}{% if assessment.assessment_type == 'quiz' %}{% for field in form %}<fieldset class="learning-question-card"><legend><span>{{ forloop.counter }}</span>{{ field.label }}</legend>{{ field }}{{ field.errors }}</fieldset>{% endfor %}{% else %}{% for field in form %}<div class="learning-field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</div>{% endfor %}{% endif %}<button class="learning-button" type="submit">{% if assessment.assessment_type == 'quiz' %}تسليم وتصحيح الاختبار{% else %}تسليم الواجب{% endif %}</button></form>
+        {% else %}<div class="learning-result-banner warning"><strong>لا توجد محاولة جديدة متاحة</strong><p>راجع سجل المحاولات أو تواصل مع المدرّس.</p></div>{% endif %}
+        {% if submissions %}<div class="learning-dashboard-heading"><div><span>السجل</span><h2>محاولاتي</h2></div></div><div class="learning-attempt-list">{% for item in submissions %}<article><span>{{ item.attempt_no }}</span><div><strong>{{ item.get_status_display }}</strong><small>{{ item.submitted_at|date:"Y/m/d H:i" }}{% if item.graded_by_label %} · {{ item.graded_by_label }}{% endif %}</small>{% if item.feedback %}<p>{{ item.feedback }}</p>{% endif %}</div><b>{% if item.score != None %}{{ item.score }} / {{ assessment.max_score }}{% else %}—{% endif %}</b></article>{% endfor %}</div>{% endif %}
+    </div>
+</div></section>
+{% endblock %}

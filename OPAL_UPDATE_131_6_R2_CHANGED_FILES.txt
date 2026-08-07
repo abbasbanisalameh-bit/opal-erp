@@ -1,0 +1,10 @@
+core/subject_ui_contracts.py
+static/css/opal_dashboard_executive.css
+dashboard/templates/dashboard/home.html
+templates/base/base.html
+tools/validate_opal_update_131_source.py
+OPAL_UPDATE_MANIFEST.json
+INSTALL_OPAL_UPDATE_131_6_R2_MANAGER_DASHBOARD_CONTRACT_FIX_AR.md
+OPAL_UPDATE_131_6_R2_MANAGER_DASHBOARD_CONTRACT_FIX_RELEASE_NOTES_AR.md
+OPAL_UPDATE_131_6_R2_VALIDATION_REPORT_AR.md
+OPAL_UPDATE_131_6_R2_CHANGED_FILES.txt

@@ -1,0 +1,41 @@
+{% extends "learning_platform/base.html" %}
+
+{% block title %}تسجيلات المنصة والتقدم | أوبال{% endblock %}
+{% block body_class %}learning-manager-mode{% endblock %}
+
+{% block content %}
+<section class="learning-page-hero manager-page"><div class="learning-container"><span>التشغيل التعليمي</span><h1>التسجيلات والتقدم</h1><p>متابعة المتعلمين المسجلين وحالة كل دورة ونسبة الإنجاز.</p></div></section>
+<section class="learning-section learning-manager-page-section"><div class="learning-container">
+    {% include "learning_platform/_manager_nav.html" %}
+    <div class="learning-manager-toolbar">
+        <form method="get" class="learning-manager-filter">
+            <input class="learning-input" type="search" name="q" value="{{ query }}" placeholder="بحث بالمتعلم أو الدورة">
+            <select class="learning-input" name="status"><option value="">كل الحالات</option>{% for value,label in enrollment_statuses %}<option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+            <button class="learning-button learning-button-small" type="submit">بحث</button>
+        </form>
+    </div>
+
+    {% if enrollments %}
+        <div class="learning-data-table-wrap">
+            <table class="learning-data-table">
+                <thead><tr><th>المتعلم</th><th>الدورة</th><th>المدرّس</th><th>الحالة</th><th>التقدم</th><th>تاريخ التسجيل</th><th>آخر نشاط</th></tr></thead>
+                <tbody>
+                    {% for enrollment in enrollments %}
+                        <tr>
+                            <td><strong>{{ enrollment.learner.full_name }}</strong><small>{{ enrollment.learner.email }}</small></td>
+                            <td><strong>{{ enrollment.course.title }}</strong><small>{{ enrollment.course.subject.name }}</small></td>
+                            <td>{{ enrollment.course.teacher.full_name }}</td>
+                            <td><span class="learning-table-status status-{{ enrollment.status }}">{{ enrollment.get_status_display }}</span></td>
+                            <td><div class="learning-table-progress"><i><em style="width:{{ enrollment.progress_percent }}%"></em></i><b>{{ enrollment.progress_percent }}%</b></div></td>
+                            <td>{{ enrollment.enrolled_at|date:"Y/m/d" }}</td>
+                            <td>{% if enrollment.last_activity_at %}{{ enrollment.last_activity_at|date:"Y/m/d H:i" }}{% else %}لم يبدأ{% endif %}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="learning-empty"><span>↗</span><strong>لا توجد تسجيلات مطابقة</strong><p>تبدأ التسجيلات بعد تفعيل بطاقات الاشتراك واختيار المتعلمين للدورات.</p></div>
+    {% endif %}
+</div></section>
+{% endblock %}

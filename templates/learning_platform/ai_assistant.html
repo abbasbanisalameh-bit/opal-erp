@@ -1,0 +1,37 @@
+{% extends "learning_platform/base.html" %}
+
+{% block title %}مساعد المحتوى | منصة أوبال التعليمية{% endblock %}
+
+{% block content %}
+<section class="learning-page-hero ai-page"><div class="learning-container"><span>مساعد المتعلم</span><h1>اسأل من محتوى دورتك</h1><p>يعتمد المساعد على الدروس المنشورة داخل الدورة، ويعرض المراجع المستخدمة مع كل إجابة.</p></div></section>
+<section class="learning-section learning-ai-section"><div class="learning-container learning-ai-layout">
+    <aside class="learning-ai-sidebar">
+        <div class="learning-ai-usage"><span>الاستخدام اليومي</span><strong>{{ usage.used }} / {{ usage.limit }}</strong><i><em style="width:{% widthratio usage.used usage.limit 100 %}%"></em></i><small>متبقٍ {{ usage.remaining }} طلبًا اليوم</small></div>
+        <div class="learning-ai-mode {% if provider.configured and governance.external_provider_enabled %}external{% else %}local{% endif %}"><strong>{% if provider.configured and governance.external_provider_enabled %}مزود خارجي منضبط{% else %}مرجع محلي من الدروس{% endif %}</strong><small>{% if provider.configured and governance.external_provider_enabled %}النموذج: {{ provider.model }}{% else %}لا تُرسل بيانات إلى خدمة خارجية في هذا الوضع.{% endif %}</small></div>
+        <div class="learning-ai-history"><h2>الأسئلة السابقة</h2>{% for item in recent_interactions %}<a class="{% if selected_interaction.pk == item.pk %}active{% endif %}" href="{% url 'learning_platform:learner_ai_assistant' %}?interaction={{ item.pk }}"><strong>{{ item.course.title }}</strong><span>{{ item.prompt|truncatechars:65 }}</span><small>{{ item.created_at|date:"m/d H:i" }}</small></a>{% empty %}<p>لم ترسل سؤالًا بعد.</p>{% endfor %}</div>
+    </aside>
+
+    <div class="learning-ai-main">
+        {% if not governance.assistant_enabled %}<div class="learning-form-alert neutral">مساعد المتعلم معطل حاليًا من إدارة المنصة.</div>{% endif %}
+        <form method="post" class="learning-ai-form" novalidate>
+            {% csrf_token %}
+            <div><span>سؤال جديد</span><h2>ماذا تريد أن تفهم؟</h2><p>اختر دورة أنت مسجل بها، ثم اكتب سؤالًا مرتبطًا بمحتواها.</p></div>
+            {% if form.non_field_errors %}<div class="learning-form-errors">{{ form.non_field_errors }}</div>{% endif %}
+            {% for field in form %}<div class="learning-field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<em>{{ error }}</em>{% endfor %}</div>{% endfor %}
+            <button class="learning-button" type="submit" {% if not governance.assistant_enabled or usage.remaining == 0 %}disabled{% endif %}>إعداد الإجابة المرجعية</button>
+            <small class="learning-ai-disclaimer">المساعد لا يغيّر العلامات أو قرارات النجاح أو الاشتراك، وقد تحتاج الإجابة إلى مراجعة المدرّس.</small>
+        </form>
+
+        {% if selected_interaction %}
+        <article class="learning-ai-answer">
+            <header><div><span>{{ selected_interaction.course.subject.name }}</span><h2>{{ selected_interaction.course.title }}</h2></div><b class="status-{{ selected_interaction.status }}">{{ selected_interaction.get_status_display }}</b></header>
+            <section class="learning-ai-question"><strong>السؤال</strong><p>{{ selected_interaction.prompt }}</p></section>
+            <section class="learning-ai-response"><strong>الإجابة</strong><div>{{ selected_interaction.response|linebreaksbr }}</div></section>
+            <footer><div><strong>المراجع المستخدمة</strong>{% if selected_interaction.source_labels %}<ul>{% for label in selected_interaction.source_labels %}<li>{{ label }}</li>{% endfor %}</ul>{% else %}<p>لم يتوفر محتوى منشور كافٍ.</p>{% endif %}</div><small>{{ selected_interaction.created_at|date:"Y-m-d H:i" }} · {{ selected_interaction.provider_name }}</small></footer>
+        </article>
+        {% elif recent_interactions %}
+        <div class="learning-inline-empty"><span>اختر سؤالًا سابقًا من القائمة لعرض الإجابة.</span></div>
+        {% endif %}
+    </div>
+</div></section>
+{% endblock %}

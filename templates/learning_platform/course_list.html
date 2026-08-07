@@ -1,0 +1,10 @@
+{% extends "learning_platform/base.html" %}
+
+{% block title %}الدورات | منصة أوبال التعليمية{% endblock %}
+
+{% block content %}
+<section class="learning-page-hero"><div class="learning-container"><span>مكتبة التعلّم</span><h1>الدورات التعليمية</h1><p>ابحث عن المادة أو المستوى أو المدرّس المناسب لك.</p><form method="get" class="learning-search"><label class="sr-only" for="course-query">البحث في الدورات</label><input id="course-query" name="q" value="{{ query }}" placeholder="ابحث عن دورة أو مادة أو مدرّس..."><button type="submit">بحث</button></form></div></section>
+<section class="learning-section learning-catalog-section"><div class="learning-container">
+    {% if courses %}<div class="learning-course-grid">{% for course in courses %}{% include "learning_platform/_course_card.html" with course=course %}{% endfor %}</div>{% else %}<div class="learning-empty"><span>⌕</span><strong>لا توجد دورات مطابقة</strong><p>{% if query %}جرّب عبارة بحث أخرى أو اعرض جميع الدورات.{% else %}ستظهر الدورات هنا فور اعتمادها ونشرها.{% endif %}</p>{% if query %}<a href="{% url 'learning_platform:course_list' %}">مسح البحث</a>{% endif %}</div>{% endif %}
+</div></section>
+{% endblock %}

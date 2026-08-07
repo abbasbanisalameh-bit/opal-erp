@@ -1,0 +1,54 @@
+{% extends "base/base.html" %}
+{% block title %}متبقيات الرسوم السابقة | OPAL ERP{% endblock %}
+{% block page_title %}متبقيات الرسوم السابقة على الطلبة{% endblock %}
+{% block page_subtitle %}أرصدة حقيقية من فواتير الأعوام السابقة ودفعاتها المعتمدة، مجمعة حسب ولي الأمر{% endblock %}
+{% block content %}
+<div class="opal-compact-metric-grid mb-4">
+  <div class="opal-card opal-compact-metric-card"><span class="opal-metric-label">إجمالي متبقيات الرسوم السابقة</span><strong class="opal-metric-value text-danger">{{ total|floatformat:2 }} د.أ</strong></div>
+  <div class="opal-card opal-compact-metric-card"><span class="opal-metric-label">أولياء الأمور</span><strong class="opal-metric-value">{{ guardians_count }}</strong></div>
+  <div class="opal-card opal-compact-metric-card"><span class="opal-metric-label">الطلبة</span><strong class="opal-metric-value">{{ students_count }}</strong></div>
+  <div class="opal-card opal-compact-metric-card"><span class="opal-metric-label">العام الحالي</span><strong class="opal-metric-value">{{ current_year.name|default:"-" }}</strong></div>
+</div>
+
+{% for row in rows %}
+<section class="opal-card mb-4 opal-previous-debt-family-card">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+    <div><h3 class="fw-bold mb-1">{{ row.guardian_name }}</h3><p class="text-secondary mb-0">{{ row.phone|default:"لا يوجد هاتف" }}{% if row.family %} · ملف ولي الأمر {{ row.family.family_code|default:row.family.pk }}{% endif %}</p></div>
+    <div class="text-end"><span class="text-secondary d-block">المتبقي من رسوم الأعوام السابقة</span><strong class="fs-3 text-danger">{{ row.total|floatformat:2 }} د.أ</strong>{% if row.family %}<div><a class="btn btn-sm btn-outline-primary mt-2" href="{% url 'parent_portal:family_detail' row.family.pk %}">فتح ملف ولي الأمر</a></div>{% endif %}</div>
+  </div>
+
+  <div class="table-responsive mb-3"><table class="opal-table align-middle">
+    <thead><tr><th>الطالب</th><th>العام</th><th>الصف والشعبة</th><th>تفاصيل الرسوم السابقة</th><th>المتبقي</th><th></th></tr></thead>
+    <tbody>
+    {% for child in row.children %}
+      {% for year in child.years %}
+      <tr>
+        <td><strong>{{ child.student.full_name }}</strong><small class="d-block text-secondary">{{ child.student.student_number }}</small></td>
+        <td>{{ year.academic_year.name }}</td>
+        <td>{{ year.grade_label }}{% if year.section_label %} / {{ year.section_label }}{% endif %}</td>
+        <td>{% for item in year.invoices %}<div>{{ item.invoice.fee_category.name }}: {{ item.remaining|floatformat:2 }} د.أ</div>{% endfor %}</td>
+        <td class="text-danger fw-bold">{{ year.total|floatformat:2 }}</td>
+        <td><a class="btn btn-sm btn-danger" href="{% url 'admissions:previous_debt_payment' child.student.pk %}"><i class="bi bi-cash-coin"></i> دفعة</a></td>
+      </tr>
+      {% endfor %}
+    {% endfor %}
+    </tbody>
+  </table></div>
+
+  <details class="opal-previous-debt-receipts">
+    <summary class="fw-bold">الإيصالات المسددة عن رسوم الأعوام السابقة ({{ row.receipts|length }})</summary>
+    <div class="table-responsive mt-3"><table class="opal-table align-middle">
+      <thead><tr><th>الإيصال</th><th>التاريخ</th><th>الطلبة/الأعوام</th><th>المبلغ</th><th>المتبقي بعد الإيصال</th><th></th></tr></thead>
+      <tbody>{% for receipt in row.receipts %}<tr>
+        <td>{{ receipt.receipt_number }}</td><td>{{ receipt.payment_date|date:"Y-m-d" }}</td>
+        <td>{% for payment in receipt.payments %}<div>{{ payment.invoice.student.full_name }} — {{ payment.invoice.academic_year.name }}</div>{% endfor %}</td>
+        <td class="text-success fw-bold">{{ receipt.amount|floatformat:2 }}</td><td>{{ receipt.remaining_after|floatformat:2 }}</td>
+        <td>{% if receipt.fee_payment %}<a class="btn btn-sm btn-outline-info" target="_blank" href="{% url 'admissions:fee_payment_receipt' receipt.fee_payment.pk %}">طباعة</a>{% else %}<span class="text-secondary">إيصال سابق</span>{% endif %}</td>
+      </tr>{% empty %}<tr><td colspan="6" class="text-center text-muted">لا توجد إيصالات مسددة عن رسوم الأعوام السابقة.</td></tr>{% endfor %}</tbody>
+    </table></div>
+  </details>
+</section>
+{% empty %}
+<div class="opal-card text-center py-5"><i class="bi bi-check-circle-fill text-success fs-1"></i><h3 class="mt-3">لا توجد متبقيات رسوم سابقة</h3><p class="text-secondary mb-0">جميع فواتير الأعوام السابقة مسددة أو ملغاة.</p></div>
+{% endfor %}
+{% endblock %}

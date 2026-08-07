@@ -1,0 +1,935 @@
+{
+  "update": "OPAL Update 131.7",
+  "root": "/mnt/data/opal_student_overflow_fix",
+  "ok": true,
+  "summary": {
+    "checks": 153,
+    "passed": 153,
+    "failed": 0,
+    "warnings": 0,
+    "python_files_parsed": 575
+  },
+  "errors": [],
+  "warnings": [],
+  "checks": [
+    {
+      "code": "python_syntax",
+      "ok": true,
+      "detail": "All Python sources parse successfully.",
+      "path": ""
+    },
+    {
+      "code": "file:OPAL_VERSION.txt",
+      "ok": true,
+      "detail": "Required file missing: OPAL_VERSION.txt",
+      "path": "OPAL_VERSION.txt"
+    },
+    {
+      "code": "version",
+      "ok": true,
+      "detail": "OPAL_VERSION.txt must equal 131.7; found '131.7'.",
+      "path": "OPAL_VERSION.txt"
+    },
+    {
+      "code": "file:OPAL_RELEASE_NAME.txt",
+      "ok": true,
+      "detail": "Required file missing: OPAL_RELEASE_NAME.txt",
+      "path": "OPAL_RELEASE_NAME.txt"
+    },
+    {
+      "code": "release_name",
+      "ok": true,
+      "detail": "OPAL_RELEASE_NAME.txt must equal 'OPAL Update 131.7 R3 - Student 360 Mobile Width Containment'; found 'OPAL Update 131.7 R3 - Student 360 Mobile Width Containment'.",
+      "path": "OPAL_RELEASE_NAME.txt"
+    },
+    {
+      "code": "file:core/update_engine_runtime.py",
+      "ok": true,
+      "detail": "Required file missing: core/update_engine_runtime.py",
+      "path": "core/update_engine_runtime.py"
+    },
+    {
+      "code": "release_identity_authority",
+      "ok": true,
+      "detail": "The Update Center must prefer the release identity shipped by the source tree over a stale private marker.",
+      "path": "core/update_engine_runtime.py"
+    },
+    {
+      "code": "file:OPAL_UPDATE_MANIFEST.json",
+      "ok": true,
+      "detail": "Required file missing: OPAL_UPDATE_MANIFEST.json",
+      "path": "OPAL_UPDATE_MANIFEST.json"
+    },
+    {
+      "code": "release_manifest",
+      "ok": true,
+      "detail": "OPAL_UPDATE_MANIFEST.json must identify Update 131.7 R2 as a code-only verified package with revision 5 or later.",
+      "path": "OPAL_UPDATE_MANIFEST.json"
+    },
+    {
+      "code": "file:templates/base/base.html",
+      "ok": true,
+      "detail": "Required file missing: templates/base/base.html",
+      "path": "templates/base/base.html"
+    },
+    {
+      "code": "cache_token",
+      "ok": true,
+      "detail": "The shared compact-portal cache token must version both CSS and JS references.",
+      "path": "templates/base/base.html"
+    },
+    {
+      "code": "file:static/css/opal_entity_360_consolidation.css",
+      "ok": true,
+      "detail": "Required file missing: static/css/opal_entity_360_consolidation.css",
+      "path": "static/css/opal_entity_360_consolidation.css"
+    },
+    {
+      "code": "file:templates/students/student_360.html",
+      "ok": true,
+      "detail": "Required file missing: templates/students/student_360.html",
+      "path": "templates/students/student_360.html"
+    },
+    {
+      "code": "student360_mobile_width_containment",
+      "ok": true,
+      "detail": "Student 360 wide tabs must remain viewport-contained and scroll only inside their data wrapper.",
+      "path": "static/css/opal_entity_360_consolidation.css"
+    },
+    {
+      "code": "file:core/subject_ui_contracts.py",
+      "ok": true,
+      "detail": "Required file missing: core/subject_ui_contracts.py",
+      "path": "core/subject_ui_contracts.py"
+    },
+    {
+      "code": "manager_dashboard_asset_contract",
+      "ok": true,
+      "detail": "The subject UI system check must validate the real manager-dashboard stylesheet path, not a volatile cache token.",
+      "path": "core/subject_ui_contracts.py"
+    },
+    {
+      "code": "file:teachers/views.py",
+      "ok": true,
+      "detail": "Required file missing: teachers/views.py",
+      "path": "teachers/views.py"
+    },
+    {
+      "code": "teacher_list_tpi_snapshot_import",
+      "ok": true,
+      "detail": "teachers.teacher_list queries TeacherPerformanceSnapshot and must import it to avoid HTTP 500.",
+      "path": "teachers/views.py"
+    },
+    {
+      "code": "teacher_list_read_only_tpi",
+      "ok": true,
+      "detail": "The teacher list must read the current monthly TPI snapshots without recalculating the whole school on every request.",
+      "path": "teachers/views.py"
+    },
+    {
+      "code": "file:templates/teachers/teacher_list.html",
+      "ok": true,
+      "detail": "Required file missing: templates/teachers/teacher_list.html",
+      "path": "templates/teachers/teacher_list.html"
+    },
+    {
+      "code": "teacher_impersonation_action_restored",
+      "ok": true,
+      "detail": "The manager-only teacher impersonation action must remain available for active linked teacher accounts.",
+      "path": "templates/teachers/teacher_list.html"
+    },
+    {
+      "code": "file:enterprise_ops/context_processors.py",
+      "ok": true,
+      "detail": "Required file missing: enterprise_ops/context_processors.py",
+      "path": "enterprise_ops/context_processors.py"
+    },
+    {
+      "code": "global_notification_context_read_only",
+      "ok": true,
+      "detail": "The notification context processor must never synchronize or write operational data on every page.",
+      "path": "enterprise_ops/context_processors.py"
+    },
+    {
+      "code": "file:timetable/context_processors.py",
+      "ok": true,
+      "detail": "Required file missing: timetable/context_processors.py",
+      "path": "timetable/context_processors.py"
+    },
+    {
+      "code": "compact_management_topbar_status",
+      "ok": true,
+      "detail": "The global management topbar must use compact school status rather than the full management dashboard state.",
+      "path": "timetable/context_processors.py"
+    },
+    {
+      "code": "teacher_management_school_scope",
+      "ok": true,
+      "detail": "Teacher management queries must be scoped to the active request school.",
+      "path": "teachers/views.py"
+    },
+    {
+      "code": "management_tpi_explicit_refresh",
+      "ok": true,
+      "detail": "The teachers dashboard must read TPI snapshots on GET and recalculate only through an explicit POST action.",
+      "path": "teachers/views.py"
+    },
+    {
+      "code": "teacher_portal_tpi_read_only",
+      "ok": true,
+      "detail": "The teacher portal must read the current TPI snapshot without recalculating the whole school on login.",
+      "path": "teachers/views.py"
+    },
+    {
+      "code": "file:core/post_consolidation_contracts.py",
+      "ok": true,
+      "detail": "Required file missing: core/post_consolidation_contracts.py",
+      "path": "core/post_consolidation_contracts.py"
+    },
+    {
+      "code": "file:core/checks.py",
+      "ok": true,
+      "detail": "Required file missing: core/checks.py",
+      "path": "core/checks.py"
+    },
+    {
+      "code": "post_consolidation_system_gate",
+      "ok": true,
+      "detail": "The post-consolidation stability contracts must be registered in Django system checks.",
+      "path": "core/checks.py"
+    },
+    {
+      "code": "file:core/live_operations_contracts.py",
+      "ok": true,
+      "detail": "Required file missing: core/live_operations_contracts.py",
+      "path": "core/live_operations_contracts.py"
+    },
+    {
+      "code": "file:dashboard/workflow.py",
+      "ok": true,
+      "detail": "Required file missing: dashboard/workflow.py",
+      "path": "dashboard/workflow.py"
+    },
+    {
+      "code": "file:dashboard/templates/dashboard/home.html",
+      "ok": true,
+      "detail": "Required file missing: dashboard/templates/dashboard/home.html",
+      "path": "dashboard/templates/dashboard/home.html"
+    },
+    {
+      "code": "file:timetable/workflow.py",
+      "ok": true,
+      "detail": "Required file missing: timetable/workflow.py",
+      "path": "timetable/workflow.py"
+    },
+    {
+      "code": "live_operations_system_gate",
+      "ok": true,
+      "detail": "The live-operations repair contracts must be registered in Django system checks.",
+      "path": "core/checks.py"
+    },
+    {
+      "code": "file:timetable/attendance_services.py",
+      "ok": true,
+      "detail": "Required file missing: timetable/attendance_services.py",
+      "path": "timetable/attendance_services.py"
+    },
+    {
+      "code": "weekly_teacher_state_scope",
+      "ok": true,
+      "detail": "Weekly timetable teacher status must be scoped to today's weekday only.",
+      "path": "timetable/workflow.py"
+    },
+    {
+      "code": "director_live_dashboard",
+      "ok": true,
+      "detail": "Director dashboard must render grade events and effective busy/free teachers.",
+      "path": "dashboard/templates/dashboard/home.html"
+    },
+    {
+      "code": "file:academics/models.py",
+      "ok": true,
+      "detail": "Required file missing: academics/models.py",
+      "path": "academics/models.py"
+    },
+    {
+      "code": "subject:annual academic year",
+      "ok": true,
+      "detail": "Subject is missing annual academic year: academic_year = models.ForeignKey",
+      "path": "academics/models.py"
+    },
+    {
+      "code": "subject:weekly periods",
+      "ok": true,
+      "detail": "Subject is missing weekly periods: weekly_periods = models.PositiveSmallIntegerField",
+      "path": "academics/models.py"
+    },
+    {
+      "code": "subject:required flag",
+      "ok": true,
+      "detail": "Subject is missing required flag: is_required = models.BooleanField",
+      "path": "academics/models.py"
+    },
+    {
+      "code": "subject:canonical identity",
+      "ok": true,
+      "detail": "Subject is missing canonical identity: canonical_key = models.CharField",
+      "path": "academics/models.py"
+    },
+    {
+      "code": "subject:stored colour",
+      "ok": true,
+      "detail": "Subject is missing stored colour: color = models.CharField",
+      "path": "academics/models.py"
+    },
+    {
+      "code": "subject:annual name uniqueness",
+      "ok": true,
+      "detail": "Subject is missing annual name uniqueness: uniq_subject_name_per_year_grade",
+      "path": "academics/models.py"
+    },
+    {
+      "code": "subject:annual code uniqueness",
+      "ok": true,
+      "detail": "Subject is missing annual code uniqueness: uniq_subject_code_per_year_grade",
+      "path": "academics/models.py"
+    },
+    {
+      "code": "subject_protect",
+      "ok": true,
+      "detail": "Subject annual-year/grade relationships must use PROTECT.",
+      "path": "academics/models.py"
+    },
+    {
+      "code": "file:curriculum/models.py",
+      "ok": true,
+      "detail": "Required file missing: curriculum/models.py",
+      "path": "curriculum/models.py"
+    },
+    {
+      "code": "curriculum_model_removed",
+      "ok": true,
+      "detail": "Operational curriculum.Curriculum model still exists.",
+      "path": "curriculum/models.py"
+    },
+    {
+      "code": "file:teachers/models.py",
+      "ok": true,
+      "detail": "Required file missing: teachers/models.py",
+      "path": "teachers/models.py"
+    },
+    {
+      "code": "assignment_periods_removed",
+      "ok": true,
+      "detail": "TeacherAssignment.weekly_periods still creates a second source of truth.",
+      "path": "teachers/models.py"
+    },
+    {
+      "code": "no_runtime_curriculum_import",
+      "ok": true,
+      "detail": "Runtime Curriculum imports remain: ",
+      "path": ""
+    },
+    {
+      "code": "file:academics/migrations/0016_annual_subject_plan_stage.py",
+      "ok": true,
+      "detail": "Required file missing: academics/migrations/0016_annual_subject_plan_stage.py",
+      "path": "academics/migrations/0016_annual_subject_plan_stage.py"
+    },
+    {
+      "code": "file:teachers/migrations/0014_subject_plan_single_source.py",
+      "ok": true,
+      "detail": "Required file missing: teachers/migrations/0014_subject_plan_single_source.py",
+      "path": "teachers/migrations/0014_subject_plan_single_source.py"
+    },
+    {
+      "code": "file:timetable/migrations/0008_subject_plan_protection.py",
+      "ok": true,
+      "detail": "Required file missing: timetable/migrations/0008_subject_plan_protection.py",
+      "path": "timetable/migrations/0008_subject_plan_protection.py"
+    },
+    {
+      "code": "file:curriculum/migrations/0003_remove_parallel_curriculum.py",
+      "ok": true,
+      "detail": "Required file missing: curriculum/migrations/0003_remove_parallel_curriculum.py",
+      "path": "curriculum/migrations/0003_remove_parallel_curriculum.py"
+    },
+    {
+      "code": "file:academics/migrations/0017_finalize_annual_subject_plan.py",
+      "ok": true,
+      "detail": "Required file missing: academics/migrations/0017_finalize_annual_subject_plan.py",
+      "path": "academics/migrations/0017_finalize_annual_subject_plan.py"
+    },
+    {
+      "code": "file:academics/migrations/0018_alter_subject_canonical_key_alter_subject_grade.py",
+      "ok": true,
+      "detail": "Required file missing: academics/migrations/0018_alter_subject_canonical_key_alter_subject_grade.py",
+      "path": "academics/migrations/0018_alter_subject_canonical_key_alter_subject_grade.py"
+    },
+    {
+      "code": "migration:migrate_subject_plan",
+      "ok": true,
+      "detail": "Migration contract missing token: migrate_subject_plan",
+      "path": ""
+    },
+    {
+      "code": "migration:reverse_unavailable",
+      "ok": true,
+      "detail": "Migration contract missing token: reverse_unavailable",
+      "path": ""
+    },
+    {
+      "code": "migration:migrations.DeleteModel(name=\"Curriculum\")",
+      "ok": true,
+      "detail": "Migration contract missing token: migrations.DeleteModel(name=\"Curriculum\")",
+      "path": ""
+    },
+    {
+      "code": "migration:name=\"weekly_periods\"",
+      "ok": true,
+      "detail": "Migration contract missing token: name=\"weekly_periods\"",
+      "path": ""
+    },
+    {
+      "code": "migration:normalize_sections_and_validate",
+      "ok": true,
+      "detail": "Migration contract missing token: normalize_sections_and_validate",
+      "path": ""
+    },
+    {
+      "code": "migration:uniq_subject_name_per_year_grade",
+      "ok": true,
+      "detail": "Migration contract missing token: uniq_subject_name_per_year_grade",
+      "path": ""
+    },
+    {
+      "code": "migration:name=\"canonical_key\"",
+      "ok": true,
+      "detail": "Migration contract missing token: name=\"canonical_key\"",
+      "path": ""
+    },
+    {
+      "code": "migration:name=\"grade\"",
+      "ok": true,
+      "detail": "Migration contract missing token: name=\"grade\"",
+      "path": ""
+    },
+    {
+      "code": "migration:django.db.models.deletion.PROTECT",
+      "ok": true,
+      "detail": "Migration contract missing token: django.db.models.deletion.PROTECT",
+      "path": ""
+    },
+    {
+      "code": "migration_colour_reuse",
+      "ok": true,
+      "detail": "Annual Subject migration must reuse one colour for repeated canonical identities without reallocation.",
+      "path": "academics/migrations/0016_annual_subject_plan_stage.py"
+    },
+    {
+      "code": "migration_subject_state_sync",
+      "ok": true,
+      "detail": "The final Subject model state must be represented by migration 0018 so makemigrations --check is clean.",
+      "path": "academics/migrations/0018_alter_subject_canonical_key_alter_subject_grade.py"
+    },
+    {
+      "code": "file:timetable/views.py",
+      "ok": true,
+      "detail": "Required file missing: timetable/views.py",
+      "path": "timetable/views.py"
+    },
+    {
+      "code": "file:templates/timetable/dashboard.html",
+      "ok": true,
+      "detail": "Required file missing: templates/timetable/dashboard.html",
+      "path": "templates/timetable/dashboard.html"
+    },
+    {
+      "code": "smart_builder_embedded",
+      "ok": true,
+      "detail": "Smart builder is not fully embedded in the canonical timetable dashboard.",
+      "path": "templates/timetable/dashboard.html"
+    },
+    {
+      "code": "smart_builder_template_deleted",
+      "ok": true,
+      "detail": "Standalone smart_builder.html must be deleted.",
+      "path": "templates/timetable/smart_builder.html"
+    },
+    {
+      "code": "legacy_timetable:response[\"Deprecation\"] = \"true\"",
+      "ok": true,
+      "detail": "Legacy timetable redirect is not marked: response[\"Deprecation\"] = \"true\"",
+      "path": "timetable/views.py"
+    },
+    {
+      "code": "legacy_timetable:response[\"Sunset\"] = \"OPAL Update 132.0\"",
+      "ok": true,
+      "detail": "Legacy timetable redirect is not marked: response[\"Sunset\"] = \"OPAL Update 132.0\"",
+      "path": "timetable/views.py"
+    },
+    {
+      "code": "timetable_no_internal_legacy_link",
+      "ok": true,
+      "detail": "Canonical timetable template still links to the deprecated route.",
+      "path": "templates/timetable/dashboard.html"
+    },
+    {
+      "code": "file:exams/urls.py",
+      "ok": true,
+      "detail": "Required file missing: exams/urls.py",
+      "path": "exams/urls.py"
+    },
+    {
+      "code": "file:exams/views.py",
+      "ok": true,
+      "detail": "Required file missing: exams/views.py",
+      "path": "exams/views.py"
+    },
+    {
+      "code": "file:templates/exams/gradebook.html",
+      "ok": true,
+      "detail": "Required file missing: templates/exams/gradebook.html",
+      "path": "templates/exams/gradebook.html"
+    },
+    {
+      "code": "canonical_gradebook",
+      "ok": true,
+      "detail": "The canonical /exams/ entry is not the unified gradebook.",
+      "path": "exams/urls.py"
+    },
+    {
+      "code": "deleted:templates/exams/dashboard.html",
+      "ok": true,
+      "detail": "Parallel exam template still exists: templates/exams/dashboard.html",
+      "path": "templates/exams/dashboard.html"
+    },
+    {
+      "code": "deleted:templates/exams/mark_list.html",
+      "ok": true,
+      "detail": "Parallel exam template still exists: templates/exams/mark_list.html",
+      "path": "templates/exams/mark_list.html"
+    },
+    {
+      "code": "gradebook_sections",
+      "ok": true,
+      "detail": "Unified gradebook is missing marks-review or normalized-results sections.",
+      "path": "templates/exams/gradebook.html"
+    },
+    {
+      "code": "legacy_exam_headers",
+      "ok": true,
+      "detail": "Exam legacy redirects are not explicitly deprecated for one release.",
+      "path": "exams/views.py"
+    },
+    {
+      "code": "file:timetable/attendance_services.py",
+      "ok": true,
+      "detail": "Required file missing: timetable/attendance_services.py",
+      "path": "timetable/attendance_services.py"
+    },
+    {
+      "code": "attendance:No daily ``present`` rows are generated",
+      "ok": true,
+      "detail": "Attendance exception-policy token missing: No daily ``present`` rows are generated",
+      "path": "timetable/attendance_services.py"
+    },
+    {
+      "code": "attendance:teacher_unavailable_for_entry",
+      "ok": true,
+      "detail": "Attendance exception-policy token missing: teacher_unavailable_for_entry",
+      "path": "timetable/attendance_services.py"
+    },
+    {
+      "code": "attendance:public_teacher_state",
+      "ok": true,
+      "detail": "Attendance exception-policy token missing: public_teacher_state",
+      "path": "timetable/attendance_services.py"
+    },
+    {
+      "code": "attendance:\"label\": \"معلم غائب\"",
+      "ok": true,
+      "detail": "Attendance exception-policy token missing: \"label\": \"معلم غائب\"",
+      "path": "timetable/attendance_services.py"
+    },
+    {
+      "code": "attendance:\"label\": \"المعلم غير متاح\"",
+      "ok": true,
+      "detail": "Attendance exception-policy token missing: \"label\": \"المعلم غير متاح\"",
+      "path": "timetable/attendance_services.py"
+    },
+    {
+      "code": "no_present_row_creation",
+      "ok": true,
+      "detail": "Attendance service creates daily present rows, which is forbidden.",
+      "path": "timetable/attendance_services.py"
+    },
+    {
+      "code": "file:exams/analytics.py",
+      "ok": true,
+      "detail": "Required file missing: exams/analytics.py",
+      "path": "exams/analytics.py"
+    },
+    {
+      "code": "normalized_exam_math",
+      "ok": true,
+      "detail": "Normalized exam percentage helper is missing.",
+      "path": "exams/analytics.py"
+    },
+    {
+      "code": "all_top_ties",
+      "ok": true,
+      "detail": "Top-student analytics does not preserve all first-place ties.",
+      "path": "exams/analytics.py"
+    },
+    {
+      "code": "file:teachers/tpi.py",
+      "ok": true,
+      "detail": "Required file missing: teachers/tpi.py",
+      "path": "teachers/tpi.py"
+    },
+    {
+      "code": "tpi_version",
+      "ok": true,
+      "detail": "TPI version is not TPI-131.",
+      "path": "teachers/tpi.py"
+    },
+    {
+      "code": "tpi_exception_evidence",
+      "ok": true,
+      "detail": "TPI attendance evidence does not disclose the administrative-exception source.",
+      "path": "teachers/tpi.py"
+    },
+    {
+      "code": "file:static/js/opal_erp.js",
+      "ok": true,
+      "detail": "Required file missing: static/js/opal_erp.js",
+      "path": "static/js/opal_erp.js"
+    },
+    {
+      "code": "file:core/system_data.py",
+      "ok": true,
+      "detail": "Required file missing: core/system_data.py",
+      "path": "core/system_data.py"
+    },
+    {
+      "code": "file:config/site_preferences.py",
+      "ok": true,
+      "detail": "Required file missing: config/site_preferences.py",
+      "path": "config/site_preferences.py"
+    },
+    {
+      "code": "file:core/context_processors.py",
+      "ok": true,
+      "detail": "Required file missing: core/context_processors.py",
+      "path": "core/context_processors.py"
+    },
+    {
+      "code": "capacity_seed_counts",
+      "ok": true,
+      "detail": "The integrated data button must create 500 students and the exact 19-teacher/25-period/5-daily capacity dataset.",
+      "path": "core/system_data.py"
+    },
+    {
+      "code": "requested_subject_plan",
+      "ok": true,
+      "detail": "The seeded subject substitutions and weekly periods do not match the approved plan.",
+      "path": "core/system_data.py"
+    },
+    {
+      "code": "exact_teacher_workload_seed",
+      "ok": true,
+      "detail": "Every generated teacher must receive 25 weekly periods, five daily periods, and an editable daily-free policy.",
+      "path": "core/system_data.py"
+    },
+    {
+      "code": "jordan_authoritative_clock",
+      "ok": true,
+      "detail": "The whole UI clock must use the server-authoritative school time zone with Asia/Amman as the Irbid default.",
+      "path": "static/js/opal_erp.js"
+    },
+    {
+      "code": "file:academics/subject_identity.py",
+      "ok": true,
+      "detail": "Required file missing: academics/subject_identity.py",
+      "path": "academics/subject_identity.py"
+    },
+    {
+      "code": "file:core/capacity_timezone_contracts.py",
+      "ok": true,
+      "detail": "Required file missing: core/capacity_timezone_contracts.py",
+      "path": "core/capacity_timezone_contracts.py"
+    },
+    {
+      "code": "file:core/test_update131_3_1_subject_palette_contract.py",
+      "ok": true,
+      "detail": "Required file missing: core/test_update131_3_1_subject_palette_contract.py",
+      "path": "core/test_update131_3_1_subject_palette_contract.py"
+    },
+    {
+      "code": "capacity_subject_palette",
+      "ok": true,
+      "detail": "The subject palette must safely allocate all 18 capacity identities with at least 45 RGB distance and future headroom.",
+      "path": "academics/subject_identity.py"
+    },
+    {
+      "code": "file:core/capacity_timezone_contracts.py",
+      "ok": true,
+      "detail": "Required file missing: core/capacity_timezone_contracts.py",
+      "path": "core/capacity_timezone_contracts.py"
+    },
+    {
+      "code": "capacity_timezone_system_gate",
+      "ok": true,
+      "detail": "The capacity and authoritative-time contracts must be registered in Django system checks.",
+      "path": "core/checks.py"
+    },
+    {
+      "code": "file:core/live_events_matrix_contracts.py",
+      "ok": true,
+      "detail": "Required file missing: core/live_events_matrix_contracts.py",
+      "path": "core/live_events_matrix_contracts.py"
+    },
+    {
+      "code": "file:core/test_update131_4_live_events_matrix_contract.py",
+      "ok": true,
+      "detail": "Required file missing: core/test_update131_4_live_events_matrix_contract.py",
+      "path": "core/test_update131_4_live_events_matrix_contract.py"
+    },
+    {
+      "code": "live_events_matrix_system_gate",
+      "ok": true,
+      "detail": "The live-events matrix contracts must be registered in Django system checks.",
+      "path": "core/checks.py"
+    },
+    {
+      "code": "file:timetable/live_services.py",
+      "ok": true,
+      "detail": "Required file missing: timetable/live_services.py",
+      "path": "timetable/live_services.py"
+    },
+    {
+      "code": "live_events_horizontal_matrix",
+      "ok": true,
+      "detail": "The director dashboard must publish the three-row grade/section/current-event matrix.",
+      "path": "dashboard/templates/dashboard/home.html"
+    },
+    {
+      "code": "official_time_boundary_refresh",
+      "ok": true,
+      "detail": "The live matrix must display official server time and refresh at the nearest event boundary.",
+      "path": "static/js/opal_erp.js"
+    },
+    {
+      "code": "search_threshold",
+      "ok": true,
+      "detail": "General table instant search threshold is not 30 rows.",
+      "path": "static/js/opal_erp.js"
+    },
+    {
+      "code": "timetable_search_off",
+      "ok": true,
+      "detail": "Timetable instant search is not disabled.",
+      "path": "templates/timetable/dashboard.html"
+    },
+    {
+      "code": "file:academics/grade_names.py",
+      "ok": true,
+      "detail": "Required file missing: academics/grade_names.py",
+      "path": "academics/grade_names.py"
+    },
+    {
+      "code": "section_name_contract",
+      "ok": true,
+      "detail": "Stored section names are not normalized to the short «شعبة أ» form.",
+      "path": "academics/grade_names.py"
+    },
+    {
+      "code": "file:static/css/opal_erp.css",
+      "ok": true,
+      "detail": "Required file missing: static/css/opal_erp.css",
+      "path": "static/css/opal_erp.css"
+    },
+    {
+      "code": "print_contract",
+      "ok": true,
+      "detail": "Update 131 timetable print contract is incomplete.",
+      "path": "static/css/opal_erp.css"
+    },
+    {
+      "code": "file:core/workflow_catalog.py",
+      "ok": true,
+      "detail": "Required file missing: core/workflow_catalog.py",
+      "path": "core/workflow_catalog.py"
+    },
+    {
+      "code": "single_material_plan_operation",
+      "ok": true,
+      "detail": "The operation catalogue must expose one material/plan operation and no retired exam-analysis key.",
+      "path": "core/workflow_catalog.py"
+    },
+    {
+      "code": "operation_reference_integrity",
+      "ok": true,
+      "detail": "Navigation references unknown operation keys: ",
+      "path": "core/workflow_catalog.py"
+    },
+    {
+      "code": "file:templates/academics/academic_structure.html",
+      "ok": true,
+      "detail": "Required file missing: templates/academics/academic_structure.html",
+      "path": "templates/academics/academic_structure.html"
+    },
+    {
+      "code": "single_gateway_cards",
+      "ok": true,
+      "detail": "The academic gateway must render one visible card for each consolidated workflow.",
+      "path": "templates/academics/academic_structure.html"
+    },
+    {
+      "code": "no_internal_legacy_routes",
+      "ok": true,
+      "detail": "Deprecated routes are still used internally: ",
+      "path": ""
+    },
+    {
+      "code": "canonical_student",
+      "ok": true,
+      "detail": "A parallel student model was detected: ",
+      "path": ""
+    },
+    {
+      "code": "file:dashboard/views.py",
+      "ok": true,
+      "detail": "Required file missing: dashboard/views.py",
+      "path": "dashboard/views.py"
+    },
+    {
+      "code": "file:dashboard/templates/dashboard/home.html",
+      "ok": true,
+      "detail": "Required file missing: dashboard/templates/dashboard/home.html",
+      "path": "dashboard/templates/dashboard/home.html"
+    },
+    {
+      "code": "file:dashboard/workflow.py",
+      "ok": true,
+      "detail": "Required file missing: dashboard/workflow.py",
+      "path": "dashboard/workflow.py"
+    },
+    {
+      "code": "file:static/css/opal_dashboard_executive.css",
+      "ok": true,
+      "detail": "Required file missing: static/css/opal_dashboard_executive.css",
+      "path": "static/css/opal_dashboard_executive.css"
+    },
+    {
+      "code": "file:core/fixed_dashboard_contracts.py",
+      "ok": true,
+      "detail": "Required file missing: core/fixed_dashboard_contracts.py",
+      "path": "core/fixed_dashboard_contracts.py"
+    },
+    {
+      "code": "dashboard_customizer_retired",
+      "ok": true,
+      "detail": "The manager dashboard customizer and its save/reset runtime must be removed.",
+      "path": "dashboard/templates/dashboard/home.html"
+    },
+    {
+      "code": "fixed_dashboard_structure",
+      "ok": true,
+      "detail": "The fixed manager dashboard structure or ten-student/top-grade data contract is incomplete.",
+      "path": "dashboard/templates/dashboard/home.html"
+    },
+    {
+      "code": "fixed_dashboard_visual_contract",
+      "ok": true,
+      "detail": "The crystal glass, rounded and dashed-gold visual contract is incomplete.",
+      "path": "static/css/opal_dashboard_executive.css"
+    },
+    {
+      "code": "file:core/single_entry_contracts.py",
+      "ok": true,
+      "detail": "Required file missing: core/single_entry_contracts.py",
+      "path": "core/single_entry_contracts.py"
+    },
+    {
+      "code": "dashboard_kpi_contract_is_layout_independent",
+      "ok": true,
+      "detail": "The canonical KPI link audit must validate real anchors and destinations without coupling to one historical CSS class order.",
+      "path": "core/single_entry_contracts.py"
+    },
+    {
+      "code": "dashboard_retired_shortcut_contract_consistency",
+      "ok": true,
+      "detail": "The retired internal-workflow dashboard shortcut must not remain required by an older single-entry contract.",
+      "path": "core/single_entry_contracts.py"
+    },
+    {
+      "code": "file:core/checks.py",
+      "ok": true,
+      "detail": "Required file missing: core/checks.py",
+      "path": "core/checks.py"
+    },
+    {
+      "code": "fixed_dashboard_system_gate",
+      "ok": true,
+      "detail": "The fixed dashboard contracts must be registered in Django system checks.",
+      "path": "core/checks.py"
+    },
+    {
+      "code": "file:core/dashboard_truth_contracts.py",
+      "ok": true,
+      "detail": "Required file missing: core/dashboard_truth_contracts.py",
+      "path": "core/dashboard_truth_contracts.py"
+    },
+    {
+      "code": "file:dashboard/management/commands/audit_dashboard_truth.py",
+      "ok": true,
+      "detail": "Required file missing: dashboard/management/commands/audit_dashboard_truth.py",
+      "path": "dashboard/management/commands/audit_dashboard_truth.py"
+    },
+    {
+      "code": "file:enterprise_ops/services.py",
+      "ok": true,
+      "detail": "Required file missing: enterprise_ops/services.py",
+      "path": "enterprise_ops/services.py"
+    },
+    {
+      "code": "file:parent_portal/evaluation_services.py",
+      "ok": true,
+      "detail": "Required file missing: parent_portal/evaluation_services.py",
+      "path": "parent_portal/evaluation_services.py"
+    },
+    {
+      "code": "dashboard_data_truth_contract",
+      "ok": true,
+      "detail": "Every manager-dashboard value must be school/year scoped, truth-labelled, and protected by a production audit command.",
+      "path": "core/dashboard_truth_contracts.py"
+    },
+    {
+      "code": "file:core/subject_ui_contracts.py",
+      "ok": true,
+      "detail": "Required file missing: core/subject_ui_contracts.py",
+      "path": "core/subject_ui_contracts.py"
+    },
+    {
+      "code": "file:core/templatetags/opal_subjects.py",
+      "ok": true,
+      "detail": "Required file missing: core/templatetags/opal_subjects.py",
+      "path": "core/templatetags/opal_subjects.py"
+    },
+    {
+      "code": "file:static/css/opal_erp.css",
+      "ok": true,
+      "detail": "Required file missing: static/css/opal_erp.css",
+      "path": "static/css/opal_erp.css"
+    },
+    {
+      "code": "canonical_subject_colour_ui",
+      "ok": true,
+      "detail": "Canonical subject colours and compact role gateways must be deployed and guarded by a system check.",
+      "path": "core/subject_ui_contracts.py"
+    }
+  ],
+  "scope_note": "Static source validation only; run Django checks, migrations, and tests in the project virtual environment."
+}

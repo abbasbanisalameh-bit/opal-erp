@@ -1,0 +1,5 @@
+{% extends "learning_platform/base.html" %}
+{% block title %}حالة الدفع | أوبال{% endblock %}
+{% block content %}
+<section class="learning-section"><div class="learning-container learning-narrow"><div class="learning-form-card"><span>رقم الطلب {{ order.public_id }}</span><h1>{{ order.get_status_display }}</h1><p>الخطة: {{ order.plan.name }} — {{ order.amount }} {{ order.currency }}</p>{% if order.status == 'paid' %}<div class="learning-foundation-note success"><strong>تم تفعيل الاشتراك</strong><p>يمكنك الآن فتح الدورات المشمولة بالخطة.</p></div>{% elif order.status == 'pending' or order.status == 'processing' %}<div class="learning-foundation-note"><strong>لم يُعتمد الدفع بعد</strong><p>سيُحدّث الطلب تلقائيًا من بوابة الدفع أو بعد مراجعته من الإدارة.</p></div>{% elif order.failure_reason %}<div class="learning-foundation-note"><strong>تفاصيل</strong><p>{{ order.failure_reason }}</p></div>{% endif %}<a class="learning-button" href="{% url 'learning_platform:subscriptions' %}">العودة إلى الاشتراكات</a></div></div></section>
+{% endblock %}

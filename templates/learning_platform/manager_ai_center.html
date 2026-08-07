@@ -1,0 +1,35 @@
+{% extends "learning_platform/base.html" %}
+
+{% block title %}حوكمة المساعد التعليمي | أوبال{% endblock %}
+{% block body_class %}learning-manager-mode{% endblock %}
+
+{% block content %}
+<section class="learning-page-hero manager-page ai-page"><div class="learning-container"><span>إدارة المنصة</span><h1>حوكمة المساعد التعليمي</h1><p>تفعيل الأدوات، حدود الاستخدام، حالة المزود، وسجل الطلبات والمسودات دون تخزين مفتاح الخدمة في قاعدة البيانات.</p></div></section>
+<section class="learning-section learning-manager-page-section"><div class="learning-container">
+    {% include "learning_platform/_manager_nav.html" %}
+    <div class="learning-manager-stat-grid report-grid ai-stats">
+        <article><span>✦</span><strong>{{ stats.today }}</strong><small>طلبات اليوم</small></article>
+        <article><span>↗</span><strong>{{ stats.external }}</strong><small>عبر المزود الخارجي</small></article>
+        <article><span>▤</span><strong>{{ stats.local }}</strong><small>مرجع محلي</small></article>
+        <article><span>!</span><strong>{{ stats.errors }}</strong><small>أخطاء المزود</small></article>
+        <article><span>✎</span><strong>{{ stats.drafts }}</strong><small>مسودات قيد المراجعة</small></article>
+    </div>
+
+    <div class="learning-ai-admin-grid">
+        <section class="learning-manager-form-card">
+            <div class="learning-dashboard-heading"><div><span>السياسة</span><h2>الإعدادات والحدود</h2></div></div>
+            <form method="post" novalidate>{% csrf_token %}{% if form.non_field_errors %}<div class="learning-form-errors">{{ form.non_field_errors }}</div>{% endif %}
+                <div class="learning-manager-form-grid">{% for field in form %}<div class="learning-field {% if field.name == 'policy_text' %}full{% endif %}">{% if field.field.widget.input_type == 'checkbox' %}<label class="learning-checkbox-row">{{ field }} <span>{{ field.label }}</span></label>{% else %}<label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% endif %}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{% for error in field.errors %}<em>{{ error }}</em>{% endfor %}</div>{% endfor %}</div>
+                <button class="learning-button" type="submit">حفظ إعدادات المساعد</button>
+            </form>
+        </section>
+        <aside class="learning-ai-provider-card {% if provider.configured %}ready{% endif %}"><span>حالة المزود الخارجي</span><h2>{% if provider.configured %}جاهز تقنيًا{% else %}غير مكتمل{% endif %}</h2><dl><div><dt>التفعيل البيئي</dt><dd>{% if provider.enabled %}نعم{% else %}لا{% endif %}</dd></div><div><dt>عنوان الخدمة</dt><dd>{% if provider.base_url_configured %}موجود{% else %}غير موجود{% endif %}</dd></div><div><dt>مفتاح API</dt><dd>{% if provider.api_key_configured %}موجود ومحجوب{% else %}غير موجود{% endif %}</dd></div><div><dt>النموذج</dt><dd>{{ provider.model|default:"غير محدد" }}</dd></div></dl><p>المفتاح يُقرأ من متغيرات البيئة ولا يظهر هنا أو يُحفظ في قاعدة البيانات.</p></aside>
+    </div>
+
+    <div class="learning-dashboard-heading"><div><span>سجل التدقيق</span><h2>أحدث طلبات المساعدة</h2></div></div>
+    {% if interactions %}<div class="learning-manager-table-wrap"><table class="learning-manager-table"><thead><tr><th>الحساب</th><th>الدورة والطلب</th><th>الوضع</th><th>المراجع</th><th>الوقت</th></tr></thead><tbody>{% for item in interactions %}<tr><td><strong>{{ item.account.full_name }}</strong><small>{{ item.account.get_role_display }}</small></td><td><strong>{{ item.course.title }}</strong><small>{{ item.get_interaction_type_display }} · {{ item.prompt|truncatechars:90 }}</small>{% if item.error_message %}<small class="learning-error">{{ item.error_message|truncatechars:120 }}</small>{% endif %}</td><td><span class="learning-table-status status-{{ item.status }}">{{ item.get_status_display }}</span><small>{{ item.provider_name }}</small></td><td>{{ item.source_labels|length }}</td><td>{{ item.created_at|date:"Y-m-d H:i" }}</td></tr>{% endfor %}</tbody></table></div>{% else %}<div class="learning-inline-empty"><span>لا توجد طلبات مسجلة بعد.</span></div>{% endif %}
+
+    <div class="learning-dashboard-heading"><div><span>المراجعة البشرية</span><h2>أحدث مسودات المدرّسين</h2></div></div>
+    {% if drafts %}<div class="learning-manager-list">{% for draft in drafts %}<article><span>✎</span><div><strong>{{ draft.title }}</strong><small>{{ draft.teacher.full_name }} · {{ draft.course.title }} · {{ draft.updated_at|date:"Y-m-d H:i" }}</small></div><b>{{ draft.get_status_display }}</b></article>{% endfor %}</div>{% else %}<div class="learning-inline-empty"><span>لا توجد مسودات بعد.</span></div>{% endif %}
+</div></section>
+{% endblock %}

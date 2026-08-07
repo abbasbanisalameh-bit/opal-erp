@@ -1,0 +1,26 @@
+{% extends "learning_platform/base.html" %}
+
+{% block title %}مواد المنصة | أوبال{% endblock %}
+{% block body_class %}learning-manager-mode{% endblock %}
+
+{% block content %}
+<section class="learning-page-hero manager-page"><div class="learning-container"><span>إدارة المحتوى</span><h1>المواد التعليمية</h1><p>أنشئ التصنيفات الرسمية التي ترتبط بها الدورات.</p></div></section>
+<section class="learning-section learning-manager-page-section"><div class="learning-container">
+    {% include "learning_platform/_manager_nav.html" %}
+    <div class="learning-manager-toolbar"><div><strong>المواد الحالية</strong><small>تعطيل المادة يخفي دوراتها من الدليل العام دون حذفها.</small></div><a class="learning-button learning-button-small" href="{% url 'learning_platform:manager_subject_create' %}">إضافة مادة</a></div>
+    {% if subjects %}
+        <div class="learning-manager-card-grid">
+            {% for subject in subjects %}
+                <article>
+                    <span>{{ subject.name|slice:":1" }}</span>
+                    <div><h2>{{ subject.name }}</h2><small>{{ subject.slug }}</small><p>{{ subject.course_count }} دورة · {{ subject.published_course_count }} منشورة</p></div>
+                    <b class="learning-state {% if subject.is_active %}active{% else %}inactive{% endif %}">{% if subject.is_active %}فعالة{% else %}معطلة{% endif %}</b>
+                    <a href="{% url 'learning_platform:manager_subject_update' subject.pk %}">تعديل</a>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="learning-empty"><span>◇</span><strong>لا توجد مواد تعليمية</strong><p>أنشئ المادة الأولى قبل إنشاء الدورات.</p><a class="learning-button learning-button-small" href="{% url 'learning_platform:manager_subject_create' %}">إنشاء مادة</a></div>
+    {% endif %}
+</div></section>
+{% endblock %}

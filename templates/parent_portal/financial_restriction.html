@@ -1,0 +1,4 @@
+{% extends "base/base.html" %}
+{% block title %}خدمة مقيدة{% endblock %}
+{% block page_title %}الخدمة مقيدة وفق سياسة الحساب{% endblock %}
+{% block content %}<section class="opal-card"><div class="alert alert-warning"><h4 class="fw-bold">{{ feature }} غير متاحة حاليًا</h4><p class="mb-0">هذه سياسة إدارية قابلة للتعديل وليست شرطًا على الترفيع أو التخريج. يبقى الحضور والتنبيهات الأساسية متاحين دائمًا.</p></div><a class="btn btn-primary" href="{% url 'parent_portal:fees' %}">عرض كشف الرسوم والرصيد السابق</a> <a class="btn btn-outline-secondary" href="{% url 'parent_portal:dashboard' %}">العودة للرئيسية</a></section>{% endblock %}

@@ -1,0 +1,14 @@
+{% extends "learning_platform/base.html" %}
+
+{% block title %}{{ error_title }} | منصة أوبال التعليمية{% endblock %}
+
+{% block content %}
+<section class="learning-error-page">
+    <div class="learning-error-card">
+        <span>{{ status_code }}</span>
+        <h1>{{ error_title }}</h1>
+        <p>{{ error_message }}</p>
+        <a class="learning-button" href="{% url 'learning_platform:landing' %}">العودة إلى الرئيسية</a>
+    </div>
+</section>
+{% endblock %}

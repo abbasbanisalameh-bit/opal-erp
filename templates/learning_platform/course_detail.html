@@ -1,0 +1,100 @@
+{% extends "learning_platform/base.html" %}
+
+{% block title %}{{ course.title }} | منصة أوبال التعليمية{% endblock %}
+
+{% block content %}
+<section class="learning-course-hero" style="--course-color:{{ course.cover_color }}">
+    <div class="learning-container learning-course-hero-grid">
+        <div>
+            <span>{{ course.subject.name }}{% if course.grade_label %} · {{ course.grade_label }}{% endif %}</span>
+            <h1>{{ course.title }}</h1>
+            <p>{{ course.summary|default:"دورة تعليمية منظمة ضمن منصة أوبال التعليمية." }}</p>
+            <div><small>المدرّس</small><strong>{{ course.teacher.full_name }}</strong></div>
+        </div>
+        <aside>
+            <span>{{ course.subject.name|slice:":1" }}</span>
+            <strong>{{ lessons|length }} درسًا منشورًا</strong>
+            {% if learning_account and learning_account.role == 'learner' %}
+                {% if enrollment and enrollment.status != 'cancelled' and entitlement %}
+                    <div class="learning-course-progress-summary">
+                        <small>نسبة الإنجاز</small>
+                        <b>{{ enrollment.progress_percent }}%</b>
+                    </div>
+                    {% if continue_lesson %}
+                        <a class="learning-button learning-button-light" href="{% url 'learning_platform:lesson_detail' course.slug continue_lesson.slug %}">متابعة التعلم</a>
+                    {% elif lessons %}
+                        <a class="learning-button learning-button-light" href="{% url 'learning_platform:lesson_detail' course.slug lessons.0.slug %}">مراجعة الدورة</a>
+                    {% endif %}
+                {% elif can_enroll %}
+                    <form method="post" action="{% url 'learning_platform:course_enroll' course.slug %}">
+                        {% csrf_token %}
+                        <button class="learning-button learning-button-light" type="submit">التسجيل والبدء</button>
+                    </form>
+                {% else %}
+                    <a class="learning-button learning-button-light" href="{% url 'learning_platform:subscriptions' %}">تفعيل اشتراك للوصول</a>
+                {% endif %}
+            {% elif learning_account %}
+                <a class="learning-button learning-button-light" href="{% url 'learning_platform:dashboard' %}">العودة إلى لوحتي</a>
+            {% else %}
+                <a class="learning-button learning-button-light" href="{% url 'learning_platform:register' %}?next={{ request.path|urlencode }}">إنشاء حساب للتعلم</a>
+            {% endif %}
+        </aside>
+    </div>
+</section>
+
+<section class="learning-section learning-lessons-section">
+    <div class="learning-container">
+        <div class="learning-dashboard-heading">
+            <div><span>محتوى الدورة</span><h2>الدروس المنشورة</h2></div>
+        </div>
+        {% if lessons %}
+            <div class="learning-lesson-list">
+                {% for lesson in lessons %}
+                    {% if enrollment and enrollment.status != 'cancelled' and entitlement %}
+                        <a class="learning-lesson-row {% if lesson.learning_completed %}completed{% endif %}" href="{% url 'learning_platform:lesson_detail' course.slug lesson.slug %}">
+                            <span>{{ lesson.order|stringformat:"02d" }}</span>
+                            <div><h3>{{ lesson.title }}</h3><small>{% if lesson.duration_minutes %}{{ lesson.duration_minutes }} دقيقة{% else %}مدة مرنة{% endif %}</small></div>
+                            <i>{% if lesson.learning_completed %}✓{% else %}▷{% endif %}</i>
+                        </a>
+                    {% else %}
+                        <article class="learning-lesson-row locked">
+                            <span>{{ lesson.order|stringformat:"02d" }}</span>
+                            <div><h3>{{ lesson.title }}</h3><small>{% if lesson.duration_minutes %}{{ lesson.duration_minutes }} دقيقة{% else %}مدة مرنة{% endif %}</small></div>
+                            <i>🔒</i>
+                        </article>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="learning-empty"><span>▷</span><strong>لم تنشر دروس هذه الدورة بعد</strong><p>ستظهر الدروس هنا بعد مراجعتها واعتمادها.</p></div>
+        {% endif %}
+    </div>
+</section>
+
+
+<section class="learning-section learning-assessments-section">
+    <div class="learning-container">
+        <div class="learning-dashboard-heading"><div><span>قياس التعلم</span><h2>الاختبارات والواجبات</h2></div>{% if active_certificate %}<a href="{% url 'learning_platform:certificate_detail' course.slug %}">عرض الشهادة ←</a>{% endif %}</div>
+        {% if assessments %}
+            <div class="learning-assessment-grid">
+                {% for assessment in assessments %}
+                    {% if enrollment and enrollment.status != 'cancelled' and entitlement %}
+                        <a class="learning-assessment-tile {% if assessment.is_passed %}passed{% endif %}" href="{% url 'learning_platform:assessment_detail' course.slug assessment.slug %}">
+                            <span>{% if assessment.assessment_type == 'quiz' %}؟{% else %}✎{% endif %}</span>
+                            <div><small>{{ assessment.get_assessment_type_display }} · {{ assessment.max_score }} علامة</small><h3>{{ assessment.title }}</h3><p>{% if assessment.is_passed %}تم الاجتياز{% elif assessment.latest_submission.status == 'submitted' %}بانتظار التصحيح{% else %}{{ assessment.attempts_used }} من {{ assessment.max_attempts }} محاولة{% endif %}</p></div>
+                            <i>{% if assessment.is_passed %}✓{% else %}←{% endif %}</i>
+                        </a>
+                    {% else %}
+                        <article class="learning-assessment-tile locked"><span>🔒</span><div><small>{{ assessment.get_assessment_type_display }}</small><h3>{{ assessment.title }}</h3><p>يتطلب التسجيل والاشتراك الفعال.</p></div></article>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="learning-inline-empty"><span>لا توجد تقييمات منشورة لهذه الدورة.</span></div>
+        {% endif %}
+        {% if active_certificate %}
+            <div class="learning-certificate-callout"><div><span>✓</span><div><strong>أكملت جميع متطلبات الدورة</strong><p>صدرت شهادتك الرقمية ويمكن طباعتها أو التحقق منها.</p></div></div><a class="learning-button learning-button-small" href="{% url 'learning_platform:certificate_detail' course.slug %}">عرض الشهادة</a></div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

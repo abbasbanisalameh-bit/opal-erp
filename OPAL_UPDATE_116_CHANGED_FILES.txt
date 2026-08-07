@@ -1,0 +1,13 @@
+OPAL Update 116.0 — Changed Files
+
+INSTALL_OPAL_UPDATE_116_EXECUTIVE_DASHBOARD_REDESIGN_AR.md
+OPAL_UPDATE_116_EXECUTIVE_DASHBOARD_REDESIGN_RELEASE_NOTES_AR.md
+OPAL_UPDATE_116_CHANGED_FILES.txt
+OPAL_UPDATE_MANIFEST.json
+OPAL_VERSION.txt
+README.md
+dashboard/templates/dashboard/home.html
+dashboard/test_update116_contract.py
+static/css/opal_dashboard_executive.css
+static/css/opal_dashboard_polish.css
+templates/base/base.html

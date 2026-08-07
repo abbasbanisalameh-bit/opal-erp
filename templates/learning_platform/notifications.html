@@ -1,0 +1,31 @@
+{% extends "learning_platform/base.html" %}
+
+{% block title %}الإشعارات | منصة أوبال التعليمية{% endblock %}
+
+{% block content %}
+<section class="learning-page-hero"><div class="learning-container"><span>مركز التنبيهات</span><h1>إشعاراتك</h1><p>نتائج التقييمات، الواجبات، الشهادات، الاشتراكات، والتنبيهات التشغيلية في مكان واحد.</p></div></section>
+<section class="learning-section learning-notification-section"><div class="learning-container learning-notification-wrap">
+    <div class="learning-manager-toolbar">
+        <form method="get" class="learning-manager-filter">
+            <select class="learning-input" name="type"><option value="">جميع الأنواع</option>{% for value,label in notification_types %}<option value="{{ value }}" {% if notice_type == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+            <label class="learning-inline-check"><input type="checkbox" name="unread" value="1" {% if unread_only %}checked{% endif %}> غير المقروءة فقط</label>
+            <button class="learning-button learning-button-small" type="submit">تصفية</button>
+        </form>
+        {% if unread_notifications_count %}<form method="post" action="{% url 'learning_platform:notification_read_all' %}">{% csrf_token %}<button class="learning-button learning-button-small learning-button-ghost" type="submit">تعليم الكل كمقروء</button></form>{% endif %}
+    </div>
+
+    {% if notifications %}
+        <div class="learning-notification-list">
+            {% for notice in notifications %}
+                <article class="{% if not notice.read_at %}unread{% endif %}">
+                    <span class="type-{{ notice.notification_type }}">{% if notice.notification_type == 'certificate' %}▣{% elif notice.notification_type == 'assessment' %}✓{% elif notice.notification_type == 'subscription' %}#{% elif notice.notification_type == 'course' %}▶{% else %}•{% endif %}</span>
+                    <div><div class="learning-notification-heading"><strong>{{ notice.title }}</strong>{% if not notice.read_at %}<b>جديد</b>{% endif %}</div><p>{{ notice.body }}</p><small>{{ notice.created_at|date:"Y-m-d H:i" }}</small></div>
+                    <form method="post" action="{% url 'learning_platform:notification_open' notice.pk %}">{% csrf_token %}<button class="learning-table-action" type="submit">{% if notice.action_url %}فتح{% else %}تم{% endif %}</button></form>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="learning-empty"><span>◇</span><strong>لا توجد إشعارات مطابقة</strong><p>ستظهر هنا نتائج التقييمات وتنبيهات الاشتراك والشهادات.</p></div>
+    {% endif %}
+</div></section>
+{% endblock %}

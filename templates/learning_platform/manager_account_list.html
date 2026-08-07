@@ -1,0 +1,55 @@
+{% extends "learning_platform/base.html" %}
+
+{% block title %}حسابات المنصة | أوبال{% endblock %}
+{% block body_class %}learning-manager-mode{% endblock %}
+
+{% block content %}
+<section class="learning-page-hero manager-page"><div class="learning-container"><span>إدارة المنصة</span><h1>الحسابات والمدرّسون</h1><p>حسابات المنصة مستقلة عن مستخدمي OPAL ERP وعن سجلات طلاب المدرسة.</p></div></section>
+<section class="learning-section learning-manager-page-section"><div class="learning-container">
+    {% include "learning_platform/_manager_nav.html" %}
+    <div class="learning-manager-toolbar">
+        <form method="get" class="learning-manager-filter">
+            <input class="learning-input" type="search" name="q" value="{{ query }}" placeholder="بحث بالاسم أو البريد أو الهاتف">
+            <select class="learning-input" name="role">
+                <option value="">جميع الأنواع</option>
+                <option value="learner" {% if role == 'learner' %}selected{% endif %}>المتعلمون</option>
+                <option value="teacher" {% if role == 'teacher' %}selected{% endif %}>المدرّسون</option>
+            </select>
+            <button class="learning-button learning-button-small" type="submit">بحث</button>
+        </form>
+        <div class="learning-manager-actions">
+            <a class="learning-button learning-button-small learning-button-ghost" href="{% url 'learning_platform:manager_password_reset_requests' %}">طلبات الاستعادة</a>
+            <a class="learning-button learning-button-small" href="{% url 'learning_platform:manager_teacher_create' %}">إضافة مدرّس</a>
+        </div>
+    </div>
+
+    {% if accounts %}
+        <div class="learning-manager-table-wrap"><table class="learning-manager-table">
+            <thead><tr><th>المستخدم</th><th>النوع</th><th>النشاط</th><th>آخر دخول</th><th>البريد</th><th>الحالة</th><th>الإجراء</th></tr></thead>
+            <tbody>
+            {% for account in accounts %}
+                <tr>
+                    <td><strong>{{ account.full_name }}</strong><small>{{ account.email }}{% if account.phone %} · {{ account.phone }}{% endif %}</small></td>
+                    <td>{{ account.get_role_display }}</td>
+                    <td>{% if account.role == 'teacher' %}{{ account.course_count }} دورة{% else %}{{ account.enrollment_count }} تسجيل{% endif %}</td>
+                    <td>{% if account.last_login_at %}{{ account.last_login_at|date:"Y-m-d H:i" }}{% else %}لم يدخل بعد{% endif %}</td>
+                    <td>{% if account.email_verified_at %}<span class="learning-state active">موثق</span>{% else %}<span class="learning-state inactive">غير موثق</span>{% endif %}</td>
+                    <td><span class="learning-state {% if account.is_active %}active{% else %}inactive{% endif %}">{% if account.is_active %}فعال{% else %}موقوف{% endif %}</span></td>
+                    <td>
+                        {% if account.role != 'manager' %}
+                        <div class="learning-row-actions">
+                            <a class="learning-table-action" href="{% url 'learning_platform:manager_account_password_reset' account.pk %}">كلمة المرور</a>
+                            {% if not account.email_verified_at %}<form method="post" action="{% url 'learning_platform:manager_account_verify_email' account.pk %}">{% csrf_token %}<button class="learning-table-action success" type="submit">توثيق البريد</button></form>{% endif %}
+                            <form method="post" action="{% url 'learning_platform:manager_account_toggle' account.pk %}">{% csrf_token %}<button class="learning-table-action {% if account.is_active %}danger{% else %}success{% endif %}" type="submit">{% if account.is_active %}إيقاف{% else %}تفعيل{% endif %}</button></form>
+                        </div>
+                        {% else %}<span>حساب تاريخي</span>{% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table></div>
+    {% else %}
+        <div class="learning-empty"><span>◇</span><strong>لا توجد حسابات مطابقة</strong><p>غيّر معايير البحث أو أنشئ حساب مدرّس جديدًا.</p></div>
+    {% endif %}
+</div></section>
+{% endblock %}

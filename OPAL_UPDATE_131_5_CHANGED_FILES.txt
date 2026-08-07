@@ -1,0 +1,29 @@
+OPAL Update 131.5 R2 - Simplified Manager Dashboard Designer
+
+Modified:
+- OPAL_VERSION.txt
+- OPAL_RELEASE_NAME.txt
+- OPAL_UPDATE_MANIFEST.json
+- accounts/models.py
+- dashboard/views.py
+- dashboard/templates/dashboard/home.html
+- core/checks.py
+- core/test_update129_horizontal_timetable_contract.py
+- core/test_update130_production_stability_contract.py
+- core/test_update131_safe_consolidation_contract.py
+- static/css/opal_erp.css
+- templates/base/base.html
+- tools/validate_opal_update_131_source.py
+- tools/verify_opal_update_131_archive.py
+
+Added:
+- accounts/migrations/0002_userprofile_dashboard_layout.py
+- dashboard/layout.py
+- static/js/opal_dashboard_layout.js
+- core/dashboard_layout_contracts.py
+- core/test_update131_5_dashboard_layout_contract.py
+- INSTALL_OPAL_UPDATE_131_5_DASHBOARD_LAYOUT_AR.md
+- OPAL_UPDATE_131_5_DASHBOARD_LAYOUT_RELEASE_NOTES_AR.md
+- OPAL_UPDATE_131_5_VALIDATION_REPORT_AR.md
+- OPAL_UPDATE_131_5_R2_VALIDATION.json
+- OPAL_UPDATE_131_5_CHANGED_FILES.txt

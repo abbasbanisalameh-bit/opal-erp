@@ -1,0 +1,10 @@
+{% extends "base/base.html" %}
+{% block title %}الدورات الامتحانية العامة{% endblock %}
+{% block page_title %}الدورات الامتحانية العامة{% endblock %}
+{% block page_subtitle %}تفتح الإدارة الدورة مرة واحدة فتظهر تلقائيًا لكل معلم وفق تكليفه{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-5"><section class="opal-card"><h3 class="fw-bold">فتح دورة عامة</h3><div class="alert alert-info">لا تُنشأ أي علامة فارغة. تظهر قائمة الطلبة عند فتح المعلم للامتحان الموزع على تكليفه.</div><form method="post">{% csrf_token %}{{ form.as_p }}<button class="btn btn-primary w-100">فتح وتوزيع الدورة</button></form></section></div>
+  <div class="col-lg-7"><section class="opal-card"><h3 class="fw-bold">الدورات المفتوحة والمؤرشفة</h3><div class="table-responsive"><table class="opal-table"><thead><tr><th>العام</th><th>الفصل</th><th>الدورة</th><th>الحالة</th><th>التكليفات</th><th>التاريخ</th></tr></thead><tbody>{% for cycle in cycles %}<tr><td>{{ cycle.academic_year }}</td><td>{{ cycle.semester.get_code_display }}</td><td>{{ cycle.get_exam_type_display }}</td><td><span class="badge {% if cycle.status == 'open' %}bg-success{% else %}bg-dark{% endif %}">{{ cycle.get_status_display }}</span></td><td>{{ cycle.exams.count }}</td><td>{{ cycle.opened_at|date:'Y-m-d H:i' }}</td></tr>{% empty %}<tr><td colspan="6">لم تفتح أي دورة بعد.</td></tr>{% endfor %}</tbody></table></div></section></div>
+</div>
+{% endblock %}

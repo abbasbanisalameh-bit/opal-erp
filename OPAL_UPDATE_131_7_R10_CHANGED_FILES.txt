@@ -1,0 +1,14 @@
+OPAL Update 131.7 R10 — Changed Files
+
+OPAL_RELEASE_NAME.txt
+OPAL_UPDATE_MANIFEST.json
+templates/base/base.html
+static/css/opal_theme_system.css
+static/js/opal_erp.js
+core/test_update131_7_r9_production_closeout_contract.py
+core/test_update131_7_r10_aesthetic_finishing_contract.py
+tools/validate_opal_update_131_source.py
+tools/verify_opal_update_131_archive.py
+INSTALL_OPAL_UPDATE_131_7_R10_AESTHETIC_FINISHING_AR.md
+OPAL_UPDATE_131_7_R10_AESTHETIC_FINISHING_RELEASE_NOTES_AR.md
+OPAL_UPDATE_131_7_R10_VALIDATION_REPORT_AR.md

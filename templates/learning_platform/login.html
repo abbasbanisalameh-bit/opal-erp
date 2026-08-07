@@ -1,0 +1,27 @@
+{% extends "learning_platform/base.html" %}
+
+{% block title %}تسجيل الدخول | منصة أوبال التعليمية{% endblock %}
+{% block body_class %}learning-auth-page{% endblock %}
+
+{% block content %}
+<section class="learning-auth-section">
+    <div class="learning-auth-orb one" aria-hidden="true"></div><div class="learning-auth-orb two" aria-hidden="true"></div>
+    <div class="learning-auth-card">
+        <div class="learning-auth-icon">O</div>
+        <span class="learning-auth-kicker">الحساب التعليمي</span>
+        <h1>مرحبًا بعودتك</h1>
+        <p>ادخل إلى دوراتك وتقدّمك واشتراكاتك في منصة أوبال التعليمية.</p>
+
+        {% if form.non_field_errors %}<div class="learning-form-alert">{{ form.non_field_errors|striptags }}</div>{% endif %}
+        <form method="post" class="learning-form" novalidate>
+            {% csrf_token %}
+            {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+            <div class="learning-field"><label for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>{{ form.email }}{% for error in form.email.errors %}<small class="learning-error">{{ error }}</small>{% endfor %}</div>
+            <div class="learning-field"><label for="{{ form.password.id_for_label }}">{{ form.password.label }}</label>{{ form.password }}{% for error in form.password.errors %}<small class="learning-error">{{ error }}</small>{% endfor %}</div>
+            <button class="learning-button learning-button-wide" type="submit">دخول إلى المنصة <span>←</span></button>
+        </form>
+        <div class="learning-auth-help"><a href="{% url 'learning_platform:password_reset_request' %}">نسيت كلمة المرور؟</a></div>
+        <div class="learning-auth-switch">ليس لديك حساب؟ <a href="{% url 'learning_platform:register' %}{% if next %}?next={{ next|urlencode }}{% endif %}">أنشئ حسابًا تعليميًا</a></div>
+    </div>
+</section>
+{% endblock %}

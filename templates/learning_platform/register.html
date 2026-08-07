@@ -1,0 +1,32 @@
+{% extends "learning_platform/base.html" %}
+
+{% block title %}إنشاء حساب | منصة أوبال التعليمية{% endblock %}
+{% block body_class %}learning-auth-page{% endblock %}
+
+{% block content %}
+<section class="learning-auth-section learning-register-section">
+    <div class="learning-auth-orb one" aria-hidden="true"></div><div class="learning-auth-orb two" aria-hidden="true"></div>
+    <div class="learning-auth-card learning-register-card">
+        <div class="learning-auth-icon">O</div>
+        <span class="learning-auth-kicker">تسجيل مستقل</span>
+        <h1>أنشئ حسابك التعليمي</h1>
+        <p>هذا الحساب مخصص للمنصة التعليمية، ولا يرتبط بحساب أو تسجيل المدرسة.</p>
+
+        {% if form.non_field_errors %}<div class="learning-form-alert">{{ form.non_field_errors|striptags }}</div>{% endif %}
+        <form method="post" class="learning-form" novalidate>
+            {% csrf_token %}
+            {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+            <div class="learning-form-grid">
+                <div class="learning-field full"><label for="{{ form.full_name.id_for_label }}">{{ form.full_name.label }}</label>{{ form.full_name }}{% for error in form.full_name.errors %}<small class="learning-error">{{ error }}</small>{% endfor %}</div>
+                <div class="learning-field"><label for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>{{ form.email }}{% for error in form.email.errors %}<small class="learning-error">{{ error }}</small>{% endfor %}</div>
+                <div class="learning-field"><label for="{{ form.phone.id_for_label }}">{{ form.phone.label }}</label>{{ form.phone }}{% for error in form.phone.errors %}<small class="learning-error">{{ error }}</small>{% endfor %}</div>
+                <div class="learning-field"><label for="{{ form.password1.id_for_label }}">{{ form.password1.label }}</label>{{ form.password1 }}{% for error in form.password1.errors %}<small class="learning-error">{{ error }}</small>{% endfor %}</div>
+                <div class="learning-field"><label for="{{ form.password2.id_for_label }}">{{ form.password2.label }}</label>{{ form.password2 }}{% for error in form.password2.errors %}<small class="learning-error">{{ error }}</small>{% endfor %}</div>
+            </div>
+            <label class="learning-terms">{{ form.accept_terms }} <span>أوافق على <a href="{% url 'learning_platform:terms' %}" target="_blank" rel="noopener">شروط الاستخدام</a> و<a href="{% url 'learning_platform:privacy' %}" target="_blank" rel="noopener">سياسة الخصوصية</a></span></label>{% for error in form.accept_terms.errors %}<small class="learning-error">{{ error }}</small>{% endfor %}
+            <button class="learning-button learning-button-wide" type="submit">إنشاء الحساب <span>←</span></button>
+        </form>
+        <div class="learning-auth-switch">لديك حساب تعليمي؟ <a href="{% url 'learning_platform:login' %}{% if next %}?next={{ next|urlencode }}{% endif %}">تسجيل الدخول</a></div>
+    </div>
+</section>
+{% endblock %}

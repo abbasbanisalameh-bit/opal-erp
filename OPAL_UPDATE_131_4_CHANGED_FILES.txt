@@ -1,0 +1,36 @@
+OPAL Update 131.4 - Live Events Matrix and Official Time
+
+ADDED
++ INSTALL_OPAL_UPDATE_131_4_LIVE_EVENTS_MATRIX_AR.md
++ OPAL_UPDATE_131_4_LIVE_EVENTS_MATRIX_RELEASE_NOTES_AR.md
++ OPAL_UPDATE_131_4_VALIDATION_REPORT_AR.md
++ OPAL_UPDATE_131_4_CHANGED_FILES.txt
++ core/live_events_matrix_contracts.py
++ core/test_update131_4_live_events_matrix_contract.py
+
+MODIFIED
+* OPAL_RELEASE_NAME.txt
+* OPAL_UPDATE_MANIFEST.json
+* OPAL_VERSION.txt
+* core/checks.py
+* core/live_operations_contracts.py
+* core/test_update129_horizontal_timetable_contract.py
+* core/test_update130_production_stability_contract.py
+* core/test_update131_2_live_operations_contract.py
+* core/test_update131_safe_consolidation_contract.py
+* dashboard/templates/dashboard/home.html
+* static/css/opal_erp.css
+* static/js/opal_erp.js
+* templates/base/base.html
+* timetable/live_services.py
+* timetable/tests_live_operations.py
+* tools/validate_opal_update_131_source.py
+* tools/verify_opal_update_131_archive.py
+
+DELETED
+(none)
+
+SCOPE
+- No database migrations.
+- No models, database tables, pages, or routes added.
+- No operational data included or changed by package installation.

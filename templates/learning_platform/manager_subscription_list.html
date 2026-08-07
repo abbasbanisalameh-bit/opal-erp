@@ -1,0 +1,43 @@
+{% extends "learning_platform/base.html" %}
+
+{% block title %}بطاقات اشتراك المنصة | أوبال{% endblock %}
+{% block body_class %}learning-manager-mode{% endblock %}
+
+{% block content %}
+<section class="learning-page-hero manager-page"><div class="learning-container"><span>إدارة الوصول</span><h1>بطاقات الاشتراك</h1><p>إنشاء رموز الاشتراك ومتابعة حالتها والمواد التي تمنح الوصول إليها.</p></div></section>
+<section class="learning-section learning-manager-page-section"><div class="learning-container">
+    {% include "learning_platform/_manager_nav.html" %}
+    <div class="learning-manager-toolbar">
+        <form method="get" class="learning-manager-filter">
+            <input class="learning-input" type="search" name="q" value="{{ query }}" placeholder="بحث بالرمز أو اسم المتعلم">
+            <select class="learning-input" name="status"><option value="">كل الحالات</option>{% for value,label in subscription_statuses %}<option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+            <select class="learning-input" name="duration"><option value="">كل المدد</option>{% for value,label in subscription_durations %}<option value="{{ value }}" {% if duration == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+            <button class="learning-button learning-button-small" type="submit">بحث</button>
+        </form>
+        <a class="learning-button learning-button-small" href="{% url 'learning_platform:manager_subscription_generate' %}">إنشاء بطاقات</a>
+    </div>
+
+    {% if cards %}
+        <div class="learning-data-table-wrap">
+            <table class="learning-data-table">
+                <thead><tr><th>الرمز</th><th>المدة</th><th>نطاق الوصول</th><th>الحالة</th><th>المستخدم</th><th>الانتهاء</th><th>إجراء</th></tr></thead>
+                <tbody>
+                    {% for card in cards %}
+                        <tr>
+                            <td><code class="learning-code">{{ card.code }}</code></td>
+                            <td>{{ card.get_duration_display }}</td>
+                            <td>{% if card.grants_all_subjects %}جميع المواد{% else %}{% for subject in card.subjects.all %}{{ subject.name }}{% if not forloop.last %}، {% endif %}{% empty %}غير محدد{% endfor %}{% endif %}</td>
+                            <td><span class="learning-table-status status-{{ card.status }}">{{ card.get_status_display }}</span></td>
+                            <td>{% if card.redeemed_by %}<strong>{{ card.redeemed_by.full_name }}</strong><small>{{ card.redeemed_by.email }}</small>{% else %}—{% endif %}</td>
+                            <td>{% if card.expires_at %}{{ card.expires_at|date:"Y/m/d" }}{% else %}—{% endif %}</td>
+                            <td>{% if card.status == 'available' %}<form method="post" action="{% url 'learning_platform:manager_subscription_cancel' card.pk %}">{% csrf_token %}<button class="learning-table-action danger" type="submit">إلغاء</button></form>{% else %}—{% endif %}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="learning-empty"><span>#</span><strong>لا توجد بطاقات مطابقة</strong><p>أنشئ أول دفعة بطاقات وحدد مدة الوصول والمواد.</p><a class="learning-button learning-button-small" href="{% url 'learning_platform:manager_subscription_generate' %}">إنشاء بطاقات</a></div>
+    {% endif %}
+</div></section>
+{% endblock %}

@@ -1,0 +1,13 @@
+<nav class="learning-manager-nav" aria-label="إدارة المنصة">
+    <a class="{% if manager_section == 'dashboard' %}active{% endif %}" href="{% url 'learning_platform:manager_dashboard' %}">الملخص</a>
+    <a class="{% if manager_section == 'accounts' %}active{% endif %}" href="{% url 'learning_platform:manager_account_list' %}">الحسابات والمدرّسون</a>
+    <a class="{% if manager_section == 'subjects' %}active{% endif %}" href="{% url 'learning_platform:manager_subject_list' %}">المواد</a>
+    <a class="{% if manager_section == 'courses' %}active{% endif %}" href="{% url 'learning_platform:manager_course_list' %}">الدورات والدروس</a>
+    <a class="{% if manager_section == 'subscriptions' %}active{% endif %}" href="{% url 'learning_platform:manager_subscription_list' %}">بطاقات الاشتراك</a>
+    <a class="{% if manager_section == 'payments' %}active{% endif %}" href="{% url 'learning_platform:manager_payment_list' %}">الخطط والدفع</a>
+    <a class="{% if manager_section == 'enrollments' %}active{% endif %}" href="{% url 'learning_platform:manager_enrollment_list' %}">التسجيلات والتقدم</a>
+    <a class="{% if manager_section == 'submissions' %}active{% endif %}" href="{% url 'learning_platform:manager_submission_list' %}">التقييمات والتصحيح</a>
+    <a class="{% if manager_section == 'reports' %}active{% endif %}" href="{% url 'learning_platform:manager_report_center' %}">التقارير التشغيلية</a>
+    <a class="{% if manager_section == 'ai' %}active{% endif %}" href="{% url 'learning_platform:manager_ai_center' %}">المساعد التعليمي</a>
+    <a class="{% if manager_section == 'readiness' %}active{% endif %}" href="{% url 'learning_platform:manager_readiness_center' %}">جاهزية التشغيل</a>
+</nav>

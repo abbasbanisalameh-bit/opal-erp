@@ -1,0 +1,19 @@
+{% extends "learning_platform/base.html" %}
+{% block title %}أسئلة {{ assessment.title }} | أوبال{% endblock %}
+{% block body_class %}learning-manager-mode{% endblock %}
+{% block content %}
+<section class="learning-page-hero manager-page"><div class="learning-container"><span>{{ course.title }}</span><h1>أسئلة: {{ assessment.title }}</h1><p>العلامة القصوى {{ assessment.max_score }} · النجاح {{ assessment.pass_score }} · المحاولات {{ assessment.max_attempts }}</p></div></section>
+<section class="learning-section learning-manager-page-section"><div class="learning-container">
+    {% include "learning_platform/_manager_nav.html" %}
+    <div class="learning-manager-toolbar"><a class="learning-button learning-button-ghost learning-button-small" href="{% url 'learning_platform:manager_assessment_list' course.pk %}">العودة للتقييمات</a><a class="learning-button learning-button-small" href="{% url 'learning_platform:manager_question_create' assessment.pk %}">إضافة سؤال</a></div>
+    {% if questions %}
+        <div class="learning-question-admin-list">
+            {% for question in questions %}
+                <article><span>{{ question.order }}</span><div><h2>{{ question.text }}</h2><ul><li class="{% if question.correct_choice == 'a' %}correct{% endif %}">أ — {{ question.choice_a }}</li><li class="{% if question.correct_choice == 'b' %}correct{% endif %}">ب — {{ question.choice_b }}</li><li class="{% if question.correct_choice == 'c' %}correct{% endif %}">ج — {{ question.choice_c }}</li><li class="{% if question.correct_choice == 'd' %}correct{% endif %}">د — {{ question.choice_d }}</li></ul><small>{{ question.points }} نقطة</small></div><a href="{% url 'learning_platform:manager_question_update' question.pk %}">تعديل</a></article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="learning-empty"><span>؟</span><strong>لا توجد أسئلة</strong><p>لا يمكن نشر الاختبار قبل إضافة سؤال واحد على الأقل.</p><a class="learning-button learning-button-small" href="{% url 'learning_platform:manager_question_create' assessment.pk %}">إضافة أول سؤال</a></div>
+    {% endif %}
+</div></section>
+{% endblock %}

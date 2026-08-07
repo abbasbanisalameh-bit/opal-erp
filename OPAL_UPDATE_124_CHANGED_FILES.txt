@@ -1,0 +1,14 @@
+OPAL_VERSION.txt
+OPAL_UPDATE_MANIFEST.json
+README.md
+core/critical_workflow_contracts.py
+core/checks.py
+core/management/commands/audit_critical_workflows.py
+core/management/commands/audit_final_stability.py
+core/management/commands/verify_core_readiness.py
+core/test_update124_critical_workflow_contract.py
+teachers/views.py
+templates/teachers/teacher_detail.html
+INSTALL_OPAL_UPDATE_124_CRITICAL_WORKFLOW_ACCEPTANCE_AR.md
+OPAL_UPDATE_124_CRITICAL_WORKFLOW_ACCEPTANCE_RELEASE_NOTES_AR.md
+OPAL_UPDATE_124_CHANGED_FILES.txt

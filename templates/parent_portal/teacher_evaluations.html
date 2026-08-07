@@ -1,0 +1,9 @@
+{% extends "base/base.html" %}
+{% load opal_subjects %}
+{% block title %}تقييم معلمي أبنائي{% endblock %}
+{% block page_title %}تقييم معلمي أبنائي{% endblock %}
+{% block page_subtitle %}تقييم أولياء الأمور الشهري لمعلمي الأبناء الرسميين{% endblock %}
+{% block content %}
+<section class="opal-card mb-4"><p class="mb-0 text-secondary"><i class="bi bi-info-circle-fill"></i> يظهر التقييم الإلزامي شهريًا بعد خمس ثوانٍ من فتح النظام. يظهر المعلم مرة واحدة فقط مهما كان عدد الأبناء الذين يدرّسهم.</p></section>
+<div class="row g-3">{% for row in rows %}<div class="col-lg-6"><section class="opal-card h-100"><div class="d-flex gap-3 align-items-center mb-3">{% if row.teacher.photo %}<img src="{{ row.teacher.photo.url }}" class="rounded-circle" width="58" height="58" style="object-fit:cover" alt="{{ row.teacher.full_name }}">{% else %}<div class="opal-user-photo-frame"><i class="bi bi-person-fill"></i></div>{% endif %}<div><h3 class="h5 mb-1">{{ row.teacher.full_name }}</h3><div class="d-flex flex-wrap gap-1 mt-1">{% for subject in row.subject_objects %}<span class="opal-subject-chip" style="{% subject_style subject %}">{{ subject.name }}</span>{% endfor %}</div></div></div>{% if row.evaluation %}<div class="alert alert-success mb-0">تم تقييم هذا المعلم {{ row.evaluation.teaching_quality_rating }}/5 لهذا الشهر.</div>{% else %}<p class="text-secondary mb-0">سيظهر هذا المعلم في نافذة التقييم الشهرية حتى إتمام التقييم.</p>{% endif %}</section></div>{% empty %}<div class="col-12"><section class="opal-card opal-empty-state"><i class="bi bi-person-video3"></i><p>لا توجد تكليفات معلمين فعالة مرتبطة بأبنائك حاليًا.</p></section></div>{% endfor %}</div>
+{% endblock %}

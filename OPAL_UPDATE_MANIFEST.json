@@ -1,0 +1,20 @@
+{
+  "schema": 2,
+  "product": "OPAL ERP",
+  "version": "131.7",
+  "version_name": "OPAL Update 131.7 R27 - FileResponse Test Connection Isolation Fix",
+  "package_revision": 30,
+  "source_type": "verified_update_package",
+  "created_at": "2026-08-06T23:10:00+03:00",
+  "baseline": "OPAL Update 131.7 R26 - Core Snapshot Test Isolation Fix",
+  "notes": "إصلاح اختبار تنزيل وحذف النسخ الاحتياطية بحيث يغلق تدفق ملف ZIP فقط ولا يستدعي HttpResponse.close الذي يطلق request_finished ويغلق اتصال قاعدة اختبار Django قبل طلب الحذف التالي. لا تغييرات تشغيلية أو بيانات أو هجرات.",
+  "code_only": true,
+  "excluded": [
+    "database",
+    "media",
+    "virtual_environment",
+    ".env",
+    ".git",
+    "collected_static"
+  ]
+}

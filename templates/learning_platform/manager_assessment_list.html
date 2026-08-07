@@ -1,0 +1,31 @@
+{% extends "learning_platform/base.html" %}
+{% block title %}تقييمات {{ course.title }} | أوبال{% endblock %}
+{% block body_class %}learning-manager-mode{% endblock %}
+{% block content %}
+<section class="learning-page-hero manager-page"><div class="learning-container"><span>{{ course.subject.name }}</span><h1>تقييمات: {{ course.title }}</h1><p>اختبارات إلكترونية وواجبات مرتبطة بإكمال الدورة.</p></div></section>
+<section class="learning-section learning-manager-page-section"><div class="learning-container">
+    {% include "learning_platform/_manager_nav.html" %}
+    <div class="learning-manager-toolbar">
+        <div class="learning-manager-actions"><a class="learning-button learning-button-ghost learning-button-small" href="{% url 'learning_platform:manager_course_list' %}">العودة للدورات</a><a class="learning-button learning-button-ghost learning-button-small" href="{% url 'learning_platform:manager_lesson_list' course.pk %}">الدروس</a></div>
+        <a class="learning-button learning-button-small" href="{% url 'learning_platform:manager_assessment_create' course.pk %}">إضافة تقييم</a>
+    </div>
+    {% if assessments %}
+        <div class="learning-manager-lesson-list learning-assessment-admin-list">
+            {% for assessment in assessments %}
+                <article>
+                    <span>{{ assessment.order }}</span>
+                    <div><small>{{ assessment.get_assessment_type_display }} · {{ assessment.max_score }} علامة · نجاح {{ assessment.pass_score }}</small><h2>{{ assessment.title }}</h2><p>{{ assessment.instructions|truncatechars:150|default:"لا توجد تعليمات." }}</p></div>
+                    <b class="learning-state {% if assessment.is_published %}active{% else %}inactive{% endif %}">{% if assessment.is_published %}منشور{% else %}غير منشور{% endif %}</b>
+                    <div class="learning-row-actions">
+                        {% if assessment.assessment_type == 'quiz' %}<a href="{% url 'learning_platform:manager_question_list' assessment.pk %}">الأسئلة ({{ assessment.question_count }})</a>{% endif %}
+                        <a href="{% url 'learning_platform:manager_assessment_update' assessment.pk %}">تعديل</a>
+                        {% if assessment.pending_count %}<a href="{% url 'learning_platform:manager_submission_list' %}?q={{ assessment.title|urlencode }}">بانتظار التصحيح {{ assessment.pending_count }}</a>{% endif %}
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="learning-empty"><span>✦</span><strong>لا توجد تقييمات بعد</strong><p>أضف اختبارًا أو واجبًا لتثبيت التعلم وربط إكمال الدورة بالنجاح.</p><a class="learning-button learning-button-small" href="{% url 'learning_platform:manager_assessment_create' course.pk %}">إضافة أول تقييم</a></div>
+    {% endif %}
+</div></section>
+{% endblock %}

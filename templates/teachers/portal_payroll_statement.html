@@ -1,0 +1,16 @@
+{% extends "base/base.html" %}
+{% block title %}كشف رواتبي{% endblock %}
+{% block page_title %}كشف رواتبي{% endblock %}
+{% block page_subtitle %}سجل الرواتب التي تم دفعها، مع طريقة الدفع والإقرار وتاريخه{% endblock %}
+{% block content %}
+<section class="opal-card">
+  <div class="d-flex justify-content-between align-items-center gap-2 mb-3 no-print">
+    <div><h3 class="mb-1">كشف راتب المعلم</h3><p class="text-secondary mb-0">{{ teacher.full_name }}</p></div>
+    <button class="btn btn-outline-primary" onclick="window.print()"><i class="bi bi-printer-fill"></i> طباعة الكشف</button>
+  </div>
+  <div class="table-responsive"><table class="opal-table"><thead><tr><th>الشهر</th><th>صافي الراتب</th><th>تاريخ الدفع</th><th>طريقة التسليم</th><th>المرجع</th><th>حالة الإقرار</th><th>وقت الإقرار</th></tr></thead><tbody>
+    {% for item in payrolls %}<tr><td>{{ item.period|date:'Y-m' }}</td><td><strong>{{ item.net_salary }}</strong></td><td>{{ item.paid_at|date:'Y-m-d H:i' }}</td><td>{{ item.payment_method|default:'-' }}</td><td>{{ item.payment_reference|default:'-' }}</td><td>{{ item.get_status_display }}</td><td>{{ item.acknowledged_at|date:'Y-m-d H:i'|default:'لم يُقر بعد' }}</td></tr>
+    {% empty %}<tr><td colspan="7">لا توجد رواتب مدفوعة حتى الآن.</td></tr>{% endfor %}
+  </tbody></table></div>
+</section>
+{% endblock %}

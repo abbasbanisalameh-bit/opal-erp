@@ -1,0 +1,71 @@
+{% if opal_monthly_evaluation_prompt %}
+<div id="opal-monthly-eval-overlay" class="opal-eval-overlay" aria-hidden="true">
+  <section class="opal-eval-modal" role="dialog" aria-modal="true" aria-labelledby="opal-eval-title">
+    <div class="opal-eval-crown"><i class="bi bi-stars"></i></div>
+    {% if opal_monthly_evaluation_prompt.stage == 'parent_teacher' %}
+    <h2 id="opal-eval-title">التقييم الأول: قيّم معلمي أبنائك</h2>
+    <p>قيّم المعلمين الرسميين لأبنائك بموضوعية.</p>
+    {% elif opal_monthly_evaluation_prompt.stage == 'parent_teaching_quality' %}
+    <h2 id="opal-eval-title">التقييم الثاني: جودة التدريس</h2>
+    <p>قيّم جودة العملية التعليمية في المدرسة بصورة عامة.</p>
+    {% elif opal_monthly_evaluation_prompt.stage == 'parent_electronic_services' %}
+    <h2 id="opal-eval-title">التقييم الثالث: الخدمات الإلكترونية</h2>
+    <p>قيّم سهولة استخدام خدمات OPAL الإلكترونية.</p>
+    {% else %}
+    <h2 id="opal-eval-title">قيّم الخدمات الإلكترونية للمدرسة</h2>
+    <p>رأيك الشهري يساعدنا على تحسين تجربة OPAL.</p>
+    {% endif %}
+    <form id="opal-monthly-eval-form" method="post" action="{% url 'enterprise_ops:submit_monthly_evaluations' %}">
+      {% csrf_token %}
+      <div class="opal-eval-list">
+        {% for row in opal_monthly_evaluation_prompt.teacher_rows %}
+        <article class="opal-eval-row" data-evaluation-row>
+          <div class="opal-eval-person">
+            {% if row.teacher.photo %}<img src="{{ row.teacher.photo.url }}" alt="{{ row.teacher.full_name }}">{% else %}<span class="opal-eval-avatar"><i class="bi bi-person-fill"></i></span>{% endif %}
+            <div><strong>{{ row.teacher.full_name }}</strong><small>{{ row.subjects|join:'، ' }}</small></div>
+          </div>
+          <div class="opal-star-rating" role="radiogroup" aria-label="تقييم {{ row.teacher.full_name }}">
+            {% for score in '12345' %}<button type="button" class="opal-star" data-score="{{ score }}" aria-label="{{ score }} نجوم"><i class="bi bi-star-fill"></i></button>{% endfor %}
+          </div>
+          <input type="hidden" name="rating_{{ row.teacher.pk }}" value="">
+        </article>
+        {% endfor %}
+        {% if opal_monthly_evaluation_prompt.stage == 'parent_teaching_quality' %}
+        <article class="opal-eval-row" data-evaluation-row>
+          <div class="opal-eval-person"><span class="opal-eval-avatar"><i class="bi bi-mortarboard-fill"></i></span><div><strong>جودة التدريس في المدرسة</strong><small>تقييم عام لجودة العملية التعليمية</small></div></div>
+          <div class="opal-star-rating" role="radiogroup" aria-label="تقييم جودة التدريس">
+            {% for score in '12345' %}<button type="button" class="opal-star" data-score="{{ score }}" aria-label="{{ score }} نجوم"><i class="bi bi-star-fill"></i></button>{% endfor %}
+          </div>
+          <input type="hidden" name="teaching_rating" value="">
+        </article>
+        {% elif opal_monthly_evaluation_prompt.stage == 'parent_electronic_services' or opal_monthly_evaluation_prompt.stage == 'teacher_services' %}
+        <article class="opal-eval-row" data-evaluation-row>
+          <div class="opal-eval-person"><span class="opal-eval-avatar"><i class="bi bi-laptop-fill"></i></span><div><strong>الخدمات الإلكترونية للمدرسة</strong><small>سهولة الاستخدام والخدمات الرقمية في OPAL</small></div></div>
+          <div class="opal-star-rating" role="radiogroup" aria-label="تقييم الخدمات الإلكترونية">
+            {% for score in '12345' %}<button type="button" class="opal-star" data-score="{{ score }}" aria-label="{{ score }} نجوم"><i class="bi bi-star-fill"></i></button>{% endfor %}
+          </div>
+          <input type="hidden" name="service_rating" value="">
+        </article>
+        {% endif %}
+      </div>
+      <div id="opal-eval-error" class="opal-eval-error" hidden></div>
+      <button class="btn opal-eval-submit" type="submit" disabled><i class="bi bi-send-check-fill"></i> إرسال التقييمات</button>
+    </form>
+    <div id="opal-eval-thanks" class="opal-eval-thanks" hidden><i class="bi bi-check-circle-fill"></i><strong>شكرًا لك</strong><span>تم حفظ تقييمك الشهري بنجاح</span></div>
+  </section>
+</div>
+<style>
+.opal-eval-overlay{position:fixed;inset:0;z-index:1095;display:grid;place-items:start center;padding:6.5rem 1rem 1rem;background:rgba(3,15,34,.38);backdrop-filter:blur(6px);opacity:0;visibility:hidden;transition:.28s ease}.opal-eval-overlay.is-visible{opacity:1;visibility:visible}.opal-eval-modal{width:min(760px,96vw);max-height:78vh;overflow:auto;border:1px solid rgba(255,215,95,.78);border-radius:24px;padding:1.35rem;background:linear-gradient(145deg,rgba(43,32,6,.98),rgba(89,62,8,.96) 52%,rgba(31,24,8,.98));box-shadow:0 26px 80px rgba(0,0,0,.48),0 0 0 3px rgba(255,207,61,.16);color:#fff7d2}.opal-eval-crown{width:54px;height:54px;margin:-.2rem auto .5rem;display:grid;place-items:center;border-radius:50%;background:linear-gradient(135deg,#fff0a3,#d49a16);color:#5d3b00;font-size:1.5rem;box-shadow:0 8px 24px rgba(255,200,42,.3)}.opal-eval-modal h2{text-align:center;font-size:1.35rem;margin:0}.opal-eval-modal>p{text-align:center;color:#f6df9e;margin:.3rem 0 1rem}.opal-eval-list{display:grid;gap:.65rem}.opal-eval-row{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.8rem 1rem;border:1px solid rgba(255,226,133,.22);border-radius:16px;background:rgba(255,255,255,.075)}.opal-eval-person{display:flex;align-items:center;gap:.7rem;min-width:0}.opal-eval-person img,.opal-eval-avatar{width:44px;height:44px;border-radius:50%;object-fit:cover;display:grid;place-items:center;background:rgba(255,255,255,.12)}.opal-eval-person strong,.opal-eval-person small{display:block}.opal-eval-person small{color:#efd889;white-space:normal}.opal-star-rating{display:flex;direction:ltr;gap:.14rem;flex-shrink:0}.opal-star{border:0;background:transparent;color:rgba(255,255,255,.23);font-size:1.55rem;padding:.08rem;line-height:1;transition:.15s}.opal-star.is-active{color:#ffd24a;filter:drop-shadow(0 0 5px rgba(255,210,74,.55));transform:scale(1.05)}.opal-eval-submit{display:block;margin:1rem auto 0;background:linear-gradient(135deg,#ffe38a,#d69b19);color:#3e2900;font-weight:800;border:0;padding:.7rem 1.4rem}.opal-eval-submit:disabled{opacity:.45}.opal-eval-error{text-align:center;color:#ffd0cc;margin-top:.8rem}.opal-eval-thanks{text-align:center;padding:2.2rem .5rem}.opal-eval-thanks i{display:block;font-size:3rem;color:#ffe071}.opal-eval-thanks strong,.opal-eval-thanks span{display:block}.opal-eval-thanks strong{font-size:1.6rem;margin:.5rem 0}.opal-eval-thanks span{color:#f5dda1}@media(max-width:650px){.opal-eval-overlay{padding-top:4.5rem}.opal-eval-row{align-items:flex-start;flex-direction:column}.opal-star-rating{align-self:center}.opal-eval-modal{max-height:84vh}}
+</style>
+<script>
+(function(){
+ const overlay=document.getElementById('opal-monthly-eval-overlay');if(!overlay)return;
+ const form=document.getElementById('opal-monthly-eval-form'),submit=form.querySelector('.opal-eval-submit'),rows=[...form.querySelectorAll('[data-evaluation-row]')],error=document.getElementById('opal-eval-error'),thanks=document.getElementById('opal-eval-thanks');
+ function ready(){submit.disabled=!rows.every(row=>row.querySelector('input[type=hidden]').value);}
+ rows.forEach(row=>row.querySelectorAll('.opal-star').forEach(button=>button.addEventListener('click',()=>{const score=Number(button.dataset.score);row.querySelector('input[type=hidden]').value=score;row.querySelectorAll('.opal-star').forEach(star=>star.classList.toggle('is-active',Number(star.dataset.score)<=score));ready();})));
+ function sound(){try{const C=window.AudioContext||window.webkitAudioContext;if(!C)return;const c=new C(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.setValueAtTime(740,c.currentTime);o.frequency.exponentialRampToValueAtTime(1040,c.currentTime+.22);g.gain.setValueAtTime(.0001,c.currentTime);g.gain.exponentialRampToValueAtTime(.17,c.currentTime+.03);g.gain.exponentialRampToValueAtTime(.0001,c.currentTime+.42);o.start();o.stop(c.currentTime+.44);}catch(e){}}
+ setTimeout(()=>{overlay.classList.add('is-visible');overlay.setAttribute('aria-hidden','false');sound();},5000);
+ form.addEventListener('submit',async event=>{event.preventDefault();if(submit.disabled)return;submit.disabled=true;error.hidden=true;try{const response=await fetch(form.action,{method:'POST',body:new FormData(form),headers:{'X-Requested-With':'XMLHttpRequest'}});const data=await response.json();if(!response.ok||!data.ok)throw new Error(data.message||'تعذر حفظ التقييمات.');form.hidden=true;thanks.hidden=false;setTimeout(()=>window.location.reload(),2400);}catch(exception){error.textContent=exception.message;error.hidden=false;submit.disabled=false;}});
+})();
+</script>
+{% endif %}

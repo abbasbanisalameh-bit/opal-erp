@@ -1,0 +1,10 @@
+{% extends "learning_platform/base.html" %}
+{% block title %}تصحيح {{ submission.assessment.title }} | أوبال{% endblock %}
+{% block body_class %}{% if platform_manager_mode %}learning-manager-mode{% endif %}{% endblock %}
+{% block content %}
+<section class="learning-page-hero {% if platform_manager_mode %}manager-page{% else %}teacher-page{% endif %}"><div class="learning-container"><span>{{ submission.assessment.course.title }}</span><h1>تصحيح: {{ submission.assessment.title }}</h1><p>{{ submission.enrollment.learner.full_name }} · المحاولة {{ submission.attempt_no }}</p></div></section>
+<section class="learning-section learning-manager-page-section"><div class="learning-container">
+    {% if platform_manager_mode %}{% include "learning_platform/_manager_nav.html" %}{% endif %}
+    <div class="learning-grading-layout"><article class="learning-answer-card"><span>إجابة المتعلم</span><div>{{ submission.answer_text|linebreaks }}</div><small>أُرسلت في {{ submission.submitted_at|date:"Y/m/d H:i" }}</small></article><form method="post" class="learning-manager-form-card">{% csrf_token %}{% if form.non_field_errors %}<div class="learning-form-errors">{{ form.non_field_errors }}</div>{% endif %}<div class="learning-manager-form-grid">{% for field in form %}<div class="learning-field full"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{{ field.errors }}</div>{% endfor %}</div><div class="learning-manager-form-actions"><button class="learning-button" type="submit">حفظ التصحيح</button><a class="learning-button learning-button-ghost" href="{{ cancel_url }}">إلغاء</a></div></form></div>
+</div></section>
+{% endblock %}

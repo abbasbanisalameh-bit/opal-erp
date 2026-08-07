@@ -1,0 +1,56 @@
+{% extends "learning_platform/base.html" %}
+
+{% block title %}لوحتي التعليمية | منصة أوبال{% endblock %}
+
+{% block content %}
+<section class="learning-dashboard-hero">
+    <div class="learning-container">{% if not learning_account.email_verified_at %}<div class="learning-manager-notice"><div><strong>البريد الإلكتروني غير موثق</strong><p>وثّق بريدك لتفعيل الشراء وتسجيل تطبيق الموبايل واستعادة الحساب ذاتيًا.</p></div><form method="post" action="{% url 'learning_platform:email_verification_resend' %}">{% csrf_token %}<button class="learning-button learning-button-small" type="submit">إرسال رابط التوثيق</button></form></div>{% endif %}<span>لوحة المتعلم</span><h1>مرحبًا، {{ learning_account.full_name }}</h1><p>تابع دوراتك واشتراكاتك وتقدمك من مكان واحد.</p></div>
+</section>
+<section class="learning-section learning-dashboard-section">
+    <div class="learning-container">
+        <div class="learning-dashboard-heading"><div><span>مساعد المحتوى</span><h2>اسأل من دروسك المنشورة</h2></div><a href="{% url 'learning_platform:learner_ai_assistant' %}">فتح المساعد ←</a></div>
+        <div class="learning-dashboard-grid">
+            <article class="learning-stat-card"><span class="violet">▷</span><div><strong>{{ enrollments|length }}</strong><small>دوراتي</small></div></article>
+            <article class="learning-stat-card"><span class="mint">#</span><div><strong>{{ active_cards|length }}</strong><small>اشتراك فعال</small></div></article>
+            <article class="learning-stat-card"><span class="amber">✓</span><div><strong>{{ completed_count }}</strong><small>دورات مكتملة</small></div></article>
+        </div>
+
+        <div class="learning-dashboard-heading"><div><span>مساري</span><h2>الدورات المسجل بها</h2></div><a href="{% url 'learning_platform:course_list' %}">استكشف الدورات ←</a></div>
+        {% if enrollments %}
+            <div class="learning-enrollment-list">
+                {% for enrollment in enrollments %}
+                    <article>
+                        <div class="learning-enrollment-symbol" style="--course-color:{{ enrollment.course.cover_color }}">{{ enrollment.course.subject.name|slice:":1" }}</div>
+                        <div class="learning-enrollment-info">
+                            <span>{{ enrollment.course.subject.name }} · {{ enrollment.get_status_display }}</span>
+                            <h3>{{ enrollment.course.title }}</h3>
+                            <small>بإشراف {{ enrollment.course.teacher.full_name }}</small>
+                            <div class="learning-progress"><i><em style="width:{{ enrollment.progress_percent }}%"></em></i><b>{{ enrollment.progress_percent }}%</b></div>
+                        </div>
+                        {% if enrollment.active_certificate %}
+                            <a href="{% url 'learning_platform:certificate_detail' enrollment.course.slug %}">الشهادة ←</a>
+                        {% elif not enrollment.has_access %}
+                            <a href="{% url 'learning_platform:subscriptions' %}">تجديد الوصول ←</a>
+                        {% elif enrollment.continue_lesson %}
+                            <a href="{% url 'learning_platform:lesson_detail' enrollment.course.slug enrollment.continue_lesson.slug %}">متابعة ←</a>
+                        {% else %}
+                            <a href="{% url 'learning_platform:course_detail' enrollment.course.slug %}">مراجعة ←</a>
+                        {% endif %}
+                    </article>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="learning-empty"><span>▷</span><strong>لم تسجل في دورة بعد</strong><p>فعّل بطاقة اشتراك، ثم اختر الدورة المناسبة وسجّل بها.</p><a class="learning-button learning-button-small" href="{% url 'learning_platform:course_list' %}">استكشف الدورات</a></div>
+        {% endif %}
+
+        <div class="learning-dashboard-heading"><div><span>الوصول</span><h2>اشتراكاتي الفعالة</h2></div><a href="{% url 'learning_platform:subscriptions' %}">إدارة الاشتراكات ←</a></div>
+        {% if active_cards %}
+            <div class="learning-subscription-grid">
+                {% for card in active_cards %}<article><span>#</span><div><strong>{{ card.get_duration_display }}</strong><small>{% if card.grants_all_subjects %}جميع المواد{% else %}{% for subject in card.subjects.all %}{{ subject.name }}{% if not forloop.last %}، {% endif %}{% empty %}باقة محددة{% endfor %}{% endif %}</small></div><time>حتى {{ card.expires_at|date:"Y/m/d" }}</time></article>{% endfor %}
+            </div>
+        {% else %}
+            <div class="learning-inline-empty"><span>لا يوجد اشتراك فعال.</span><a href="{% url 'learning_platform:subscriptions' %}">تفعيل بطاقة اشتراك</a></div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

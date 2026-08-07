@@ -1,0 +1,30 @@
+{% extends "base/base.html" %}
+{% load opal_subjects %}
+{% block title %}مساحة عمل المعلم{% endblock %}
+{% block page_title %}{% if mode == 'students' %}طلابي{% elif mode == 'marks' %}علاماتي{% elif mode == 'homework' %}واجباتي{% else %}موادي{% endif %}{% endblock %}
+{% block page_subtitle %}اختر الصف ثم المادة والشعبة؛ لن تُحمّل بيانات الطلاب أو العلامات أو الواجبات إلا للتكليف الذي تحدده.{% endblock %}
+{% block content %}
+<section class="opal-card mb-4">
+  <form method="get" class="row g-3 align-items-end" data-live-filter>
+    <input type="hidden" name="mode" value="{{ mode }}">
+    <div class="col-md-3"><label class="form-label">الصف</label><select class="form-select" name="grade"><option value="">اختر الصف</option>{% for item in grades %}<option value="{{ item.pk }}" {% if filters.grade == item.pk|stringformat:'s' %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
+    <div class="col-md-3"><label class="form-label">المادة</label><select class="form-select" name="subject" {% if not filters.grade %}disabled{% endif %}><option value="">اختر المادة</option>{% for item in subjects %}<option value="{{ item.pk }}" {% if filters.subject == item.pk|stringformat:'s' %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
+    <div class="col-md-3"><label class="form-label">الشعبة</label><select class="form-select" name="section" {% if not filters.grade %}disabled{% endif %}><option value="">اختر الشعبة</option>{% for item in sections %}<option value="{{ item.pk }}" {% if filters.section == item.pk|stringformat:'s' %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
+    <div class="col-md-3"><label class="form-label">التكليف</label><select class="form-select" name="assignment" {% if not filters.section %}disabled{% endif %}><option value="">اختر التكليف</option>{% for item in assignments %}<option value="{{ item.pk }}" {% if filters.assignment == item.pk|stringformat:'s' %}selected{% endif %}>{{ item.academic_year }} — {{ item.subject }} — {{ item.section }}</option>{% endfor %}</select></div>
+    <div class="col-12 d-flex justify-content-end"><button class="btn btn-primary" type="submit"><i class="bi bi-funnel-fill"></i> عرض التكليف المحدد</button></div>
+  </form>
+</section>
+{% if mode == 'students' and filters.section %}<section class="opal-card mt-3"><h3 class="mb-3">طلبة الصف والشعبة</h3><div class="table-responsive"><table class="opal-table"><thead><tr><th>#</th><th>رقم الطالب</th><th>اسم الطالب</th></tr></thead><tbody>{% for enrollment in workspace_enrollments %}<tr><td>{{ forloop.counter }}</td><td>{{ enrollment.student.student_number }}</td><td>{{ enrollment.student.full_name }}</td></tr>{% empty %}<tr><td colspan="3">لا يوجد طلبة نشطون في هذه الشعبة لهذا العام.</td></tr>{% endfor %}</tbody></table></div></section>{% endif %}
+{% if selected_assignment %}
+<section class="opal-card opal-subject-card" style="{% subject_style selected_assignment.subject %}">
+  <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap"><div><span class="badge bg-info text-dark mb-2">التكليف المحدد</span><h3><span class="opal-subject-chip" style="{% subject_style selected_assignment.subject %}">{{ selected_assignment.subject }}</span> — {{ selected_assignment.section }}</h3><p class="text-secondary mb-0">{{ selected_assignment.academic_year }} · الصف {{ selected_assignment.section.grade }}</p></div><div class="d-flex gap-2 flex-wrap">
+    {% if mode == 'marks' %}<a class="btn btn-primary" href="{% url 'teachers:portal_marks' selected_assignment.pk %}"><i class="bi bi-award-fill"></i> فتح إدخال العلامات</a>{% endif %}
+    {% if mode == 'homework' %}<a class="btn btn-success" href="{% url 'teachers:portal_homework' selected_assignment.pk %}"><i class="bi bi-journal-text"></i> فتح إدارة الواجبات</a>{% endif %}
+    {% if mode == 'students' %}<span class="badge bg-secondary align-self-center">قائمة الطلاب معروضة أدناه</span>{% endif %}
+    {% if mode == 'subjects' %}<span class="badge bg-secondary align-self-center">تفاصيل التكليف معروضة هنا</span>{% endif %}
+  </div></div>
+</section>
+{% else %}
+<section class="opal-card opal-empty-state"><i class="bi bi-funnel"></i><h4>ابدأ بتحديد صف ومادة وشعبة</h4><p>يبقى التحميل خفيفًا، وتظهر فقط بيانات التكليف الذي تختاره.</p></section>
+{% endif %}
+{% endblock %}
