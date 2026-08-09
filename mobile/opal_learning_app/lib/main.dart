@@ -438,7 +438,28 @@ class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
-                  children: cards.map((item) => SizedBox(width: 165, child: Card(child: Padding(padding: const EdgeInsets.all(14), child: Column(children: [Text(item.value, style: Theme.of(context).textTheme.headlineSmall), const SizedBox(height: 4), Text(item.key, textAlign: TextAlign.center)])))).toList(),
+                  children: cards
+                      .map(
+                        (item) => SizedBox(
+                          width: 165,
+                          child: Card(
+                            child: Padding(
+                              padding: const EdgeInsets.all(14),
+                              child: Column(
+                                children: [
+                                  Text(
+                                    item.value,
+                                    style: Theme.of(context).textTheme.headlineSmall,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(item.key, textAlign: TextAlign.center),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      )
+                      .toList(),
                 ),
                 const SizedBox(height: 18),
                 Text('فحص الجاهزية', style: Theme.of(context).textTheme.titleLarge),
