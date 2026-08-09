@@ -7,7 +7,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 
 const apiBase = String.fromEnvironment(
   'OPAL_API_BASE_URL',
-  defaultValue: 'https://example.invalid/learning/api/v1',
+  defaultValue: 'https://opalschool2016.pythonanywhere.com/learning/api/v1',
 );
 
 void main() {
@@ -207,7 +207,7 @@ class _OpalLearningAppState extends State<OpalLearningApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'منصة أوبال التعليمية',
+      title: 'أوبال',
       locale: const Locale('ar'),
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF6F52D4)),
@@ -302,7 +302,7 @@ class _LoginPageState extends State<LoginPage> {
                     child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                       const Icon(Icons.school_rounded, size: 64),
                       const SizedBox(height: 12),
-                      Text('منصة أوبال التعليمية', textAlign: TextAlign.center, style: Theme.of(context).textTheme.headlineSmall),
+                      Text('أوبال', textAlign: TextAlign.center, style: Theme.of(context).textTheme.headlineSmall),
                       const SizedBox(height: 8),
                       const Text('ولي الأمر والمعلم يستخدمان نفس حساب OPAL. حساب المنصة المستقل يمكنه استخدام البريد الإلكتروني.', textAlign: TextAlign.center),
                       const SizedBox(height: 24),

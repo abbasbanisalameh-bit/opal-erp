@@ -1,0 +1,23 @@
+mobile/opal_learning_app/pubspec.yaml
+mobile/opal_learning_app/lib/main.dart
+mobile/opal_learning_app/README_AR.md
+mobile/opal_learning_app/assets/opal-icon-192.png
+mobile/opal_learning_app/assets/opal-icon-512.png
+mobile/opal_learning_app/test/mobile_contract_test.dart
+mobile/opal_learning_app/tool/prepare_android.sh
+mobile/opal_learning_app/tool/configure_android.py
+mobile/opal_learning_app/tool/build_android_release.sh
+mobile/opal_learning_app/ci/opal-android-build.yml
+core/management/commands/install_mobile_android_ci.py
+core/test_update131_7_r35_android_production_app_contract.py
+INSTALL_OPAL_UPDATE_131_7_R35_ANDROID_PRODUCTION_APP_AR.md
+OPAL_UPDATE_131_7_R35_RELEASE_NOTES_AR.md
+OPAL_UPDATE_131_7_R35_VALIDATION_REPORT_AR.md
+OPAL_UPDATE_131_7_R35_CHANGED_FILES.txt
+OPAL_UPDATE_131_7_R35_SHA256.txt
+OPAL_RELEASE_NAME.txt
+OPAL_UPDATE_MANIFEST.json
+
+Generated on the installed repository by:
+python manage.py install_mobile_android_ci
+=> .github/workflows/opal-android-build.yml

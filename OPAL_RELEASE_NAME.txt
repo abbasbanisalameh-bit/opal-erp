@@ -1,1 +1,1 @@
-OPAL Update 131.7 R34 - Mobile School SSO and Biometric Attendance Gateway
+OPAL Update 131.7 R35 - Android Production App Build Pipeline
