@@ -1,0 +1,102 @@
+{% extends "base/base.html" %}
+{% block title %}تكامل البصمة{% endblock %}
+{% block page_title %}تكامل أجهزة البصمة{% endblock %}
+{% block page_subtitle %}البصمة دليل حضور؛ لا تحفظ OPAL أي قالب بصمة، ولا تعدل الدوام الرسمي قبل مراجعة الإدارة{% endblock %}
+{% block content %}
+
+{% if one_time_token %}
+<section class="opal-card mb-4 border border-warning">
+  <h3 class="fw-bold"><i class="bi bi-key-fill"></i> رمز ربط {{ one_time_device }}</h3>
+  <p class="text-danger fw-bold">يظهر هذا الرمز مرة واحدة فقط. انسخه الآن إلى برنامج الربط المحلي ثم احفظه في مكان آمن.</p>
+  <div class="input-group" dir="ltr">
+    <input id="bio-token" class="form-control" readonly value="{{ one_time_token }}">
+    <button class="btn btn-outline-secondary" type="button" onclick="navigator.clipboard.writeText(document.getElementById('bio-token').value)">نسخ</button>
+  </div>
+</section>
+{% endif %}
+
+<div class="row g-4 mb-4">
+  <div class="col-lg-6">
+    <section class="opal-card h-100">
+      <h3 class="fw-bold"><i class="bi bi-fingerprint"></i> إضافة جهاز</h3>
+      <p class="text-secondary">لا ترفع صور أو قوالب البصمات إلى OPAL. الجهاز يحتفظ بالبصمة ويرسل فقط رقم المستخدم والوقت.</p>
+      <form method="post" action="{% url 'timetable:biometric_device_create' %}">{% csrf_token %}
+        {{ device_form.as_p }}
+        <button class="btn btn-primary">إضافة الجهاز وإنشاء رمز الربط</button>
+      </form>
+    </section>
+  </div>
+  <div class="col-lg-6">
+    <section class="opal-card h-100">
+      <h3 class="fw-bold"><i class="bi bi-person-badge"></i> ربط معرف الجهاز بالمعلم</h3>
+      <form method="post" action="{% url 'timetable:biometric_identity_create' %}">{% csrf_token %}
+        {{ identity_form.as_p }}
+        <button class="btn btn-primary">حفظ الربط</button>
+      </form>
+    </section>
+  </div>
+</div>
+
+<section class="opal-card mb-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <div>
+      <h3 class="fw-bold mb-1">الأجهزة المسجلة</h3>
+      <p class="text-secondary mb-0">آخر اتصال يثبت أن برنامج الربط أرسل بيانات بنجاح.</p>
+    </div>
+  </div>
+  <div class="table-responsive"><table class="opal-table">
+    <thead><tr><th>الجهاز</th><th>الرمز</th><th>الشركة</th><th>الفرع</th><th>آخر اتصال</th><th>الرمز</th><th>إجراء</th></tr></thead>
+    <tbody>{% for item in devices %}<tr>
+      <td>{{ item.name }}</td><td dir="ltr">{{ item.device_code }}</td><td>{{ item.get_vendor_display }}</td><td>{{ item.branch|default:"—" }}</td>
+      <td>{{ item.last_seen_at|date:"Y-m-d H:i"|default:"لم يتصل بعد" }}</td><td dir="ltr">{% if item.token_hint %}…{{ item.token_hint }}{% else %}غير منشأ{% endif %}</td>
+      <td><form method="post" action="{% url 'timetable:biometric_device_token_regenerate' item.pk %}">{% csrf_token %}<button class="btn btn-sm btn-outline-warning" onclick="return confirm('سيتم إلغاء رمز الربط السابق. متابعة؟')">تدوير رمز الربط</button></form></td>
+    </tr>{% empty %}<tr><td colspan="7">لا توجد أجهزة بعد.</td></tr>{% endfor %}</tbody>
+  </table></div>
+</section>
+
+<section class="opal-card mb-4">
+  <h3 class="fw-bold">روابط المعلمين</h3>
+  <div class="table-responsive"><table class="opal-table">
+    <thead><tr><th>المعلم</th><th>الجهاز</th><th>معرف الجهاز</th><th>الحالة</th></tr></thead>
+    <tbody>{% for item in identities %}<tr><td>{{ item.teacher }}</td><td>{{ item.device }}</td><td dir="ltr">{{ item.device_user_id }}</td><td>{% if item.is_active %}<span class="badge bg-success">فعال</span>{% else %}<span class="badge bg-secondary">موقوف</span>{% endif %}</td></tr>{% empty %}<tr><td colspan="4">لم يتم ربط معلمين بعد.</td></tr>{% endfor %}</tbody>
+  </table></div>
+</section>
+
+<section class="opal-card mb-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-3">
+    <div><h3 class="fw-bold mb-1">مراجعة يوم البصمة</h3><p class="text-secondary mb-0">لا يعتمد الغياب أو التأخر آليًا؛ الإدارة تراجع أولًا.</p></div>
+    <form method="post" action="{% url 'timetable:biometric_sync' %}" class="d-flex gap-2 align-items-end">{% csrf_token %}
+      <div><label class="form-label">التاريخ</label><input class="form-control" type="date" name="date" value="{{ selected_date|date:'Y-m-d' }}"></div>
+      <button class="btn btn-primary">تحديث الملخص</button>
+    </form>
+  </div>
+  <div class="table-responsive"><table class="opal-table">
+    <thead><tr><th>المعلم</th><th>أول بصمة</th><th>آخر بصمة</th><th>المتوقع</th><th>العدد</th><th>المقترح</th><th>المراجعة</th><th>اعتماد</th></tr></thead>
+    <tbody>{% for item in summaries %}<tr>
+      <td>{{ item.teacher }}</td>
+      <td>{{ item.first_punch_at|date:"H:i"|default:"—" }}</td><td>{{ item.last_punch_at|date:"H:i"|default:"—" }}</td>
+      <td>{% if item.expected_start %}{{ item.expected_start|time:"H:i" }}–{{ item.expected_end|time:"H:i" }}{% else %}—{% endif %}</td>
+      <td>{{ item.punch_count }}</td><td>{{ item.get_derived_status_display }}</td><td>{{ item.get_review_status_display }}</td>
+      <td>
+        {% if item.review_status == 'pending' %}
+        <form method="post" action="{% url 'timetable:biometric_summary_action' item.pk %}" class="d-flex flex-wrap gap-1">{% csrf_token %}
+          <input type="hidden" name="action" value="apply">
+          <select class="form-select form-select-sm" name="status">
+            <option value="">اعتماد المقترح</option><option value="normal">منتظم</option><option value="late">متأخر</option><option value="early_departure">مغادرة مبكرة</option><option value="absent">غائب</option>
+          </select>
+          <button class="btn btn-sm btn-success">اعتماد</button>
+        </form>
+        <form method="post" action="{% url 'timetable:biometric_summary_action' item.pk %}" class="mt-1">{% csrf_token %}<input type="hidden" name="action" value="ignore"><button class="btn btn-sm btn-outline-secondary">تجاهل</button></form>
+        {% else %}—{% endif %}
+      </td>
+    </tr>{% empty %}<tr><td colspan="8">لا توجد ملخصات لهذا اليوم. اربط المعلمين ثم اضغط «تحديث الملخص».</td></tr>{% endfor %}</tbody>
+  </table></div>
+</section>
+
+<section class="opal-card">
+  <h3 class="fw-bold">آخر البصمات الخام</h3>
+  <div class="table-responsive"><table class="opal-table"><thead><tr><th>الوقت</th><th>الجهاز</th><th>معرف الجهاز</th><th>المعلم</th><th>الحركة</th></tr></thead><tbody>
+    {% for item in recent_punches %}<tr><td>{{ item.punched_at|date:"Y-m-d H:i:s" }}</td><td>{{ item.device.name }}</td><td dir="ltr">{{ item.device_user_id }}</td><td>{{ item.teacher|default:"غير مربوط" }}</td><td>{{ item.get_direction_display }}</td></tr>{% empty %}<tr><td colspan="5">لم تصل بصمات بعد.</td></tr>{% endfor %}
+  </tbody></table></div>
+</section>
+{% endblock %}
