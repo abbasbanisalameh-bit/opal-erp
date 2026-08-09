@@ -1,0 +1,9 @@
+mobile/opal_learning_app/lib/main.dart
+mobile/opal_learning_app/pubspec.yaml
+core/test_update131_7_r35_1_flutter_radio_group_hotfix_contract.py
+OPAL_UPDATE_MANIFEST.json
+OPAL_RELEASE_NAME.txt
+INSTALL_OPAL_UPDATE_131_7_R35_1_FLUTTER_RADIO_GROUP_HOTFIX_AR.md
+OPAL_UPDATE_131_7_R35_1_RELEASE_NOTES_AR.md
+OPAL_UPDATE_131_7_R35_1_CHANGED_FILES.txt
+OPAL_UPDATE_131_7_R35_1_VALIDATION_REPORT_AR.md

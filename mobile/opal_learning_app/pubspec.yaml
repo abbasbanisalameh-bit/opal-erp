@@ -1,7 +1,7 @@
 name: opal_learning_app
 description: تطبيق أوبال التعليمي الرسمي المتصل بواجهات OPAL Learning API.
 publish_to: none
-version: 1.1.0+35
+version: 1.1.1+36
 
 environment:
   sdk: '>=3.4.0 <4.0.0'

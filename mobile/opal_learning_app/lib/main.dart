@@ -614,7 +614,38 @@ class _AssessmentPageState extends State<AssessmentPage> {
         return ListView(padding: const EdgeInsets.all(16), children: [
           Text(data['title'].toString(), style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 8), Text(data['instructions']?.toString() ?? ''),
-          if (quiz) ...questions.map((raw) { final q = Map<String, dynamic>.from(raw as Map); final choices = Map<String, dynamic>.from(q['choices'] as Map); return Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [Text(q['text'].toString(), style: Theme.of(context).textTheme.titleMedium), ...choices.entries.map((e) => RadioListTile<String>(value: e.key, groupValue: answers[q['id'].toString()], title: Text(e.value.toString()), onChanged: (value) => setState(() => answers[q['id'].toString()] = value!)))]))); }),
+          if (quiz) ...questions.map((raw) {
+            final q = Map<String, dynamic>.from(raw as Map);
+            final choices = Map<String, dynamic>.from(q['choices'] as Map);
+            final questionId = q['id'].toString();
+            return Card(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(q['text'].toString(), style: Theme.of(context).textTheme.titleMedium),
+                    RadioGroup<String>(
+                      groupValue: answers[questionId],
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() => answers[questionId] = value);
+                        }
+                      },
+                      child: Column(
+                        children: choices.entries
+                            .map((e) => RadioListTile<String>(
+                                  value: e.key,
+                                  title: Text(e.value.toString()),
+                                ))
+                            .toList(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
           if (!quiz) TextField(controller: assignment, minLines: 7, maxLines: 20, decoration: const InputDecoration(labelText: 'إجابة الواجب', border: OutlineInputBorder())),
           const SizedBox(height: 18), FilledButton(onPressed: busy ? null : () => submit(data), child: const Text('إرسال التقييم')),
         ]);
