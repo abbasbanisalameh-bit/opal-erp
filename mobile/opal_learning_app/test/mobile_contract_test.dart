@@ -23,4 +23,14 @@ void main() {
     expect(profile.label, 'آدم أحمد بني سلامة');
     expect(profile.subtitle, 'الصف الأول - أ');
   });
+
+  test('manager profile uses the same OPAL mobile identity contract', () {
+    final profile = MobileProfile.fromMap({
+      'token': 'olm-manager-token',
+      'account': {'full_name': 'مدير المدرسة', 'role': 'manager'},
+      'profile': {'kind': 'manager', 'manager_username': 'admin'},
+    });
+    expect(profile.label, 'مدير المدرسة');
+    expect(profile.subtitle, 'إدارة منصة أوبال التعليمية');
+  });
 }

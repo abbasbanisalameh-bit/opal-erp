@@ -70,3 +70,23 @@ Authorization: Bearer olp_...
 ## حدود R20
 
 R20 يوفر API مستقرة وواجهة ويب تقدمية قابلة للتثبيت على الهاتف. بناء ملف Android/iOS موقّع ونشره في المتاجر يحتاج مفاتيح توقيع وحسابات متاجر وسياسات خصوصية نهائية، ولا يمكن تضمين تلك الأسرار داخل حزمة تحديث الخادم.
+
+## R35.2 — دخول إدارة OPAL من تطبيق Android
+
+- تستخدم الإدارة **نفس اسم المستخدم وكلمة مرور OPAL ERP** عبر `POST /learning/api/v1/auth/school-login/`.
+- إذا كان المستخدم يطابق قاعدة الإدارة الرسمية في OPAL (`is_management_user`) يعيد الخادم `mode=manager` ورمزًا قصير العمر يبدأ بـ `olm_`.
+- لا يتم إنشاء كلمة مرور منفصلة لمدير المنصة، ولا يُسمح لحساب LearningAccount مستقل بتجاوز صلاحيات ERP.
+- رموز الإدارة تُخزن في قاعدة البيانات كبصمة Hash فقط، وتُراجع صلاحية المستخدم الإداري في كل طلب.
+
+واجهات الإدارة المحمولة المضافة:
+
+- `GET manager/dashboard/` — ملخص المنصة والجاهزية.
+- `GET manager/accounts/` — حسابات المتعلمين والمعلمين.
+- `GET manager/subjects/` — المواد الفعالة.
+- `GET manager/courses/` — الدورات وحالاتها.
+- `POST manager/courses/<id>/status/` — نشر/مسودة/أرشفة مع نفس شروط النشر في الويب.
+- `GET manager/subscription-cards/` — بطاقات الاشتراك.
+- `POST manager/subscription-cards/generate/` — إنشاء بطاقات عشوائية آمنة باستخدام المولد المركزي نفسه.
+- `POST manager/subscription-cards/<id>/cancel/` — إلغاء بطاقة متاحة فقط.
+- `GET manager/readiness/` — بوابة جاهزية المنصة.
+- `GET|POST manager/school-access/` — الإتاحة العامة، المعلمين، الصفوف، والطالب المحدد.

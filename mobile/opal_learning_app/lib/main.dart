@@ -31,7 +31,12 @@ class MobileProfile {
   final Map<String, dynamic> profile;
 
   String get label => profile['student_name']?.toString() ?? account['full_name']?.toString() ?? 'أوبال';
-  String get subtitle => profile['class_label']?.toString() ?? '';
+  String get subtitle {
+    final kind = profile['kind']?.toString() ?? '';
+    if (kind == 'manager') return 'إدارة منصة أوبال التعليمية';
+    if (kind == 'teacher') return 'حساب المعلم';
+    return profile['class_label']?.toString() ?? '';
+  }
 
   factory MobileProfile.fromMap(Map<String, dynamic> raw) => MobileProfile(
         token: raw['token']?.toString() ?? '',
@@ -304,7 +309,7 @@ class _LoginPageState extends State<LoginPage> {
                       const SizedBox(height: 12),
                       Text('أوبال', textAlign: TextAlign.center, style: Theme.of(context).textTheme.headlineSmall),
                       const SizedBox(height: 8),
-                      const Text('ولي الأمر والمعلم يستخدمان نفس حساب OPAL. حساب المنصة المستقل يمكنه استخدام البريد الإلكتروني.', textAlign: TextAlign.center),
+                      const Text('ولي الأمر والمعلم والإدارة يستخدمون نفس حساب OPAL. حساب المنصة المستقل يمكنه استخدام البريد الإلكتروني.', textAlign: TextAlign.center),
                       const SizedBox(height: 24),
                       TextField(controller: identifier, autofillHints: const [AutofillHints.username], decoration: const InputDecoration(labelText: 'اسم المستخدم أو البريد الإلكتروني', border: OutlineInputBorder())),
                       const SizedBox(height: 12),
@@ -337,27 +342,45 @@ class _HomePageState extends State<HomePage> {
   int index = 0;
   @override
   Widget build(BuildContext context) {
-    final isLearner = widget.account['role'] == 'learner';
-    final pages = isLearner
-        ? [CoursesPage(api: widget.api), NotificationsPage(api: widget.api), CertificatesPage(api: widget.api), SubscriptionPage(api: widget.api)]
-        : [TeacherMobilePage(api: widget.api), NotificationsPage(api: widget.api)];
-    final destinations = isLearner
-        ? const [
-            NavigationDestination(icon: Icon(Icons.menu_book), label: 'الدورات'),
-            NavigationDestination(icon: Icon(Icons.notifications), label: 'الإشعارات'),
-            NavigationDestination(icon: Icon(Icons.workspace_premium), label: 'الشهادات'),
-            NavigationDestination(icon: Icon(Icons.card_membership), label: 'الاشتراك'),
+    final role = widget.account['role']?.toString() ?? '';
+    final isLearner = role == 'learner';
+    final isManager = role == 'manager';
+    final pages = isManager
+        ? [
+            ManagerDashboardPage(api: widget.api),
+            ManagerAccountsPage(api: widget.api),
+            ManagerCoursesPage(api: widget.api),
+            ManagerCardsPage(api: widget.api),
+            ManagerAccessPage(api: widget.api),
           ]
-        : const [
-            NavigationDestination(icon: Icon(Icons.cast_for_education), label: 'دوراتي'),
-            NavigationDestination(icon: Icon(Icons.notifications), label: 'الإشعارات'),
-          ];
+        : isLearner
+            ? [CoursesPage(api: widget.api), NotificationsPage(api: widget.api), CertificatesPage(api: widget.api), SubscriptionPage(api: widget.api)]
+            : [TeacherMobilePage(api: widget.api), NotificationsPage(api: widget.api)];
+    final destinations = isManager
+        ? const [
+            NavigationDestination(icon: Icon(Icons.dashboard), label: 'الرئيسية'),
+            NavigationDestination(icon: Icon(Icons.people), label: 'الحسابات'),
+            NavigationDestination(icon: Icon(Icons.menu_book), label: 'الدورات'),
+            NavigationDestination(icon: Icon(Icons.confirmation_number), label: 'البطاقات'),
+            NavigationDestination(icon: Icon(Icons.tune), label: 'الإتاحة'),
+          ]
+        : isLearner
+            ? const [
+                NavigationDestination(icon: Icon(Icons.menu_book), label: 'الدورات'),
+                NavigationDestination(icon: Icon(Icons.notifications), label: 'الإشعارات'),
+                NavigationDestination(icon: Icon(Icons.workspace_premium), label: 'الشهادات'),
+                NavigationDestination(icon: Icon(Icons.card_membership), label: 'الاشتراك'),
+              ]
+            : const [
+                NavigationDestination(icon: Icon(Icons.cast_for_education), label: 'دوراتي'),
+                NavigationDestination(icon: Icon(Icons.notifications), label: 'الإشعارات'),
+              ];
     if (index >= pages.length) index = 0;
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.account['full_name']?.toString() ?? 'أوبال تعليم'),
         actions: [
-          if (widget.profiles.length > 1)
+          if (!isManager && widget.profiles.length > 1)
             PopupMenuButton<MobileProfile>(
               tooltip: 'تبديل الابن',
               icon: const Icon(Icons.switch_account),
@@ -371,6 +394,345 @@ class _HomePageState extends State<HomePage> {
       bottomNavigationBar: NavigationBar(selectedIndex: index, onDestinationSelected: (v) => setState(() => index = v), destinations: destinations),
     );
   }
+}
+
+class ManagerDashboardPage extends StatefulWidget {
+  const ManagerDashboardPage({super.key, required this.api});
+  final ApiClient api;
+  @override
+  State<ManagerDashboardPage> createState() => _ManagerDashboardPageState();
+}
+
+class _ManagerDashboardPageState extends State<ManagerDashboardPage> {
+  late Future<Map<String, dynamic>> future = load();
+  Future<Map<String, dynamic>> load() async => Map<String, dynamic>.from(await widget.api.get('manager/dashboard/') as Map);
+  Future<void> reload() async => setState(() => future = load());
+
+  @override
+  Widget build(BuildContext context) => FutureBuilder<Map<String, dynamic>>(
+        future: future,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
+          if (snapshot.hasError) return ErrorPane(message: snapshot.error.toString(), onRetry: reload);
+          final data = snapshot.data!;
+          final stats = Map<String, dynamic>.from(data['stats'] as Map? ?? const {});
+          final readiness = Map<String, dynamic>.from(data['readiness'] as Map? ?? const {});
+          final cards = <MapEntry<String, String>>[
+            MapEntry('المتعلمون', '${stats['learners'] ?? 0}'),
+            MapEntry('المعلمون', '${stats['teachers'] ?? 0}'),
+            MapEntry('الدورات المنشورة', '${stats['published_courses'] ?? 0}'),
+            MapEntry('التسجيلات', '${stats['enrollments'] ?? 0}'),
+            MapEntry('بطاقات متاحة', '${stats['available_subscriptions'] ?? 0}'),
+            MapEntry('اشتراكات فعالة', '${stats['active_subscriptions'] ?? 0}'),
+          ];
+          final checks = List<dynamic>.from(readiness['checks'] as List? ?? const []);
+          return RefreshIndicator(
+            onRefresh: reload,
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                Text('إدارة منصة أوبال التعليمية', style: Theme.of(context).textTheme.headlineSmall),
+                const SizedBox(height: 8),
+                Text('حالة الجاهزية: ${readiness['overall'] ?? '—'} · الموانع: ${readiness['blocking_failures'] ?? 0}'),
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: cards.map((item) => SizedBox(width: 165, child: Card(child: Padding(padding: const EdgeInsets.all(14), child: Column(children: [Text(item.value, style: Theme.of(context).textTheme.headlineSmall), const SizedBox(height: 4), Text(item.key, textAlign: TextAlign.center)])))).toList(),
+                ),
+                const SizedBox(height: 18),
+                Text('فحص الجاهزية', style: Theme.of(context).textTheme.titleLarge),
+                ...checks.map((raw) {
+                  final item = Map<String, dynamic>.from(raw as Map);
+                  final status = item['status']?.toString() ?? '';
+                  final icon = status == 'pass' ? Icons.check_circle : status == 'fail' ? Icons.error : Icons.warning_amber_rounded;
+                  return ListTile(leading: Icon(icon), title: Text(item['label']?.toString() ?? ''), subtitle: Text(item['detail']?.toString() ?? ''));
+                }),
+              ],
+            ),
+          );
+        },
+      );
+}
+
+class ManagerAccountsPage extends StatelessWidget {
+  const ManagerAccountsPage({super.key, required this.api});
+  final ApiClient api;
+  @override
+  Widget build(BuildContext context) => AsyncListPage(
+        loader: () async => List<dynamic>.from(await api.get('manager/accounts/') as List),
+        emptyText: 'لا توجد حسابات منصة.',
+        builder: (context, raw) {
+          final item = Map<String, dynamic>.from(raw as Map);
+          return Card(child: ListTile(
+            leading: CircleAvatar(child: Icon(item['role'] == 'teacher' ? Icons.school : Icons.person)),
+            title: Text(item['full_name']?.toString() ?? ''),
+            subtitle: Text('${item['email'] ?? ''}\n${item['role'] == 'teacher' ? 'معلم' : item['role'] == 'manager' ? 'مدير منصة' : 'متعلم'}${item['is_school_managed'] == true ? ' · مرتبط بالمدرسة' : ''}'),
+            isThreeLine: true,
+            trailing: Icon(item['is_active'] == true ? Icons.check_circle : Icons.block),
+          ));
+        },
+      );
+}
+
+class ManagerCoursesPage extends StatefulWidget {
+  const ManagerCoursesPage({super.key, required this.api});
+  final ApiClient api;
+  @override
+  State<ManagerCoursesPage> createState() => _ManagerCoursesPageState();
+}
+
+class _ManagerCoursesPageState extends State<ManagerCoursesPage> {
+  late Future<List<dynamic>> future = load();
+  Future<List<dynamic>> load() async => List<dynamic>.from(await widget.api.get('manager/courses/') as List);
+  Future<void> reload() async => setState(() => future = load());
+  Future<void> changeStatus(Map<String, dynamic> course, String action) async {
+    try {
+      await widget.api.post('manager/courses/${course['id']}/status/', {'action': action});
+      await reload();
+    } on ApiException catch (exc) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(exc.message)));
+    }
+  }
+  @override
+  Widget build(BuildContext context) => FutureBuilder<List<dynamic>>(
+        future: future,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
+          if (snapshot.hasError) return ErrorPane(message: snapshot.error.toString(), onRetry: reload);
+          final items = snapshot.data ?? const [];
+          return RefreshIndicator(
+            onRefresh: reload,
+            child: ListView.separated(
+              padding: const EdgeInsets.all(16),
+              itemCount: items.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 8),
+              itemBuilder: (context, index) {
+                final item = Map<String, dynamic>.from(items[index] as Map);
+                return Card(child: ListTile(
+                  leading: const CircleAvatar(child: Icon(Icons.menu_book)),
+                  title: Text(item['title']?.toString() ?? ''),
+                  subtitle: Text('${item['subject']?['name'] ?? ''} · ${item['teacher']?['name'] ?? ''}\nالدروس ${item['lesson_count'] ?? 0} · التقييمات ${item['assessment_count'] ?? 0} · ${item['status'] ?? ''}'),
+                  isThreeLine: true,
+                  trailing: PopupMenuButton<String>(
+                    onSelected: (value) => changeStatus(item, value),
+                    itemBuilder: (_) => const [
+                      PopupMenuItem(value: 'publish', child: Text('نشر')),
+                      PopupMenuItem(value: 'draft', child: Text('إعادة لمسودة')),
+                      PopupMenuItem(value: 'archive', child: Text('أرشفة')),
+                    ],
+                  ),
+                ));
+              },
+            ),
+          );
+        },
+      );
+}
+
+class ManagerCardsPage extends StatefulWidget {
+  const ManagerCardsPage({super.key, required this.api});
+  final ApiClient api;
+  @override
+  State<ManagerCardsPage> createState() => _ManagerCardsPageState();
+}
+
+class _ManagerCardsPageState extends State<ManagerCardsPage> {
+  late Future<List<dynamic>> future = load();
+  Future<List<dynamic>> load() async => List<dynamic>.from(await widget.api.get('manager/subscription-cards/') as List);
+  Future<void> reload() async => setState(() => future = load());
+  Future<void> cancelCard(int id) async {
+    try {
+      await widget.api.post('manager/subscription-cards/$id/cancel/');
+      await reload();
+    } on ApiException catch (exc) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(exc.message)));
+    }
+  }
+  Future<void> generateCards() async {
+    final subjects = List<dynamic>.from(await widget.api.get('manager/subjects/') as List);
+    if (!mounted) return;
+    final quantity = TextEditingController(text: '1');
+    final prefix = TextEditingController(text: 'OPAL');
+    String duration = 'monthly';
+    bool allSubjects = true;
+    final selected = <int>{};
+    final accepted = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setLocalState) => AlertDialog(
+          title: const Text('إنشاء بطاقات اشتراك'),
+          content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
+            TextField(controller: quantity, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'عدد البطاقات')),
+            TextField(controller: prefix, textCapitalization: TextCapitalization.characters, decoration: const InputDecoration(labelText: 'بادئة الرمز')),
+            const SizedBox(height: 10),
+            DropdownMenu<String>(
+              initialSelection: duration,
+              label: const Text('المدة'),
+              dropdownMenuEntries: const [
+                DropdownMenuEntry(value: 'monthly', label: 'شهري'),
+                DropdownMenuEntry(value: 'termly', label: 'فصلي'),
+                DropdownMenuEntry(value: 'yearly', label: 'سنوي'),
+              ],
+              onSelected: (value) { if (value != null) duration = value; },
+            ),
+            CheckboxListTile(value: allSubjects, title: const Text('جميع المواد'), onChanged: (value) => setLocalState(() => allSubjects = value ?? false)),
+            if (!allSubjects) ...subjects.map((raw) {
+              final item = Map<String, dynamic>.from(raw as Map);
+              final id = item['id'] as int;
+              return CheckboxListTile(
+                value: selected.contains(id),
+                title: Text(item['name']?.toString() ?? ''),
+                onChanged: (value) => setLocalState(() { if (value == true) { selected.add(id); } else { selected.remove(id); } }),
+              );
+            }),
+          ])),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('إلغاء')),
+            FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('إنشاء')),
+          ],
+        ),
+      ),
+    );
+    if (accepted != true) return;
+    try {
+      await widget.api.post('manager/subscription-cards/generate/', {
+        'quantity': int.tryParse(quantity.text.trim()) ?? 1,
+        'prefix': prefix.text.trim(),
+        'duration': duration,
+        'grants_all_subjects': allSubjects,
+        'subject_ids': selected.toList(),
+      });
+      await reload();
+    } on ApiException catch (exc) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(exc.message)));
+    }
+  }
+  @override
+  Widget build(BuildContext context) => Column(children: [
+        Padding(padding: const EdgeInsets.all(12), child: SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: generateCards, icon: const Icon(Icons.add_card), label: const Text('إنشاء بطاقات عشوائية')))),
+        Expanded(child: FutureBuilder<List<dynamic>>(
+          future: future,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
+            if (snapshot.hasError) return ErrorPane(message: snapshot.error.toString(), onRetry: reload);
+            final items = snapshot.data ?? const [];
+            return RefreshIndicator(onRefresh: reload, child: ListView.separated(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+              itemCount: items.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 8),
+              itemBuilder: (context, index) {
+                final item = Map<String, dynamic>.from(items[index] as Map);
+                return Card(child: ListTile(
+                  leading: const Icon(Icons.confirmation_number),
+                  title: SelectableText(item['code']?.toString() ?? ''),
+                  subtitle: Text('${item['duration_label'] ?? ''} · ${item['status_label'] ?? ''}'),
+                  trailing: item['status'] == 'available' ? IconButton(onPressed: () => cancelCard(item['id'] as int), tooltip: 'إلغاء البطاقة', icon: const Icon(Icons.cancel)) : null,
+                ));
+              },
+            ));
+          },
+        )),
+      ]);
+}
+
+class ManagerAccessPage extends StatefulWidget {
+  const ManagerAccessPage({super.key, required this.api});
+  final ApiClient api;
+  @override
+  State<ManagerAccessPage> createState() => _ManagerAccessPageState();
+}
+
+class _ManagerAccessPageState extends State<ManagerAccessPage> {
+  late Future<Map<String, dynamic>> future = load();
+  final search = TextEditingController();
+  Future<Map<String, dynamic>> load([String query = '']) async {
+    final suffix = query.trim().isEmpty ? '' : '?q=${Uri.encodeQueryComponent(query.trim())}';
+    return Map<String, dynamic>.from(await widget.api.get('manager/school-access/$suffix') as Map);
+  }
+  Future<void> reload([String query = '']) async => setState(() => future = load(query));
+  Future<void> apply(Map<String, dynamic> body) async {
+    try {
+      await widget.api.post('manager/school-access/', body);
+      await reload(search.text);
+    } on ApiException catch (exc) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(exc.message)));
+    }
+  }
+  @override
+  Widget build(BuildContext context) => FutureBuilder<Map<String, dynamic>>(
+        future: future,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
+          if (snapshot.hasError) return ErrorPane(message: snapshot.error.toString(), onRetry: () => reload(search.text));
+          final data = snapshot.data!;
+          final grades = List<dynamic>.from(data['grades'] as List? ?? const []);
+          final students = List<dynamic>.from(data['students'] as List? ?? const []);
+          return ListView(padding: const EdgeInsets.all(16), children: [
+            Text('إتاحة المنصة', style: Theme.of(context).textTheme.titleLarge),
+            SwitchListTile(
+              value: data['parent_default_enabled'] == true,
+              title: const Text('الإتاحة الافتراضية لأولياء الأمور'),
+              onChanged: (value) => apply({'action': 'global', 'parent_default_enabled': value, 'teacher_sso_enabled': data['teacher_sso_enabled'] == true}),
+            ),
+            SwitchListTile(
+              value: data['teacher_sso_enabled'] == true,
+              title: const Text('إتاحة المنصة للمعلمين'),
+              onChanged: (value) => apply({'action': 'global', 'parent_default_enabled': data['parent_default_enabled'] == true, 'teacher_sso_enabled': value}),
+            ),
+            Row(children: [
+              Expanded(child: FilledButton.tonal(onPressed: () => apply({'action': 'all_on'}), child: const Text('إتاحة للجميع'))),
+              const SizedBox(width: 8),
+              Expanded(child: FilledButton.tonal(onPressed: () => apply({'action': 'all_off'}), child: const Text('إيقاف عن الجميع'))),
+            ]),
+            const Divider(height: 30),
+            Text('حسب الصف', style: Theme.of(context).textTheme.titleMedium),
+            ...grades.map((raw) {
+              final item = Map<String, dynamic>.from(raw as Map);
+              return ListTile(
+                title: Text(item['name']?.toString() ?? ''),
+                trailing: DropdownMenu<String>(
+                  width: 150,
+                  initialSelection: item['mode']?.toString() ?? 'inherit',
+                  dropdownMenuEntries: const [
+                    DropdownMenuEntry(value: 'inherit', label: 'يتبع العام'),
+                    DropdownMenuEntry(value: 'enabled', label: 'متاح'),
+                    DropdownMenuEntry(value: 'disabled', label: 'موقوف'),
+                  ],
+                  onSelected: (value) { if (value != null) apply({'action': 'grade', 'grade_id': item['id'], 'mode': value}); },
+                ),
+              );
+            }),
+            const Divider(height: 30),
+            Text('طالب معين', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 8),
+            TextField(
+              controller: search,
+              textInputAction: TextInputAction.search,
+              onSubmitted: reload,
+              decoration: InputDecoration(labelText: 'اسم الطالب أو رقمه', border: const OutlineInputBorder(), suffixIcon: IconButton(onPressed: () => reload(search.text), icon: const Icon(Icons.search))),
+            ),
+            const SizedBox(height: 8),
+            ...students.map((raw) {
+              final item = Map<String, dynamic>.from(raw as Map);
+              return ListTile(
+                title: Text(item['full_name']?.toString() ?? ''),
+                subtitle: Text(item['student_number']?.toString() ?? ''),
+                trailing: DropdownMenu<String>(
+                  width: 150,
+                  initialSelection: item['mode']?.toString() ?? 'inherit',
+                  dropdownMenuEntries: const [
+                    DropdownMenuEntry(value: 'inherit', label: 'يتبع الصف'),
+                    DropdownMenuEntry(value: 'enabled', label: 'متاح'),
+                    DropdownMenuEntry(value: 'disabled', label: 'موقوف'),
+                  ],
+                  onSelected: (value) { if (value != null) apply({'action': 'student', 'student_id': item['id'], 'mode': value}); },
+                ),
+              );
+            }),
+          ]);
+        },
+      );
 }
 
 class AsyncListPage extends StatefulWidget {

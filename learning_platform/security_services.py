@@ -17,6 +17,7 @@ from .models import (
     LearningAuditEvent,
     LearningEmailVerificationRequest,
     LearningRateLimitBucket,
+    LearningManagerAPIToken,
 )
 
 
@@ -269,5 +270,85 @@ def revoke_api_token(token, *, ip_address=None):
             entity_type="learning_api_token",
             entity_id=str(locked.pk),
             ip_address=ip_address,
+        )
+    return locked
+
+
+@transaction.atomic
+def issue_manager_api_token(user, *, device_name="", ip_address=None):
+    """Issue a short-lived mobile token for an existing OPAL ERP manager.
+
+    No platform password or duplicate manager identity is created. Access is
+    re-evaluated on every authenticated request using OPAL's canonical role rule.
+    """
+    from accounts.workflow import is_management_user
+
+    if not is_management_user(user):
+        raise ValidationError("هذا الحساب لا يملك صلاحية إدارة منصة أوبال التعليمية.")
+    raw_token = "olm_" + secrets.token_urlsafe(36)
+    hours = int(getattr(settings, "OPAL_LEARNING_MANAGER_API_TOKEN_HOURS", 12))
+    token = LearningManagerAPIToken.objects.create(
+        user=user,
+        token_hash=_opaque_hash("manager-api-token", raw_token),
+        token_prefix=raw_token[:12],
+        device_name=(device_name or "").strip()[:120],
+        expires_at=timezone.now() + timedelta(hours=max(1, hours)),
+    )
+    LearningAuditEvent.objects.create(
+        account=None,
+        action="manager_api_token_issued",
+        entity_type="learning_manager_api_token",
+        entity_id=str(token.pk),
+        ip_address=ip_address,
+        metadata={
+            "erp_manager_username": user.get_username(),
+            "device_name": token.device_name,
+        },
+    )
+    return token, raw_token
+
+
+def find_manager_api_token(raw_token):
+    if not raw_token or not raw_token.startswith("olm_"):
+        return None
+    token_hash = _opaque_hash("manager-api-token", raw_token)
+    token = (
+        LearningManagerAPIToken.objects.select_related("user", "user__profile", "user__profile__role")
+        .filter(
+            token_hash=token_hash,
+            revoked_at__isnull=True,
+            expires_at__gt=timezone.now(),
+            user__is_active=True,
+        )
+        .first()
+    )
+    if token is None or not constant_time_compare(token.token_hash, token_hash):
+        return None
+    from accounts.workflow import is_management_user
+
+    return token if is_management_user(token.user) else None
+
+
+@transaction.atomic
+def touch_manager_api_token(token):
+    now = timezone.now()
+    LearningManagerAPIToken.objects.filter(pk=token.pk).update(last_used_at=now)
+    token.last_used_at = now
+    return token
+
+
+@transaction.atomic
+def revoke_manager_api_token(token, *, ip_address=None):
+    locked = LearningManagerAPIToken.objects.select_for_update().select_related("user").get(pk=token.pk)
+    if locked.revoked_at is None:
+        locked.revoked_at = timezone.now()
+        locked.save(update_fields=["revoked_at"])
+        LearningAuditEvent.objects.create(
+            account=None,
+            action="manager_api_token_revoked",
+            entity_type="learning_manager_api_token",
+            entity_id=str(locked.pk),
+            ip_address=ip_address,
+            metadata={"erp_manager_username": locked.user.get_username()},
         )
     return locked

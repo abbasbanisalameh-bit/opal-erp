@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+from django.conf import settings
 from django.contrib.auth.hashers import check_password, make_password
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
@@ -1035,6 +1036,45 @@ class LearningAPIToken(models.Model):
 
     def __str__(self):
         return f"{self.account} — {self.device_name or self.token_prefix}"
+
+
+class LearningManagerAPIToken(models.Model):
+    """Short-lived mobile token bound directly to an OPAL ERP management user.
+
+    Management authentication deliberately remains rooted in Django/OPAL ERP rather
+    than creating a second platform password. The token stores only an opaque hash.
+    """
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="learning_manager_api_tokens",
+        verbose_name="مستخدم OPAL ERP",
+    )
+    token_hash = models.CharField("بصمة الرمز", max_length=64, unique=True, db_index=True)
+    token_prefix = models.CharField("بداية الرمز", max_length=12, db_index=True)
+    device_name = models.CharField("اسم الجهاز", max_length=120, blank=True)
+    expires_at = models.DateTimeField("ينتهي في", db_index=True)
+    last_used_at = models.DateTimeField(null=True, blank=True)
+    revoked_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+        indexes = [
+            models.Index(fields=["user", "revoked_at", "expires_at"], name="learn_mgr_api_user_idx"),
+        ]
+
+    @property
+    def is_valid(self):
+        if self.revoked_at is not None or self.expires_at <= timezone.now() or not self.user.is_active:
+            return False
+        from accounts.workflow import is_management_user
+
+        return is_management_user(self.user)
+
+    def __str__(self):
+        return f"{self.user.get_username()} — {self.device_name or self.token_prefix}"
 
 
 class LearningRateLimitBucket(models.Model):
