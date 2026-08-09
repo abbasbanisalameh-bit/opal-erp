@@ -10,7 +10,7 @@
     <h2>{{ card.student.full_name }}</h2>
     <p>الصف: {{ card.student.grade }} / {{ card.student.section|default:"-" }}</p>
     <p>الهاتف: {{ card.student.phone|default:"-" }}</p><p>الترتيب: {% if card.rank.available %}{{ card.rank.rank }} من {{ card.rank.class_count }}{% else %}غير متاح{% endif %}</p><p>الواجبات الحالية: {{ card.homework|length }}</p>
-    <a class="btn btn-sm btn-primary" href="{% url 'parent_portal:student_detail' card.student.id %}">عرض التفاصيل</a>
+    <div class="d-flex flex-wrap gap-2"><a class="btn btn-sm btn-primary" href="{% url 'parent_portal:student_detail' card.student.id %}">عرض التفاصيل</a>{% if card.learning_access.enabled %}<a class="btn btn-sm btn-success" href="{% url 'learning_platform:erp_parent_student_entry' card.student.pk %}"><i class="bi bi-mortarboard-fill"></i> منصة أوبال التعليمية</a>{% endif %}</div>
   </div>
 {% endfor %}
 </div>

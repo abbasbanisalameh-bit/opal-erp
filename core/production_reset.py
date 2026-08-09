@@ -24,6 +24,10 @@ PREVIEW_TOKEN_MAX_AGE_SECONDS = 30 * 60
 # branches and configuration rows are intentionally absent from this list.
 DELETE_MODEL_LABELS = (
     # Learning platform transactions, identities and content.
+    "learning_platform.LearningStudentAccessOverride",
+    "learning_platform.LearningGradeAccessOverride",
+    "learning_platform.LearningStudentProfile",
+    "learning_platform.LearningTeacherProfile",
     "learning_platform.LearningPaymentEvent",
     "learning_platform.LearningAPIToken",
     "learning_platform.LearningRateLimitBucket",
@@ -158,6 +162,7 @@ PRESERVED_MODEL_LABELS = (
     "timetable.SchoolScheduleSettings",
     "openemis_integration.OpenEMISSettings",
     "learning_platform.LearningAISettings",
+    "learning_platform.LearningAccessSettings",
 )
 
 
@@ -172,6 +177,7 @@ PRESERVED_LABELS_AR = {
     "timetable.SchoolScheduleSettings": "إعدادات أيام الدوام",
     "openemis_integration.OpenEMISSettings": "إعدادات OpenEMIS",
     "learning_platform.LearningAISettings": "إعدادات مساعد منصة التعلم",
+    "learning_platform.LearningAccessSettings": "إعدادات إتاحة منصة التعلم للمدرسة",
     "auth.User.current_manager": "حساب المدير الحالي",
     "development_center.total": "بيانات مركز التطوير",
 }

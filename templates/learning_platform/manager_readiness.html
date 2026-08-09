@@ -4,9 +4,14 @@
 {% block content %}
 <section class="learning-section"><div class="learning-container">
 {% include "learning_platform/_manager_nav.html" %}
-<div class="learning-dashboard-heading"><div><span>بوابة الاعتماد</span><h1>جاهزية التشغيل الفعلي</h1><p>لا تعتمد الإطلاق العام ما دام هناك فشل مانع واحد.</p></div><span class="learning-status {% if readiness.overall == 'production_ready' %}active{% else %}inactive{% endif %}">{% if readiness.overall == 'production_ready' %}جاهزة للإنتاج{% elif readiness.overall == 'pilot_ready' %}جاهزة لتجربة محدودة{% else %}غير جاهزة{% endif %}</span></div>
-<div class="learning-manager-stat-grid"><article><span>×</span><strong>{{ readiness.blocking_failures }}</strong><small>أعطال مانعة</small></article><article><span>!</span><strong>{{ readiness.warnings }}</strong><small>تحذيرات</small></article></div>
-<div class="learning-manager-list">{% for check in readiness.checks %}<article><span>{% if check.status == 'pass' %}✓{% elif check.status == 'warn' %}!{% else %}×{% endif %}</span><div><strong>{{ check.label }}</strong><small>{{ check.detail }}</small></div><b class="{% if check.status == 'pass' %}active{% else %}inactive{% endif %}">{{ check.status }}</b></article>{% endfor %}</div>
-<div class="learning-foundation-note"><strong>أمر التحقق من Bash</strong><p><code>python manage.py verify_learning_production_readiness --strict</code></p></div>
+<div class="learning-dashboard-heading"><div><span>بوابة الاعتماد</span><h1>جاهزية التشغيل الفعلي</h1><p>لا تعتمد الإطلاق العام ما دام هناك فشل مانع واحد. التحذيرات مصنفة إلى إلزامية واختيارية وقيود استضافة.</p></div><span class="learning-status {% if readiness.overall == 'production_ready' %}active{% else %}inactive{% endif %}">{% if readiness.overall == 'production_ready' %}جاهزة للإنتاج{% elif readiness.overall == 'pilot_ready' %}جاهزة لتجربة محدودة{% else %}غير جاهزة{% endif %}</span></div>
+<div class="learning-manager-stat-grid">
+  <article><span>×</span><strong>{{ readiness.blocking_failures }}</strong><small>أعطال مانعة</small></article>
+  <article><span>!</span><strong>{{ readiness.warnings }}</strong><small>كل التحذيرات</small></article>
+  <article><span>!</span><strong>{{ readiness.warning_breakdown.required|default:0 }}</strong><small>تحذيرات إلزامية</small></article>
+  <article><span>i</span><strong>{{ readiness.warning_breakdown.hosting|default:0 }}</strong><small>قيود استضافة</small></article>
+</div>
+<div class="learning-manager-list">{% for check in readiness.checks %}<article><span>{% if check.status == 'pass' %}✓{% elif check.status == 'warn' %}!{% else %}×{% endif %}</span><div><strong>{{ check.label }}</strong><small>{% if check.requirement == 'hosting' %}[قيد استضافة] {% elif check.requirement == 'optional' %}[اختياري] {% else %}[إلزامي] {% endif %}{{ check.detail }}</small></div><b class="{% if check.status == 'pass' %}active{% else %}inactive{% endif %}">{{ check.status }}</b></article>{% endfor %}</div>
+<div class="learning-foundation-note"><strong>أمر التحقق من Bash</strong><p><code>python manage.py verify_learning_production_readiness</code></p><p>للتدقيق الذي يشترط اختفاء كل التحذيرات بما فيها قيود الاستضافة استخدم <code>--strict</code>.</p></div>
 </div></section>
 {% endblock %}

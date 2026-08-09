@@ -1,0 +1,45 @@
+{% extends "learning_platform/base.html" %}
+{% block title %}إتاحة المنصة للمدرسة | منصة أوبال التعليمية{% endblock %}
+{% block body_class %}learning-manager-mode{% endblock %}
+{% block content %}
+<section class="learning-page-hero manager-page"><div class="learning-container"><span>الإعدادات المدرسية</span><h1>إتاحة منصة أوبال التعليمية</h1><p>الترتيب المعتمد للصلاحية: الطالب أولًا، ثم الصف، ثم الإعداد العام.</p></div></section>
+<section class="learning-section learning-manager-page-section"><div class="learning-container">
+{% include "learning_platform/_manager_nav.html" %}
+<div class="learning-manager-form-card">
+  <h2>الإتاحة العامة</h2>
+  <form method="post">{% csrf_token %}<input type="hidden" name="action" value="global">
+    <label class="learning-checkbox-row"><input type="checkbox" name="parent_default_enabled" value="1" {% if access_settings.parent_default_enabled %}checked{% endif %}> <span>إتاحة المنصة افتراضيًا لجميع الطلاب في حسابات أولياء الأمور</span></label>
+    <label class="learning-checkbox-row"><input type="checkbox" name="teacher_sso_enabled" value="1" {% if access_settings.teacher_sso_enabled %}checked{% endif %}> <span>إتاحة المنصة للمعلمين من بوابة المعلم</span></label>
+    <button class="learning-button" type="submit">حفظ الإعداد العام</button>
+  </form>
+  <div class="learning-manager-form-actions" style="margin-top:1rem;">
+    <form method="post">{% csrf_token %}<input type="hidden" name="action" value="all_on"><button class="learning-button learning-button-small" type="submit" onclick="return confirm('سيتم إتاحة المنصة لجميع الطلاب وإلغاء جميع استثناءات الصفوف والطلاب. متابعة؟')">إتاحة للجميع</button></form>
+    <form method="post">{% csrf_token %}<input type="hidden" name="action" value="all_off"><button class="learning-button learning-button-small learning-button-ghost" type="submit" onclick="return confirm('سيتم إيقاف المنصة عن جميع الطلاب وإلغاء جميع استثناءات الصفوف والطلاب. متابعة؟')">إيقاف عن الجميع</button></form>
+  </div>
+  <p><small>إتاحة/إيقاف الجميع تلغي الاستثناءات السابقة. بعد ذلك يمكنك إنشاء استثناء جديد لصف أو لطالب محدد.</small></p>
+</div>
+
+<div class="learning-manager-form-card">
+  <h2>التحكم حسب الصف</h2><p>«يرث العام» يعني اتباع مفتاح الإتاحة العامة أعلاه.</p>
+  <div class="learning-teacher-course-list">
+    {% for grade in grades %}<article><div><strong>{{ grade.name }}</strong></div>
+      <form method="post" class="learning-manager-form-actions">{% csrf_token %}<input type="hidden" name="action" value="grade"><input type="hidden" name="grade_id" value="{{ grade.pk }}">
+        <select name="mode" class="learning-input"><option value="inherit" {% if grade.learning_mode == 'inherit' %}selected{% endif %}>يرث العام</option><option value="enabled" {% if grade.learning_mode == 'enabled' %}selected{% endif %}>متاح</option><option value="disabled" {% if grade.learning_mode == 'disabled' %}selected{% endif %}>موقوف</option></select>
+        <button class="learning-button learning-button-small" type="submit">حفظ</button>
+      </form></article>{% endfor %}
+  </div>
+</div>
+
+<div class="learning-manager-form-card">
+  <h2>استثناء طالب محدد</h2>
+  <form method="get" class="learning-manager-form-actions"><input class="learning-input" name="q" value="{{ query }}" placeholder="اسم الطالب أو رقمه أو ولي الأمر"><button class="learning-button learning-button-small" type="submit">بحث</button></form>
+  {% if query %}<div class="learning-teacher-course-list">
+    {% for student in students %}<article><div><small>{{ student.student_number }} · {{ student.grade }} {{ student.section }}</small><strong>{{ student.full_name }}</strong><p>الحالة الفعلية الآن: {% if student.learning_resolved.enabled %}متاح{% else %}موقوف{% endif %} — {{ student.learning_resolved.label }}</p></div>
+      <form method="post" class="learning-manager-form-actions">{% csrf_token %}<input type="hidden" name="action" value="student"><input type="hidden" name="student_id" value="{{ student.pk }}">
+        <select name="mode" class="learning-input"><option value="inherit" {% if student.learning_mode == 'inherit' %}selected{% endif %}>يرث الصف/العام</option><option value="enabled" {% if student.learning_mode == 'enabled' %}selected{% endif %}>متاح لهذا الطالب</option><option value="disabled" {% if student.learning_mode == 'disabled' %}selected{% endif %}>موقوف لهذا الطالب</option></select>
+        <button class="learning-button learning-button-small" type="submit">حفظ</button>
+      </form></article>{% empty %}<div class="learning-empty"><strong>لا توجد نتائج.</strong></div>{% endfor %}
+  </div>{% endif %}
+</div>
+</div></section>
+{% endblock %}

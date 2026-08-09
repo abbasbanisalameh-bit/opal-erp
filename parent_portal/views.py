@@ -4,7 +4,7 @@ from django.contrib.auth import update_session_auth_hash
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import HttpResponse
+from django.http import Http404, HttpResponse
 import csv
 
 from .models import Family, FamilyStudent, TeacherMonthlyEvaluation
@@ -413,7 +413,26 @@ def _family_finance_context(family):
 @management_required
 def family_detail(request, pk):
     family = get_object_or_404(Family.objects.select_related("user", "school"), pk=pk)
-    return render(request, "parent_portal/family_detail.html", _family_finance_context(family))
+    context = _family_finance_context(family)
+    context.update({"can_print_receipts": True, "receipt_family_pk": family.pk})
+    return render(request, "parent_portal/family_detail.html", context)
+
+
+@management_required
+def family_receipt_print(request, pk, source_type, receipt_pk):
+    family = get_object_or_404(Family.objects.select_related("school"), pk=pk)
+    if source_type not in {"fee", "accounting"}:
+        raise Http404("نوع الإيصال غير معروف.")
+    history = build_guardian_receipt_history(
+        [link.student for link in FamilyStudent.objects.filter(family=family, is_active=True).select_related("student")]
+    )
+    receipt = next(
+        (item for item in history if item.get("source_type") == source_type and item.get("source_id") == receipt_pk),
+        None,
+    )
+    if receipt is None:
+        raise Http404("الإيصال لا يتبع ملف ولي الأمر المحدد.")
+    return render(request, "parent_portal/guardian_receipt_print.html", {"family": family, "receipt": receipt})
 
 
 @management_required

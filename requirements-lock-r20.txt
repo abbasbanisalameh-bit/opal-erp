@@ -1,0 +1,14 @@
+# OPAL Learning tested dependency lock
+# Generated from the active Python environment by:
+#   python manage.py write_learning_dependency_lock
+arabic-reshaper==3.0.1
+asgiref==3.11.1
+charset-normalizer==3.4.8
+Django==5.2.16
+pillow==12.3.0
+psycopg-binary==3.3.4
+psycopg==3.3.4
+python-bidi==0.6.11
+qrcode==8.2
+reportlab==5.0.0
+sqlparse==0.5.5

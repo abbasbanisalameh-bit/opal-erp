@@ -49,7 +49,8 @@
     <p class="mb-1">متبقيات السنوات السابقة: <strong class="text-danger">{{ card.previous_debt.total }} د.أ</strong></p>
     <p class="mb-1">الإجمالي المطلوب: <strong>{{ card.combined_remaining }} د.أ</strong></p><p class="mb-1">الترتيب: {% if card.rank.available %}<strong>{{ card.rank.rank }} من {{ card.rank.class_count }}</strong>{% else %}غير متاح{% endif %}</p><p class="mb-2">الواجبات الحالية: {{ card.homework|length }}</p>
     <div class="alert alert-info py-2"><strong>{{ card.schedule.message }}</strong>{% if card.schedule.current_class %}<div>الحصة الحالية: <span class="opal-subject-chip" style="{% subject_style card.schedule.current_class.subject %}">{{ card.schedule.current_class.subject }}</span></div>{% endif %}{% if card.schedule.next_class %}<div>الحصة التالية: <span class="opal-subject-chip" style="{% subject_style card.schedule.next_class.subject %}">{{ card.schedule.next_class.subject }}</span></div>{% endif %}{% if card.schedule.ends_soon %}<div class="text-danger">اقترب انتهاء الحدث الجاري</div>{% endif %}</div>
-    <small class="text-secondary">فتح الملف من بطاقة «الأبناء» أعلاه.</small>
+    {% if card.learning_access.enabled %}<a class="btn btn-primary btn-sm mt-2" href="{% url 'learning_platform:erp_parent_student_entry' card.student.pk %}"><i class="bi bi-mortarboard-fill"></i> منصة أوبال التعليمية</a>{% endif %}
+    <small class="text-secondary d-block mt-2">فتح الملف من بطاقة «الأبناء» أعلاه.</small>
   </div>
   {% endfor %}
 </div>

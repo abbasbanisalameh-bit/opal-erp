@@ -97,79 +97,106 @@ class SystemDataCenterTests(TestCase):
         self.assertContains(response, "تهيئة التشغيل الفعلي")
         self.assertContains(response, reverse("core:production_launch_preparation"))
         self.assertNotContains(response, 'name="action" value="reset_all"')
-        self.assertNotContains(response, "مختبر البيانات التجريبية")
+        self.assertContains(response, "إدخال البيانات التجريبية")
 
     def test_seed_is_comprehensive_and_reset_removes_all_operational_data(self):
+        from collections import Counter
         from core.system_data import reset_all_operational_data, seed_system_data
         from students.models import Student
         from teachers.models import Teacher, TeacherDocument, TeacherPerformanceSnapshot
         from accounting.models import Receipt
-        from parent_portal.models import Family, TeacherMonthlyEvaluation
-        from parent_portal.models import FamilyStudent
+        from parent_portal.models import Family, FamilyStudent, TeacherMonthlyEvaluation
         from academics.models import Grade, Section, Subject
         from teachers.models import TeacherAssignment
-        from timetable.models import SchoolDayEvent, TimeSlot
-        from admissions.models import FeePayment
-        from documents.models import IssuedDocument
-        from exams.models import Exam, StudentMark
-        from timetable.models import TeacherAbsence, TimetableEntry
-        from attendance_v2.models import Attendance, AttendanceRegister
+        from timetable.models import SchoolDayEvent, TimeSlot, TimetableEntry
+        from admissions.models import FeePayment, FeePaymentAllocation
+        from attendance_v2.models import AttendanceRegister
         from enterprise_ops.models import MonthlyServiceEvaluation, RolePermissionRule
+        from learning_platform.models import (
+            LearningAccount, LearningCourse, LearningLesson, LearningStudentProfile,
+            LearningSubscriptionCard, LearningTeacherProfile,
+        )
 
         Student.objects.create(student_number="OLD-WITNESS", full_name="سجل قديم", grade="الأول")
         result = seed_system_data(user=self.user)
         self.assertEqual(result["students"], 500)
-        self.assertEqual(result["teachers"], 19)
-        self.assertEqual(result["families"], 300)
-        self.assertEqual(Student.objects.filter(is_demo=True).count(), 0)
-        self.assertEqual(Teacher.objects.filter(is_demo=True).count(), 0)
-        self.assertEqual(TeacherDocument.objects.count(), 38)
-        self.assertGreater(Receipt.objects.count(), 0)
-        self.assertEqual(Family.objects.count(), 300)
+        self.assertEqual(result["teachers"], 30)
+        self.assertEqual(result["families"], 200)
+        self.assertEqual(result["sections"], 30)
+        self.assertEqual(result["teacher_weekly_load"], 30)
+        self.assertEqual(result["teacher_daily_target"], 6)
+        self.assertTrue(result["schedule_verified"])
+        self.assertEqual(result["learning_accounts"], 530)
+        self.assertEqual(result["learning_courses"], 330)
+        self.assertEqual(result["learning_lessons"], 660)
+
+        self.assertEqual(Student.objects.count(), 500)
+        self.assertEqual(Teacher.objects.count(), 30)
+        self.assertEqual(TeacherDocument.objects.count(), 60)
+        self.assertEqual(Family.objects.count(), 200)
         self.assertEqual(Grade.objects.count(), 12)
-        self.assertEqual(Section.objects.count(), 25)
-        self.assertEqual(StudentMark.objects.count(), 52640)
-        self.assertEqual(IssuedDocument.objects.count(), 819)
-        self.assertEqual(Receipt.objects.count() + FeePayment.objects.count(), 800)
-        self.assertEqual(result["schedule_verified"], True)
-        self.assertEqual(Subject.objects.filter(academic_year__is_current=True).count(), 159)
-        self.assertEqual(TeacherAssignment.objects.count(), 329)
+        self.assertEqual(Section.objects.count(), 30)
+        self.assertEqual(Subject.objects.filter(academic_year__is_current=True).count(), 132)
+        self.assertEqual(TeacherAssignment.objects.count(), 330)
         self.assertEqual(TimeSlot.objects.filter(generated_for_smart_schedule=False).count(), 8)
-        self.assertEqual(SchoolDayEvent.objects.filter(event_type="break").count(), 3)
-        self.assertFalse(SchoolDayEvent.objects.filter(event_type="break", start_time__isnull=True).exists())
-        self.assertEqual(sorted(item.sections.count() for item in SchoolDayEvent.objects.filter(event_type="break")), [8, 8, 9])
-        self.assertEqual(TimetableEntry.objects.count(), 475)
-        self.assertEqual(result["teacher_weekly_load"], 25)
-        self.assertEqual(result["teacher_daily_target"], 5)
-        self.assertFalse(Teacher.objects.exclude(weekly_teaching_load=25).exists())
+        self.assertEqual(TimetableEntry.objects.count(), 900)
+
+        breaks = list(SchoolDayEvent.objects.filter(event_type="break").prefetch_related("sections"))
+        self.assertEqual(len(breaks), 3)
+        self.assertTrue(all(item.effective_duration_minutes == 20 for item in breaks))
+        self.assertEqual(sorted(item.sections.count() for item in breaks), [8, 10, 12])
+        section_breaks = Counter()
+        for item in breaks:
+            for section_id in item.sections.values_list("pk", flat=True):
+                section_breaks[section_id] += 1
+        self.assertEqual(len(section_breaks), 30)
+        self.assertEqual(set(section_breaks.values()), {1})
+
+        self.assertFalse(Teacher.objects.exclude(weekly_teaching_load=30).exists())
         self.assertFalse(Teacher.objects.exclude(free_period_policy="daily").exists())
-        self.assertFalse(Teacher.objects.exclude(daily_free_periods=1).exists())
+        self.assertFalse(Teacher.objects.filter(daily_free_periods__lt=1).exists())
+        days = ("sunday", "monday", "tuesday", "wednesday", "thursday")
         for teacher in Teacher.objects.all():
             self.assertEqual(
                 sum(assignment.subject.weekly_periods for assignment in teacher.assignments.select_related("subject")),
-                25,
+                30,
             )
-        self.assertEqual(AttendanceRegister.objects.count(), 250)
-        self.assertFalse(Attendance.objects.exclude(status__in={"absent", "departed"}).exists())
-        self.assertEqual(TeacherAbsence.objects.count(), 25)
-        self.assertTrue(TeacherMonthlyEvaluation.objects.exists())
-        self.assertEqual(MonthlyServiceEvaluation.objects.count(), 319)
-        self.assertFalse(Exam.objects.filter(teacher_assignment__isnull=True).exists())
-        relations = set(FamilyStudent.objects.values_list("relation", flat=True))
-        self.assertTrue({"والد", "والدة", "عم ووصي", "الأخ الأكبر", "جد وولي"}.issubset(relations))
-        mixed_family = Family.objects.filter(children__relation="والد").filter(children__relation="عم ووصي").distinct()
-        self.assertTrue(mixed_family.exists())
-        child_counts = sorted(
-            Family.objects.annotate(total=models.Count("children")).values_list("total", flat=True)
+            for day in days:
+                self.assertEqual(TimetableEntry.objects.filter(teacher=teacher, day=day).count(), 6)
+
+        homeroom_ids = list(Section.objects.order_by("pk").values_list("homeroom_teacher_id", flat=True))
+        self.assertNotIn(None, homeroom_ids)
+        self.assertEqual(len(set(homeroom_ids)), 30)
+
+        family_sizes = Counter(
+            FamilyStudent.objects.filter(is_active=True).values_list("family_id", flat=True)
         )
-        self.assertEqual(child_counts.count(1), 150)
-        self.assertEqual(child_counts.count(2), 100)
-        self.assertEqual(child_counts.count(3), 50)
-        self.assertEqual(Student.objects.exclude(national_id="").count(), 500)
-        self.assertEqual(Teacher.objects.exclude(national_id="").count(), 19)
+        self.assertEqual(Counter(family_sizes.values()), Counter({1: 50, 2: 50, 3: 50, 4: 50}))
+        self.assertEqual(set(FamilyStudent.objects.values_list("relation", flat=True)), {"والد"})
+        for link in FamilyStudent.objects.select_related("family", "student"):
+            guardian = link.family.guardian_name.split()
+            child = link.student.full_name.split()
+            self.assertGreaterEqual(len(guardian), 4)
+            self.assertGreaterEqual(len(child), 4)
+            self.assertEqual(child[1], guardian[0])
+            self.assertEqual(child[2], guardian[1])
+            self.assertEqual(child[-1], guardian[-1])
         self.assertEqual(Student.objects.values("full_name").distinct().count(), 500)
-        self.assertEqual(Teacher.objects.values("full_name").distinct().count(), 19)
-        self.assertEqual(Family.objects.values("guardian_name").distinct().count(), 300)
+        self.assertEqual(Family.objects.values("guardian_name").distinct().count(), 200)
+
+        self.assertEqual(FeePayment.objects.filter(scope="all_siblings", is_deleted=False).count(), 200)
+        self.assertEqual(FeePayment.objects.values("guardian_name").distinct().count(), 200)
+        self.assertGreater(FeePaymentAllocation.objects.count(), 0)
+        self.assertGreater(Receipt.objects.count(), 0)
+
+        self.assertEqual(LearningAccount.objects.filter(is_school_managed=True).count(), 530)
+        self.assertEqual(LearningStudentProfile.objects.count(), 500)
+        self.assertEqual(LearningTeacherProfile.objects.count(), 30)
+        self.assertEqual(LearningCourse.objects.filter(academic_section__isnull=False, status="published").count(), 330)
+        self.assertEqual(LearningLesson.objects.filter(course__academic_section__isnull=False, is_published=True).count(), 660)
+        self.assertEqual(LearningSubscriptionCard.objects.count(), 500)
+        self.assertEqual(LearningSubscriptionCard.objects.filter(status="redeemed").count(), 250)
+        self.assertEqual(LearningSubscriptionCard.objects.filter(status="available").count(), 250)
         self.assertFalse(Student.objects.filter(student_number="OLD-WITNESS").exists())
 
         permission_rule = RolePermissionRule.objects.create(
@@ -187,6 +214,9 @@ class SystemDataCenterTests(TestCase):
         self.assertFalse(Student.objects.exists())
         self.assertFalse(Teacher.objects.exists())
         self.assertFalse(Family.objects.exists())
+        self.assertFalse(LearningStudentProfile.objects.exists())
+        self.assertFalse(LearningTeacherProfile.objects.exists())
+        self.assertFalse(LearningCourse.objects.exists())
         self.assertTrue(User.objects.filter(pk=self.user.pk, is_superuser=True).exists())
         self.assertTrue(RolePermissionRule.objects.filter(pk=permission_rule.pk).exists())
         self.assertFalse(TeacherPerformanceSnapshot.objects.exists())
@@ -200,19 +230,21 @@ class SystemDataCenterActionTests(TestCase):
         School.objects.create(name="مدرسة إجراءات البيانات", is_active=True)
         self.client.force_login(self.user)
 
-    def test_legacy_seed_action_is_blocked_and_redirected_to_safe_workflow(self):
+    def test_superuser_can_launch_integrated_seed_from_system_settings(self):
         from unittest.mock import patch
 
-        with patch("core.system_data.seed_system_data") as seed_service:
+        result = {"students": 500, "families": 200, "teachers": 30}
+        with patch("core.system_data.seed_system_data", return_value=result) as seed_service:
             response = self.client.post(
                 reverse("core:system_settings"),
                 {"action": "seed_system"},
                 follow=True,
             )
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "تم إيقاف التصفير المباشر")
-        self.assertContains(response, "تهيئة التشغيل الفعلي")
-        seed_service.assert_not_called()
+        self.assertContains(response, "500 طالب")
+        self.assertContains(response, "200 ولي أمر")
+        self.assertContains(response, "30 معلم")
+        seed_service.assert_called_once_with(user=self.user)
 
     def test_legacy_reset_action_is_blocked_without_calling_service(self):
         from unittest.mock import patch

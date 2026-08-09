@@ -35,12 +35,31 @@ def system_settings(request):
     if request.method == "POST":
         action = request.POST.get("action", "school_settings")
 
-        if action in {"seed_system", "reset_all"}:
+        if action == "reset_all":
             messages.error(
                 request,
-                "تم إيقاف التصفير المباشر. استخدم صفحة تهيئة التشغيل الفعلي التي تبدأ بالمعاينة والتأكيد.",
+                "التصفير المباشر متوقف. استخدم صفحة تهيئة التشغيل الفعلي التي تبدأ بالمعاينة والتأكيد.",
             )
             return redirect("core:production_launch_preparation")
+
+        if action == "seed_system":
+            if not request.user.is_superuser:
+                messages.error(request, "إدخال البيانات التجريبية المترابطة متاح لمدير النظام الأعلى فقط.")
+                return redirect("core:system_settings")
+            try:
+                from .system_data import seed_system_data
+                result = seed_system_data(user=request.user)
+            except Exception as exc:
+                logger.exception("R29 integrated demo seed failed")
+                messages.error(request, f"تعذر إنشاء البيانات التجريبية، ولم تُعتمد عملية جزئية: {exc}")
+            else:
+                messages.success(
+                    request,
+                    "تم إنشاء بيانات R29 المترابطة: "
+                    f"{result.get('students', 0)} طالب، {result.get('families', 0)} ولي أمر، "
+                    f"{result.get('teachers', 0)} معلم، وجدول ومنصة تعليمية مترابطان.",
+                )
+            return redirect(f"{reverse('core:system_settings')}?section=operations#operations-settings")
 
         if action == "registration_settings":
             registration_form = RegistrationSettingsForm(

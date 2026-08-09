@@ -19,13 +19,15 @@ def audit_capacity_seed(root: Path | None = None) -> list[AuditIssue]:
     source = _read(root, path)
     required = (
         "DEMO_STUDENT_COUNT = 500",
-        "DEMO_TEACHER_COUNT = 19",
-        "DEMO_TEACHER_WEEKLY_LOAD = 25",
-        "DEMO_TEACHER_DAILY_TARGET = 5",
-        '("التربية الرياضية", 3)',
+        "DEMO_GUARDIAN_COUNT = 200",
+        "DEMO_TEACHER_COUNT = 30",
+        "DEMO_TEACHER_WEEKLY_LOAD = 30",
+        "DEMO_TEACHER_DAILY_TARGET = 6",
+        '("اللغة العربية", 5)',
+        '("الرياضيات", 5)',
+        '("العلوم", 5)',
+        '("التربية الرياضية", 2)',
         '("التربية المهنية", 2)',
-        '("العلوم", 4)',
-        '("الاجتماعيات", 3)',
         'enforce_daily_teaching_target=True',
         'teacher.daily_free_periods = 1',
     )
@@ -33,7 +35,7 @@ def audit_capacity_seed(root: Path | None = None) -> list[AuditIssue]:
     if missing:
         issues.append(AuditIssue(
             "capacity_seed_contract_missing",
-            "زر إدخال البيانات لا يطابق سعة 500 طالب ونصاب 25 حصة وخطة المواد المعتمدة.",
+            "زر إدخال البيانات لا يطابق عقد R29: 500 طالب/200 ولي أمر/30 معلم ونصاب 30 حصة وخطة المواد المترابطة.",
             path,
         ))
     return issues

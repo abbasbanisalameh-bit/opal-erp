@@ -31,12 +31,38 @@
         </aside>
 
         <article class="learning-lesson-content-card">
-            {% if lesson.video_url %}
-                <div class="learning-video-link">
-                    <span>▶</span>
-                    <div><strong>فيديو الدرس</strong><small>يفتح الرابط في نافذة جديدة.</small></div>
-                    <a href="{{ lesson.video_url }}" target="_blank" rel="noopener noreferrer">فتح الفيديو</a>
-                </div>
+            {% if lesson_video_player %}
+                <section class="learning-video-browser" aria-labelledby="learningLessonVideoTitle">
+                    <header class="learning-video-browser-bar">
+                        <div class="learning-video-browser-title">
+                            <span aria-hidden="true">▶</span>
+                            <div>
+                                <strong id="learningLessonVideoTitle">فيديو الدرس</strong>
+                                <small>يعمل داخل منصة أوبال دون مغادرة صفحة الدرس.</small>
+                            </div>
+                        </div>
+                        <span class="learning-video-browser-provider">{{ lesson_video_player.provider }}</span>
+                    </header>
+                    <div class="learning-video-browser-screen">
+                        {% if lesson_video_player.kind == "video" %}
+                            <video controls playsinline preload="metadata" controlslist="nodownload" disablepictureinpicture>
+                                <source src="{{ lesson_video_player.url }}">
+                                متصفحك لا يدعم تشغيل هذا الفيديو.
+                            </video>
+                        {% else %}
+                            <iframe
+                                src="{{ lesson_video_player.url }}"
+                                title="فيديو الدرس: {{ lesson.title }}"
+                                loading="lazy"
+                                referrerpolicy="strict-origin-when-cross-origin"
+                                sandbox="allow-scripts allow-same-origin allow-presentation allow-forms"
+                                allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                                allowfullscreen
+                            ></iframe>
+                        {% endif %}
+                    </div>
+                    <p class="learning-video-browser-note">إذا كان مصدر الفيديو يمنع العرض المدمج فلن يتم فتح صفحة خارجية؛ استخدم مصدرًا يدعم التضمين مثل YouTube أو Vimeo أو رابط فيديو مباشر.</p>
+                </section>
             {% endif %}
 
             <div class="learning-lesson-copy">

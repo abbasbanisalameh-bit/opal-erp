@@ -1,0 +1,11 @@
+{% extends "learning_platform/base.html" %}
+{% block title %}دروس {{ course.title }} | منصة أوبال التعليمية{% endblock %}
+{% block content %}
+<section class="learning-page-hero"><div class="learning-container"><span>محتوى المعلم</span><h1>{{ course.title }}</h1><p>{{ course.grade_label }}{% if course.academic_section %} · {{ course.academic_section }}{% endif %} · {{ course.subject.name }}</p></div></section>
+<section class="learning-section"><div class="learning-container">
+<div class="learning-dashboard-heading"><div><span>الدروس</span><h2>محتوى الدورة</h2><small>الحالة: {{ course.get_status_display }}</small></div><div><a href="{% url 'learning_platform:teacher_course_update' course.pk %}">تعديل الدورة</a> · <a href="{% url 'learning_platform:teacher_lesson_create' course.pk %}">إضافة درس</a></div></div>
+{% if course.status != 'published' %}<form method="post" action="{% url 'learning_platform:teacher_course_publish' course.pk %}" class="mb-3">{% csrf_token %}<button class="learning-button learning-button-small" type="submit">نشر الدورة لطلاب الشعبة</button></form>{% endif %}
+{% if lessons %}<div class="learning-teacher-course-list">{% for lesson in lessons %}<article><div><small>الدرس {{ lesson.order }} · {% if lesson.is_published %}منشور{% else %}مسودة{% endif %}</small><h3>{{ lesson.title }}</h3>{% if lesson.attachment %}<p>يتضمن مرفقًا تعليميًا.</p>{% endif %}</div><div class="learning-teacher-actions"><a href="{% url 'learning_platform:teacher_lesson_update' lesson.pk %}">تعديل الدرس</a></div></article>{% endfor %}</div>{% else %}<div class="learning-empty"><strong>لا توجد دروس بعد.</strong><p>أضف أول درس لهذه الدورة.</p></div>{% endif %}
+<a class="learning-button learning-button-ghost" href="{% url 'learning_platform:dashboard' %}">العودة إلى لوحة المعلم</a>
+</div></section>
+{% endblock %}

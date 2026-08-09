@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from django.db.models import Count, Exists, OuterRef, Q
+from django.utils import timezone
 
 
 def _issue(code, label, count, description, route, *, severity="warning"):
@@ -54,9 +55,26 @@ def build_operation_audit():
     schools_without_current_year = School.objects.filter(is_active=True).exclude(
         academic_years__is_current=True
     ).distinct().count()
-    current_years_without_current_semester = AcademicYear.objects.filter(
-        is_current=True
-    ).exclude(semesters__is_current=True).distinct().count()
+    reference_date = timezone.localdate()
+    # A current year intentionally has no current semester before classes begin,
+    # during the mid-year break, or after the final term ends. Only flag a year
+    # when today's date lies inside an open semester but that semester is not the
+    # current operational semester. This mirrors core.academic_context.
+    years_expected_to_have_current_semester = AcademicYear.objects.filter(
+        is_current=True,
+        is_closed=False,
+        start_date__lte=reference_date,
+        end_date__gte=reference_date,
+        semesters__start_date__lte=reference_date,
+        semesters__end_date__gte=reference_date,
+        semesters__is_closed=False,
+    ).distinct()
+    current_years_without_current_semester = years_expected_to_have_current_semester.exclude(
+        semesters__is_current=True,
+        semesters__start_date__lte=reference_date,
+        semesters__end_date__gte=reference_date,
+        semesters__is_closed=False,
+    ).distinct().count()
 
     matching_entries = TimetableEntry.objects.filter(
         teacher_id=OuterRef("teacher_id"),
@@ -111,7 +129,7 @@ def build_operation_audit():
 
     issues = [
         _issue("CURRENT_YEAR", "مدارس دون عام دراسي حالي", schools_without_current_year, "يجب تحديد عام حالي لكل مدرسة نشطة قبل التسجيل والجدول والحضور والعلامات.", "academics:academic_year_list", severity="danger"),
-        _issue("CURRENT_SEMESTER", "أعوام حالية دون فصل حالي", current_years_without_current_semester, "حدد الفصل الجاري حتى تتوحد التقارير والعمليات اليومية.", "academics:semester_list"),
+        _issue("CURRENT_SEMESTER", "أعوام داخل فترة فصل دون فصل تشغيلي حالي", current_years_without_current_semester, "خارج حدود الفصل أو أثناء العطلة لا يلزم فصل حالي؛ داخل فترة الدراسة راجع إغلاق/تفعيل الفصل حتى تتوحد العمليات اليومية.", "academics:semester_list"),
         _issue("STUDENT_ENROLLMENT", "طلاب دون قيد أكاديمي نشط", students_without_enrollment, "كل طالب نشط يجب أن يرتبط بقيد واحد في العام الحالي.", "academics:lifecycle_list", severity="danger"),
         _issue("STUDENT_FAMILY", "طلاب دون ملف ولي أمر", students_without_family, "بطاقة الطالب والبوابة والإشعارات تعتمد على رابط الأسرة الرسمي.", "parent_portal:family_management", severity="danger"),
         _issue("EMPTY_FAMILY", "ملفات أولياء أمور دون أبناء", families_without_children, "راجع الملفات الفارغة أو اربطها بالطالب الصحيح.", "parent_portal:family_management"),

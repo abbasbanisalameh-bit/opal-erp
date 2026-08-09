@@ -2,6 +2,7 @@ import csv
 import secrets
 from datetime import timedelta
 from functools import wraps
+from urllib.parse import parse_qs, urlparse
 
 from django.conf import settings
 from django.contrib import messages
@@ -43,6 +44,7 @@ from .forms import (
     LearningPaymentCheckoutForm,
     LearningTeacherAIForm,
     LearningTeacherCreateForm,
+    LearningTeacherSchoolCourseForm,
     SubscriptionActivationForm,
 )
 from .models import (
@@ -66,6 +68,9 @@ from .models import (
     LearningSubscriptionPlan,
     LearningPaymentOrder,
     LearningEmailVerificationRequest,
+    LearningAccessSettings,
+    LearningGradeAccessOverride,
+    LearningStudentAccessOverride,
 )
 from .ai_services import (
     account_ai_usage,
@@ -114,6 +119,81 @@ from .payment_services import (
     process_payment_webhook,
 )
 from .production import collect_learning_readiness_checks
+from .school_bridge import (
+    access_settings_for_school,
+    assert_parent_can_open_student,
+    eligible_courses_for_student,
+    ensure_learning_subject_for_academic_subject,
+    ensure_student_learning_account,
+    ensure_teacher_learning_account,
+    managed_student_for_account,
+    managed_teacher_for_account,
+    school_managed_account_can_see_course,
+    student_learning_access,
+    teacher_learning_access,
+)
+
+
+def _lesson_video_player(video_url):
+    """Return a safe, template-friendly player description for a lesson video URL.
+
+    The lesson stays inside OPAL. Known video providers are converted to their
+    official embed endpoints, direct video files use the native HTML5 player,
+    and other URLs are shown in a sandboxed in-page frame when the remote site
+    permits framing.
+    """
+    raw_url = (video_url or "").strip()
+    if not raw_url:
+        return None
+
+    try:
+        parsed = urlparse(raw_url)
+    except (TypeError, ValueError):
+        return None
+
+    scheme = (parsed.scheme or "").lower()
+    host = (parsed.hostname or "").lower().rstrip(".")
+    if scheme not in {"http", "https"} or not host:
+        return None
+
+    # YouTube share/watch/short/embed links -> privacy-enhanced embedded player.
+    youtube_id = ""
+    if host in {"youtu.be", "www.youtu.be"}:
+        youtube_id = parsed.path.strip("/").split("/", 1)[0]
+    elif host in {"youtube.com", "www.youtube.com", "m.youtube.com", "music.youtube.com"}:
+        parts = [part for part in parsed.path.split("/") if part]
+        if parsed.path == "/watch":
+            youtube_id = (parse_qs(parsed.query).get("v") or [""])[0]
+        elif len(parts) >= 2 and parts[0] in {"embed", "shorts", "live"}:
+            youtube_id = parts[1]
+    if youtube_id and all(ch.isalnum() or ch in "-_" for ch in youtube_id):
+        return {
+            "kind": "iframe",
+            "url": f"https://www.youtube-nocookie.com/embed/{youtube_id}",
+            "provider": "YouTube",
+        }
+
+    # Vimeo public links -> official embedded player.
+    if host in {"vimeo.com", "www.vimeo.com", "player.vimeo.com"}:
+        parts = [part for part in parsed.path.split("/") if part]
+        video_id = ""
+        if parts:
+            if parts[0] == "video" and len(parts) >= 2:
+                video_id = parts[1]
+            elif parts[0].isdigit():
+                video_id = parts[0]
+        if video_id.isdigit():
+            return {
+                "kind": "iframe",
+                "url": f"https://player.vimeo.com/video/{video_id}",
+                "provider": "Vimeo",
+            }
+
+    path_lower = parsed.path.lower()
+    if path_lower.endswith((".mp4", ".webm", ".ogg", ".ogv", ".m4v")):
+        return {"kind": "video", "url": raw_url, "provider": "video"}
+
+    return {"kind": "iframe", "url": raw_url, "provider": host}
 
 
 def _client_ip(request):
@@ -203,6 +283,144 @@ def _require_learner(account):
     if account.role != LearningAccount.Role.LEARNER:
         raise PermissionDenied("هذه العملية متاحة للمتعلم فقط.")
     return account
+
+
+@login_required(login_url="login")
+@never_cache
+def erp_parent_student_entry(request, student_pk):
+    from students.models import Student
+
+    student = get_object_or_404(Student, pk=student_pk, is_active=True)
+    assert_parent_can_open_student(request.user, student)
+    account = ensure_student_learning_account(student)
+    start_learning_session(request, account, ip_address=_client_ip(request), action=LearningAuditEvent.Action.LOGIN)
+    messages.success(request, f"تم فتح منصة أوبال التعليمية للطالب {student.full_name}.")
+    return redirect("learning_platform:dashboard")
+
+
+@login_required(login_url="login")
+@never_cache
+def erp_teacher_entry(request):
+    teacher = getattr(request.user, "teacher_profile", None)
+    if teacher is None or not teacher_learning_access(teacher):
+        raise PermissionDenied("منصة أوبال التعليمية غير متاحة لحساب المعلم الحالي.")
+    account = ensure_teacher_learning_account(teacher)
+    start_learning_session(request, account, ip_address=_client_ip(request), action=LearningAuditEvent.Action.LOGIN)
+    return redirect("learning_platform:dashboard")
+
+
+@never_cache
+@platform_manager_required
+@require_http_methods(["GET", "POST"])
+def manager_school_access(request):
+    from academics.models import Grade
+    from core.models import School
+    from students.models import Student
+
+    school = School.objects.filter(is_active=True).first()
+    if school is None:
+        messages.error(request, "أدخل بيانات المدرسة أولًا.")
+        return redirect("core:system_settings")
+    access = access_settings_for_school(school)
+
+    if request.method == "POST":
+        action = (request.POST.get("action") or "").strip()
+        if action == "global":
+            access.parent_default_enabled = request.POST.get("parent_default_enabled") == "1"
+            access.teacher_sso_enabled = request.POST.get("teacher_sso_enabled") == "1"
+            access.save(update_fields=["parent_default_enabled", "teacher_sso_enabled", "updated_at"])
+            messages.success(request, "تم حفظ الإتاحة العامة للمنصة.")
+        elif action in {"all_on", "all_off"}:
+            # An explicit whole-school switch must be literal: clear all
+            # narrower exceptions so an old grade/student override cannot
+            # silently defeat the manager's "everyone" decision.
+            access.parent_default_enabled = action == "all_on"
+            access.save(update_fields=["parent_default_enabled", "updated_at"])
+            LearningStudentAccessOverride.objects.filter(settings=access).delete()
+            LearningGradeAccessOverride.objects.filter(settings=access).delete()
+            messages.success(
+                request,
+                "تمت إتاحة المنصة لجميع الطلاب وإلغاء الاستثناءات السابقة."
+                if access.parent_default_enabled
+                else "تم إيقاف المنصة عن جميع الطلاب وإلغاء الاستثناءات السابقة.",
+            )
+        elif action == "grade":
+            grade = get_object_or_404(Grade, pk=request.POST.get("grade_id"), school=school)
+            mode = request.POST.get("mode")
+            if mode == "inherit":
+                LearningGradeAccessOverride.objects.filter(settings=access, grade=grade).delete()
+            elif mode in {"enabled", "disabled"}:
+                LearningGradeAccessOverride.objects.update_or_create(
+                    settings=access,
+                    grade=grade,
+                    defaults={"is_enabled": mode == "enabled"},
+                )
+            messages.success(request, f"تم تحديث إتاحة المنصة للصف {grade.name}.")
+        elif action == "student":
+            student = get_object_or_404(Student, pk=request.POST.get("student_id"), is_active=True)
+            enrollment_access = student_learning_access(student)
+            if enrollment_access["enrollment"] is None or enrollment_access["enrollment"].academic_year.school_id != school.pk:
+                raise PermissionDenied("الطالب لا يتبع المدرسة الحالية.")
+            mode = request.POST.get("mode")
+            if mode == "inherit":
+                LearningStudentAccessOverride.objects.filter(settings=access, student=student).delete()
+            elif mode in {"enabled", "disabled"}:
+                LearningStudentAccessOverride.objects.update_or_create(
+                    settings=access,
+                    student=student,
+                    defaults={"is_enabled": mode == "enabled"},
+                )
+            messages.success(request, f"تم تحديث إتاحة المنصة للطالب {student.full_name}.")
+        return redirect("learning_platform:manager_school_access")
+
+    grades = list(Grade.objects.filter(school=school, is_active=True).order_by("order", "name"))
+    grade_override_map = {
+        item.grade_id: item.is_enabled
+        for item in LearningGradeAccessOverride.objects.filter(settings=access)
+    }
+    for grade in grades:
+        grade.learning_mode = (
+            "enabled" if grade_override_map.get(grade.pk) is True
+            else "disabled" if grade_override_map.get(grade.pk) is False
+            else "inherit"
+        )
+
+    query = (request.GET.get("q") or "").strip()
+    students = Student.objects.filter(is_active=True)
+    if query:
+        students = students.filter(
+            models.Q(full_name__icontains=query)
+            | models.Q(student_number__icontains=query)
+            | models.Q(guardian_name__icontains=query)
+        )
+    else:
+        students = students.none()
+    students = list(students.order_by("full_name")[:50])
+    student_override_map = {
+        item.student_id: item.is_enabled
+        for item in LearningStudentAccessOverride.objects.filter(settings=access, student__in=students)
+    }
+    for student in students:
+        student.learning_mode = (
+            "enabled" if student_override_map.get(student.pk) is True
+            else "disabled" if student_override_map.get(student.pk) is False
+            else "inherit"
+        )
+        student.learning_resolved = student_learning_access(student)
+
+    return render(
+        request,
+        "learning_platform/manager_school_access.html",
+        _manager_context(
+            request,
+            manager_section="school_access",
+            access_settings=access,
+            grades=grades,
+            students=students,
+            query=query,
+            school=school,
+        ),
+    )
 
 
 def landing(request):
@@ -727,7 +945,7 @@ def manager_lesson_list(request, course_pk):
 def manager_lesson_create(request, course_pk):
     course = get_object_or_404(LearningCourse, pk=course_pk)
     instance = LearningLesson(course=course)
-    form = LearningLessonForm(request.POST or None, instance=instance, course=course)
+    form = LearningLessonForm(request.POST or None, request.FILES or None, instance=instance, course=course)
     if request.method == "POST" and form.is_valid():
         lesson = form.save()
         if lesson.is_published:
@@ -763,7 +981,7 @@ def manager_lesson_update(request, pk):
     lesson = get_object_or_404(LearningLesson.objects.select_related("course"), pk=pk)
     course = lesson.course
     was_published = lesson.is_published
-    form = LearningLessonForm(request.POST or None, instance=lesson, course=course)
+    form = LearningLessonForm(request.POST or None, request.FILES or None, instance=lesson, course=course)
     if request.method == "POST" and form.is_valid():
         lesson = form.save()
         if was_published != lesson.is_published:
@@ -917,6 +1135,135 @@ def manager_enrollment_list(request):
 
 @never_cache
 @learning_login_required
+@require_http_methods(["GET", "POST"])
+def teacher_course_create(request):
+    account = request.learning_account
+    teacher = managed_teacher_for_account(account)
+    if teacher is None or not teacher_learning_access(teacher):
+        raise PermissionDenied("إنشاء المحتوى متاح للمعلم المرتبط رسميًا بـ OPAL فقط.")
+    form = LearningTeacherSchoolCourseForm(request.POST or None, teacher=teacher)
+    if request.method == "POST" and form.is_valid():
+        assignment = form.cleaned_data["assignment"]
+        course = form.save(commit=False)
+        course.teacher = account
+        course.subject = ensure_learning_subject_for_academic_subject(assignment.subject)
+        course.academic_subject = assignment.subject
+        course.academic_section = assignment.section
+        course.grade_label = assignment.section.grade.name
+        course.status = LearningCourse.Status.DRAFT
+        course.save()
+        messages.success(request, "تم إنشاء الدورة ضمن تكليفك الرسمي. أضف الدروس ثم انشرها.")
+        return redirect("learning_platform:teacher_lesson_list", course_pk=course.pk)
+    return render(request, "learning_platform/teacher_form.html", _base_context(
+        request, form=form, page_title="إنشاء محتوى تعليمي", page_intro="اختر تكليفًا رسميًا ثم أنشئ محتوى المادة والشعبة.",
+        submit_label="إنشاء الدورة", cancel_url=reverse("learning_platform:dashboard")
+    ))
+
+
+@never_cache
+@learning_login_required
+@require_http_methods(["GET", "POST"])
+def teacher_course_update(request, pk):
+    account = request.learning_account
+    teacher = managed_teacher_for_account(account)
+    if teacher is None:
+        raise PermissionDenied("هذه الصفحة متاحة للمعلم المدرسي فقط.")
+    course = get_object_or_404(LearningCourse, pk=pk, teacher=account)
+    form = LearningTeacherSchoolCourseForm(request.POST or None, instance=course, teacher=teacher)
+    if request.method == "POST" and form.is_valid():
+        assignment = form.cleaned_data["assignment"]
+        course = form.save(commit=False)
+        course.subject = ensure_learning_subject_for_academic_subject(assignment.subject)
+        course.academic_subject = assignment.subject
+        course.academic_section = assignment.section
+        course.grade_label = assignment.section.grade.name
+        course.teacher = account
+        course.save()
+        messages.success(request, "تم تحديث الدورة.")
+        return redirect("learning_platform:teacher_lesson_list", course_pk=course.pk)
+    return render(request, "learning_platform/teacher_form.html", _base_context(
+        request, form=form, page_title=f"تعديل: {course.title}", page_intro="لا يمكن ربط الدورة إلا بأحد تكليفاتك الرسمية.",
+        submit_label="حفظ التعديلات", cancel_url=reverse("learning_platform:dashboard")
+    ))
+
+
+@learning_login_required
+@require_POST
+def teacher_course_publish(request, pk):
+    account = request.learning_account
+    if managed_teacher_for_account(account) is None:
+        raise PermissionDenied("هذه العملية متاحة للمعلم المدرسي فقط.")
+    course = get_object_or_404(LearningCourse, pk=pk, teacher=account)
+    if not course.lessons.filter(is_published=True).exists():
+        messages.error(request, "أضف درسًا منشورًا واحدًا على الأقل قبل نشر الدورة.")
+        return redirect("learning_platform:teacher_lesson_list", course_pk=course.pk)
+    course.status = LearningCourse.Status.PUBLISHED
+    if course.published_at is None:
+        course.published_at = timezone.now()
+    course.save(update_fields=["status", "published_at", "updated_at"])
+    messages.success(request, "تم نشر الدورة لطلاب الصف والشعبة المرتبطين بها.")
+    return redirect("learning_platform:teacher_lesson_list", course_pk=course.pk)
+
+
+@never_cache
+@learning_login_required
+def teacher_lesson_list(request, course_pk):
+    account = request.learning_account
+    if managed_teacher_for_account(account) is None:
+        raise PermissionDenied("هذه الصفحة متاحة للمعلم المدرسي فقط.")
+    course = get_object_or_404(LearningCourse.objects.select_related("subject", "academic_subject", "academic_section"), pk=course_pk, teacher=account)
+    return render(request, "learning_platform/teacher_course_content.html", _base_context(
+        request, course=course, lessons=course.lessons.all().order_by("order", "id")
+    ))
+
+
+@never_cache
+@learning_login_required
+@require_http_methods(["GET", "POST"])
+def teacher_lesson_create(request, course_pk):
+    account = request.learning_account
+    if managed_teacher_for_account(account) is None:
+        raise PermissionDenied("هذه الصفحة متاحة للمعلم المدرسي فقط.")
+    course = get_object_or_404(LearningCourse, pk=course_pk, teacher=account)
+    instance = LearningLesson(course=course)
+    form = LearningLessonForm(request.POST or None, request.FILES or None, instance=instance, course=course)
+    if request.method == "POST" and form.is_valid():
+        lesson = form.save()
+        if lesson.is_published:
+            refresh_course_enrollments(course)
+        messages.success(request, "تم حفظ الدرس.")
+        return redirect("learning_platform:teacher_lesson_list", course_pk=course.pk)
+    return render(request, "learning_platform/teacher_form.html", _base_context(
+        request, form=form, page_title=f"إضافة درس — {course.title}", page_intro="يمكنك كتابة المحتوى أو إضافة فيديو أو رفع مرفق للدرس.",
+        submit_label="حفظ الدرس", cancel_url=reverse("learning_platform:teacher_lesson_list", kwargs={"course_pk": course.pk})
+    ))
+
+
+@never_cache
+@learning_login_required
+@require_http_methods(["GET", "POST"])
+def teacher_lesson_update(request, pk):
+    account = request.learning_account
+    if managed_teacher_for_account(account) is None:
+        raise PermissionDenied("هذه الصفحة متاحة للمعلم المدرسي فقط.")
+    lesson = get_object_or_404(LearningLesson.objects.select_related("course"), pk=pk, course__teacher=account)
+    course = lesson.course
+    was_published = lesson.is_published
+    form = LearningLessonForm(request.POST or None, request.FILES or None, instance=lesson, course=course)
+    if request.method == "POST" and form.is_valid():
+        lesson = form.save()
+        if was_published != lesson.is_published:
+            refresh_course_enrollments(course)
+        messages.success(request, "تم تحديث الدرس.")
+        return redirect("learning_platform:teacher_lesson_list", course_pk=course.pk)
+    return render(request, "learning_platform/teacher_form.html", _base_context(
+        request, form=form, page_title=f"تعديل الدرس — {lesson.title}", page_intro=course.title,
+        submit_label="حفظ التعديلات", cancel_url=reverse("learning_platform:teacher_lesson_list", kwargs={"course_pk": course.pk})
+    ))
+
+
+@never_cache
+@learning_login_required
 def teacher_course_learners(request, course_pk):
     account = request.learning_account
     if account.role != LearningAccount.Role.TEACHER:
@@ -962,11 +1309,22 @@ def dashboard(request):
         return render(
             request,
             "learning_platform/teacher_dashboard.html",
-            _base_context(request, courses=courses),
+            _base_context(
+                request,
+                courses=courses,
+                school_managed_teacher=managed_teacher_for_account(account),
+            ),
         )
     enrollments = list(
         LearningEnrollment.objects.filter(learner=account)
         .select_related("course", "course__subject", "course__teacher")
+    )
+    managed_student = managed_student_for_account(account)
+    available_courses = (
+        eligible_courses_for_student(managed_student)
+        .select_related("subject", "teacher", "academic_subject", "academic_section")
+        .annotate(lesson_count=Count("lessons", filter=models.Q(lessons__is_published=True)))[:24]
+        if managed_student is not None else LearningCourse.objects.none()
     )
     for enrollment in enrollments:
         enrollment.continue_lesson = first_incomplete_lesson(enrollment)
@@ -988,6 +1346,8 @@ def dashboard(request):
             enrollments=enrollments,
             active_cards=active_cards,
             completed_count=completed_count,
+            managed_student=managed_student,
+            available_courses=available_courses,
         ),
     )
 
@@ -998,6 +1358,10 @@ def course_list(request):
         .select_related("subject", "teacher")
         .annotate(lesson_count=Count("lessons", filter=models.Q(lessons__is_published=True)))
     )
+    account = get_learning_account(request)
+    managed_student = managed_student_for_account(account)
+    if managed_student is not None:
+        courses = courses.filter(pk__in=eligible_courses_for_student(managed_student).values("pk"))
     query = (request.GET.get("q") or "").strip()
     if query:
         courses = courses.filter(
@@ -1025,6 +1389,8 @@ def course_detail(request, slug):
     )
     lessons = list(course.lessons.all())
     account = get_learning_account(request)
+    if account and account.role == LearningAccount.Role.LEARNER and not school_managed_account_can_see_course(account, course):
+        raise PermissionDenied("هذه الدورة ليست ضمن صف الطالب أو مواده الحالية.")
     enrollment = None
     entitlement = None
     completed_lesson_ids = set()
@@ -1171,6 +1537,7 @@ def lesson_detail(request, course_slug, lesson_slug):
             progress=progress,
             previous_lesson=previous_lesson,
             next_lesson=next_lesson,
+            lesson_video_player=_lesson_video_player(lesson.video_url),
         ),
     )
 

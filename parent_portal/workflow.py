@@ -43,6 +43,8 @@ def student_for_user_or_403(user, student_id):
 
 
 def build_student_card(student, *, marks_allowed=True):
+    from learning_platform.school_bridge import student_learning_access
+
     separated = student_separated_finance_snapshot(student)
     finance = separated["current"]
     paid = finance["paid"]
@@ -63,6 +65,7 @@ def build_student_card(student, *, marks_allowed=True):
         "marks": StudentMark.objects.filter(student=student, exam__status__in=["published", "closed"]).select_related("exam", "exam__subject")[:5] if marks_allowed else [],
         "rank": student_class_rank(student),
         "homework": homework_for_student(student)[:5],
+        "learning_access": student_learning_access(student),
     }
 
 
@@ -95,10 +98,13 @@ def build_student_detail_context(student):
     their dedicated guardian gateways.  This prevents the student summary from
     becoming a second, competing route to the same information.
     """
+    from learning_platform.school_bridge import student_learning_access
+
     separated = student_separated_finance_snapshot(student)
     finance = separated["current"]
     return {
         "student": student,
+        "learning_access": student_learning_access(student),
         "rank": student_class_rank(student),
         "current_year": separated["current_year"],
         "total": finance["total"],

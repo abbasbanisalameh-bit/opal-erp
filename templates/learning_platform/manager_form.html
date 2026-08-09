@@ -15,7 +15,7 @@
     <div class="learning-container">
         {% include "learning_platform/_manager_nav.html" %}
         <div class="learning-manager-form-card">
-            <form method="post" novalidate>
+            <form method="post" enctype="multipart/form-data" novalidate>
                 {% csrf_token %}
                 {% if form.non_field_errors %}<div class="learning-form-errors">{{ form.non_field_errors }}</div>{% endif %}
                 <div class="learning-manager-form-grid">

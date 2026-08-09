@@ -9,5 +9,6 @@
     <a class="{% if manager_section == 'submissions' %}active{% endif %}" href="{% url 'learning_platform:manager_submission_list' %}">التقييمات والتصحيح</a>
     <a class="{% if manager_section == 'reports' %}active{% endif %}" href="{% url 'learning_platform:manager_report_center' %}">التقارير التشغيلية</a>
     <a class="{% if manager_section == 'ai' %}active{% endif %}" href="{% url 'learning_platform:manager_ai_center' %}">المساعد التعليمي</a>
+    <a class="{% if manager_section == 'school_access' %}active{% endif %}" href="{% url 'learning_platform:manager_school_access' %}">إتاحة المدرسة</a>
     <a class="{% if manager_section == 'readiness' %}active{% endif %}" href="{% url 'learning_platform:manager_readiness_center' %}">جاهزية التشغيل</a>
 </nav>

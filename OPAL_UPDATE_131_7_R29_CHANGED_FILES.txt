@@ -1,0 +1,54 @@
+OPAL Update 131.7 R29 - Changed Files
+========================================
+
+Added: 12
++ INSTALL_OPAL_UPDATE_131_7_R29_SCHOOL_LEARNING_BRIDGE_RELATIONAL_DEMO_DATA_AR.md
++ OPAL_UPDATE_131_7_R29_SCHOOL_LEARNING_BRIDGE_RELATIONAL_DEMO_DATA_RELEASE_NOTES_AR.md
++ OPAL_UPDATE_131_7_R29_VALIDATION_REPORT_AR.md
++ core/test_update131_7_r29_relational_demo_contract.py
++ learning_platform/migrations/0008_school_learning_bridge.py
++ learning_platform/school_bridge.py
++ learning_platform/test_update131_7_r29_school_learning_bridge.py
++ parent_portal/test_update131_7_r29_receipt_policy.py
++ templates/learning_platform/manager_school_access.html
++ templates/learning_platform/teacher_course_content.html
++ templates/learning_platform/teacher_form.html
++ templates/parent_portal/guardian_receipt_print.html
+
+Modified: 31
+* OPAL_RELEASE_NAME.txt
+* OPAL_UPDATE_MANIFEST.json
+* core/capacity_timezone_contracts.py
+* core/production_reset.py
+* core/system_data.py
+* core/test_update131_3_capacity_timezone_contract.py
+* core/tests.py
+* core/views.py
+* learning_platform/api.py
+* learning_platform/forms.py
+* learning_platform/models.py
+* learning_platform/services.py
+* learning_platform/urls.py
+* learning_platform/views.py
+* parent_portal/receipt_services.py
+* parent_portal/urls.py
+* parent_portal/views.py
+* parent_portal/workflow.py
+* teachers/views.py
+* templates/core/system_settings.html
+* templates/learning_platform/_manager_nav.html
+* templates/learning_platform/dashboard.html
+* templates/learning_platform/manager_form.html
+* templates/learning_platform/teacher_dashboard.html
+* templates/parent_portal/_guardian_receipt_history.html
+* templates/parent_portal/children.html
+* templates/parent_portal/dashboard.html
+* templates/parent_portal/student_detail.html
+* templates/teachers/portal_dashboard.html
+* tools/validate_opal_update_131_source.py
+* tools/verify_opal_update_131_archive.py
+
+Removed: 0
+
+Generated inventory file:
++ OPAL_UPDATE_131_7_R29_CHANGED_FILES.txt

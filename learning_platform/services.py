@@ -275,6 +275,10 @@ def learner_can_access_course(account, course, *, at=None):
         return False
     if course.status != LearningCourse.Status.PUBLISHED or not course.subject.is_active:
         return False
+    if account.is_school_managed:
+        from .school_bridge import school_managed_account_can_see_course
+        if not school_managed_account_can_see_course(account, course):
+            return False
     return current_entitlement(account, course.subject, at=at) is not None
 
 

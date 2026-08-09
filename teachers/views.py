@@ -24,6 +24,7 @@ from timetable.live_services import teacher_live_status
 from core.request_scope import request_school
 from core.secondary_effects import run_secondary_effect
 from attendance_v2.services import notify_parent_for_attendance
+from learning_platform.school_bridge import teacher_learning_access
 
 
 @management_required
@@ -156,6 +157,7 @@ def teacher_detail(request, pk):
         "issued_documents": issued_documents,
         "latest_termination_document": latest_termination_document,
         "workload": teacher_workload_summary(teacher),
+        "learning_platform_enabled": teacher_learning_access(teacher),
     })
 
 
@@ -337,6 +339,7 @@ def portal_dashboard(request):
         "tpi": tpi,
         "tpi_components": snapshot.components.get("components", []) if snapshot else [],
         "workload": teacher_workload_summary(teacher),
+        "learning_platform_enabled": teacher_learning_access(teacher),
     })
 
 

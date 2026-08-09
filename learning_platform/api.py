@@ -239,22 +239,37 @@ def _course_payload(course, *, account=None, include_lessons=False):
 @api_auth_required
 @require_http_methods(["GET"])
 def api_course_list(request):
+    account = request.learning_account
     courses = LearningCourse.objects.filter(
         status=LearningCourse.Status.PUBLISHED,
         subject__is_active=True,
     ).select_related("subject", "teacher").order_by("-published_at", "title")
-    return _success([_course_payload(course, account=request.learning_account) for course in courses])
+    if account.is_school_managed and account.role == LearningAccount.Role.LEARNER:
+        from .school_bridge import eligible_courses_for_student, managed_student_for_account
+        student = managed_student_for_account(account)
+        courses = (
+            eligible_courses_for_student(student).select_related("subject", "teacher").order_by("-published_at", "title")
+            if student is not None else courses.none()
+        )
+    return _success([_course_payload(course, account=account) for course in courses])
 
 
 @api_auth_required
 @require_http_methods(["GET"])
 def api_course_detail(request, slug):
-    course = get_object_or_404(
-        LearningCourse.objects.select_related("subject", "teacher"),
-        slug=slug,
+    account = request.learning_account
+    courses = LearningCourse.objects.select_related("subject", "teacher").filter(
         status=LearningCourse.Status.PUBLISHED,
     )
-    return _success(_course_payload(course, account=request.learning_account, include_lessons=True))
+    if account.is_school_managed and account.role == LearningAccount.Role.LEARNER:
+        from .school_bridge import eligible_courses_for_student, managed_student_for_account
+        student = managed_student_for_account(account)
+        courses = (
+            eligible_courses_for_student(student).select_related("subject", "teacher")
+            if student is not None else courses.none()
+        )
+    course = get_object_or_404(courses, slug=slug)
+    return _success(_course_payload(course, account=account, include_lessons=True))
 
 
 @csrf_exempt

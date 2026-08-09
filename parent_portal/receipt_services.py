@@ -31,6 +31,8 @@ def _row(
     allocations,
     created_by=None,
     status_label="معتمد",
+    source_type="",
+    source_id=None,
 ):
     receiver, receiver_title = _receiver_details(created_by)
     allocations = [item for item in allocations if Decimal(item["amount"] or 0) > 0]
@@ -45,6 +47,8 @@ def _row(
         "receiver": receiver,
         "receiver_title": receiver_title,
         "status_label": status_label,
+        "source_type": source_type,
+        "source_id": source_id,
     }
 
 
@@ -63,6 +67,14 @@ def build_guardian_receipt_history(students):
     allocation_qs = FeePaymentAllocation.objects.filter(
         student_id__in=student_ids
     ).select_related("student")
+    # A canonical family FeePayment can point at the underlying accounting
+    # StudentPayment.  In that case the family receipt is the authoritative
+    # receipt shown to the guardian; do not display the same money again as a
+    # registration/legacy accounting receipt.
+    canonical_accounting_payment_ids = set(
+        allocation_qs.exclude(accounting_payment_id=None)
+        .values_list("accounting_payment_id", flat=True)
+    )
     fee_payments = (
         FeePayment.objects.filter(allocations__student_id__in=student_ids, is_deleted=False)
         .select_related("created_by", "created_by__profile", "created_by__profile__role")
@@ -90,6 +102,8 @@ def build_guardian_receipt_history(students):
                 payment_type=payment_type,
                 allocations=allocations,
                 created_by=payment.created_by,
+                source_type="fee",
+                source_id=payment.pk,
             )
         )
         history[-1]["payment_method"] = payment.get_payment_method_display()
@@ -100,7 +114,7 @@ def build_guardian_receipt_history(students):
             receipt__isnull=False,
             first_payment__gt=0,
             payment__status="posted",
-        ).select_related(
+        ).exclude(payment_id__in=canonical_accounting_payment_ids).select_related(
             "student",
             "receipt",
             "created_by",
@@ -124,6 +138,8 @@ def build_guardian_receipt_history(students):
                 ],
                 created_by=registration.created_by,
                 status_label="ملغى" if registration.receipt.is_void else "معتمد",
+                source_type="accounting",
+                source_id=registration.receipt.pk,
             )
         )
         history[-1]["payment_method"] = registration.get_payment_method_display()
@@ -131,6 +147,7 @@ def build_guardian_receipt_history(students):
     older_receipts = (
         Receipt.objects.filter(payment__invoice__student_id__in=student_ids, payment__status="posted")
         .exclude(pk__in=registration_receipt_ids)
+        .exclude(payment_id__in=canonical_accounting_payment_ids)
         .select_related(
             "payment",
             "payment__invoice",
@@ -152,8 +169,10 @@ def build_guardian_receipt_history(students):
                 allocations=[{"student_name": student.full_name, "amount": payment.amount}],
                 created_by=payment.created_by,
                 status_label="ملغى" if receipt.is_void else "معتمد",
+                source_type="accounting",
+                source_id=receipt.pk,
             )
         )
         history[-1]["payment_method"] = payment.get_payment_method_display()
 
-    return sorted(history, key=lambda item: item["created_at"], reverse=True)
+    return sorted(history, key=lambda item: (item["created_at"], item["receipt_number"]))

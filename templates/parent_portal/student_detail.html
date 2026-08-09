@@ -32,7 +32,7 @@
         <div class="col-md-4"><strong>الحالة:</strong> {{ student.get_status_display }}</div>
       </div>
     </div>
-    <a class="btn btn-outline-primary" href="{% url 'parent_portal:student_personal_update' student.pk %}"><i class="bi bi-pencil-square"></i> تعديل الصورة والمعلومات الشخصية</a>
+    <div class="d-flex flex-wrap gap-2">{% if learning_access.enabled %}<a class="btn btn-success" href="{% url 'learning_platform:erp_parent_student_entry' student.pk %}"><i class="bi bi-mortarboard-fill"></i> منصة أوبال التعليمية</a>{% endif %}<a class="btn btn-outline-primary" href="{% url 'parent_portal:student_personal_update' student.pk %}"><i class="bi bi-pencil-square"></i> تعديل الصورة والمعلومات الشخصية</a></div>
   </div>
 </section>
 

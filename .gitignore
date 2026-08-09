@@ -1,5 +1,0 @@
-__pycache__/
-*.py[cod]
-staticfiles/
-media/
-db.sqlite3

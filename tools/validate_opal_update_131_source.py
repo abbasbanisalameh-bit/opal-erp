@@ -220,13 +220,16 @@ def main() -> int:
         "integrated_learning_platform_isolation",
         "class LearningAccount(models.Model):" in learning_models
         and "class Student(" not in learning_models
-        and "students.Student" not in learning_models
+        and "class LearningStudentProfile(models.Model):" in learning_models
+        and '"students.Student"' in learning_models
+        and "class LearningTeacherProfile(models.Model):" in learning_models
+        and '"teachers.Teacher"' in learning_models
         and 'LEARNING_SESSION_KEY = "opal_learning_account_id"' in learning_session
         and "base/base.html" not in learning_base
         and "includes/sidebar.html" not in learning_base
         and "includes/topbar.html" not in learning_base
         and "learning_platform/css/platform.css" in learning_base,
-        "The integrated learning platform must keep its identity, session, student records and visual shell independent from OPAL ERP.",
+        "The learning platform must keep its independent LearningAccount/session/shell while using explicit one-to-one ERP student/teacher bridge profiles.",
         path="learning_platform/models.py",
     )
     base = require_file("templates/base/base.html")
@@ -565,23 +568,24 @@ def main() -> int:
     add_check(
         "capacity_seed_counts",
         "DEMO_STUDENT_COUNT = 500" in system_data
-        and "DEMO_TEACHER_COUNT = 19" in system_data
-        and "DEMO_TEACHER_WEEKLY_LOAD = 25" in system_data
-        and "DEMO_TEACHER_DAILY_TARGET = 5" in system_data,
-        "The integrated data button must create 500 students and the exact 19-teacher/25-period/5-daily capacity dataset.",
+        and "DEMO_GUARDIAN_COUNT = 200" in system_data
+        and "DEMO_TEACHER_COUNT = 30" in system_data
+        and "DEMO_TEACHER_WEEKLY_LOAD = 30" in system_data
+        and "DEMO_TEACHER_DAILY_TARGET = 6" in system_data,
+        "The integrated data button must create 500 students, 200 guardians, and the exact 30-teacher/30-weekly/6-daily relational capacity dataset.",
         path="core/system_data.py",
     )
     add_check(
         "requested_subject_plan",
         all(token in system_data for token in (
-            '("التربية الرياضية", 3)', '("التربية المهنية", 2)', '("التربية الفنية", 1)',
-            '("العلوم", 4)', '("الاجتماعيات", 3)', '("الفيزياء", 1)', '("الكيمياء", 1)',
-            '("الأحياء", 1)', '("علوم الأرض", 1)', '("التاريخ", 1)', '("الجغرافيا", 1)',
-            '("التربية الوطنية", 1)', '("الثقافة المالية", 1)',
+            '("اللغة العربية", 5)', '("الرياضيات", 5)', '("العلوم", 5)',
+            '("اللغة الإنجليزية", 5)', '("التربية الإسلامية", 2)',
+            '("التربية المهنية", 2)', '("التربية الرياضية", 2)',
+            '("الحاسوب", 1)', '("التربية الفنية", 1)',
+            '("الاجتماعيات", 1)', '("الثقافة المالية", 1)',
         ))
-        and 'if grade_order <= 3:' in system_data
-        and 'if grade_order <= 9:' in system_data,
-        "The seeded subject substitutions and weekly periods do not match the approved plan.",
+        and 'Thirty weekly lessons per section' in system_data,
+        "The R29 seeded subject plan must total 30 weekly lessons with daily Arabic, math and science plus the approved remaining subjects.",
         path="core/system_data.py",
     )
     add_check(

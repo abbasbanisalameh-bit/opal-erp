@@ -15,8 +15,12 @@ def _env_int(name: str, default: int) -> int:
 
 
 def build_learning_production_settings() -> dict[str, object]:
+    sales_mode = os.environ.get("OPAL_LEARNING_SUBSCRIPTION_SALES_MODE", "cards").strip().lower() or "cards"
+    if sales_mode not in {"cards", "manual", "payment"}:
+        sales_mode = "cards"
     return {
         "OPAL_LEARNING_PUBLIC_LAUNCH": env_bool("OPAL_LEARNING_PUBLIC_LAUNCH", False),
+        "OPAL_LEARNING_SUBSCRIPTION_SALES_MODE": sales_mode,
         "OPAL_LEARNING_REQUIRE_EMAIL_VERIFICATION": env_bool(
             "OPAL_LEARNING_REQUIRE_EMAIL_VERIFICATION", True
         ),

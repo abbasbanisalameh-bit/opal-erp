@@ -11,7 +11,7 @@ import zipfile
 from pathlib import PurePosixPath, Path
 
 EXPECTED_VERSION = "131.7"
-MIN_PACKAGE_REVISION = 31
+MIN_PACKAGE_REVISION = 32
 REQUIRED = {
     "manage.py",
     "requirements.txt",
@@ -248,6 +248,19 @@ REQUIRED = {
     "OPAL_UPDATE_131_7_R28_PRODUCTION_DATA_RESET_LAUNCH_PREPARATION_RELEASE_NOTES_AR.md",
     "OPAL_UPDATE_131_7_R28_VALIDATION_REPORT_AR.md",
     "OPAL_UPDATE_131_7_R28_CHANGED_FILES.txt",
+    "learning_platform/migrations/0008_school_learning_bridge.py",
+    "learning_platform/school_bridge.py",
+    "learning_platform/test_update131_7_r29_school_learning_bridge.py",
+    "core/test_update131_7_r29_relational_demo_contract.py",
+    "parent_portal/test_update131_7_r29_receipt_policy.py",
+    "templates/learning_platform/manager_school_access.html",
+    "templates/learning_platform/teacher_course_content.html",
+    "templates/learning_platform/teacher_form.html",
+    "templates/parent_portal/guardian_receipt_print.html",
+    "INSTALL_OPAL_UPDATE_131_7_R29_SCHOOL_LEARNING_BRIDGE_RELATIONAL_DEMO_DATA_AR.md",
+    "OPAL_UPDATE_131_7_R29_SCHOOL_LEARNING_BRIDGE_RELATIONAL_DEMO_DATA_RELEASE_NOTES_AR.md",
+    "OPAL_UPDATE_131_7_R29_VALIDATION_REPORT_AR.md",
+    "OPAL_UPDATE_131_7_R29_CHANGED_FILES.txt",
 }
 FORBIDDEN_PARTS = {
     ".git", ".venv", "venv", "env", "media", "uploads", "staticfiles",
@@ -343,7 +356,7 @@ def verify(path: Path) -> dict[str, object]:
             errors.append("manifest لا يثبت أن الحزمة code-only.")
         revision = manifest.get("package_revision")
         if not isinstance(revision, int) or revision < MIN_PACKAGE_REVISION:
-            errors.append("مراجعة الحزمة الحالية يجب أن تكون 31 أو أحدث لتحديث 131.7.")
+            errors.append("مراجعة الحزمة الحالية يجب أن تكون 32 أو أحدث لتحديث 131.7.")
 
     unique_errors = list(dict.fromkeys(errors))
     return {

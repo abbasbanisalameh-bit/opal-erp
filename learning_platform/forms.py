@@ -1,4 +1,3 @@
-import secrets
 
 from django import forms
 from django.contrib.auth.password_validation import validate_password
@@ -7,6 +6,7 @@ from django.db import transaction
 from django.utils import timezone
 from django.utils.text import slugify
 
+from .card_codes import generate_unique_card_code
 from .models import (
     LearningAccount,
     LearningAIDraft,
@@ -254,12 +254,63 @@ class LearningCourseForm(forms.ModelForm):
         return teacher
 
 
+class LearningTeacherSchoolCourseForm(forms.ModelForm):
+    assignment = forms.ModelChoiceField(label="التكليف الرسمي", queryset=None)
+    slug = forms.SlugField(label="المعرف", max_length=240, required=False, allow_unicode=True)
+
+    class Meta:
+        model = LearningCourse
+        fields = ["assignment", "title", "slug", "summary", "cover_color"]
+        widgets = {
+            "summary": forms.Textarea(attrs={"rows": 5}),
+            "cover_color": forms.TextInput(attrs={"type": "color"}),
+        }
+
+    def __init__(self, *args, teacher=None, **kwargs):
+        from teachers.models import TeacherAssignment
+
+        self.erp_teacher = teacher
+        super().__init__(*args, **kwargs)
+        queryset = TeacherAssignment.objects.none()
+        if teacher is not None:
+            queryset = teacher.assignments.filter(
+                is_active=True, academic_year__is_current=True, section__is_active=True, subject__is_active=True
+            ).select_related("academic_year", "section", "section__grade", "subject")
+        self.fields["assignment"].queryset = queryset
+        if self.instance.pk and self.instance.academic_subject_id:
+            self.fields["assignment"].initial = queryset.filter(
+                subject_id=self.instance.academic_subject_id,
+                section_id=self.instance.academic_section_id,
+            ).values_list("pk", flat=True).first()
+        for field in self.fields.values():
+            field.widget.attrs["class"] = INPUT_CLASS
+        self.fields["assignment"].help_text = "لا يمكنك إنشاء محتوى إلا لمادة وشعبة مسندتين لك رسميًا."
+        self.fields["slug"].help_text = "اتركه فارغًا ليُنشأ تلقائيًا من عنوان الدورة."
+
+    def clean_slug(self):
+        value = _normalise_slug(self.cleaned_data.get("slug"), self.cleaned_data.get("title"))
+        if not value:
+            raise ValidationError("تعذر إنشاء معرف صالح للدورة.")
+        query = LearningCourse.objects.filter(slug=value)
+        if self.instance.pk:
+            query = query.exclude(pk=self.instance.pk)
+        if query.exists():
+            raise ValidationError("هذا المعرف مستخدم لدورة أخرى.")
+        return value
+
+    def clean_assignment(self):
+        assignment = self.cleaned_data["assignment"]
+        if self.erp_teacher is None or assignment.teacher_id != self.erp_teacher.pk:
+            raise ValidationError("هذا التكليف لا يخص حساب المعلم الحالي.")
+        return assignment
+
+
 class LearningLessonForm(forms.ModelForm):
     slug = forms.SlugField(label="المعرف", max_length=240, required=False, allow_unicode=True)
 
     class Meta:
         model = LearningLesson
-        fields = ["title", "slug", "content", "video_url", "duration_minutes", "order", "is_published"]
+        fields = ["title", "slug", "content", "video_url", "attachment", "duration_minutes", "order", "is_published"]
         widgets = {
             "content": forms.Textarea(attrs={"rows": 10}),
             "video_url": forms.URLInput(attrs={"dir": "ltr"}),
@@ -364,13 +415,9 @@ class LearningSubscriptionBatchForm(forms.Form):
         quantity = self.cleaned_data["quantity"]
         prefix = (self.cleaned_data.get("prefix") or "OPAL").strip().upper()
         cards = []
+        reserved_codes = set()
         for _ in range(quantity):
-            for _attempt in range(12):
-                code = f"{prefix}-{secrets.token_hex(5).upper()}"
-                if not LearningSubscriptionCard.objects.filter(code=code).exists():
-                    break
-            else:
-                raise ValidationError("تعذر إنشاء رمز فريد. أعد المحاولة.")
+            code = generate_unique_card_code(prefix=prefix, reserved=reserved_codes)
             card = LearningSubscriptionCard.objects.create(
                 code=code,
                 duration=duration,

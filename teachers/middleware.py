@@ -13,6 +13,7 @@ class TeacherPortalAccessMiddleware:
         "/logout/",
         "/static/",
         "/media/",
+        "/learning/",
         "/enterprise/feedback/",
         "/enterprise/monthly-evaluation/",
         "/enterprise/reports/",

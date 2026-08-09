@@ -14,13 +14,16 @@ from .models import LearningCourse, LearningSubscriptionPlan
 from .payment_services import payment_configuration_status
 
 
-def _check(code, label, status, detail, *, blocking=False):
+def _check(code, label, status, detail, *, blocking=False, requirement="required"):
+    if requirement not in {"required", "optional", "hosting"}:
+        requirement = "required"
     return {
         "code": code,
         "label": label,
         "status": status,
         "detail": detail,
         "blocking": bool(blocking),
+        "requirement": requirement,
     }
 
 
@@ -34,6 +37,7 @@ def collect_learning_readiness_checks(*, include_migrations=True):
             "pass" if public_launch else "warn",
             "قفل الإطلاق العام مفتوح صراحة." if public_launch else "الإطلاق العام مقفل؛ هذا مناسب للتجربة المحدودة فقط.",
             blocking=False,
+            requirement="optional",
         )
     )
     debug = bool(settings.DEBUG)
@@ -86,23 +90,49 @@ def collect_learning_readiness_checks(*, include_migrations=True):
             "pass" if email_ready else ("fail" if public_launch else "warn"),
             "إعداد SMTP مكتمل." if email_ready else "هيئ SMTP ومرسلًا موثقًا قبل الإطلاق العام؛ الاستعادة الإدارية فقط متاحة في التجربة.",
             blocking=public_launch,
+            requirement="required" if public_launch else "optional",
         )
     )
+
+    # R33: the platform can be sold by unpredictable prepaid cards without an
+    # external payment gateway. Payment integration is required only when the
+    # operator explicitly selects electronic-payment mode.
     payment = payment_configuration_status()
-    payment_ready = payment["configured"] and (payment["external"] if public_launch else True)
+    sales_mode = (getattr(settings, "OPAL_LEARNING_SUBSCRIPTION_SALES_MODE", "cards") or "cards").strip().lower()
+    if sales_mode not in {"cards", "manual", "payment"}:
+        sales_mode = "cards"
+    if sales_mode == "cards":
+        payment_status = "pass"
+        payment_blocking = False
+        payment_detail = "بطاقات الاشتراك العشوائية هي وسيلة التحصيل المعتمدة؛ لا تُشترط بوابة دفع خارجية."
+    elif sales_mode == "manual":
+        manual_ready = bool(payment["configured"] and not payment["external"] and payment["manual_allowed"])
+        payment_status = "fail" if public_launch else ("pass" if manual_ready else "warn")
+        payment_blocking = public_launch
+        payment_detail = (
+            "التحصيل اليدوي مهيأ للتشغيل المدرسي الداخلي."
+            if manual_ready
+            else "فعّل إعدادات التحصيل اليدوي إذا كان هذا هو وضع التشغيل الداخلي المعتمد."
+        )
+        if public_launch:
+            payment_detail = "التحصيل اليدوي وضع داخلي؛ للإطلاق العام اختر بطاقات الاشتراك أو مزود دفع إلكتروني."
+    else:
+        external_ready = bool(payment["configured"] and payment["external"])
+        payment_status = "pass" if external_ready else ("fail" if public_launch else "warn")
+        payment_blocking = public_launch
+        payment_detail = (
+            f"مزود الدفع الخارجي {payment['provider']} مهيأ."
+            if external_ready
+            else "وضع الدفع الإلكتروني مختار لكن بيانات مزود الدفع الخارجي غير مكتملة."
+        )
     checks.append(
         _check(
-            "payment",
-            "بوابة الدفع",
-            "pass" if payment_ready else ("fail" if public_launch else "warn"),
-            (
-                f"مزود الدفع الخارجي {payment['provider']} مهيأ."
-                if payment_ready and payment["external"]
-                else "التحصيل اليدوي مهيأ للتشغيل الداخلي فقط."
-                if payment["configured"] and not payment["external"]
-                else "لم تُهيأ بوابة دفع فعلية أو وضع التحصيل اليدوي المعتمد."
-            ),
-            blocking=public_launch,
+            "subscription_sales",
+            "طريقة تحصيل الاشتراك",
+            payment_status,
+            payment_detail,
+            blocking=payment_blocking,
+            requirement="required",
         )
     )
     plans_count = LearningSubscriptionPlan.objects.filter(is_active=True).count()
@@ -128,8 +158,8 @@ def collect_learning_readiness_checks(*, include_migrations=True):
     lock_ready = False
     if lock_path.is_file():
         try:
-            lock_text = lock_path.read_text(encoding="utf-8")
-            lock_ready = "Django==" in lock_text and "Pillow==" in lock_text
+            lock_text = lock_path.read_text(encoding="utf-8").lower()
+            lock_ready = "django==" in lock_text and "pillow==" in lock_text
         except OSError:
             lock_ready = False
     checks.append(
@@ -139,6 +169,7 @@ def collect_learning_readiness_checks(*, include_migrations=True):
             "pass" if lock_ready else ("fail" if public_launch else "warn"),
             "ملف requirements-lock-r20.txt موجود ويثبت البيئة المختبرة." if lock_ready else "أنشئ requirements-lock-r20.txt من البيئة التي نجحت فيها الاختبارات قبل الإطلاق العام.",
             blocking=public_launch,
+            requirement="required" if public_launch else "optional",
         )
     )
     backend = connection.vendor
@@ -152,6 +183,7 @@ def collect_learning_readiness_checks(*, include_migrations=True):
                 if backend == "sqlite"
                 else f"قاعدة البيانات: {backend}."
             ),
+            requirement="hosting",
         )
     )
     media_root = Path(getattr(settings, "MEDIA_ROOT", settings.BASE_DIR / "media"))
@@ -255,6 +287,7 @@ def collect_learning_readiness_checks(*, include_migrations=True):
                 else "المزود الخارجي مفعّل لكن بياناته ناقصة."
             ),
             blocking=ai_external_enabled,
+            requirement="optional" if not ai_external_enabled else "required",
         )
     )
     failures = [item for item in checks if item["status"] == "fail" and item["blocking"]]
@@ -265,11 +298,17 @@ def collect_learning_readiness_checks(*, include_migrations=True):
         overall = "pilot_ready"
     else:
         overall = "production_ready"
+    warning_breakdown = {
+        kind: sum(1 for item in warnings if item.get("requirement") == kind)
+        for kind in ("required", "optional", "hosting")
+    }
     return {
         "overall": overall,
         "checks": checks,
         "blocking_failures": len(failures),
         "warnings": len(warnings),
+        "warning_breakdown": warning_breakdown,
+        "subscription_sales_mode": sales_mode,
     }
 
 

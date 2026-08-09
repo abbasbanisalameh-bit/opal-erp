@@ -1,1 +1,1 @@
-OPAL Update 131.7 R28 - Production Data Reset and Launch Preparation
+OPAL Update 131.7 R33 - Production Readiness Alignment and Secure Subscription Cards

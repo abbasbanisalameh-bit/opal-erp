@@ -24,6 +24,7 @@
     <a class="opal-module-card" href="{% url 'teachers:portal_workspace' %}?mode=students"><i class="bi bi-people-fill"></i><div><h3>طلابي</h3><p>اختيار التكليف ثم عرض طلاب الشعبة.</p></div></a>
     <a class="opal-module-card" href="{% url 'teachers:portal_workspace' %}?mode=marks"><i class="bi bi-clipboard2-check-fill"></i><div><h3>امتحاناتي وعلاماتي</h3><p>المدخل الوحيد لاختيار التكليف وإدخال العلامات.</p></div></a>
     <a class="opal-module-card" href="{% url 'teachers:portal_workspace' %}?mode=homework"><i class="bi bi-journal-text"></i><div><h3>واجباتي</h3><p>المدخل الوحيد لاختيار التكليف وإدارة الواجبات.</p></div></a>
+    {% if learning_platform_enabled %}<a class="opal-module-card" href="{% url 'learning_platform:erp_teacher_entry' %}"><i class="bi bi-mortarboard-fill"></i><div><h3>منصة أوبال التعليمية</h3><p>إنشاء ورفع المحتوى فقط للمواد والشعب المسندة لك رسميًا.</p></div></a>{% endif %}
     <a class="opal-module-card" href="{% url 'teachers:portal_timetable' %}"><i class="bi bi-calendar3"></i><div><h3>الجدول الدراسي</h3><p>حسب اليوم أو الصف والشعبة أو المادة.</p></div></a>
     <a class="opal-module-card" href="{% url 'teachers:portal_payroll' %}"><i class="bi bi-wallet2"></i><div><h3>راتبي وسلفي</h3><p>بطاقات الرواتب وطلبات السلف والإقرار أو الاعتراض.</p></div></a>
   </div>

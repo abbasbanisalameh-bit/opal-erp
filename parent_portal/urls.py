@@ -10,6 +10,7 @@ urlpatterns = [
     path("manage/<int:pk>/", views.family_detail, name="family_detail"),
     path("manage/<int:pk>/edit/", views.family_update, name="family_update"),
     path("manage/<int:pk>/statement/", views.family_statement_print, name="family_statement_print"),
+    path("manage/<int:pk>/receipt/<str:source_type>/<int:receipt_pk>/print/", views.family_receipt_print, name="family_receipt_print"),
     path("manage/<int:pk>/statement.csv", views.family_statement_csv, name="family_statement_csv"),
     path("manage/<int:pk>/account/create/", views.family_account_create, name="family_account_create"),
     path("manage/<int:pk>/account/reset/", views.family_account_reset, name="family_account_reset"),

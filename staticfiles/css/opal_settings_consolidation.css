@@ -1,0 +1,49 @@
+/* OPAL ERP Update 72 — System Settings Consolidation */
+.opal-settings-tabs{
+  position:sticky;top:calc(var(--opal-topbar-height,72px) + 12px);z-index:15;
+  display:flex;gap:.55rem;align-items:center;overflow-x:auto;padding:.7rem;
+  border:1px solid rgba(255,255,255,.46);background:rgba(255,255,255,.78);
+  backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+  box-shadow:0 12px 30px rgba(15,45,76,.08);scrollbar-width:thin
+}
+.opal-settings-tab{display:inline-flex;align-items:center;gap:.45rem;flex:0 0 auto;min-height:40px;padding:.58rem .88rem;border-radius:12px;color:#21405d;text-decoration:none;font-weight:700;border:1px solid transparent;transition:.18s ease}
+.opal-settings-tab:hover,.opal-settings-tab:focus{color:#123a5a;background:rgba(32,103,158,.09);border-color:rgba(32,103,158,.16);transform:translateY(-1px)}
+.opal-settings-tab i{font-size:1.05rem;color:#b78a2f}
+.opal-settings-section{scroll-margin-top:150px;padding:1.15rem 1.2rem;border:1px solid rgba(255,255,255,.5);background:linear-gradient(145deg,rgba(255,255,255,.84),rgba(244,249,253,.72));box-shadow:0 14px 36px rgba(18,57,89,.08)}
+.opal-section-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;padding-bottom:.9rem;margin-bottom:1rem;border-bottom:1px solid rgba(35,81,118,.1)}
+.opal-section-heading h3{display:flex;align-items:center;gap:.55rem;margin:.15rem 0 .35rem;font-size:1.08rem;color:#173d5d}
+.opal-section-heading h3 i{color:#b88a2e}.opal-section-heading p{margin:0;color:#607487;font-size:.88rem;line-height:1.7;max-width:850px}
+.opal-section-kicker{display:inline-block;color:#a87821;font-size:.72rem;font-weight:800;letter-spacing:.02em}
+.opal-section-actions{display:flex;flex-wrap:wrap;gap:.5rem;justify-content:flex-end}
+.opal-settings-actions-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.75rem}
+.opal-settings-action{display:grid;grid-template-columns:42px minmax(0,1fr);grid-template-rows:auto auto;column-gap:.75rem;align-items:center;min-height:92px;padding:.85rem;border-radius:15px;text-decoration:none;color:#24445f;background:rgba(255,255,255,.7);border:1px solid rgba(41,91,130,.12);box-shadow:0 7px 18px rgba(27,66,97,.05);transition:.18s ease}
+.opal-settings-action>i{grid-row:1/3;width:42px;height:42px;display:grid;place-items:center;border-radius:13px;background:rgba(31,102,157,.1);color:#23689e;font-size:1.2rem}
+.opal-settings-action strong{font-size:.91rem;line-height:1.35}.opal-settings-action small{color:#738494;font-size:.74rem;line-height:1.45}
+.opal-settings-action:hover,.opal-settings-action:focus{color:#173e5e;transform:translateY(-2px);border-color:rgba(31,102,157,.25);box-shadow:0 12px 26px rgba(27,66,97,.1)}
+.opal-settings-action.primary>i{background:rgba(30,107,166,.14);color:#175f94}.opal-settings-action.warning>i{background:rgba(183,136,38,.14);color:#a47618}
+.opal-inner-panel{padding:1rem;border-radius:15px;background:rgba(255,255,255,.58);border:1px solid rgba(43,91,127,.1)}
+.opal-inner-panel h4{font-size:.96rem;color:#244762;margin:0 0 .85rem;display:flex;align-items:center;gap:.45rem}.opal-inner-panel h4 i{color:#b88a2e}
+.opal-form-footer{display:flex;justify-content:flex-end;gap:.5rem;margin-top:1rem;padding-top:.85rem;border-top:1px solid rgba(43,91,127,.09)}
+.opal-check-card{min-height:44px;padding:.65rem 2.25rem .65rem .8rem;border-radius:12px;background:rgba(255,255,255,.64);border:1px solid rgba(42,88,124,.1)}
+.opal-data-chip{display:inline-flex;align-items:center;gap:.55rem;padding:.48rem .7rem;border-radius:999px;background:rgba(34,103,157,.08);border:1px solid rgba(34,103,157,.12);font-size:.8rem}.opal-data-chip span{color:#557083}.opal-data-chip em{font-style:normal;color:#a33b3b}
+.opal-danger-zone{border:1px solid rgba(185,69,69,.16);border-radius:15px;background:rgba(255,247,247,.66);overflow:hidden}.opal-danger-zone>summary{cursor:pointer;padding:.85rem 1rem;color:#8d3535;font-weight:800;list-style:none}.opal-danger-zone>summary::-webkit-details-marker{display:none}.opal-danger-zone[open]{padding:0 1rem 1rem}.opal-danger-zone[open]>summary{margin:0 -1rem .2rem;border-bottom:1px solid rgba(185,69,69,.12)}
+@media (max-width:1199.98px){.opal-settings-actions-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:991.98px){.opal-settings-tabs{position:relative;top:auto}.opal-settings-actions-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.opal-section-heading{flex-direction:column}.opal-section-actions{justify-content:flex-start}}
+@media (max-width:575.98px){.opal-settings-section{padding:.9rem}.opal-settings-actions-grid{grid-template-columns:1fr}.opal-settings-action{min-height:80px}.opal-settings-tab{font-size:.82rem}.opal-section-actions,.opal-section-actions .btn{width:100%}.opal-section-actions .btn{justify-content:center}.opal-form-footer .btn{width:100%}}
+@media print{.opal-settings-tabs,.opal-section-actions,.opal-danger-zone{display:none!important}.opal-settings-section{box-shadow:none!important;break-inside:avoid}}
+
+
+/* OPAL Update 79: collapsible system settings sections */
+.opal-settings-accordion{overflow:hidden;padding:0!important;}
+.opal-settings-accordion>summary{list-style:none;}
+.opal-settings-accordion>summary::-webkit-details-marker{display:none;}
+.opal-settings-summary{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1.15rem 1.35rem;cursor:pointer;user-select:none;border-radius:inherit;}
+.opal-settings-summary>span{display:grid;grid-template-columns:auto 1fr;align-items:center;column-gap:.8rem;row-gap:.18rem;}
+.opal-settings-summary>span>i{grid-row:1/3;font-size:1.35rem;}
+.opal-settings-summary strong{font-size:1.03rem;}
+.opal-settings-summary small{display:block;color:var(--opal-muted,#64748b);font-weight:400;}
+.opal-settings-chevron{transition:transform .2s ease;}
+.opal-settings-accordion[open] .opal-settings-chevron{transform:rotate(180deg);}
+.opal-settings-accordion[open]>.opal-settings-summary{border-bottom:1px solid rgba(148,163,184,.22);}
+.opal-settings-body{padding:1.25rem 1.35rem 1.4rem;}
+@media(max-width:767.98px){.opal-settings-summary{padding:1rem}.opal-settings-summary small{font-size:.78rem}.opal-settings-body{padding:1rem}}

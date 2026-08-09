@@ -22,6 +22,7 @@ class LearningAccount(models.Model):
     role = models.CharField("نوع الحساب", max_length=20, choices=Role.choices, default=Role.LEARNER)
     password = models.CharField("كلمة المرور المشفرة", max_length=128, editable=False)
     is_active = models.BooleanField("فعال", default=True, db_index=True)
+    is_school_managed = models.BooleanField("حساب مدرسي مرتبط بـ OPAL ERP", default=False, db_index=True)
     created_at = models.DateTimeField("تاريخ الإنشاء", auto_now_add=True)
     updated_at = models.DateTimeField("آخر تحديث", auto_now=True)
     last_login_at = models.DateTimeField("آخر دخول", null=True, blank=True)
@@ -90,6 +91,22 @@ class LearningCourse(models.Model):
     slug = models.SlugField("المعرف", max_length=240, unique=True, allow_unicode=True)
     summary = models.TextField("الملخص", blank=True)
     grade_label = models.CharField("المستوى أو الصف", max_length=120, blank=True)
+    academic_subject = models.ForeignKey(
+        "academics.Subject",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="learning_courses",
+        verbose_name="المادة المدرسية المرتبطة",
+    )
+    academic_section = models.ForeignKey(
+        "academics.Section",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="learning_courses",
+        verbose_name="الشعبة المدرسية المرتبطة",
+    )
     cover_color = models.CharField("لون الغلاف", max_length=20, default="#7254d8")
     status = models.CharField("الحالة", max_length=20, choices=Status.choices, default=Status.DRAFT, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -122,6 +139,7 @@ class LearningLesson(models.Model):
     slug = models.SlugField("المعرف", max_length=240, allow_unicode=True)
     content = models.TextField("المحتوى", blank=True)
     video_url = models.URLField("رابط الفيديو", blank=True)
+    attachment = models.FileField("مرفق الدرس", upload_to="learning_lessons/", blank=True)
     duration_minutes = models.PositiveSmallIntegerField("المدة بالدقائق", default=0)
     order = models.PositiveIntegerField("الترتيب", default=1)
     is_published = models.BooleanField("منشور", default=False, db_index=True)
@@ -793,6 +811,84 @@ class LearningEmailVerificationRequest(models.Model):
 
     def __str__(self):
         return f"{self.account} — توثيق البريد"
+
+
+class LearningAccessSettings(models.Model):
+    """School-owned switches controlling ERP-to-learning access."""
+
+    school = models.OneToOneField(
+        "core.School", on_delete=models.CASCADE, related_name="learning_access_settings"
+    )
+    parent_default_enabled = models.BooleanField("إتاحة المنصة لأولياء الأمور افتراضيًا", default=False)
+    teacher_sso_enabled = models.BooleanField("إتاحة المنصة للمعلمين", default=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "إعداد وصول منصة أوبال التعليمية"
+        verbose_name_plural = "إعدادات وصول منصة أوبال التعليمية"
+
+    def __str__(self):
+        return f"{self.school} — وصول المنصة"
+
+
+class LearningGradeAccessOverride(models.Model):
+    settings = models.ForeignKey(
+        LearningAccessSettings, on_delete=models.CASCADE, related_name="grade_overrides"
+    )
+    grade = models.OneToOneField(
+        "academics.Grade", on_delete=models.CASCADE, related_name="learning_access_override"
+    )
+    is_enabled = models.BooleanField("متاح للصف")
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["grade__order", "grade__name"]
+
+    def __str__(self):
+        return f"{self.grade}: {'متاح' if self.is_enabled else 'موقوف'}"
+
+
+class LearningStudentAccessOverride(models.Model):
+    settings = models.ForeignKey(
+        LearningAccessSettings, on_delete=models.CASCADE, related_name="student_overrides"
+    )
+    student = models.OneToOneField(
+        "students.Student", on_delete=models.CASCADE, related_name="learning_access_override"
+    )
+    is_enabled = models.BooleanField("متاح للطالب")
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["student__full_name", "student_id"]
+
+    def __str__(self):
+        return f"{self.student}: {'متاح' if self.is_enabled else 'موقوف'}"
+
+
+class LearningStudentProfile(models.Model):
+    student = models.OneToOneField(
+        "students.Student", on_delete=models.CASCADE, related_name="learning_profile"
+    )
+    account = models.OneToOneField(
+        LearningAccount, on_delete=models.CASCADE, related_name="school_student_profile"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.student} — {self.account}"
+
+
+class LearningTeacherProfile(models.Model):
+    teacher = models.OneToOneField(
+        "teachers.Teacher", on_delete=models.CASCADE, related_name="learning_profile"
+    )
+    account = models.OneToOneField(
+        LearningAccount, on_delete=models.CASCADE, related_name="school_teacher_profile"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.teacher} — {self.account}"
 
 
 class LearningSubscriptionPlan(models.Model):

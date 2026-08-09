@@ -2,7 +2,7 @@
   <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
     <div>
       <h3 class="fw-bold mb-1" id="guardianReceiptHistoryTitle"><i class="bi bi-receipt"></i> سجل إيصالات ولي الأمر</h3>
-      <p class="text-secondary mb-0">عرض مختصر للقراءة فقط، مرتب من أحدث إيصال إلى الأقدم.</p>
+      <p class="text-secondary mb-0">عرض أفقي مرتب من أقدم إيصال إلى الأحدث. ولي الأمر يقرأ فقط، وخيارات الإدارة غير متاحة هنا.</p>
     </div>
     <span class="badge bg-primary">{{ receipt_history|length }} إيصال</span>
   </div>
@@ -26,6 +26,7 @@
         <div><dt>عن الأبناء</dt><dd>{{ receipt.children_names }}</dd></div>
         <div><dt>المستلم</dt><dd>{{ receipt.receiver }}{% if receipt.receiver_title %} · {{ receipt.receiver_title }}{% endif %}</dd></div>
       </dl>
+      {% if can_print_receipts and receipt.source_id %}<div class="mb-2"><a class="btn btn-sm btn-outline-dark" target="_blank" href="{% url 'parent_portal:family_receipt_print' receipt_family_pk receipt.source_type receipt.source_id %}"><i class="bi bi-printer"></i> طباعة الإيصال</a></div>{% endif %}
       <div class="opal-receipt-allocations">
         <div class="text-secondary small mb-1">توزيع المبلغ</div>
         {% for allocation in receipt.allocations %}

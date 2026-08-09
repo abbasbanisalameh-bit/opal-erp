@@ -1,0 +1,415 @@
+/*
+ * OPAL ERP Update 103 — Central Theme System
+ * Final cascade layer loaded after page-specific CSS.
+ * Sea Breeze day mode + high-contrast OPAL night mode.
+ */
+
+:root,
+html[data-opal-theme="dark"] {
+  --opal-bg:#071523;
+  --opal-bg-alt:#0b1d30;
+  --opal-surface:#10283f;
+  --opal-surface-soft:#16344f;
+  --opal-surface-strong:#1d405e;
+  --opal-text:#f4f8fc;
+  --opal-text-soft:#c5d5e4;
+  --opal-muted:#9fb4c8;
+  --opal-border:#355872;
+  --opal-primary:#35b8d3;
+  --opal-primary-strong:#178aa9;
+  --opal-primary-soft:#173f57;
+  --opal-link:#73d9ed;
+  --opal-shadow:0 14px 34px rgba(0,0,0,.32);
+  --opal-focus:0 0 0 .22rem rgba(53,184,211,.28);
+  color-scheme:dark;
+}
+
+html[data-opal-theme="light"] {
+  --opal-bg:#d7edf6;
+  --opal-bg-alt:#eaf7fb;
+  --opal-surface:#f1fbfe;
+  --opal-surface-soft:#dceff6;
+  --opal-surface-strong:#c7e4ef;
+  --opal-text:#113a50;
+  --opal-text-soft:#315f73;
+  --opal-muted:#587d8e;
+  --opal-border:#97c3d2;
+  --opal-primary:#167f9e;
+  --opal-primary-strong:#0d617d;
+  --opal-primary-soft:#c2e5ef;
+  --opal-link:#0c6785;
+  --opal-shadow:0 12px 30px rgba(35,97,120,.14);
+  --opal-focus:0 0 0 .22rem rgba(22,127,158,.22);
+  color-scheme:light;
+}
+
+html, body { min-height:100%; }
+body {
+  color:var(--opal-text) !important;
+  background:linear-gradient(145deg,var(--opal-bg),var(--opal-bg-alt)) fixed !important;
+}
+.opal-layout,.opal-main {
+  color:var(--opal-text) !important;
+  background:transparent !important;
+}
+.opal-main { min-width:0; }
+
+/* All ordinary application surfaces inherit the active theme. */
+.opal-main :where(
+  .card,.opal-card,.glass-card,.panel,.widget,.box,.well,.content-card,
+  .dashboard-card,.dashboard-panel,.stat-card,.metric-card,.summary-card,
+  .opal-section,.opal-enterprise-section,.opal-flow-section,.opal-flow-card,
+  .opal-module-card,.opal-report-card,.opal-feedback-card,.opal-kpi-card,
+  .opal-live-panel,.opal-analytics-panel,.opal-mini-status-card,
+  .list-group-item,.accordion-item,.accordion-body,.modal-content,.offcanvas,
+  .dropdown-menu,.toast,.popover,.tab-content,.opal-page-navigation,
+  .opal-subnav,.opal-current-operation,.opal-assignment-summary,
+  .opal-instant-table-search,.chart-box,.chart-container,.canvas-wrap
+) {
+  color:var(--opal-text) !important;
+  background:linear-gradient(145deg,var(--opal-surface),var(--opal-surface-soft)) !important;
+  border-color:var(--opal-border) !important;
+  box-shadow:var(--opal-shadow);
+}
+
+/* Neutral text — explicit because legacy pages contain fixed Bootstrap colors. */
+.opal-main :where(h1,h2,h3,h4,h5,h6,label,legend,dt,dd,.card-title,.panel-title,
+  .widget-title,.metric-value,.stat-value,.page-title,.text-dark,.text-body,
+  .text-white,.text-light) { color:var(--opal-text) !important; }
+.opal-main :where(p,li,td,th,span,div) { border-color:var(--opal-border); }
+.opal-main :where(.text-muted,.text-secondary,small,.small,.subtitle,.metric-label,
+  .form-text,.helptext) { color:var(--opal-muted) !important; }
+.opal-main a:not(.btn):not(.badge) { color:var(--opal-link); }
+.opal-main a:not(.btn):not(.badge):hover { color:var(--opal-primary); }
+
+/* Forms */
+body :where(.form-control,.form-select,textarea,select,input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  .input-group-text) {
+  color:var(--opal-text) !important;
+  background:var(--opal-surface) !important;
+  border-color:var(--opal-border) !important;
+}
+body :where(.form-control,.form-select,textarea,select,input):focus {
+  color:var(--opal-text) !important;
+  background:var(--opal-surface) !important;
+  border-color:var(--opal-primary) !important;
+  box-shadow:var(--opal-focus) !important;
+}
+body :where(input,textarea)::placeholder { color:var(--opal-muted) !important; opacity:1; }
+body select option { color:var(--opal-text); background:var(--opal-surface); }
+
+/* Tables */
+.opal-main table { --bs-table-color:var(--opal-text); --bs-table-bg:transparent; color:var(--opal-text) !important; border-color:var(--opal-border) !important; }
+.opal-main table :where(th,td) { color:var(--opal-text) !important; border-color:var(--opal-border) !important; }
+.opal-main table thead :where(th,td) { background:var(--opal-surface-strong) !important; }
+.opal-main table tbody :where(th,td) { background:color-mix(in srgb,var(--opal-surface) 94%,transparent) !important; }
+.opal-main table tbody tr:nth-child(even) :where(th,td) { background:var(--opal-surface-soft) !important; }
+.opal-main table tbody tr:hover :where(th,td) { background:var(--opal-primary-soft) !important; }
+
+/* Navigation and overlays */
+.opal-main :where(.nav-tabs,.nav-pills) { border-color:var(--opal-border) !important; }
+.opal-main :where(.nav-link,.dropdown-item,.accordion-button,.page-link) {
+  color:var(--opal-text) !important;
+  background:var(--opal-surface) !important;
+  border-color:var(--opal-border) !important;
+}
+.opal-main :where(.nav-link.active,.nav-link:hover,.dropdown-item:hover,.dropdown-item:focus,
+  .accordion-button:not(.collapsed),.page-item.active .page-link) {
+  color:#fff !important;
+  background:var(--opal-primary-strong) !important;
+  border-color:var(--opal-primary) !important;
+}
+.modal-header,.modal-footer,.offcanvas-header,.accordion-button { border-color:var(--opal-border) !important; }
+.btn-close { filter:var(--opal-close-filter,none); }
+html[data-opal-theme="dark"] { --opal-close-filter:invert(1) grayscale(100%) brightness(200%); }
+
+/* Buttons remain semantic but gain consistent contrast. */
+.btn-primary,.btn-info { color:#fff !important; background:var(--opal-primary-strong) !important; border-color:var(--opal-primary) !important; }
+.btn-outline-primary,.btn-outline-info { color:var(--opal-primary) !important; border-color:var(--opal-primary) !important; }
+.btn-outline-primary:hover,.btn-outline-info:hover { color:#fff !important; background:var(--opal-primary-strong) !important; }
+html[data-opal-theme="dark"] .btn-light,
+html[data-opal-theme="dark"] .btn-outline-dark { color:var(--opal-text) !important; background:var(--opal-surface-soft) !important; border-color:var(--opal-border) !important; }
+
+/* Status colors keep their meaning and always use readable foregrounds. */
+:where(.badge,.alert,.btn).bg-success,:where(.badge,.alert,.btn).text-bg-success { color:#fff !important; }
+:where(.badge,.alert,.btn).bg-danger,:where(.badge,.alert,.btn).text-bg-danger { color:#fff !important; }
+:where(.badge,.alert,.btn).bg-primary,:where(.badge,.alert,.btn).text-bg-primary { color:#fff !important; }
+.badge.bg-warning,.badge.text-bg-warning { color:#3d2b00 !important; }
+.alert { border-color:color-mix(in srgb,currentColor 35%,transparent) !important; }
+
+/* Hard-coded legacy inline surfaces: normalize only neutral white/dark blocks,
+   without overriding semantic success/warning/danger backgrounds. */
+html[data-opal-theme="dark"] .opal-main :where(
+  [style*="background: white"],[style*="background:white"],
+  [style*="background-color: white"],[style*="background-color:white"],
+  [style*="background: #fff"],[style*="background:#fff"],
+  [style*="background-color: #fff"],[style*="background-color:#fff"],
+  [style*="background: rgb(255"],[style*="background-color: rgb(255"]
+) { background:var(--opal-surface) !important; color:var(--opal-text) !important; border-color:var(--opal-border) !important; }
+
+html[data-opal-theme="light"] .opal-main :where(
+  [style*="background: #0"],[style*="background:#0"],
+  [style*="background-color: #0"],[style*="background-color:#0"],
+  [style*="background: rgb(0"],[style*="background-color: rgb(0"]
+) { background:var(--opal-surface) !important; color:var(--opal-text) !important; border-color:var(--opal-border) !important; }
+
+/* Charts and third-party legends */
+.opal-main :where(.apexcharts-legend-text,.chartjs-render-monitor + *,svg text) { color:var(--opal-text) !important; fill:var(--opal-text) !important; }
+
+/* Keep sidebar/topbar coherent without flattening their OPAL identity. */
+.opal-topbar,.opal-sidebar { border-color:var(--opal-border) !important; }
+html[data-opal-theme="light"] .opal-topbar { background:rgba(236,249,253,.92) !important; color:var(--opal-text) !important; }
+html[data-opal-theme="dark"] .opal-topbar { background:rgba(8,27,44,.94) !important; color:var(--opal-text) !important; }
+html[data-opal-theme="light"] .opal-sidebar { background:linear-gradient(180deg,#175b73,#0d4056) !important; }
+html[data-opal-theme="dark"] .opal-sidebar { background:linear-gradient(180deg,#071827,#0b2a40) !important; }
+
+/* Print remains clean and independent from screen theme. */
+@media print {
+  body,.opal-main { background:#fff !important; color:#000 !important; }
+  .opal-main * { box-shadow:none !important; }
+}
+
+@media (max-width:900px) {
+  .opal-main { overflow-x:hidden; }
+  .opal-main :where(.card,.panel,.widget,.opal-card,.dashboard-card) { max-width:100%; }
+}
+
+/* OPAL Update 131.7 R10 — aesthetic finishing touches.
+   This layer refines the existing design system without introducing a second
+   theme, changing page routes, or altering any operational form behavior. */
+:root {
+  --opal-finish-radius:20px;
+  --opal-finish-shadow:0 16px 38px color-mix(in srgb,var(--opal-bg) 42%,transparent);
+  --opal-finish-transition:160ms cubic-bezier(.2,.75,.25,1);
+}
+
+html { scroll-padding-top:1rem; }
+body {
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Tahoma,Arial,sans-serif;
+  line-height:1.65;
+  text-rendering:optimizeLegibility;
+  -webkit-font-smoothing:antialiased;
+}
+::selection { color:#fff; background:color-mix(in srgb,var(--opal-primary-strong) 84%,#000); }
+
+.opal-skip-link {
+  position:fixed;
+  z-index:3000;
+  inset-block-start:.75rem;
+  inset-inline-start:1rem;
+  padding:.65rem .9rem;
+  border:2px solid var(--opal-primary);
+  border-radius:12px;
+  color:#fff;
+  background:var(--opal-primary-strong);
+  box-shadow:var(--opal-shadow);
+  font-size:.85rem;
+  font-weight:800;
+  text-decoration:none;
+  transform:translateY(-180%);
+  transition:transform var(--opal-finish-transition);
+}
+.opal-skip-link:focus-visible { color:#fff; transform:translateY(0); outline:0; box-shadow:var(--opal-focus),var(--opal-shadow); }
+#opal-main-content:focus { outline:0; }
+
+.opal-main > .page-heading {
+  position:relative;
+  isolation:isolate;
+  overflow:hidden;
+  padding:clamp(1rem,2vw,1.35rem) clamp(1rem,2.4vw,1.55rem);
+  border:1px solid color-mix(in srgb,var(--opal-primary) 24%,var(--opal-border));
+  border-radius:var(--opal-finish-radius);
+  background:
+    linear-gradient(135deg,color-mix(in srgb,var(--opal-primary-soft) 46%,var(--opal-surface)),var(--opal-surface-soft));
+  box-shadow:0 12px 30px color-mix(in srgb,var(--opal-bg) 32%,transparent);
+}
+.opal-main > .page-heading::before {
+  content:"";
+  position:absolute;
+  z-index:-1;
+  inset-block:.85rem;
+  inset-inline-start:0;
+  width:4px;
+  border-radius:0 999px 999px 0;
+  background:linear-gradient(180deg,var(--opal-primary),var(--opal-link));
+  box-shadow:0 0 22px color-mix(in srgb,var(--opal-primary) 48%,transparent);
+}
+.opal-main > .page-heading::after {
+  content:"";
+  position:absolute;
+  z-index:-2;
+  inset-block-start:-90px;
+  inset-inline-end:-65px;
+  width:190px;
+  height:190px;
+  border-radius:50%;
+  background:radial-gradient(circle,color-mix(in srgb,var(--opal-primary) 17%,transparent),transparent 68%);
+  pointer-events:none;
+}
+.page-heading h1 { font-size:clamp(1.55rem,3vw,2.15rem); line-height:1.25; text-wrap:balance; }
+.page-heading p { max-width:72ch; line-height:1.75; text-wrap:pretty; }
+.page-heading .opal-current-operation { margin-top:.8rem; }
+
+.opal-page-navigation {
+  box-shadow:0 8px 24px color-mix(in srgb,var(--opal-bg) 24%,transparent);
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+}
+.opal-breadcrumbs { min-width:0; }
+.opal-breadcrumbs :where(a,strong,span) { overflow-wrap:anywhere; }
+
+:where(.btn,.icon-btn,.opal-menu a) {
+  transition:transform var(--opal-finish-transition),box-shadow var(--opal-finish-transition),border-color var(--opal-finish-transition),background-color var(--opal-finish-transition),color var(--opal-finish-transition);
+}
+:where(.btn,.icon-btn):focus-visible {
+  outline:0;
+  box-shadow:var(--opal-focus),0 8px 18px color-mix(in srgb,var(--opal-bg) 26%,transparent) !important;
+}
+.icon-btn:not(:disabled):hover { transform:translateY(-2px); border-color:var(--opal-primary) !important; }
+.btn:not(:disabled):not(.disabled):active { transform:translateY(1px) scale(.99); }
+
+:where(a.opal-module-card,a.opal-dashboard-action-card,a.dashboard-card,a.stat-card,[data-opal-card-link]) {
+  transition:transform var(--opal-finish-transition),box-shadow var(--opal-finish-transition),border-color var(--opal-finish-transition);
+}
+:where(a.opal-module-card,a.opal-dashboard-action-card,a.dashboard-card,[data-opal-card-link]):hover {
+  transform:translateY(-3px);
+  border-color:color-mix(in srgb,var(--opal-primary) 52%,var(--opal-border)) !important;
+  box-shadow:var(--opal-finish-shadow) !important;
+}
+:where(a.opal-module-card,a.opal-dashboard-action-card,a.dashboard-card,[data-opal-card-link]):focus-visible {
+  outline:0;
+  box-shadow:var(--opal-focus),var(--opal-finish-shadow) !important;
+}
+
+body :where(.form-control,.form-select,textarea,select,input:not([type="checkbox"]):not([type="radio"]):not([type="range"])) {
+  transition:border-color var(--opal-finish-transition),box-shadow var(--opal-finish-transition),background-color var(--opal-finish-transition);
+}
+body :where(.form-control,.form-select,textarea):disabled {
+  cursor:not-allowed;
+  opacity:.66;
+}
+body :where(.form-control,textarea):read-only:not(:focus) { background:var(--opal-surface-soft) !important; }
+body :where(input[type="checkbox"],input[type="radio"],input[type="range"]) { accent-color:var(--opal-primary); }
+body :where(.form-control,.form-select,textarea):user-invalid {
+  border-color:#f87171 !important;
+  box-shadow:0 0 0 .18rem rgba(248,113,113,.16) !important;
+}
+.form-label { letter-spacing:.005em; }
+.form-text,.helptext { display:block; margin-top:.35rem; line-height:1.55; }
+
+.table-responsive,.opal-table-wrap,.table-wrap {
+  scrollbar-gutter:stable;
+  overscroll-behavior-inline:contain;
+}
+.opal-main table { font-variant-numeric:tabular-nums; }
+.opal-main table thead th { letter-spacing:.015em; }
+.opal-main table tbody tr { transition:background-color var(--opal-finish-transition); }
+
+.opal-empty-state {
+  border:1px dashed color-mix(in srgb,var(--opal-primary) 28%,var(--opal-border));
+  border-radius:16px;
+  background:color-mix(in srgb,var(--opal-primary-soft) 28%,transparent);
+}
+.opal-empty-state > i { filter:drop-shadow(0 6px 12px color-mix(in srgb,var(--opal-primary) 22%,transparent)); }
+
+.alert {
+  position:relative;
+  overflow:hidden;
+  box-shadow:0 8px 22px color-mix(in srgb,var(--opal-bg) 20%,transparent);
+}
+.alert::before {
+  content:"";
+  position:absolute;
+  inset-block:.45rem;
+  inset-inline-start:0;
+  width:3px;
+  border-radius:999px;
+  background:currentColor;
+  opacity:.58;
+}
+.opal-system-message { backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); }
+
+.opal-global-search-box:focus-within {
+  border-color:var(--opal-primary) !important;
+  box-shadow:var(--opal-focus),0 12px 28px color-mix(in srgb,var(--opal-bg) 26%,transparent);
+}
+.opal-global-search-box kbd {
+  border:1px solid var(--opal-border);
+  border-bottom-width:2px;
+  border-radius:7px;
+  color:var(--opal-muted);
+  background:var(--opal-surface-soft);
+  font-family:inherit;
+  font-size:.65rem;
+}
+.opal-copyright-footer {
+  border-radius:16px 16px 0 0;
+  background:linear-gradient(180deg,transparent,color-mix(in srgb,var(--opal-surface) 48%,transparent));
+}
+
+.opal-scroll-top {
+  position:fixed;
+  z-index:1080;
+  inset-inline-end:clamp(.8rem,2vw,1.4rem);
+  inset-block-end:max(1rem,env(safe-area-inset-bottom));
+  display:grid;
+  place-items:center;
+  width:46px;
+  height:46px;
+  padding:0;
+  border:1px solid color-mix(in srgb,var(--opal-primary) 60%,var(--opal-border));
+  border-radius:15px;
+  color:#fff;
+  background:linear-gradient(145deg,var(--opal-primary-strong),var(--opal-primary));
+  box-shadow:0 14px 30px color-mix(in srgb,var(--opal-primary-strong) 30%,transparent);
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+  transform:translateY(12px) scale(.94);
+  transition:opacity var(--opal-finish-transition),visibility var(--opal-finish-transition),transform var(--opal-finish-transition),box-shadow var(--opal-finish-transition);
+}
+.opal-scroll-top.is-visible {
+  opacity:1;
+  visibility:visible;
+  pointer-events:auto;
+  transform:translateY(0) scale(1);
+}
+.opal-scroll-top:hover { transform:translateY(-2px) scale(1.02); box-shadow:0 18px 36px color-mix(in srgb,var(--opal-primary-strong) 38%,transparent); }
+.opal-scroll-top:focus-visible { outline:0; box-shadow:var(--opal-focus),0 18px 36px color-mix(in srgb,var(--opal-primary-strong) 38%,transparent); }
+body.opal-keyboard-open .opal-scroll-top { display:none; }
+
+* { scrollbar-width:thin; scrollbar-color:color-mix(in srgb,var(--opal-primary) 46%,var(--opal-border)) transparent; }
+*::-webkit-scrollbar { width:9px; height:9px; }
+*::-webkit-scrollbar-track { background:transparent; }
+*::-webkit-scrollbar-thumb {
+  border:2px solid transparent;
+  border-radius:999px;
+  background:color-mix(in srgb,var(--opal-primary) 42%,var(--opal-border));
+  background-clip:padding-box;
+}
+*::-webkit-scrollbar-thumb:hover { background:var(--opal-primary); background-clip:padding-box; }
+
+@media (max-width:575.98px) {
+  .opal-main > .page-heading { padding:.9rem 1rem; border-radius:17px; }
+  .opal-main > .page-heading::after { width:135px; height:135px; }
+  .opal-scroll-top { width:42px; height:42px; border-radius:13px; }
+  .opal-global-search-box kbd { display:none; }
+}
+
+@media (prefers-contrast:more) {
+  .opal-main > .page-heading,.opal-page-navigation,.opal-card,.card,.table-responsive { border-width:2px !important; }
+  .opal-scroll-top { border:2px solid currentColor; }
+}
+
+@media (prefers-reduced-motion:reduce) {
+  html { scroll-behavior:auto; }
+  :where(.btn,.icon-btn,.opal-menu a,a.opal-module-card,a.opal-dashboard-action-card,a.dashboard-card,[data-opal-card-link]),
+  .opal-skip-link,.opal-scroll-top,body :where(.form-control,.form-select,textarea,select,input) { transition:none !important; }
+  :where(.btn,.icon-btn,a.opal-module-card,a.opal-dashboard-action-card,a.dashboard-card,[data-opal-card-link]):hover { transform:none !important; }
+}
+
+@media print {
+  .opal-skip-link,.opal-scroll-top { display:none !important; }
+  .opal-main > .page-heading { padding:0 !important; border:0 !important; background:#fff !important; box-shadow:none !important; }
+  .opal-main > .page-heading::before,.opal-main > .page-heading::after,.alert::before { display:none !important; }
+}

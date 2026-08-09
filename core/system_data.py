@@ -3,7 +3,6 @@ from __future__ import annotations
 from collections import Counter
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
-import random
 
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import Group, User
@@ -14,44 +13,27 @@ from django.utils import timezone
 DEFAULT_ACCOUNT_PASSWORD = "Opal@12345"
 
 DEMO_STUDENT_COUNT = 500
-DEMO_GUARDIAN_COUNT = 300
-DEMO_TEACHER_COUNT = 19
-DEMO_TEACHER_WEEKLY_LOAD = 25
-DEMO_TEACHER_DAILY_TARGET = 5
-DEMO_ASSIGNMENT_SEED = 1139
+DEMO_GUARDIAN_COUNT = 200
+DEMO_TEACHER_COUNT = 30
+DEMO_TEACHER_WEEKLY_LOAD = 30
+DEMO_TEACHER_DAILY_TARGET = 6
 
 
 def _subject_plan_for_grade(grade_order):
-    """Return the exact weekly plan requested for the acceptance data set."""
-    plan = [
-        ("اللغة العربية", 1),
-        ("الرياضيات", 1),
-        ("التربية الرياضية", 3),
-        ("اللغة الإنجليزية", 1),
+    """Thirty weekly lessons per section; Arabic, math and science occur daily."""
+    return [
+        ("اللغة العربية", 5),
+        ("الرياضيات", 5),
+        ("العلوم", 5),
+        ("اللغة الإنجليزية", 5),
+        ("التربية الإسلامية", 2),
         ("التربية المهنية", 2),
-        ("التربية الإسلامية", 1),
+        ("التربية الرياضية", 2),
         ("الحاسوب", 1),
         ("التربية الفنية", 1),
+        ("الاجتماعيات", 1),
         ("الثقافة المالية", 1),
     ]
-    if grade_order <= 9:
-        plan.append(("العلوم", 4))
-    else:
-        plan.extend([
-            ("الفيزياء", 1),
-            ("الكيمياء", 1),
-            ("الأحياء", 1),
-            ("علوم الأرض", 1),
-        ])
-    if grade_order <= 3:
-        plan.append(("الاجتماعيات", 3))
-    else:
-        plan.extend([
-            ("التاريخ", 1),
-            ("الجغرافيا", 1),
-            ("التربية الوطنية", 1),
-        ])
-    return plan
 
 
 def _teacher_specialization_label(subject_loads):
@@ -119,6 +101,16 @@ def reset_all_operational_data(*, keep_user=None):
         "families": Family.objects.count(), "documents": IssuedDocument.objects.count(),
         "receipts": Receipt.objects.count() + FeePayment.objects.count(),
     }
+
+    # Remove learning-platform operational data before school/student/teacher rows.
+    # The safe production-reset ordering is reused so PROTECT relations cannot
+    # leave a partially-reset demo database.
+    from django.apps import apps
+    from core.production_reset import DELETE_MODEL_LABELS
+    for label in DELETE_MODEL_LABELS:
+        if label.startswith("learning_platform."):
+            app_label, model_name = label.split(".", 1)
+            _delete_all(apps.get_model(app_label, model_name))
 
     # Protected and transactional financial chains are removed from leaf to root.
     _delete_all(MonthlyFinancialStatement)
@@ -223,30 +215,21 @@ def reset_all_operational_data(*, keep_user=None):
 
 
 def _guardian_index(student_index):
-    # A varied but exact 500-student/300-guardian distribution:
-    # 150 guardians with one student, 100 with two, and 50 with three.
-    if student_index <= 150:
+    """Exact 500-student/200-family distribution: 50 families each with 1, 2, 3 and 4 children."""
+    if student_index <= 50:
         return student_index, 0
-    if student_index <= 350:
+    if student_index <= 150:
+        relative = student_index - 51
+        return 51 + (relative // 2), relative % 2
+    if student_index <= 300:
         relative = student_index - 151
-        return 151 + (relative // 2), relative % 2
-    relative = student_index - 351
-    return 251 + (relative // 3), relative % 3
+        return 101 + (relative // 3), relative % 3
+    relative = student_index - 301
+    return 151 + (relative // 4), relative % 4
 
 
 def _relation_for(guardian_index, child_position):
-    category = (guardian_index - 1) % 6
-    if category == 0:
-        return "والد"
-    if category == 1:
-        return "والدة"
-    if category == 2:
-        return "عم ووصي"
-    if category == 3:
-        return "الأخ الأكبر"
-    if category == 4:
-        return "والد" if child_position == 0 else "عم ووصي"
-    return "جد وولي"
+    return "والد"
 
 
 def _month_28(base_date, offset):
@@ -294,7 +277,7 @@ def _structure(school):
     subject_rows = []
     all_subject_names = []
     for grade in grades:
-        section_names = ("أ", "ب", "ج") if grade.order == 1 else ("أ", "ب")
+        section_names = ("أ", "ب", "ج") if grade.order <= 6 else ("أ", "ب")
         for section_name in section_names:
             sections.append(Section(
                 academic_year=year, branch=branch, grade=grade,
@@ -343,7 +326,7 @@ def _structure(school):
             name=f"الحصة {index}", start_time=start, end_time=end_dt.time(),
             order=index, is_active=True,
         ))
-        cursor = end_dt + timedelta(minutes=5)
+        cursor = end_dt + timedelta(minutes=10)
     TimeSlot.objects.bulk_create(slots)
     SchoolScheduleSettings.objects.create(
         school=school,
@@ -359,12 +342,12 @@ def _structure(school):
         ),
         SchoolDayEvent(
             school=school, name="نهاية الدوام", event_type="dismissal",
-            start_time=time(14, 5), end_time=time(14, 15),
+            start_time=time(14, 45), end_time=time(14, 55),
             days="sunday,monday,tuesday,wednesday,thursday", order=8,
         ),
         SchoolDayEvent(
             school=school, name="النشاط المدرسي الأسبوعي", event_type="other",
-            start_time=time(14, 15), end_time=time(14, 55),
+            start_time=time(15, 0), end_time=time(15, 40),
             days="thursday", order=9,
         ),
     ])
@@ -379,7 +362,7 @@ def _structure(school):
             school=school,
             name=name,
             event_type="break",
-            duration_minutes=15,
+            duration_minutes=20,
             placement_mode="smart",
             days="sunday,monday,tuesday,wednesday,thursday",
             order=order,
@@ -429,8 +412,12 @@ def _validate_integrated_academic_demo(*, school, year, sections):
 
     if len(base_slots) != 8:
         raise ValueError("بيانات الاختبار المترابطة تحتاج ثمانية أوقات حصص أساسية.")
+    if len(sections) != 30:
+        raise ValueError("يجب أن تتضمن بيانات R29 ثلاثين شعبة مترابطة.")
     if len(breaks) != 3:
         raise ValueError("يجب أن تتضمن بيانات الاختبار ثلاث مجموعات استراحة مترابطة.")
+    if any(item.effective_duration_minutes != 20 for item in breaks):
+        raise ValueError("مدة كل استراحة في بيانات R29 يجب أن تكون عشرين دقيقة.")
     if any(item.placement_mode != "smart" or not item.start_time or not item.end_time for item in breaks):
         raise ValueError("لم يثبت محرك الجدول أوقات جميع الاستراحات الذكية.")
 
@@ -484,17 +471,29 @@ def _validate_integrated_academic_demo(*, school, year, sections):
         if assignment is None or assignment.teacher_id != entry.teacher_id:
             raise ValueError("توجد حصة في الجدول لا تطابق التكليف الرسمي.")
 
+    daily_subjects = {"اللغة العربية", "الرياضيات", "العلوم"}
+    daily_subject_count = Counter((entry.section_id, entry.subject.name, entry.day) for entry in entries)
+    for section in sections:
+        for subject_name in daily_subjects:
+            for day in canonical_days:
+                if daily_subject_count[(section.pk, subject_name, day)] != 1:
+                    raise ValueError(f"يجب أن تكون مادة {subject_name} موجودة مرة واحدة يوميًا في كل شعبة.")
+
+    homeroom_ids = [section.homeroom_teacher_id for section in sections]
+    if any(value is None for value in homeroom_ids) or len(set(homeroom_ids)) != len(sections):
+        raise ValueError("يجب أن يكون لكل شعبة مربي صف واحد مختلف في بيانات R29.")
+
     configured_teachers = 0
     daily_by_teacher = Counter((entry.teacher_id, entry.day) for entry in entries if entry.teacher_id)
     for teacher_id, assigned in assigned_by_teacher.items():
         teacher = next(item.teacher for item in assignments if item.teacher_id == teacher_id)
         if teacher.weekly_teaching_load != DEMO_TEACHER_WEEKLY_LOAD or assigned != DEMO_TEACHER_WEEKLY_LOAD:
-            raise ValueError("يجب أن يكون نصاب كل معلم تجريبي 25 حصة فعلية بالضبط.")
-        if teacher.free_period_policy != "daily" or teacher.daily_free_periods != 1:
-            raise ValueError("يجب أن يبقى لكل معلم حد أدنى حصة فراغ يومية قابلة للتعديل.")
+            raise ValueError("يجب أن يكون نصاب كل معلم تجريبي 30 حصة فعلية بالضبط.")
+        if teacher.free_period_policy != "daily" or teacher.daily_free_periods < 1:
+            raise ValueError("يجب أن يبقى لكل معلم حصة فراغ يومية واحدة على الأقل.")
         for day in canonical_days:
             if daily_by_teacher[(teacher_id, day)] != DEMO_TEACHER_DAILY_TARGET:
-                raise ValueError("لم يوزع الجدول نصاب المعلم على خمس حصص يوميًا.")
+                raise ValueError("لم يوزع الجدول نصاب المعلم على ست حصص يوميًا.")
         configured_teachers += 1
 
     for event in breaks:
@@ -581,14 +580,25 @@ def seed_system_data(*, student_count=DEMO_STUDENT_COUNT, teacher_count=DEMO_TEA
         family_name = family_names[(value * 7 + value // 10) % len(family_names)]
         return first, father, grandfather, family_name, f"{first} {father} {grandfather} {family_name}"
 
+    def family_identity(index):
+        value = index - 1
+        father = male_names[value % len(male_names)]
+        grandfather = male_names[(value // 10 + 3) % len(male_names)]
+        great_grandfather = male_names[(value // 20 + 6) % len(male_names)]
+        surname = family_names[(value * 5 + value // 10) % len(family_names)]
+        return {
+            "father": father, "grandfather": grandfather, "great_grandfather": great_grandfather,
+            "surname": surname,
+            "guardian_name": f"{father} {grandfather} {great_grandfather} {surname}",
+        }
+
     account_rows = []
     for index in range(1, teacher_count + 1):
         *_, name = generated_name(index, female=index % 2 == 0)
         account_rows.append(User(username=f"teacher_{index:03d}", password=password_hash, first_name=name, email=f"teacher{index:03d}@opal-school.edu", is_active=True))
     for index in range(1, guardian_count + 1):
-        category = (index - 1) % 6
-        *_, name = generated_name(index, female=category == 1)
-        account_rows.append(User(username=f"guardian_{index:03d}", password=password_hash, first_name=name, is_active=True))
+        identity = family_identity(index)
+        account_rows.append(User(username=f"guardian_{index:03d}", password=password_hash, first_name=identity["guardian_name"], is_active=True))
     User.objects.bulk_create(account_rows)
     teacher_users = {row.username: row for row in User.objects.filter(username__startswith="teacher_")}
     guardian_users = {row.username: row for row in User.objects.filter(username__startswith="guardian_")}
@@ -620,17 +630,17 @@ def seed_system_data(*, student_count=DEMO_STUDENT_COUNT, teacher_count=DEMO_TEA
         for doc_type, title, prefix in (("contract", "عقد عمل", "CON"), ("qualification", "شهادة جامعية", "QUAL"))
     ])
 
-    relation_labels = ["والد", "والدة", "عم ووصي", "الأخ الأكبر", "وصي على أبناء وأبناء أخ", "جد وولي"]
     family_rows = []
+    family_identity_by_index = {}
     for index in range(1, guardian_count + 1):
-        category = (index - 1) % 6
-        *_, name = generated_name(index, female=category == 1)
+        identity = family_identity(index)
+        family_identity_by_index[index] = identity
         family_rows.append(Family(
             school=school, user=guardian_users[f"guardian_{index:03d}"], source="manual",
-            guardian_name=name, relation=relation_labels[category], identity_type="national",
+            guardian_name=identity["guardian_name"], relation="والد", identity_type="national",
             identity_number=f"3000{index:06d}", phone=f"079{index:07d}",
             secondary_phone=f"077{index:07d}", email=f"guardian{index:03d}@mail.com",
-            job_title=("مهندسة" if category == 1 else "موظف"), address=f"إربد - منطقة {index % 15 + 1}",
+            job_title="موظف", address=f"إربد - منطقة {index % 15 + 1}",
             family_code=f"G-{index:05d}", is_active=True,
         ))
     Family.objects.bulk_create(family_rows)
@@ -648,49 +658,30 @@ def seed_system_data(*, student_count=DEMO_STUDENT_COUNT, teacher_count=DEMO_TEA
     through = Group.user_set.through
     through.objects.bulk_create([through(user_id=teacher.user_id, group_id=teacher_group.pk) for teacher in teachers], ignore_conflicts=True)
 
-    # Build one coherent chain: annual Subject plan -> assignment -> exact 25-period workload -> official timetable.
-    # The requested plan totals 19 periods per section.  Twenty-five sections
-    # therefore produce exactly 475 periods, which is 19 teachers × 25 periods.
-    assignment_tasks = []
-    for section in sections:
-        section.homeroom_teacher = teachers[(section.pk + section.grade.order) % len(teachers)]
-        section.save(update_fields=["homeroom_teacher"])
-        for subject in subjects_by_grade[section.grade_id]:
-            assignment_tasks.append((section, subject, subject.weekly_periods))
-
+    # Build one exact and auditable chain: each of the 30 sections has one
+    # unique homeroom teacher, and that teacher owns the section's complete
+    # 30-period demo plan.  This deliberately favours relational correctness
+    # over realism in synthetic data: 30 sections × 30 periods = 900, exactly
+    # 30 teachers × 30 periods (6 per day across five days), with no hidden
+    # cross-section teacher conflict introduced by the seed itself.
     teacher_loads = {teacher.pk: 0 for teacher in teachers}
     subject_loads_by_teacher = {teacher.pk: Counter() for teacher in teachers}
     assignment_rows = []
-
-    # Place multi-period assignments first.  A fixed seed varies equal-load
-    # choices so the smart builder can satisfy all section and teacher conflicts
-    # while keeping the generated data perfectly reproducible.
-    rng = random.Random(DEMO_ASSIGNMENT_SEED)
-    tasks_by_weight = {}
-    for task in assignment_tasks:
-        tasks_by_weight.setdefault(task[2], []).append(task)
-    ordered_tasks = []
-    for weight in sorted(tasks_by_weight, reverse=True):
-        group = list(tasks_by_weight[weight])
-        rng.shuffle(group)
-        ordered_tasks.extend(group)
-
-    for section, subject, periods in ordered_tasks:
-        eligible = [teacher for teacher in teachers if teacher_loads[teacher.pk] + periods <= DEMO_TEACHER_WEEKLY_LOAD]
-        if not eligible:
-            raise ValueError("تعذر توزيع تكليفات البيانات التجريبية ضمن نصاب 25 حصة لكل معلم.")
-        minimum_load = min(teacher_loads[teacher.pk] for teacher in eligible)
-        candidates = [teacher for teacher in eligible if teacher_loads[teacher.pk] == minimum_load]
-        teacher = rng.choice(candidates)
-        teacher_loads[teacher.pk] += periods
-        subject_loads_by_teacher[teacher.pk][subject.name] += periods
-        assignment_rows.append(TeacherAssignment(
-            teacher=teacher, academic_year=year, section=section, subject=subject,
-            is_primary=True, is_active=True,
-        ))
+    for section_index, section in enumerate(sections):
+        teacher = teachers[section_index]
+        section.homeroom_teacher = teacher
+        section.save(update_fields=["homeroom_teacher"])
+        for subject in subjects_by_grade[section.grade_id]:
+            periods = subject.weekly_periods
+            teacher_loads[teacher.pk] += periods
+            subject_loads_by_teacher[teacher.pk][subject.name] += periods
+            assignment_rows.append(TeacherAssignment(
+                teacher=teacher, academic_year=year, section=section, subject=subject,
+                is_primary=True, is_active=True,
+            ))
 
     if set(teacher_loads.values()) != {DEMO_TEACHER_WEEKLY_LOAD}:
-        raise ValueError("لم يصل جميع المعلمين إلى النصاب التجريبي المطلوب وهو 25 حصة أسبوعيًا.")
+        raise ValueError("لم يصل جميع المعلمين إلى النصاب التجريبي المطلوب وهو 30 حصة أسبوعيًا.")
 
     TeacherAssignment.objects.bulk_create(assignment_rows)
     for teacher in teachers:
@@ -739,13 +730,18 @@ def seed_system_data(*, student_count=DEMO_STUDENT_COUNT, teacher_count=DEMO_TEA
         guardian_index, position = _guardian_index(index)
         family = family_by_index[guardian_index]
         section = sections[(index - 1) % len(sections)]
-        first_name, father_name, grandfather_name, family_name, full_name = generated_name(index, female=index % 2 == 0)
+        identity = family_identity_by_index[guardian_index]
+        first_name = (female_names if index % 2 == 0 else male_names)[(index + position) % 10]
+        father_name = identity["father"]
+        grandfather_name = identity["grandfather"]
+        family_name = identity["surname"]
+        full_name = f"{first_name} {father_name} {grandfather_name} {family_name}"
         number = f"STU-{index:05d}"
         student_rows.append(Student(
             student_number=number, source="manual", national_id=f"1000{index:06d}",
             ministry_student_id=f"MIN-S-{index:06d}", full_name=full_name,
             guardian_name=family.guardian_name, father_name=f"{father_name} {grandfather_name} {family_name}",
-            mother_name=f"{female_names[(index + 2) % len(female_names)]} {family_name}",
+            mother_name=f"{female_names[(guardian_index + 2) % len(female_names)]} {grandfather_name} {family_name}",
             gender="male" if index % 2 else "female", blood_type=("A+", "B+", "O+", "AB+")[index % 4],
             grade=section.grade.name, section=section.name, phone=family.phone,
             address=family.address, status="active", enrollment_date=year.start_date,
@@ -768,7 +764,7 @@ def seed_system_data(*, student_count=DEMO_STUDENT_COUNT, teacher_count=DEMO_TEA
         ))
         link_rows.append(FamilyStudent(
             family=meta["family"], student=student,
-            relation=_relation_for(int(meta["family"].family_code.split("-")[1]), meta["position"]), is_active=True,
+            relation="والد", is_active=True,
         ))
     Enrollment.objects.bulk_create(enrollment_rows)
     FamilyStudent.objects.bulk_create(link_rows)
@@ -779,7 +775,12 @@ def seed_system_data(*, student_count=DEMO_STUDENT_COUNT, teacher_count=DEMO_TEA
     for student in students:
         meta = student_meta[student.student_number]
         total = Decimal("900") + meta["section"].grade.order * Decimal("75")
-        ratio = (Decimal("0"), Decimal("0.20"), Decimal("0.50"), Decimal("0.80"), Decimal("1.00"))[(meta["index"] - 1) % 5]
+        ratios = (Decimal("0"), Decimal("0.20"), Decimal("0.50"), Decimal("0.80"), Decimal("1.00"))
+        if meta["position"] == 0:
+            guardian_no = int(meta["family"].family_code.split("-")[1])
+            ratio = (Decimal("0.20"), Decimal("0.50"), Decimal("0.80"), Decimal("1.00"))[(guardian_no - 1) % 4]
+        else:
+            ratio = ratios[(meta["index"] - 1) % len(ratios)]
         paid = (total * ratio).quantize(Decimal("0.01"))
         status = "open" if paid == 0 else ("paid" if paid >= total else "partial")
         invoice_rows.append(StudentInvoice(
@@ -830,25 +831,45 @@ def seed_system_data(*, student_count=DEMO_STUDENT_COUNT, teacher_count=DEMO_TEA
         ))
     StudentRegistration.objects.bulk_create(registration_rows)
 
-    FeePayment.objects.bulk_create([
-        FeePayment(
-            school=school, receipt_number=f"FEE-{payment.invoice.student.student_number}",
-            scope="single", main_student=payment.invoice.student,
-            guardian_name=payment.invoice.student.guardian_name, phone=payment.invoice.student.phone,
-            total_amount=payment.amount, total_due_before=payment.invoice.amount,
-            total_due_after=payment.invoice.amount - payment.amount,
-            payment_method=payment.payment_method, created_by=user,
-        ) for payment in payments
-    ])
-    fee_payments = {row.main_student_id: row for row in FeePayment.objects.filter(school=school)}
-    FeePaymentAllocation.objects.bulk_create([
-        FeePaymentAllocation(
-            fee_payment=fee_payments[payment.invoice.student_id], student=payment.invoice.student,
-            invoice=payment.invoice, accounting_payment=payment, amount=payment.amount,
-            total_fees=payment.invoice.amount, paid_before=0,
-            remaining_before=payment.invoice.amount, remaining_after=payment.invoice.amount - payment.amount,
-        ) for payment in payments
-    ])
+    # One canonical family receipt per guardian, allocated automatically to
+    # every child who has a positive payment.  The first child always has a
+    # payment, so all 200 guardians own at least one real receipt.
+    family_fee_rows = []
+    for family in families:
+        family_students = [student for student in students if student_meta[student.student_number]["family"].pk == family.pk]
+        family_payments = [payment_by_student.get(student.pk) for student in family_students]
+        family_payments = [payment for payment in family_payments if payment is not None]
+        if not family_payments:
+            raise ValueError(f"ملف ولي الأمر {family.family_code} لا يحتوي دفعة، وهذا يخالف عقد R29.")
+        due_before = sum((invoice_by_student[student.pk].amount for student in family_students), Decimal("0"))
+        total_amount = sum((payment.amount for payment in family_payments), Decimal("0"))
+        family_fee_rows.append(FeePayment(
+            school=school, receipt_number=f"FAMILY-{family.family_code}",
+            scope="all_siblings", main_student=family_students[0],
+            guardian_name=family.guardian_name, phone=family.phone,
+            total_amount=total_amount, total_due_before=due_before,
+            total_due_after=due_before - total_amount,
+            payment_method=family_payments[0].payment_method, created_by=user,
+            notes="دفعة مترابطة عن جميع الإخوة — بيانات R29 التجريبية",
+        ))
+    FeePayment.objects.bulk_create(family_fee_rows)
+    fee_payment_by_family = {row.receipt_number.replace("FAMILY-G-", ""): row for row in FeePayment.objects.filter(school=school, receipt_number__startswith="FAMILY-G-")}
+    allocation_rows = []
+    for student in students:
+        payment = payment_by_student.get(student.pk)
+        if payment is None:
+            continue
+        meta = student_meta[student.student_number]
+        family_no = meta["family"].family_code.split("-")[1]
+        family_payment = fee_payment_by_family[family_no]
+        invoice = invoice_by_student[student.pk]
+        allocation_rows.append(FeePaymentAllocation(
+            fee_payment=family_payment, student=student, invoice=invoice, accounting_payment=payment,
+            amount=payment.amount, total_fees=invoice.amount, paid_before=0,
+            remaining_before=invoice.amount, remaining_after=invoice.amount - payment.amount,
+        ))
+    FeePaymentAllocation.objects.bulk_create(allocation_rows, batch_size=1000)
+
 
     # Ten recent school days using the current exception-only attendance policy.
     # A submitted register proves the homeroom teacher completed the daily task;
@@ -1120,6 +1141,79 @@ def seed_system_data(*, student_count=DEMO_STUDENT_COUNT, teacher_count=DEMO_TEA
         ReportPreset(name="تقرير الحضور", category="attendance", code="attendance-overview", is_active=True, created_by=user),
     ])
 
+    # School-linked learning-platform demo identities/content.  Parents and
+    # teachers enter by ERP SSO; each child keeps a distinct learner identity.
+    from learning_platform.models import (
+        LearningAccessSettings, LearningCourse, LearningLesson, LearningSubscriptionCard, LearningSubscriptionPlan,
+    )
+    from learning_platform.card_codes import generate_unique_card_codes
+    from learning_platform.school_bridge import (
+        ensure_student_learning_account, ensure_teacher_learning_account, ensure_learning_subject_for_academic_subject,
+    )
+
+    LearningAccessSettings.objects.update_or_create(
+        school=school, defaults={"parent_default_enabled": True, "teacher_sso_enabled": True}
+    )
+    learning_teacher_by_id = {teacher.pk: ensure_teacher_learning_account(teacher) for teacher in teachers}
+    learning_student_by_id = {student.pk: ensure_student_learning_account(student) for student in students}
+    learning_subject_by_academic_id = {}
+    for subject in [item for items in subjects_by_grade.values() for item in items]:
+        learning_subject_by_academic_id[subject.pk] = ensure_learning_subject_for_academic_subject(subject)
+
+    course_rows = []
+    for assignment in assignments:
+        course_rows.append(LearningCourse(
+            subject=learning_subject_by_academic_id[assignment.subject_id],
+            teacher=learning_teacher_by_id[assignment.teacher_id],
+            title=f"{assignment.subject.name} — {assignment.section}",
+            slug=f"school-course-{assignment.pk}",
+            summary=f"محتوى تجريبي مترابط لمادة {assignment.subject.name} حسب التكليف الرسمي للمعلم والشعبة.",
+            grade_label=assignment.section.grade.name,
+            academic_subject=assignment.subject, academic_section=assignment.section,
+            status=LearningCourse.Status.PUBLISHED, published_at=timezone.now(),
+        ))
+    LearningCourse.objects.bulk_create(course_rows, batch_size=500)
+    school_courses = list(LearningCourse.objects.filter(slug__startswith="school-course-").select_related("academic_subject", "academic_section"))
+    LearningLesson.objects.bulk_create([
+        LearningLesson(
+            course=course, title=f"الدرس {lesson_no}: {course.academic_subject.name}",
+            slug=f"lesson-{lesson_no}",
+            content=f"محتوى تجريبي مترابط للدرس {lesson_no} في {course.academic_subject.name} للشعبة {course.academic_section}.",
+            duration_minutes=20 + lesson_no * 5, order=lesson_no, is_published=True,
+        )
+        for course in school_courses for lesson_no in (1, 2)
+    ], batch_size=1000)
+    LearningSubscriptionPlan.objects.create(
+        name="الخطة المدرسية السنوية", slug="school-yearly-demo",
+        duration=LearningSubscriptionCard.Duration.YEARLY, price=Decimal("10.000"),
+        currency="JOD", grants_all_subjects=True, is_active=True, display_order=1,
+    )
+    now_learning = timezone.now()
+    demo_card_codes = generate_unique_card_codes(len(students), prefix="DEMO")
+    LearningSubscriptionCard.objects.bulk_create([
+        LearningSubscriptionCard(
+            code=demo_card_codes[index - 1], duration=LearningSubscriptionCard.Duration.YEARLY,
+            grants_all_subjects=True,
+            status=(LearningSubscriptionCard.Status.REDEEMED if index <= 250 else LearningSubscriptionCard.Status.AVAILABLE),
+            redeemed_by=(learning_student_by_id[student.pk] if index <= 250 else None),
+            activated_at=(now_learning if index <= 250 else None),
+            expires_at=(now_learning + timedelta(days=365) if index <= 250 else None),
+        )
+        for index, student in enumerate(students, 1)
+    ], batch_size=1000)
+
+    family_size_counts = Counter(
+        FamilyStudent.objects.filter(family__school=school, is_active=True)
+        .values_list("family_id", flat=True)
+    )
+    distribution = Counter(family_size_counts.values())
+    if distribution != Counter({1: 50, 2: 50, 3: 50, 4: 50}):
+        raise ValueError(f"توزيع الإخوة غير مطابق لعقد R29: {dict(distribution)}")
+    if FeePayment.objects.filter(school=school, scope="all_siblings", is_deleted=False).count() != 200:
+        raise ValueError("يجب أن يمتلك كل ولي أمر إيصال دفعة عائلية واحدًا على الأقل.")
+    if len(school_courses) != len(assignments) or LearningLesson.objects.filter(course__in=school_courses).count() != len(school_courses) * 2:
+        raise ValueError("محتوى منصة التعلم التجريبي غير مترابط مع جميع تكليفات المعلمين.")
+
     academic_demo = _validate_integrated_academic_demo(
         school=school,
         year=year,
@@ -1131,6 +1225,9 @@ def seed_system_data(*, student_count=DEMO_STUDENT_COUNT, teacher_count=DEMO_TEA
         "years": school.academic_years.count(), "semesters": year.semesters.count(),
         "marks": StudentMark.objects.count(), "documents": IssuedDocument.objects.count(),
         "receipts": Receipt.objects.count() + FeePayment.objects.count(),
+        "learning_accounts": len(learning_teacher_by_id) + len(learning_student_by_id),
+        "learning_courses": len(school_courses),
+        "learning_lessons": len(school_courses) * 2,
         "password": DEFAULT_ACCOUNT_PASSWORD,
         **academic_demo,
     }

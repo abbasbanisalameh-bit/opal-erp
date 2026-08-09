@@ -14,6 +14,7 @@ from django.db import transaction
 from django.urls import reverse
 from django.utils import timezone
 
+from .card_codes import generate_unique_card_code
 from .models import (
     LearningAccount,
     LearningAuditEvent,
@@ -141,7 +142,8 @@ def initiate_external_checkout(order, *, return_url, webhook_url):
 
 
 def _new_card_code(order):
-    return f"PAID-{order.pk:08d}-{secrets.token_hex(4).upper()}"
+    # Keep payment/order identifiers private: the public card value is fully random.
+    return generate_unique_card_code(prefix="OPAL")
 
 
 @transaction.atomic

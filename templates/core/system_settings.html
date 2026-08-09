@@ -18,6 +18,7 @@
 
 
 
+
 {# OPAL_SYSTEM_SETTINGS_DEDUPLICATED_V1 #}
 
 <details id="school-settings" class="opal-card mb-4 opal-settings-section opal-settings-accordion" open>
@@ -138,6 +139,7 @@
     <a href="{% url 'core:system_updates' %}" class="opal-settings-action primary" title="المدخل الوحيد لتحديث النظام والنسخ الاحتياطية"><i class="bi bi-arrow-repeat"></i><strong>تحديثات النظام</strong><small>رفع التحديث والنسخ والاستعادة</small></a>
     <a href="{% url 'core:integrity_center' %}" class="opal-settings-action warning" title="فحص تناسق وترابط البيانات"><i class="bi bi-database-check"></i><strong>سلامة البيانات</strong><small>فحص وإصلاح آمن</small></a>
     <a href="{% url 'core:production_launch_preparation' %}" class="opal-settings-action warning" title="معاينة وتنظيف البيانات التجريبية قبل التشغيل الفعلي"><i class="bi bi-rocket-takeoff-fill"></i><strong>تهيئة التشغيل الفعلي</strong><small>تنظيف آمن مع إبقاء المدير والإعدادات</small></a>
+    <a href="{% url 'learning_platform:manager_school_access' %}" class="opal-settings-action primary" title="إتاحة منصة أوبال التعليمية لأولياء الأمور والمعلمين"><i class="bi bi-mortarboard-fill"></i><strong>إتاحة منصة أوبال التعليمية</strong><small>عام · حسب الصف · حسب الطالب · وصول المعلم</small></a>
     {% endif %}
     {% if opal_openemis_enabled and request.user.is_staff %}
     <a href="{% url 'openemis:settings' %}" class="opal-settings-action" title="إعداد التكامل الوزاري عند توفر الواجهة الرسمية"><i class="bi bi-cloud-arrow-up-fill"></i><strong>OpenEMIS</strong><small>الإعداد واختبار الاتصال</small></a>
@@ -147,6 +149,13 @@
   </div>
 
   {% if request.user.is_superuser %}
+  <div class="alert alert-info mt-4">
+    <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap">
+      <div><strong><i class="bi bi-database-fill-add"></i> بيانات تجريبية مترابطة R29</strong><div class="small mt-1">ينشئ 500 طالب / 200 ولي أمر / 30 معلم مع العام والصفوف والشعب والمواد والتكليفات والجدول والدفعات وحسابات ومحتوى المنصة. العملية تستبدل البيانات التشغيلية الحالية ببيانات تجريبية.</div></div>
+      <form method="post" class="opal-system-data-form" data-confirm="سيتم حذف البيانات التشغيلية الحالية وإنشاء بيانات R29 التجريبية المترابطة. هل تريد المتابعة؟">{% csrf_token %}<input type="hidden" name="action" value="seed_system"><button type="submit" class="btn btn-primary" data-busy-label="جارٍ إنشاء البيانات...">إدخال البيانات التجريبية</button></form>
+    </div>
+  </div>
+
   <div class="alert alert-warning mt-4 mb-0">
     <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap">
       <div><strong><i class="bi bi-shield-exclamation"></i> حذف البيانات نُقل إلى مسار مستقل وآمن.</strong><div class="small mt-1">تبدأ العملية بمعاينة تفصيلية، ثم تأكيد صريح، وتصدر تقريرًا نهائيًا دون حذف إعدادات المدرسة أو حساب المدير.</div></div>
