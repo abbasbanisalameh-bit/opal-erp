@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import ClassCoverage, SchoolDayEvent, SchoolScheduleSettings, TeacherAbsence, TimeSlot, TimetableEntry
+from .models import (BiometricDailySummary, BiometricDevice, ClassCoverage, SchoolDayEvent, SchoolScheduleSettings, TeacherAbsence, TeacherBiometricIdentity, TeacherBiometricPunch, TimeSlot, TimetableEntry)
 
 
 @admin.register(TimeSlot)
@@ -20,3 +20,8 @@ admin.site.register(SchoolScheduleSettings)
 admin.site.register(SchoolDayEvent)
 admin.site.register(TeacherAbsence)
 admin.site.register(ClassCoverage)
+
+admin.site.register(BiometricDevice)
+admin.site.register(TeacherBiometricIdentity)
+admin.site.register(TeacherBiometricPunch)
+admin.site.register(BiometricDailySummary)

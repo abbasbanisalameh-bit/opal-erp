@@ -272,3 +272,161 @@ class ClassCoverage(models.Model):
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=["entry", "date"], name="uniq_entry_coverage_date")]
+
+
+class BiometricDevice(models.Model):
+    """A physical attendance terminal registered with OPAL.
+
+    OPAL never stores fingerprint templates.  The terminal keeps the biometric
+    material; OPAL stores only the external user id and punch timestamps.
+    """
+
+    VENDORS = [
+        ("generic", "جهاز عام / بوابة محلية"),
+        ("zkteco", "ZKTeco"),
+        ("other", "شركة أخرى"),
+    ]
+
+    school = models.ForeignKey("core.School", on_delete=models.CASCADE, related_name="biometric_devices")
+    branch = models.ForeignKey(
+        "core.Branch", on_delete=models.SET_NULL, null=True, blank=True, related_name="biometric_devices"
+    )
+    name = models.CharField("اسم الجهاز", max_length=120)
+    device_code = models.CharField("رمز الجهاز", max_length=80, unique=True)
+    vendor = models.CharField("الشركة", max_length=20, choices=VENDORS, default="generic")
+    serial_number = models.CharField("الرقم التسلسلي", max_length=120, blank=True)
+    timezone_name = models.CharField("المنطقة الزمنية", max_length=64, default="Asia/Amman")
+    token_hash = models.CharField("بصمة رمز الربط", max_length=64, unique=True, null=True, blank=True, editable=False)
+    token_hint = models.CharField("آخر أحرف الرمز", max_length=8, blank=True, editable=False)
+    is_active = models.BooleanField("فعال", default=True, db_index=True)
+    last_seen_at = models.DateTimeField("آخر اتصال", null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["school__name", "name"]
+        verbose_name = "جهاز بصمة"
+        verbose_name_plural = "أجهزة البصمة"
+
+    def clean(self):
+        super().clean()
+        if self.branch_id and self.school_id and self.branch.school_id != self.school_id:
+            raise ValidationError({"branch": "الفرع لا يتبع مدرسة جهاز البصمة."})
+
+    def save(self, *args, **kwargs):
+        self.device_code = (self.device_code or "").strip().upper()
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.name} ({self.device_code})"
+
+
+class TeacherBiometricIdentity(models.Model):
+    """Maps a terminal-local numeric/string user id to the canonical Teacher."""
+
+    device = models.ForeignKey(BiometricDevice, on_delete=models.CASCADE, related_name="teacher_identities")
+    teacher = models.ForeignKey("teachers.Teacher", on_delete=models.CASCADE, related_name="biometric_identities")
+    device_user_id = models.CharField("معرف المعلم داخل الجهاز", max_length=80)
+    is_active = models.BooleanField("فعال", default=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["teacher__full_name", "device_user_id"]
+        constraints = [
+            models.UniqueConstraint(fields=["device", "device_user_id"], name="uniq_biometric_device_user"),
+            models.UniqueConstraint(fields=["device", "teacher"], name="uniq_biometric_device_teacher"),
+        ]
+
+    def clean(self):
+        super().clean()
+        if self.device_id and self.teacher_id and self.device.school_id != self.teacher.school_id:
+            raise ValidationError("المعلم وجهاز البصمة يجب أن يتبعا المدرسة نفسها.")
+
+    def save(self, *args, **kwargs):
+        self.device_user_id = (self.device_user_id or "").strip()
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.teacher} — {self.device}: {self.device_user_id}"
+
+
+class TeacherBiometricPunch(models.Model):
+    DIRECTIONS = [
+        ("in", "دخول"),
+        ("out", "خروج"),
+        ("unknown", "غير محدد"),
+    ]
+
+    device = models.ForeignKey(BiometricDevice, on_delete=models.PROTECT, related_name="punches")
+    teacher = models.ForeignKey(
+        "teachers.Teacher", on_delete=models.SET_NULL, null=True, blank=True, related_name="biometric_punches"
+    )
+    device_user_id = models.CharField("معرف المستخدم في الجهاز", max_length=80, db_index=True)
+    event_uid = models.CharField("معرف الحدث", max_length=64, unique=True, db_index=True)
+    punched_at = models.DateTimeField("وقت البصمة", db_index=True)
+    direction = models.CharField("نوع الحركة", max_length=10, choices=DIRECTIONS, default="unknown", db_index=True)
+    raw_payload = models.JSONField("بيانات الجهاز الخام", default=dict, blank=True)
+    received_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-punched_at", "-id"]
+        indexes = [
+            models.Index(fields=["teacher", "punched_at"], name="bio_teacher_punch_idx"),
+            models.Index(fields=["device", "punched_at"], name="bio_device_punch_idx"),
+        ]
+
+    def __str__(self):
+        who = self.teacher or self.device_user_id
+        return f"{who} — {self.punched_at}"
+
+
+class BiometricDailySummary(models.Model):
+    DERIVED_STATUSES = [
+        ("normal", "منتظم"),
+        ("late", "متأخر"),
+        ("early_departure", "مغادرة مبكرة"),
+        ("late_and_early", "تأخر ومغادرة مبكرة"),
+        ("incomplete", "بصمة واحدة / غير مكتمل"),
+        ("no_punch", "لا توجد بصمة"),
+        ("no_schedule", "لا يوجد جدول في هذا اليوم"),
+    ]
+    REVIEW_STATUSES = [
+        ("pending", "بانتظار المراجعة"),
+        ("applied", "اعتمد في الدوام"),
+        ("ignored", "تم التجاهل"),
+    ]
+
+    teacher = models.ForeignKey("teachers.Teacher", on_delete=models.CASCADE, related_name="biometric_daily_summaries")
+    date = models.DateField("التاريخ", db_index=True)
+    first_punch_at = models.DateTimeField("أول بصمة", null=True, blank=True)
+    last_punch_at = models.DateTimeField("آخر بصمة", null=True, blank=True)
+    expected_start = models.TimeField("بداية الدوام المتوقعة", null=True, blank=True)
+    expected_end = models.TimeField("نهاية الدوام المتوقعة", null=True, blank=True)
+    punch_count = models.PositiveSmallIntegerField("عدد البصمات", default=0)
+    source_devices_count = models.PositiveSmallIntegerField("عدد الأجهزة", default=0)
+    derived_status = models.CharField("النتيجة المقترحة", max_length=24, choices=DERIVED_STATUSES, db_index=True)
+    review_status = models.CharField("حالة المراجعة", max_length=12, choices=REVIEW_STATUSES, default="pending", db_index=True)
+    applied_exception = models.ForeignKey(
+        TeacherAbsence, on_delete=models.SET_NULL, null=True, blank=True, related_name="biometric_summaries"
+    )
+    reviewed_by = models.ForeignKey(
+        "auth.User", on_delete=models.SET_NULL, null=True, blank=True, related_name="reviewed_biometric_summaries"
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    note = models.CharField("ملاحظة", max_length=250, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-date", "teacher__full_name"]
+        constraints = [
+            models.UniqueConstraint(fields=["teacher", "date"], name="uniq_biometric_teacher_day_summary"),
+        ]
+        indexes = [
+            models.Index(fields=["date", "derived_status", "review_status"], name="bio_daily_review_idx"),
+        ]
+
+    def __str__(self):
+        return f"{self.teacher} — {self.date}: {self.get_derived_status_display()}"

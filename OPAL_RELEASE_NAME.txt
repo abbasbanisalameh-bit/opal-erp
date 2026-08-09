@@ -1,1 +1,1 @@
-OPAL Update 131.7 R33 - Production Readiness Alignment and Secure Subscription Cards
+OPAL Update 131.7 R34 - Mobile School SSO and Biometric Attendance Gateway

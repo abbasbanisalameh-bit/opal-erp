@@ -1,3 +1,5 @@
+from datetime import date
+
 from django.contrib import messages
 from django.db import transaction
 from django.core.exceptions import ValidationError
@@ -15,10 +17,13 @@ from admissions.services import active_school
 from enterprise_ops.permissions import management_required
 from enterprise_ops.services import audit
 from .forms import (
-    CoverageAssignmentForm, SchoolDayEventForm, SchoolScheduleSettingsForm,
-    TeacherAbsenceForm, TimeSlotForm, TimetableEntryForm,
+    BiometricDeviceForm, CoverageAssignmentForm, SchoolDayEventForm, SchoolScheduleSettingsForm,
+    TeacherAbsenceForm, TeacherBiometricIdentityForm, TimeSlotForm, TimetableEntryForm,
 )
-from .models import ClassCoverage, SchoolDayEvent, SchoolScheduleSettings, TeacherAbsence, TimeSlot, TimetableEntry
+from .models import (
+    BiometricDailySummary, BiometricDevice, ClassCoverage, SchoolDayEvent, SchoolScheduleSettings,
+    TeacherAbsence, TeacherBiometricIdentity, TeacherBiometricPunch, TimeSlot, TimetableEntry,
+)
 from .workflow import (
     active_time_slots_queryset, build_print_context, build_schedule_settings_context,
     build_smart_builder_state, build_timetable_dashboard_context,
@@ -292,3 +297,113 @@ def teacher_print(request, teacher_id):
     entries = teacher_schedule_queryset(teacher)
     audit(request, "print", "timetable.TeacherSchedule", teacher.pk, f"طباعة جدول {teacher}")
     return render(request, "timetable/print.html", build_print_context(entries, f"جدول المعلم {teacher}", school=teacher.school))
+
+
+@management_required
+def biometric_center(request):
+    school = active_school()
+    selected_raw = (request.GET.get("date") or timezone.localdate().isoformat()).strip()
+    try:
+        selected_date = date.fromisoformat(selected_raw)
+    except ValueError:
+        selected_date = timezone.localdate()
+    devices = BiometricDevice.objects.filter(school=school).select_related("branch").order_by("name")
+    identities = TeacherBiometricIdentity.objects.filter(device__school=school).select_related("device", "teacher").order_by("teacher__full_name")
+    summaries = BiometricDailySummary.objects.filter(teacher__school=school, date=selected_date).select_related(
+        "teacher", "applied_exception", "reviewed_by"
+    ).order_by("teacher__full_name")
+    recent_punches = TeacherBiometricPunch.objects.filter(device__school=school).select_related("device", "teacher")[:50]
+    one_time_token = request.session.pop("biometric_device_token_once", "")
+    one_time_device = request.session.pop("biometric_device_token_device", "")
+    return render(request, "timetable/biometric_center.html", {
+        "selected_date": selected_date,
+        "devices": devices,
+        "identities": identities,
+        "summaries": summaries,
+        "recent_punches": recent_punches,
+        "device_form": BiometricDeviceForm(school=school),
+        "identity_form": TeacherBiometricIdentityForm(school=school),
+        "one_time_token": one_time_token,
+        "one_time_device": one_time_device,
+    })
+
+
+@management_required
+@require_POST
+def biometric_device_create(request):
+    from .biometric_services import issue_device_token
+    school = active_school()
+    form = BiometricDeviceForm(request.POST, school=school)
+    if not form.is_valid():
+        messages.error(request, "تعذر إضافة جهاز البصمة: " + "; ".join(sum(form.errors.values(), [])))
+        return redirect("timetable:biometric_center")
+    device = form.save(commit=False)
+    device.school = school
+    device.save()
+    raw_token = issue_device_token(device)
+    request.session["biometric_device_token_once"] = raw_token
+    request.session["biometric_device_token_device"] = device.name
+    audit(request, "create", "timetable.BiometricDevice", device.pk, f"إضافة جهاز بصمة {device}")
+    messages.success(request, "تم إضافة الجهاز. انسخ رمز الربط الظاهر مرة واحدة فقط.")
+    return redirect("timetable:biometric_center")
+
+
+@management_required
+@require_POST
+def biometric_device_token_regenerate(request, pk):
+    from .biometric_services import issue_device_token
+    device = get_object_or_404(BiometricDevice, pk=pk, school=active_school())
+    raw_token = issue_device_token(device)
+    request.session["biometric_device_token_once"] = raw_token
+    request.session["biometric_device_token_device"] = device.name
+    audit(request, "update", "timetable.BiometricDevice", device.pk, f"تدوير رمز ربط جهاز البصمة {device}")
+    messages.success(request, "تم إنشاء رمز ربط جديد وأُلغي الرمز السابق.")
+    return redirect("timetable:biometric_center")
+
+
+@management_required
+@require_POST
+def biometric_identity_create(request):
+    school = active_school()
+    form = TeacherBiometricIdentityForm(request.POST, school=school)
+    if form.is_valid():
+        identity = form.save()
+        audit(request, "create", "timetable.TeacherBiometricIdentity", identity.pk, f"ربط {identity.teacher} بجهاز {identity.device}")
+        messages.success(request, "تم ربط معرف الجهاز بالمعلم.")
+    else:
+        messages.error(request, "تعذر حفظ الربط: " + "; ".join(sum(form.errors.values(), [])))
+    return redirect("timetable:biometric_center")
+
+
+@management_required
+@require_POST
+def biometric_sync(request):
+    from .biometric_services import rebuild_daily_summaries
+    raw = (request.POST.get("date") or timezone.localdate().isoformat()).strip()
+    try:
+        selected_date = date.fromisoformat(raw)
+    except ValueError:
+        selected_date = timezone.localdate()
+    rows = rebuild_daily_summaries(selected_date, school=active_school())
+    messages.success(request, f"تم تحديث ملخص البصمة لـ {len(rows)} معلمًا دون تعديل الدوام الرسمي تلقائيًا.")
+    return redirect(f"{reverse('timetable:biometric_center')}?date={selected_date.isoformat()}")
+
+
+@management_required
+@require_POST
+def biometric_summary_action(request, pk):
+    from .biometric_services import apply_daily_summary, ignore_daily_summary
+    summary = get_object_or_404(BiometricDailySummary.objects.select_related("teacher"), pk=pk, teacher__school=active_school())
+    action = (request.POST.get("action") or "").strip()
+    try:
+        if action == "ignore":
+            ignore_daily_summary(summary, user=request.user, note=request.POST.get("note", ""))
+            messages.success(request, "تم تجاهل الاقتراح مع بقاء البصمات الخام محفوظة للمراجعة.")
+        elif action == "apply":
+            apply_daily_summary(summary, user=request.user, requested_status=request.POST.get("status", ""))
+            messages.success(request, "تم اعتماد نتيجة البصمة في سجل دوام المعلم الرسمي ومزامنة الإشغال.")
+        else:
+            messages.error(request, "إجراء غير معروف.")
+    except ValidationError as exc:
+        messages.error(request, " ".join(exc.messages) if getattr(exc, "messages", None) else str(exc))
+    return redirect(f"{reverse('timetable:biometric_center')}?date={summary.date.isoformat()}")

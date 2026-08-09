@@ -4,6 +4,7 @@ import json
 from functools import wraps
 
 from django.conf import settings
+from django.contrib.auth import authenticate
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404
@@ -22,6 +23,7 @@ from .models import (
     LearningNotification,
     LearningSubmission,
     LearningSubscriptionPlan,
+    LearningSubscriptionCard,
 )
 from .security_services import (
     account_is_locked,
@@ -116,6 +118,118 @@ def api_auth_required(view_func):
     return wrapped
 
 
+
+def _issue_mobile_profile(account, *, device_name, ip_address, profile=None):
+    token, raw_token = issue_api_token(
+        account,
+        device_name=(device_name or "OPAL Mobile")[:120],
+        ip_address=ip_address,
+    )
+    payload = {
+        "token": raw_token,
+        "token_type": "Bearer",
+        "expires_at": token.expires_at.isoformat(),
+        "account": _account_payload(account),
+    }
+    if profile:
+        payload["profile"] = profile
+    return payload
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def api_school_login(request):
+    """Authenticate an OPAL ERP guardian/teacher and issue learning tokens.
+
+    School-managed LearningAccount rows deliberately have unusable passwords.
+    This endpoint keeps one credential source: the existing ERP account.  A
+    guardian receives one scoped learning token per eligible child, while a
+    teacher receives a token for the teacher learning identity.
+    """
+    try:
+        payload = _json_body(request)
+        username = str(payload.get("username") or payload.get("identifier") or "").strip()
+        password = str(payload.get("password") or "")
+        if not username or not password:
+            return _error("اسم المستخدم وكلمة المرور مطلوبان.", code="credentials_required")
+        identifier = f"{_client_ip(request)}:{username.lower()}"
+        consume_rate_limit(
+            "school_api_login",
+            identifier,
+            limit=int(getattr(settings, "OPAL_LEARNING_LOGIN_RATE_LIMIT", 10)),
+            window_seconds=300,
+        )
+        user = authenticate(request=request, username=username, password=password)
+        if user is None or not user.is_active:
+            return _error("اسم المستخدم أو كلمة المرور غير صحيحة.", status=401, code="invalid_credentials")
+
+        from parent_portal.models import FamilyStudent
+        from .school_bridge import (
+            ensure_student_learning_account,
+            ensure_teacher_learning_account,
+            student_learning_access,
+            teacher_learning_access,
+        )
+
+        device_name = str(payload.get("device_name") or "OPAL Mobile")[:120]
+        ip_address = _client_ip(request)
+        family = getattr(user, "family_account", None)
+        if family is not None and family.is_active:
+            profiles = []
+            links = FamilyStudent.objects.filter(
+                family=family,
+                family__is_active=True,
+                is_active=True,
+                student__is_active=True,
+            ).select_related("student").order_by("student__full_name", "student_id")
+            for link in links:
+                access = student_learning_access(link.student)
+                if not access["enabled"]:
+                    continue
+                account = ensure_student_learning_account(link.student)
+                enrollment = access.get("enrollment")
+                class_label = ""
+                if enrollment is not None:
+                    class_label = f"{enrollment.grade.name} - {enrollment.section.name}"
+                profiles.append(
+                    _issue_mobile_profile(
+                        account,
+                        device_name=device_name,
+                        ip_address=ip_address,
+                        profile={
+                            "kind": "student",
+                            "student_id": link.student_id,
+                            "student_name": link.student.full_name,
+                            "class_label": class_label,
+                        },
+                    )
+                )
+            if not profiles:
+                return _error("لا يوجد ابن متاح له دخول منصة أوبال التعليمية حاليًا.", status=403, code="learning_access_disabled")
+            return _success({"mode": "guardian", "guardian_name": family.guardian_name, "profiles": profiles}, status=201)
+
+        teacher = getattr(user, "teacher_profile", None)
+        if teacher is not None and teacher.is_active:
+            if not teacher_learning_access(teacher):
+                return _error("دخول منصة أوبال التعليمية غير متاح للمعلمين حاليًا.", status=403, code="learning_access_disabled")
+            account = ensure_teacher_learning_account(teacher)
+            profile = _issue_mobile_profile(
+                account,
+                device_name=device_name,
+                ip_address=ip_address,
+                profile={
+                    "kind": "teacher",
+                    "teacher_id": teacher.pk,
+                    "teacher_name": teacher.full_name,
+                },
+            )
+            return _success({"mode": "teacher", "profiles": [profile]}, status=201)
+
+        return _error("هذا الحساب ليس حساب ولي أمر أو معلمًا مرتبطًا بالمنصة.", status=403, code="unsupported_school_account")
+    except ValidationError as exc:
+        return _error(_validation_message(exc), status=429 if "تجاوز" in _validation_message(exc) else 400)
+
+
 @csrf_exempt
 @require_http_methods(["POST"])
 def api_login(request):
@@ -176,6 +290,7 @@ def _account_payload(account):
         "phone": account.phone,
         "role": account.role,
         "email_verified": account.email_verified_at is not None,
+        "is_school_managed": account.is_school_managed,
     }
 
 
@@ -251,6 +366,8 @@ def api_course_list(request):
             eligible_courses_for_student(student).select_related("subject", "teacher").order_by("-published_at", "title")
             if student is not None else courses.none()
         )
+    elif account.role == LearningAccount.Role.TEACHER:
+        courses = courses.filter(teacher=account)
     return _success([_course_payload(course, account=account) for course in courses])
 
 
@@ -268,6 +385,8 @@ def api_course_detail(request, slug):
             eligible_courses_for_student(student).select_related("subject", "teacher")
             if student is not None else courses.none()
         )
+    elif account.role == LearningAccount.Role.TEACHER:
+        courses = courses.filter(teacher=account)
     course = get_object_or_404(courses, slug=slug)
     return _success(_course_payload(course, account=account, include_lessons=True))
 
@@ -527,6 +646,33 @@ def api_certificates(request):
             for certificate in certificates
         ]
     )
+
+
+@csrf_exempt
+@api_auth_required
+@require_http_methods(["POST"])
+def api_subscription_card_redeem(request):
+    account = request.learning_account
+    if account.role != LearningAccount.Role.LEARNER:
+        return _error("تفعيل البطاقة متاح لحساب المتعلم فقط.", status=403, code="learner_required")
+    payload = _json_body(request)
+    code = str(payload.get("code") or "").strip().upper()
+    if not code:
+        return _error("أدخل رمز البطاقة.", code="card_code_required")
+    card = LearningSubscriptionCard.objects.filter(code=code).prefetch_related("subjects").first()
+    if card is None:
+        return _error("رمز البطاقة غير صحيح.", status=404, code="card_not_found")
+    try:
+        card.activate(account)
+    except ValidationError as exc:
+        return _error(_validation_message(exc), status=409, code="card_unavailable")
+    return _success({
+        "code": card.code,
+        "duration": card.duration,
+        "expires_at": card.expires_at.isoformat() if card.expires_at else None,
+        "grants_all_subjects": card.grants_all_subjects,
+        "subjects": [{"id": item.pk, "name": item.name} for item in card.subjects.all()],
+    }, status=201)
 
 
 @api_auth_required

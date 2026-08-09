@@ -2,7 +2,10 @@ from datetime import time
 
 from django import forms
 
-from .models import ClassCoverage, SchoolDayEvent, SchoolScheduleSettings, TeacherAbsence, TimeSlot, TimetableEntry
+from .models import (
+    BiometricDevice, ClassCoverage, SchoolDayEvent, SchoolScheduleSettings, TeacherAbsence,
+    TeacherBiometricIdentity, TimeSlot, TimetableEntry,
+)
 
 
 class StyledModelForm(forms.ModelForm):
@@ -223,3 +226,43 @@ class CoverageAssignmentForm(StyledModelForm):
     class Meta:
         model = ClassCoverage
         fields = ["substitute_teacher"]
+
+
+class BiometricDeviceForm(StyledModelForm):
+    class Meta:
+        model = BiometricDevice
+        fields = ["name", "device_code", "vendor", "serial_number", "branch", "timezone_name", "is_active"]
+        labels = {
+            "name": "اسم الجهاز",
+            "device_code": "رمز الجهاز",
+            "vendor": "الشركة",
+            "serial_number": "الرقم التسلسلي",
+            "branch": "الفرع",
+            "timezone_name": "المنطقة الزمنية",
+            "is_active": "فعال",
+        }
+
+    def __init__(self, *args, school=None, **kwargs):
+        self.school = school
+        super().__init__(*args, **kwargs)
+        if self.school:
+            self.fields["branch"].queryset = self.fields["branch"].queryset.filter(school=self.school)
+
+
+class TeacherBiometricIdentityForm(StyledModelForm):
+    class Meta:
+        model = TeacherBiometricIdentity
+        fields = ["device", "teacher", "device_user_id", "is_active"]
+        labels = {
+            "device": "جهاز البصمة",
+            "teacher": "المعلم",
+            "device_user_id": "رقم/معرف المعلم داخل الجهاز",
+            "is_active": "فعال",
+        }
+
+    def __init__(self, *args, school=None, **kwargs):
+        self.school = school
+        super().__init__(*args, **kwargs)
+        if self.school:
+            self.fields["device"].queryset = self.fields["device"].queryset.filter(school=self.school, is_active=True)
+            self.fields["teacher"].queryset = self.fields["teacher"].queryset.filter(school=self.school, is_active=True)

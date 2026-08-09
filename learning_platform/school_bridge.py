@@ -93,6 +93,7 @@ def ensure_student_learning_account(student):
     if profile is not None:
         account = profile.account
         updates = []
+        now = timezone.now()
         if account.full_name != student.full_name:
             account.full_name = student.full_name
             updates.append("full_name")
@@ -102,6 +103,18 @@ def ensure_student_learning_account(student):
         if not account.is_school_managed:
             account.is_school_managed = True
             updates.append("is_school_managed")
+        # School-managed identities use the ERP credential source.  Their
+        # synthetic @school.opal.local address is never an end-user mailbox,
+        # so keep legal/email gates satisfied for API token issuance.
+        if account.terms_accepted_at is None:
+            account.terms_accepted_at = now
+            updates.append("terms_accepted_at")
+        if account.privacy_accepted_at is None:
+            account.privacy_accepted_at = now
+            updates.append("privacy_accepted_at")
+        if account.email_verified_at is None:
+            account.email_verified_at = now
+            updates.append("email_verified_at")
         if updates:
             updates.append("updated_at")
             account.save(update_fields=updates)
@@ -131,6 +144,7 @@ def ensure_teacher_learning_account(teacher):
     if profile is not None:
         account = profile.account
         updates = []
+        now = timezone.now()
         if account.full_name != teacher.full_name:
             account.full_name = teacher.full_name
             updates.append("full_name")
@@ -140,6 +154,15 @@ def ensure_teacher_learning_account(teacher):
         if not account.is_school_managed:
             account.is_school_managed = True
             updates.append("is_school_managed")
+        if account.terms_accepted_at is None:
+            account.terms_accepted_at = now
+            updates.append("terms_accepted_at")
+        if account.privacy_accepted_at is None:
+            account.privacy_accepted_at = now
+            updates.append("privacy_accepted_at")
+        if account.email_verified_at is None:
+            account.email_verified_at = now
+            updates.append("email_verified_at")
         if updates:
             updates.append("updated_at")
             account.save(update_fields=updates)

@@ -92,8 +92,8 @@ def reset_all_operational_data(*, keep_user=None):
         TeacherDocument, TeacherPayroll, TeacherPerformanceSnapshot,
     )
     from timetable.models import (
-        ClassCoverage, SchoolDayEvent, SchoolScheduleSettings, TeacherAbsence,
-        TimeSlot, TimetableEntry,
+        BiometricDailySummary, ClassCoverage, SchoolDayEvent, SchoolScheduleSettings, TeacherAbsence,
+        TeacherBiometricIdentity, TeacherBiometricPunch, TimeSlot, TimetableEntry,
     )
 
     counts = {
@@ -142,6 +142,9 @@ def reset_all_operational_data(*, keep_user=None):
     _delete_all(ExamCycle)
     _delete_all(AttendanceRegister)
     _delete_all(Attendance)
+    _delete_all(BiometricDailySummary)
+    _delete_all(TeacherBiometricPunch)
+    _delete_all(TeacherBiometricIdentity)
     _delete_all(ClassCoverage)
     _delete_all(TeacherAbsence)
     _delete_all(TimetableEntry)
