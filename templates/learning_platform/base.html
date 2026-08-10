@@ -5,15 +5,15 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="light">
-    <meta name="theme-color" content="#6f52d4">
+    <meta name="theme-color" content="#0d5cb6">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <link rel="manifest" href="{% url 'learning_platform:mobile_manifest' %}">
-    <link rel="icon" href="{% static 'learning_platform/icons/opal-learning-icon.svg' %}" type="image/svg+xml">
+    <link rel="icon" href="{% static 'learning_platform/icons/icon-192.png' %}" type="image/png">
     <title>{% block title %}منصة أوبال التعليمية{% endblock %}</title>
     <meta name="description" content="منصة أوبال التعليمية للدورات والتعلم الرقمي والاشتراكات المستقلة.">
-    <link rel="stylesheet" href="{% static 'learning_platform/css/platform.css' %}?v=20260805-r20-production-release">
+    <link rel="stylesheet" href="{% static 'learning_platform/css/platform.css' %}?v=20260810-r36-branding">
     {% block extra_head %}{% endblock %}
 </head>
 <body class="learning-body {% block body_class %}{% endblock %}">
@@ -22,8 +22,8 @@
     <header class="learning-header">
         <div class="learning-container learning-header-inner">
             <a class="learning-brand" href="{% url 'learning_platform:landing' %}" aria-label="منصة أوبال التعليمية">
-                <span class="learning-brand-mark" aria-hidden="true">O</span>
-                <span><strong>أوبال</strong><small>المنصة التعليمية</small></span>
+                <img class="learning-brand-logo" src="{% static 'learning_platform/icons/opal-learning-logo.png' %}" alt="" aria-hidden="true">
+                <span><strong>منصة أوبال</strong><small>تعلّم · تقدّم · تألّق</small></span>
             </a>
 
             <button class="learning-menu-toggle" type="button" aria-expanded="false" aria-controls="learning-nav" aria-label="فتح القائمة">
@@ -87,8 +87,8 @@
         <div class="learning-container learning-footer-grid">
             <div>
                 <a class="learning-brand learning-brand-light" href="{% url 'learning_platform:landing' %}">
-                    <span class="learning-brand-mark" aria-hidden="true">O</span>
-                    <span><strong>أوبال</strong><small>المنصة التعليمية</small></span>
+                    <img class="learning-brand-logo" src="{% static 'learning_platform/icons/opal-learning-logo.png' %}" alt="" aria-hidden="true">
+                    <span><strong>منصة أوبال</strong><small>تعلّم · تقدّم · تألّق</small></span>
                 </a>
                 <p>تعلّم عربي واضح، في وقتك ومن أي مكان.</p>
             </div>
@@ -98,7 +98,7 @@
         <div class="learning-container learning-footer-bottom">© 2026 منصة أوبال التعليمية</div>
     </footer>
 
-    <script src="{% static 'learning_platform/js/platform.js' %}?v=20260805-r20-production-release" defer></script>
+    <script src="{% static 'learning_platform/js/platform.js' %}?v=20260810-r36-branding" defer></script>
     <script>if ('serviceWorker' in navigator) { window.addEventListener('load', function(){ navigator.serviceWorker.register('{% url "learning_platform:mobile_service_worker" %}').catch(function(){}); }); }</script>
     {% block extra_js %}{% endblock %}
 </body>

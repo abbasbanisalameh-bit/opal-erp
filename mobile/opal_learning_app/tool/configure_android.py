@@ -18,7 +18,7 @@ if "android.permission.INTERNET" not in text:
     text = text[: end + 1] + "\n    " + permission + text[end + 1 :]
 
 for old in ('android:label="opal_learning_app"', 'android:label="Opal Learning App"'):
-    text = text.replace(old, 'android:label="أوبال"')
+    text = text.replace(old, 'android:label="منصة أوبال"')
 
 if "android:usesCleartextTraffic=" not in text:
     text = text.replace("<application", '<application android:usesCleartextTraffic="false"', 1)

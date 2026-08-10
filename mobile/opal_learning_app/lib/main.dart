@@ -10,6 +10,156 @@ const apiBase = String.fromEnvironment(
   defaultValue: 'https://opalschool2016.pythonanywhere.com/learning/api/v1',
 );
 
+
+class OpalPalette {
+  static const blue = Color(0xFF0D5CB6);
+  static const blueDark = Color(0xFF073B78);
+  static const teal = Color(0xFF0EB6B4);
+  static const tealDark = Color(0xFF087F84);
+  static const gold = Color(0xFFE3A928);
+  static const ink = Color(0xFF10243E);
+  static const surface = Color(0xFFF5F9FD);
+  static const success = Color(0xFF168A57);
+}
+
+String opalRoleLabel(String role) {
+  if (role == 'manager') return 'الإدارة';
+  if (role == 'teacher') return 'المعلم';
+  if (role == 'learner') return 'المتعلم';
+  return 'أوبال';
+}
+
+String opalMotivation(String role) {
+  final learner = [
+    'كل درس تنجزه اليوم يقرّبك خطوة من هدفك.',
+    'ابدأ بخطوة صغيرة، واستمر بثبات.',
+    'تقدّمك يصنع الفرق؛ أكمل من حيث توقفت.',
+    'وقت التعلّم الآن فرصة جديدة للتميّز.',
+    'إنجاز اليوم هو ثقة الغد. أحسنت الاستمرار.',
+  ];
+  final teacher = [
+    'محتوى واضح اليوم يصنع تعلّمًا أقوى غدًا.',
+    'أثر المعلم يبدأ من فكرة تصل بوضوح.',
+    'شارك المعرفة، وتابع تقدّم طلابك بثقة.',
+    'كل درس جيد يفتح بابًا جديدًا للفهم.',
+    'استمر في صناعة تجربة تعلم تستحق التذكّر.',
+  ];
+  final manager = [
+    'رؤية واضحة اليوم تعني منصة أكثر جاهزية غدًا.',
+    'تابع المؤشرات، وامنح التعلّم أفضل بيئة ممكنة.',
+    'الإدارة الذكية تبدأ من معلومة واضحة وقرار هادئ.',
+    'كل تحسين صغير يرفع جودة تجربة التعلّم للجميع.',
+    'منصة منظمة تعني وقتًا أكثر للتعلّم والإنجاز.',
+  ];
+  final values = role == 'manager' ? manager : role == 'teacher' ? teacher : learner;
+  return values[DateTime.now().day % values.length];
+}
+
+class OpalLogo extends StatelessWidget {
+  const OpalLogo({super.key, this.size = 92});
+  final double size;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: size,
+        height: size,
+        padding: EdgeInsets.all(size * .035),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(color: OpalPalette.blue.withValues(alpha: .16), blurRadius: 24, offset: const Offset(0, 10)),
+          ],
+        ),
+        child: ClipOval(
+          child: Image.asset('assets/opal-learn-logo.png', fit: BoxFit.cover),
+        ),
+      );
+}
+
+class OpalWelcomeBanner extends StatelessWidget {
+  const OpalWelcomeBanner({super.key, required this.account});
+  final Map<String, dynamic> account;
+
+  @override
+  Widget build(BuildContext context) {
+    final role = account['role']?.toString() ?? '';
+    final name = account['full_name']?.toString().trim();
+    final greeting = (name == null || name.isEmpty) ? 'مرحبًا بك' : 'مرحبًا، $name';
+    final icon = role == 'manager'
+        ? Icons.admin_panel_settings_rounded
+        : role == 'teacher'
+            ? Icons.co_present_rounded
+            : Icons.auto_stories_rounded;
+    return Container(
+      margin: const EdgeInsets.fromLTRB(14, 12, 14, 6),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [OpalPalette.blueDark, OpalPalette.blue, OpalPalette.tealDark],
+          begin: Alignment.topRight,
+          end: Alignment.bottomLeft,
+        ),
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [BoxShadow(color: OpalPalette.blueDark.withValues(alpha: .16), blurRadius: 20, offset: const Offset(0, 8))],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(color: Colors.white.withValues(alpha: .14), shape: BoxShape.circle),
+            child: Icon(icon, color: Colors.white, size: 29),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(greeting, style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.w800)),
+                const SizedBox(height: 3),
+                Text('${opalRoleLabel(role)} · ${opalMotivation(role)}', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.white.withValues(alpha: .90), height: 1.45)),
+              ],
+            ),
+          ),
+          const Icon(Icons.auto_awesome_rounded, color: OpalPalette.gold),
+        ],
+      ),
+    );
+  }
+}
+
+class OpalSplash extends StatelessWidget {
+  const OpalSplash({super.key});
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        body: Container(
+          width: double.infinity,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFFF8FBFF), Color(0xFFEAF6FC), Color(0xFFF9FCFF)],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+          ),
+          child: const SafeArea(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                OpalLogo(size: 136),
+                SizedBox(height: 22),
+                Text('منصة أوبال التعليمية', style: TextStyle(fontSize: 23, fontWeight: FontWeight.w800, color: OpalPalette.ink)),
+                SizedBox(height: 10),
+                Text('تعلّم. تقدّم. تألّق.', style: TextStyle(fontSize: 15, color: OpalPalette.tealDark, fontWeight: FontWeight.w700)),
+                SizedBox(height: 28),
+                SizedBox(width: 34, height: 34, child: CircularProgressIndicator(strokeWidth: 3)),
+              ],
+            ),
+          ),
+        ),
+      );
+}
+
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const OpalLearningApp());
@@ -212,17 +362,67 @@ class _OpalLearningAppState extends State<OpalLearningApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'أوبال',
+      title: 'منصة أوبال',
       locale: const Locale('ar'),
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF6F52D4)),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: OpalPalette.blue,
+          brightness: Brightness.light,
+          surface: Colors.white,
+        ),
+        scaffoldBackgroundColor: OpalPalette.surface,
         useMaterial3: true,
         fontFamilyFallback: const ['Arial'],
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.white,
+          foregroundColor: OpalPalette.ink,
+          centerTitle: false,
+          elevation: 0,
+          surfaceTintColor: Colors.transparent,
+        ),
+        cardTheme: CardThemeData(
+          color: Colors.white,
+          elevation: 0,
+          margin: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(18)),
+            side: BorderSide(color: Color(0xFFE2EDF7)),
+          ),
+        ),
+        inputDecorationTheme: const InputDecorationTheme(
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(16)),
+            borderSide: BorderSide(color: Color(0xFFDCE8F3)),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(16)),
+            borderSide: BorderSide(color: Color(0xFFDCE8F3)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(16)),
+            borderSide: BorderSide(color: OpalPalette.teal, width: 1.5),
+          ),
+        ),
+        navigationBarTheme: NavigationBarThemeData(
+          backgroundColor: Colors.white,
+          indicatorColor: OpalPalette.teal.withValues(alpha: .14),
+          labelTextStyle: WidgetStateProperty.all(const TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+        ),
+        filledButtonTheme: FilledButtonThemeData(
+          style: FilledButton.styleFrom(
+            backgroundColor: OpalPalette.blue,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          ),
+        ),
       ),
       home: Directionality(
         textDirection: TextDirection.rtl,
         child: loading
-            ? const Scaffold(body: Center(child: CircularProgressIndicator()))
+            ? const OpalSplash()
             : account == null
                 ? LoginPage(api: api, onSignedIn: signedIn)
                 : HomePage(
@@ -295,29 +495,133 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        body: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 480),
-                child: Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                      const Icon(Icons.school_rounded, size: 64),
-                      const SizedBox(height: 12),
-                      Text('أوبال', textAlign: TextAlign.center, style: Theme.of(context).textTheme.headlineSmall),
-                      const SizedBox(height: 8),
-                      const Text('ولي الأمر والمعلم والإدارة يستخدمون نفس حساب OPAL. حساب المنصة المستقل يمكنه استخدام البريد الإلكتروني.', textAlign: TextAlign.center),
-                      const SizedBox(height: 24),
-                      TextField(controller: identifier, autofillHints: const [AutofillHints.username], decoration: const InputDecoration(labelText: 'اسم المستخدم أو البريد الإلكتروني', border: OutlineInputBorder())),
-                      const SizedBox(height: 12),
-                      TextField(controller: password, obscureText: true, autofillHints: const [AutofillHints.password], decoration: const InputDecoration(labelText: 'كلمة المرور', border: OutlineInputBorder())),
-                      if (error != null) Padding(padding: const EdgeInsets.only(top: 12), child: Text(error!, style: TextStyle(color: Theme.of(context).colorScheme.error))),
-                      const SizedBox(height: 18),
-                      FilledButton(onPressed: busy ? null : submit, child: busy ? const SizedBox.square(dimension: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('دخول')),
-                    ]),
+        body: Container(
+          width: double.infinity,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFFEAF5FD), Color(0xFFF9FCFF), Color(0xFFE9F8F7)],
+              begin: Alignment.topRight,
+              end: Alignment.bottomLeft,
+            ),
+          ),
+          child: SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 480),
+                  child: Column(
+                    children: [
+                      const OpalLogo(size: 142),
+                      const SizedBox(height: 16),
+                      Text(
+                        'منصة أوبال التعليمية',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                              color: OpalPalette.ink,
+                              fontWeight: FontWeight.w900,
+                            ),
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        'تعلّم بوضوح، تقدّم بثقة، وتألق كل يوم ✨',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: OpalPalette.tealDark, fontWeight: FontWeight.w700),
+                      ),
+                      const SizedBox(height: 22),
+                      Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(22),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    width: 42,
+                                    height: 42,
+                                    decoration: BoxDecoration(
+                                      color: OpalPalette.blue.withValues(alpha: .10),
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                    child: const Icon(Icons.login_rounded, color: OpalPalette.blue),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text('أهلًا بك', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
+                                        const Text('سجّل دخولك وواصل رحلتك التعليمية من حيث توقفت.', style: TextStyle(color: Color(0xFF5E7186), height: 1.4)),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 22),
+                              TextField(
+                                controller: identifier,
+                                autofillHints: const [AutofillHints.username],
+                                decoration: const InputDecoration(
+                                  labelText: 'اسم المستخدم أو البريد الإلكتروني',
+                                  prefixIcon: Icon(Icons.person_outline_rounded),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              TextField(
+                                controller: password,
+                                obscureText: true,
+                                autofillHints: const [AutofillHints.password],
+                                decoration: const InputDecoration(
+                                  labelText: 'كلمة المرور',
+                                  prefixIcon: Icon(Icons.lock_outline_rounded),
+                                ),
+                              ),
+                              if (error != null)
+                                Container(
+                                  margin: const EdgeInsets.only(top: 12),
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context).colorScheme.errorContainer,
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Icon(Icons.error_outline_rounded, color: Theme.of(context).colorScheme.error),
+                                      const SizedBox(width: 8),
+                                      Expanded(child: Text(error!)),
+                                    ],
+                                  ),
+                                ),
+                              const SizedBox(height: 18),
+                              FilledButton.icon(
+                                onPressed: busy ? null : submit,
+                                icon: busy
+                                    ? const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                    : const Icon(Icons.arrow_forward_rounded),
+                                label: const Text('دخول إلى المنصة'),
+                              ),
+                              const SizedBox(height: 14),
+                              const Text(
+                                'ولي الأمر والمعلم والإدارة يستخدمون نفس حساب OPAL ERP. ويمكن للحساب المستقل للمنصة استخدام البريد الإلكتروني.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(fontSize: 12, color: Color(0xFF73869A), height: 1.45),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.verified_user_outlined, size: 17, color: OpalPalette.success),
+                          SizedBox(width: 6),
+                          Text('دخول آمن ومشفّر', style: TextStyle(color: Color(0xFF60758A), fontSize: 12)),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -378,7 +682,14 @@ class _HomePageState extends State<HomePage> {
     if (index >= pages.length) index = 0;
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.account['full_name']?.toString() ?? 'أوبال تعليم'),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ClipOval(child: Image.asset('assets/opal-learn-logo.png', width: 34, height: 34, fit: BoxFit.cover)),
+            const SizedBox(width: 9),
+            const Text('منصة أوبال', style: TextStyle(fontWeight: FontWeight.w800)),
+          ],
+        ),
         actions: [
           if (!isManager && widget.profiles.length > 1)
             PopupMenuButton<MobileProfile>(
@@ -390,7 +701,12 @@ class _HomePageState extends State<HomePage> {
           IconButton(onPressed: widget.onSignedOut, tooltip: 'تسجيل الخروج', icon: const Icon(Icons.logout)),
         ],
       ),
-      body: IndexedStack(index: index, children: pages),
+      body: Column(
+        children: [
+          OpalWelcomeBanner(account: widget.account),
+          Expanded(child: IndexedStack(index: index, children: pages)),
+        ],
+      ),
       bottomNavigationBar: NavigationBar(selectedIndex: index, onDestinationSelected: (v) => setState(() => index = v), destinations: destinations),
     );
   }
