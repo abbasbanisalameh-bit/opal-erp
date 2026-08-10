@@ -1,1 +1,1 @@
-OPAL Update 131.7 R36 - Learning App Brand Experience
+OPAL Update 131.7 R36.1 - Flutter Brand Analyze Const Hotfix
