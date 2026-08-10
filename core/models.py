@@ -411,3 +411,35 @@ class ProductionDataResetRun(models.Model):
 
     def __str__(self):
         return f"تهيئة التشغيل الفعلي #{self.pk or '-'} — {self.get_status_display()}"
+
+
+class SystemMobileAPIToken(models.Model):
+    """Hashed bearer token for the native OPAL ERP mobile application."""
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="opal_system_mobile_tokens",
+    )
+    token_hash = models.CharField(max_length=128, unique=True, db_index=True)
+    token_prefix = models.CharField(max_length=16, db_index=True)
+    device_name = models.CharField(max_length=120, blank=True)
+    expires_at = models.DateTimeField(db_index=True)
+    last_used_at = models.DateTimeField(null=True, blank=True)
+    revoked_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+        indexes = [models.Index(fields=["user", "revoked_at", "expires_at"], name="core_system_user_id_4d66b3_idx")]
+        verbose_name = "رمز تطبيق نظام أوبال"
+        verbose_name_plural = "رموز تطبيق نظام أوبال"
+
+    @property
+    def is_active(self):
+        from django.utils import timezone
+
+        return self.revoked_at is None and self.expires_at > timezone.now() and self.user.is_active
+
+    def __str__(self):
+        return f"{self.user.get_username()} · {self.token_prefix}"

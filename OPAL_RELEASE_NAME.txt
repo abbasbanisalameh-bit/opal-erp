@@ -1,1 +1,1 @@
-OPAL Update 131.7 R36.1 - Flutter Brand Analyze Const Hotfix
+OPAL Update 131.7 R37.2 - Mobile Index Migration Consistency Fix

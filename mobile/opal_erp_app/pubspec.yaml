@@ -1,0 +1,25 @@
+name: opal_erp_app
+description: تطبيق نظام أوبال المدرسي الرسمي للهواتف.
+publish_to: none
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.2.2
+  flutter_secure_storage: ^9.2.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/opal-school-logo.png
+    - assets/opal-erp-icon-192.png
+    - assets/opal-erp-icon-512.png
