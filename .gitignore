@@ -1,3 +1,14 @@
 __pycache__/
 *.py[cod]
 .pytest_cache/
+
+# حماية المساحة
+mobile/opal_erp_app/lib/
+mobile/opal_erp_app/node_modules/
+**/node_modules/
+**/__pycache__/
+backups/
+*.sqlite3.bak
+db_backup*.sqlite3
+OPAL_UPDATE_*.md
+INSTALL_OPAL_*.md
