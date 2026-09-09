@@ -1,0 +1,190 @@
+{% extends "base/base.html" %}
+{% block title %}مواصلات الأبناء{% endblock %}
+{% block page_title %}مواصلات الأبناء{% endblock %}
+{% block page_subtitle %}موقع الأبناء والجولة الحالية{% endblock %}
+{% block content %}
+<style>
+  body.opal-transport-map-open { overflow: hidden !important; }
+  #parent-map-wrap.opal-map-fullscreen {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    max-width: none !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #000;
+    z-index: 2147483647 !important;
+    overflow: hidden !important;
+    border-radius: 0 !important;
+  }
+  #parent-map-wrap.opal-map-fullscreen #parent-map {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 100vh !important;
+    min-height: 100dvh !important;
+    border-radius: 0 !important;
+  }
+
+  .opal-map-viewport-layer {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #000 !important;
+    z-index: 2147483647 !important;
+    overflow: hidden !important;
+    border-radius: 0 !important;
+  }
+  .opal-map-viewport-layer > #parent-map {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 100dvh !important;
+    border-radius: 0 !important;
+  }
+</style>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<div class="container-fluid py-4" dir="rtl">
+  <div class="row g-4">
+    <div class="col-xl-5">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <h4>موقع استلام ونزول الأبناء</h4>
+          <p class="text-muted small">هذا الموقع واحد لجميع الأبناء صباحًا ومساءً، ويُستخدم في تخطيط الجولات.</p>
+          {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+          <form method="post">
+            {% csrf_token %}
+            {% for field in form %}
+            <div class="mb-3">
+              <label class="form-label fw-bold">{{ field.label }}</label>
+              {{ field }}
+              {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
+            </div>
+            {% endfor %}
+            <button type="button" id="use-location" class="btn btn-outline-primary mb-2">📍 استخدام موقعي الحالي</button>
+            <button type="submit" class="btn btn-primary w-100">حفظ موقع الأبناء</button>
+          </form>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-7">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h4>الجولة الحالية</h4>
+          {% if active_trip %}
+            <div class="mb-2"><strong>{{ active_trip.route.name }}</strong> — {{ active_trip.get_direction_display }}</div>
+            <div>السائق: <strong>{{ active_trip.driver.name }}</strong>
+              {% if whatsapp_phone %} · <a href="https://wa.me/{{ whatsapp_phone }}" target="_blank" rel="noopener">واتساب</a>{% endif %}
+            </div>
+            {% if active_trip_payload.students %}
+            <div class="small text-muted mt-2">أبناؤك على الرحلة: {% for student in active_trip_payload.students %}<strong>{{ student.name }}</strong>{% if not forloop.last %}، {% endif %}{% endfor %}</div>
+            {% endif %}
+            <div id="parent-map-wrap" class="position-relative mt-3">
+              <div id="parent-map" style="height:440px;border-radius:14px;overflow:hidden;"></div>
+              <div class="position-absolute top-0 start-0 p-2 d-flex gap-1" style="z-index:1000;">
+                <button type="button" class="btn btn-sm btn-light shadow" id="parent-map-plus">＋</button>
+                <button type="button" class="btn btn-sm btn-light shadow" id="parent-map-minus">−</button>
+                <button type="button" class="btn btn-sm btn-light shadow" id="parent-map-fullscreen">⛶ تكبير الخريطة</button>
+                <span class="badge bg-dark align-self-center" id="parent-wake-state">الشاشة عادية</span>
+              </div>
+            </div>
+          {% else %}
+            <div class="alert alert-info mb-0">لا توجد جولة نشطة لأحد أبنائك حاليًا.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% if active_trip %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function(){
+ const map=L.map("parent-map").setView([32.556,35.85],11);
+ const mapWrap=document.getElementById("parent-map-wrap");
+ const fullBtn=document.getElementById("parent-map-fullscreen");
+ const wakeState=document.getElementById("parent-wake-state");
+ let wakeLock=null;
+ document.getElementById("parent-map-plus").onclick=()=>map.zoomIn();
+ document.getElementById("parent-map-minus").onclick=()=>map.zoomOut();
+ async function keepAwake(enable){
+   if(!enable){if(wakeLock){try{await wakeLock.release();}catch(e){} wakeLock=null;} wakeState.textContent="الشاشة عادية"; return;}
+   if(!("wakeLock" in navigator)){wakeState.textContent="إبقاء الشاشة غير مدعوم"; return;}
+   try{wakeLock=await navigator.wakeLock.request("screen"); wakeState.textContent="الشاشة مضاءة"; wakeLock.addEventListener("release",()=>wakeState.textContent="الشاشة عادية");}catch(e){wakeState.textContent="تعذر إبقاء الشاشة";}
+ }
+ let fullscreenOpen=false;
+ function resizeMapSoon(){[0,80,250,600].forEach(d=>setTimeout(()=>{try{map.invalidateSize(true);}catch(e){}},d));}
+ async function setMapFullscreen(open){
+    fullscreenOpen=Boolean(open);
+    if(fullscreenOpen){
+      window.__opalMapRestore = window.__opalMapRestore || { parent: mapWrap.parentNode, next: mapWrap.nextSibling };
+      document.body.appendChild(mapWrap);
+      mapWrap.classList.add("opal-map-viewport-layer");
+      mapWrap.classList.add("opal-map-fullscreen");
+      document.body.classList.add("opal-transport-map-open");
+      try { if(mapWrap.requestFullscreen && !document.fullscreenElement) await mapWrap.requestFullscreen(); } catch(e) {}
+      await keepAwake(true);
+    } else {
+      try { if(document.fullscreenElement && document.exitFullscreen) await document.exitFullscreen(); } catch(e) {}
+      mapWrap.classList.remove("opal-map-fullscreen");
+      mapWrap.classList.remove("opal-map-viewport-layer");
+      document.body.classList.remove("opal-transport-map-open");
+      const restore=window.__opalMapRestore;
+      if(restore && restore.parent){ restore.parent.insertBefore(mapWrap, restore.next); }
+      await keepAwake(false);
+    }
+    if(fullscreenBtn) fullscreenBtn.textContent=fullscreenOpen?"↙ تصغير الخريطة":"⛶ تكبير الخريطة";
+    if(fullBtn) fullBtn.textContent=fullscreenOpen?"↙ تصغير الخريطة":"⛶ تكبير الخريطة";
+    resizeMapSoon();
+  }
+  document.addEventListener("fullscreenchange", function(){
+    if(!document.fullscreenElement && fullscreenOpen) setMapFullscreen(false);
+  });
+  fullBtn.onclick=()=>setMapFullscreen(!fullscreenOpen);
+ window.addEventListener("resize",resizeMapSoon);window.addEventListener("orientationchange",resizeMapSoon);
+ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"&copy; OpenStreetMap"}).addTo(map);
+ let bus,actual,stopMarkers=[];
+ function draw(trip){
+   const a=trip.gps.map(s=>[s.latitude,s.longitude]);
+   if(actual)actual.setLatLngs(a);else if(a.length)actual=L.polyline(a).addTo(map);
+   if(trip.latest){if(bus)bus.setLatLng([trip.latest.latitude,trip.latest.longitude]);else bus=L.marker([trip.latest.latitude,trip.latest.longitude]).addTo(map);}
+   stopMarkers.forEach(m=>map.removeLayer(m));
+   stopMarkers=(trip.stops||[]).map(s=>{const m=L.circleMarker([s.latitude,s.longitude],{radius:7,weight:2}).addTo(map);m.bindPopup((s.label||s.address||"موقع الأسرة")+"<br>محطة "+s.sequence);return m;});
+   const points=[];
+   if(trip.latest)points.push([trip.latest.latitude,trip.latest.longitude]);
+   (trip.stops||[]).forEach(s=>points.push([s.latitude,s.longitude]));
+   if(points.length){try{map.fitBounds(points,{padding:[30,30],maxZoom:15});}catch(e){}}
+ }
+ async function refresh(){try{const r=await fetch("{% url 'transport:tracking-api' %}");if(r.ok){const d=await r.json();if(d.trips&&d.trips[0])draw(d.trips[0]);}}catch(e){}}
+ refresh();setInterval(refresh,10000);
+ document.getElementById("use-location").onclick=function(){
+   if(!navigator.geolocation){alert("المتصفح لا يدعم تحديد الموقع.");return;}
+   navigator.geolocation.getCurrentPosition(function(pos){
+     document.getElementById("id_latitude").value=pos.coords.latitude.toFixed(6);
+     document.getElementById("id_longitude").value=pos.coords.longitude.toFixed(6);
+     alert("تم تحديد موقعك. اضغط حفظ موقع الأبناء.");
+   },function(){alert("تعذر الحصول على موقع الجهاز.");},{enableHighAccuracy:true,timeout:10000});
+ };
+})();
+</script>
+{% else %}
+<script>
+document.getElementById("use-location").onclick=function(){
+ if(!navigator.geolocation){alert("المتصفح لا يدعم تحديد الموقع.");return;}
+ navigator.geolocation.getCurrentPosition(function(pos){
+   document.getElementById("id_latitude").value=pos.coords.latitude.toFixed(6);
+   document.getElementById("id_longitude").value=pos.coords.longitude.toFixed(6);
+ },function(){alert("تعذر الحصول على موقع الجهاز.");},{enableHighAccuracy:true,timeout:10000});
+};
+</script>
+{% endif %}
+{% endblock %}

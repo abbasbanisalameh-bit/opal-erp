@@ -51,6 +51,18 @@ DELETE_MODEL_LABELS = (
     "learning_platform.LearningSubject",
     "learning_platform.LearningAccount",
 
+    # Transport operational chains. These models intentionally protect
+    # StudentRegistration, so all transport children must be cleared first.
+    "transport.TransportGPSPoint",
+    "transport.TransportStudentEvent",
+    "transport.TransportTripStop",
+    "transport.TransportAssignment",
+    "transport.TransportTrip",
+    "transport.TransportGroupMember",
+    "transport.TransportGroup",
+    "transport.TransportFamilyLocation",
+    "transport.TransportDriver",
+
     # Finance and admission chains.
     "accounting.MonthlyFinancialStatement",
     "accounting.CanteenTransaction",
@@ -139,6 +151,7 @@ CATEGORY_MODEL_LABELS = OrderedDict(
         ("guardians", ("parent_portal.Family", "parent_portal.FamilyStudent")),
         ("teachers", ("teachers.Teacher", "teachers.TeacherAssignment", "teachers.Homework", "teachers.TeacherDocument", "teachers.TeacherAdvance", "teachers.TeacherPayroll", "teachers.TeacherPerformanceSnapshot", "parent_portal.TeacherMonthlyEvaluation")),
         ("admissions", ("admissions.StudentRegistration", "admissions.FeePayment", "admissions.FeePaymentAllocation", "admissions.GradeFee", "admissions.TransportRoute")),
+        ("transport", tuple(label for label in DELETE_MODEL_LABELS if label.startswith("transport."))),
         ("finance", ("accounting.StudentInvoice", "accounting.StudentPayment", "accounting.Receipt", "accounting.Installment", "accounting.DiscountRequest", "accounting.ExpenseEntry", "accounting.MonthlyFinancialTarget", "accounting.FinancialYearClosure", "accounting.FinancialCarryForward", "accounting.CanteenTransaction", "accounting.MonthlyFinancialStatement", "accounting.FeeCategory")),
         ("attendance", ("attendance_v2.Attendance", "attendance_v2.AttendanceRegister")),
         ("timetable", ("timetable.TimeSlot", "timetable.TimetableEntry", "timetable.SchoolDayEvent", "timetable.TeacherAbsence", "timetable.ClassCoverage")),
@@ -191,6 +204,7 @@ CATEGORY_LABELS_AR = {
     "guardians": "أولياء الأمور وروابط الإخوة",
     "teachers": "المعلمون وسجلاتهم التشغيلية",
     "admissions": "التسجيل ورسوم الصفوف والمواصلات",
+    "transport": "المواصلات والجولات والمحطات والتتبع",
     "finance": "الفواتير والدفعات والإيصالات",
     "attendance": "الحضور والغياب",
     "timetable": "الجدول والحصص والغيابات والتغطيات",

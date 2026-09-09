@@ -352,7 +352,14 @@ def _prune_database_safety_snapshots(*, preserve: Path | None = None) -> list[st
 
 
 def _create_database_safety_snapshot() -> Path:
-    """Create a verified SQLite rollback point before applying an update."""
+    """Create and verify a SQLite rollback point before applying an update.
+
+    The live Django process may have an open SQLite connection while the update
+    request is running.  We therefore use the SQLite backup API first, then
+    VACUUM INTO as a second SQLite-native fallback.  Both methods produce a
+    standalone database and are verified with ``PRAGMA quick_check`` before the
+    snapshot becomes visible as an official safety point.
+    """
     database_path = _sqlite_database_path()
     directory = database_safety_dir()
     timestamp = timezone.localtime().strftime("%Y%m%d_%H%M%S_%f")
@@ -364,7 +371,11 @@ def _create_database_safety_snapshot() -> Path:
             raise sqlite3.DatabaseError("empty SQLite safety snapshot")
         check = None
         try:
-            check = sqlite3.connect(f"{path.resolve().as_uri()}?mode=ro", uri=True, timeout=30)
+            check = sqlite3.connect(
+                f"{path.resolve().as_uri()}?mode=ro",
+                uri=True,
+                timeout=60,
+            )
             result = check.execute("PRAGMA quick_check").fetchone()
             if not result or str(result[0]).lower() != "ok":
                 raise sqlite3.DatabaseError(f"SQLite quick_check failed: {result!r}")
@@ -372,16 +383,28 @@ def _create_database_safety_snapshot() -> Path:
             if check is not None:
                 check.close()
 
+    def prepare_destination() -> None:
+        temporary_path.unlink(missing_ok=True)
+        try:
+            temporary_path.parent.mkdir(parents=True, exist_ok=True)
+            os.chmod(temporary_path.parent, 0o700)
+        except OSError as exc:
+            raise SystemUpdateError(
+                f"تعذر تجهيز مجلد نقطة أمان قاعدة البيانات: {exc}"
+            ) from exc
+
     def in_process_backup() -> None:
+        prepare_destination()
         source = destination = None
         try:
-            temporary_path.unlink(missing_ok=True)
+            # Close Django's pooled SQLite handles before opening an independent
+            # backup connection. This avoids stale locks left by the request.
             connections.close_all()
-            source = sqlite3.connect(str(database_path), timeout=90)
-            source.execute("PRAGMA busy_timeout = 90000")
-            destination = sqlite3.connect(str(temporary_path), timeout=90)
-            destination.execute("PRAGMA busy_timeout = 90000")
-            source.backup(destination, pages=256, sleep=0.15)
+            source = sqlite3.connect(str(database_path), timeout=180)
+            source.execute("PRAGMA busy_timeout = 180000")
+            destination = sqlite3.connect(str(temporary_path), timeout=180)
+            destination.execute("PRAGMA busy_timeout = 180000")
+            source.backup(destination, pages=64, sleep=0.50)
             destination.commit()
         finally:
             if destination is not None:
@@ -389,55 +412,72 @@ def _create_database_safety_snapshot() -> Path:
             if source is not None:
                 source.close()
 
-    def subprocess_backup() -> None:
-        helper = "\n".join(
-            [
-                "import os, sqlite3, sys",
-                "src, dst = sys.argv[1], sys.argv[2]",
-                "try:",
-                "    os.unlink(dst)",
-                "except FileNotFoundError:",
-                "    pass",
-                "source = destination = None",
-                "try:",
-                "    source = sqlite3.connect(src, timeout=120)",
-                "    source.execute('PRAGMA busy_timeout = 120000')",
-                "    destination = sqlite3.connect(dst, timeout=120)",
-                "    destination.execute('PRAGMA busy_timeout = 120000')",
-                "    source.backup(destination, pages=128, sleep=0.25)",
-                "    destination.commit()",
-                "finally:",
-                "    if destination is not None: destination.close()",
-                "    if source is not None: source.close()",
-            ]
-        )
-        completed = subprocess.run(
-            [python_executable(), "-c", helper, str(database_path), str(temporary_path)],
-            cwd=str(project_root()),
-            text=True,
-            capture_output=True,
-            timeout=180,
-            check=False,
-        )
-        if completed.returncode != 0:
-            detail = (completed.stderr or completed.stdout or "subprocess backup failed").strip()
-            raise sqlite3.OperationalError(detail[-2000:])
+    def vacuum_into_backup() -> None:
+        prepare_destination()
+        source = None
+        try:
+            connections.close_all()
+            source = sqlite3.connect(str(database_path), timeout=180)
+            source.execute("PRAGMA busy_timeout = 180000")
+            escaped = str(temporary_path).replace("'", "''")
+            source.execute(f"VACUUM INTO '{escaped}'")
+            source.commit()
+        finally:
+            if source is not None:
+                source.close()
 
     errors: list[BaseException] = []
+
+    # SQLite safety copies are large (the current OPAL database is ~16 MB).
+    # PythonAnywhere enforces an account-level quota that is not reflected by
+    # shutil.disk_usage() on the shared filesystem.  Waiting to prune until
+    # *after* creating a new copy can therefore make the safety step fail with
+    # SQLITE_IOERR/ENOSPC even though older verified rollback points exist.
+    # Keep at least two verified rollback points, but free one slot before
+    # creating the next copy whenever three or more exist.  If creation then
+    # fails, the two older points are still available for rollback.
     try:
-        for attempt in range(3):
-            try:
-                in_process_backup()
-                verify_snapshot(temporary_path)
-                break
-            except (OSError, sqlite3.Error) as exc:
-                errors.append(exc)
-                temporary_path.unlink(missing_ok=True)
-                if attempt < 2:
-                    time.sleep(0.75 * (attempt + 1))
+        existing = sorted(
+            (
+                path
+                for path in database_safety_dir().glob("DB_SAFETY_BEFORE_*.sqlite3")
+                if path.is_file()
+            ),
+            key=lambda path: (path.stat().st_mtime_ns, path.name),
+            reverse=True,
+        )
+        if len(existing) >= 3:
+            for old_path in existing[2:]:
+                try:
+                    old_path.unlink()
+                except OSError as exc:
+                    errors.append(exc)
+                    break
+    except OSError as exc:
+        errors.append(exc)
+
+    methods = (in_process_backup, vacuum_into_backup)
+    try:
+        for method in methods:
+            for attempt in range(3):
+                try:
+                    method()
+                    verify_snapshot(temporary_path)
+                    break
+                except (OSError, sqlite3.Error) as exc:
+                    errors.append(exc)
+                    temporary_path.unlink(missing_ok=True)
+                    if attempt < 2:
+                        time.sleep(1.0 * (attempt + 1))
+            else:
+                continue
+            break
         else:
-            subprocess_backup()
-            verify_snapshot(temporary_path)
+            details = "; ".join(
+                f"{type(exc).__name__}: {str(exc).strip()[-500:]}"
+                for exc in errors[-6:]
+            )
+            raise sqlite3.OperationalError(details or "SQLite backup methods failed")
 
         os.chmod(temporary_path, 0o600)
         os.replace(temporary_path, final_path)
@@ -461,19 +501,21 @@ def _create_database_safety_snapshot() -> Path:
         return final_path
     except (OSError, sqlite3.Error, subprocess.SubprocessError) as exc:
         errors.append(exc)
-        detail = type(errors[-1]).__name__
+        detail = "; ".join(
+            f"{type(item).__name__}: {str(item).strip()[-700:]}"
+            for item in errors[-6:]
+        )
         _append_audit(
             "database_safety_failed",
             "system",
-            f"type={detail} attempts={len(errors)} database={database_path.name}",
+            f"type={type(exc).__name__} attempts={len(errors)} database={database_path.name}",
         )
         raise SystemUpdateError(
             "تعذر إنشاء نقطة أمان لقاعدة البيانات قبل التحديث؛ لم يتم تطبيق التحديث. "
-            f"رمز التشخيص: {detail}."
+            f"تفاصيل التشخيص: {detail or type(exc).__name__}"
         ) from exc
     finally:
         temporary_path.unlink(missing_ok=True)
-
 
 def _restore_database_safety_snapshot(snapshot_path: Path) -> None:
     """Restore a SQLite safety point logically, without replacing files in place."""

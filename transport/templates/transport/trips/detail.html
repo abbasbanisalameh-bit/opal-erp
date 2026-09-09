@@ -1,0 +1,73 @@
+{% extends "base/base.html" %}
+{% block title %}تفاصيل جولة المواصلات{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<div class="container-fluid py-4" dir="rtl">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h3 class="mb-1">{{ trip.route.name }} — {{ trip.get_direction_display }} #{{ trip.sequence }}</h3>
+      <div class="text-muted">{{ trip.service_date }} · {{ trip.driver.name }} · {{ trip.get_vehicle_type_display }}{% if trip.vehicle_description %} · {{ trip.vehicle_description }}{% endif %}</div>
+    </div>
+    <a class="btn btn-outline-secondary" href="{% url 'transport:trip-list' %}">العودة إلى الجولات</a>
+  </div>
+
+  <div class="row g-3 mb-3">
+    <div class="col-md-3"><div class="card shadow-sm"><div class="card-body"><div class="text-muted small">الحالة</div><strong id="trip-status">{{ trip.get_status_display }}</strong></div></div></div>
+    <div class="col-md-3"><div class="card shadow-sm"><div class="card-body"><div class="text-muted small">بدء الجولة</div><strong id="started-at">—</strong></div></div></div>
+    <div class="col-md-3"><div class="card shadow-sm"><div class="card-body"><div class="text-muted small">نهاية الجولة</div><strong id="finished-at">—</strong></div></div></div>
+    <div class="col-md-3"><div class="card shadow-sm"><div class="card-body"><div class="text-muted small">المدة الفعلية</div><strong id="duration">—</strong></div></div></div>
+  </div>
+
+  <div class="card shadow-sm mb-3"><div class="card-body p-2"><div id="trip-map" style="height:430px;border-radius:14px;overflow:hidden"></div></div></div>
+
+  <div class="row g-3 mb-3">
+    <div class="col-lg-6"><div class="card shadow-sm h-100"><div class="card-body"><h5>المحطة التالية</h5><div id="next-stop" class="mt-2">—</div></div></div></div>
+    <div class="col-lg-6"><div class="card shadow-sm h-100"><div class="card-body"><h5>{% if trip.direction == 'morning' %}الطلاب الذين صعدوا{% else %}الطلاب الذين تم توصيلهم{% endif %}</h5><div id="completed-list" class="mt-2"></div></div></div></div>
+  </div>
+
+  <div class="row g-3 mb-3">
+    <div class="col-lg-6"><div class="card shadow-sm h-100"><div class="card-body"><h5>{% if trip.direction == 'morning' %}الطلاب المتبقون قبل الركوب{% else %}الطلاب المتبقون في الحافلة{% endif %}</h5><div id="remaining-list" class="mt-2"></div></div></div></div>
+    <div class="col-lg-6"><div class="card shadow-sm h-100"><div class="card-body"><h5>المحطات وأوقات الانتظار</h5><div id="stops-list" class="mt-2"></div></div></div></div>
+  </div>
+
+  <div class="card shadow-sm"><div class="card-body"><h5>سجل جميع الطلاب</h5><div class="table-responsive"><table class="table table-hover align-middle"><thead><tr><th>الطالب</th><th>الحالة</th><th>وصول للمحطة</th><th>{% if trip.direction == 'morning' %}صعود{% else %}توصيل{% endif %}</th><th>انتظار</th></tr></thead><tbody id="students-table"></tbody></table></div></div></div>
+</div>
+{{ trip_payload|json_script:"trip-detail-data" }}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function(){
+  let data=JSON.parse(document.getElementById('trip-detail-data').textContent||'{}');
+  const live={{ is_live|yesno:'true,false' }};
+  const map=L.map('trip-map').setView([32.556,35.85],12);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(map);
+  let planned=null, actual=null, bus=null;
+  const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const fmt=v=>v?new Date(v).toLocaleString('ar-JO',{hour:'2-digit',minute:'2-digit',second:'2-digit'}):'—';
+  const mins=s=>s==null?'—':Math.round(Number(s)/60)+' د';
+  function render(d){
+    data=d;
+    document.getElementById('trip-status').textContent=d.status==='active'?'جارية':d.status==='completed'?'مكتملة':d.status==='planned'?'مخططة':'ملغاة';
+    document.getElementById('started-at').textContent=fmt(d.started_at);
+    document.getElementById('finished-at').textContent=fmt(d.finished_at);
+    document.getElementById('duration').textContent=mins(d.duration_seconds);
+    const pts=d.stops.map(s=>[s.latitude,s.longitude]);
+    if(planned) planned.setLatLngs(pts); else if(pts.length) planned=L.polyline(pts,{dashArray:'6 8'}).addTo(map);
+    const gps=d.gps.map(p=>[p.latitude,p.longitude]);
+    if(actual) actual.setLatLngs(gps); else if(gps.length) actual=L.polyline(gps).addTo(map);
+    if(d.latest){if(bus) bus.setLatLng([d.latest.latitude,d.latest.longitude]); else bus=L.marker([d.latest.latitude,d.latest.longitude]).addTo(map);}
+    if(pts.length) try{map.fitBounds(pts,{padding:[25,25],maxZoom:15});}catch(e){}
+    const ns=document.getElementById('next-stop');
+    ns.innerHTML=d.next_stop?'<strong>#'+d.next_stop.sequence+'</strong> '+esc(d.next_stop.label||d.next_stop.address)+'<div class="small text-muted">'+esc(d.next_stop.address)+'</div>':'لا توجد محطة متبقية.';
+    document.getElementById('completed-list').innerHTML=(d.completed_students||[]).map(x=>'<div class="border rounded p-2 mb-1">'+esc(x.name)+' <span class="badge bg-success">'+esc(x.status_label)+'</span></div>').join('')||'<span class="text-muted">لا يوجد حتى الآن.</span>';
+    document.getElementById('remaining-list').innerHTML=(d.remaining_students||[]).map(x=>'<div class="border rounded p-2 mb-1">'+esc(x.name)+' <span class="badge bg-warning text-dark">'+esc(x.status_label)+'</span></div>').join('')||'<span class="text-muted">لا يوجد.</span>';
+    document.getElementById('stops-list').innerHTML=d.stops.map(s=>'<div class="border rounded p-2 mb-1"><strong>#'+s.sequence+' '+esc(s.label||'محطة')+'</strong><div class="small">الوصول: '+fmt(s.arrived_at)+' · المغادرة: '+fmt(s.departed_at)+' · الانتظار/التوقف: '+mins(s.dwell_seconds)+'</div><div class="small text-muted">'+esc(s.address)+'</div></div>').join('')||'<span class="text-muted">لا توجد محطات.</span>';
+    document.getElementById('students-table').innerHTML=d.students.map(x=>'<tr><td>'+esc(x.name)+'</td><td><span class="badge '+(x.status==='boarded'||x.status==='dropped_off'?'bg-success':x.status==='missed'?'bg-danger':'bg-secondary')+'">'+esc(x.status_label)+'</span></td><td>'+fmt(x.arrived_at)+'</td><td>'+fmt(x.boarded_at||x.dropped_off_at)+'</td><td>'+mins(x.wait_seconds)+'</td></tr>').join('');
+    setTimeout(()=>map.invalidateSize(true),50);
+  }
+  render(data);
+  if(live){
+    setInterval(async()=>{try{const r=await fetch('{% url 'transport:tracking-api' %}',{credentials:'same-origin'}); if(!r.ok)return; const j=await r.json(); const found=(j.trips||[]).find(x=>String(x.id)===String(data.id)); if(found)render(found);}catch(e){}},10000);
+  }
+})();
+</script>
+{% endblock %}

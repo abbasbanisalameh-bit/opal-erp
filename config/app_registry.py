@@ -14,6 +14,7 @@ BASE_INSTALLED_APPS = (
     "documents",
     "announcements",
     "admissions",
+    "transport",
     "academics",
     "core",
     "django.contrib.admin",

@@ -1,0 +1,37 @@
+{% extends "base/base.html" %}
+{% block title %}اشتراكات الطلاب - المواصلات{% endblock %}
+{% block content %}
+<div class="container-fluid py-4" dir="rtl">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+    <div><h2 class="mb-1">اشتراكات الطلاب بالمواصلات</h2><p class="text-muted mb-0">إدارة الاشتراك من سجل الطالب الأصلي دون إنشاء سجل نقل موازٍ.</p></div>
+    <a class="btn btn-outline-secondary" href="{% url 'transport:transport-dashboard' %}">العودة للمواصلات</a>
+  </div>
+  <form method="get" class="card card-body mb-3">
+    <div class="row g-2 align-items-end">
+      <div class="col-md-8"><label class="form-label">بحث</label><input class="form-control" name="q" value="{{ query }}" placeholder="اسم الطالب أو الرقم أو رقم التسجيل"></div>
+      <div class="col-md-2"><button class="btn btn-primary w-100" type="submit">بحث</button></div>
+      <div class="col-md-2"><a class="btn btn-outline-secondary w-100" href="{% url 'transport:subscription-list' %}">مسح</a></div>
+    </div>
+  </form>
+  <div class="card shadow-sm border-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead><tr><th>الطالب</th><th>رقم التسجيل</th><th>الصف</th><th>المسار</th><th>نوع المواصلات</th><th>رسوم النقل</th><th></th></tr></thead>
+        <tbody>
+        {% for registration in registrations %}
+        <tr>
+          <td><strong>{{ registration.student.full_name }}</strong></td>
+          <td>{{ registration.registration_number }}</td>
+          <td>{{ registration.grade|default:"—" }}</td>
+          <td>{{ registration.transport_route.name|default:"غير محدد" }}</td>
+          <td>{{ registration.get_transport_type_display }}</td>
+          <td>{{ registration.transport_fee }}</td>
+          <td><a class="btn btn-sm btn-primary" href="{% url 'transport:subscription-edit' registration.pk %}">إدارة الاشتراك</a></td>
+        </tr>
+        {% empty %}<tr><td colspan="7" class="text-center text-muted py-4">لا توجد سجلات طلاب مطابقة.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -13,7 +13,7 @@ def live_schedule(request):
     runs on every page.  Management pages therefore use the lightweight school
     state here, while teacher pages retain their own scoped current-class state.
     """
-    if not request.user.is_authenticated:
+    if not getattr(getattr(request, "user", None), "is_authenticated", False):
         return {}
     if is_management(request.user):
         school = request_school(request)

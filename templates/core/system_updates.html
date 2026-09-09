@@ -39,6 +39,19 @@
     بعد أي استعادة ناجحة اضغط <strong>Reload</strong> من صفحة Web في PythonAnywhere.
 </div>
 
+<div class="opal-card mb-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div>
+            <h4 class="fw-bold mb-1"><i class="bi bi-terminal"></i> كونسول النظام</h4>
+            <p class="text-secondary mb-0">افتح جلسة كونسول جديدة. عند فتح جلسة أخرى تُغلق الجلسة السابقة تلقائيًا ويمكنك تحديد ونسخ المخرجات بسهولة.</p>
+        </div>
+        <form method="post" action="{% url 'core:open_system_console' %}" target="opalConsoleWindow" onsubmit="return window.open('', 'opalConsoleWindow', 'width=1100,height=760,resizable=yes,scrollbars=yes');">
+            {% csrf_token %}
+            <button class="btn btn-dark" type="submit"><i class="bi bi-terminal-fill"></i> فتح كونسول</button>
+        </form>
+    </div>
+</div>
+
 <ul class="nav nav-tabs mb-4">
     <li class="nav-item">
         <a class="nav-link {% if active_tab == 'local' %}active{% endif %}" href="?tab=local">

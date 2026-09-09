@@ -1,7 +1,0 @@
-OPAL_VERSION.txt
-OPAL_UPDATE_MANIFEST.json
-core/update_engine_runtime.py
-core/checks.py
-core/test_update129_horizontal_timetable_contract.py
-INSTALL_OPAL_UPDATE_129_2_DATABASE_SAFETY_AND_MATRIX_AR.md
-OPAL_UPDATE_129_2_DATABASE_SAFETY_AND_MATRIX_RELEASE_NOTES_AR.md

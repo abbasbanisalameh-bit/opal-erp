@@ -42,12 +42,21 @@
     <button type="button" id="opal-sidebar-overlay" class="opal-sidebar-overlay" aria-label="إغلاق القائمة" tabindex="-1"></button>
 
     <main id="opal-main-content" class="opal-main" tabindex="-1">
-        {% if opal_is_impersonating %}
+        {% if opal_is_impersonating and not opal_is_transport_driver_impersonating %}
         <div class="opal-impersonation-banner">
             <div><i class="bi bi-person-bounding-box"></i> أنت داخل حساب مستخدم آخر بواسطة المدير <strong>{{ opal_impersonator_name|default:"المدير العام" }}</strong>.</div>
             <form method="post" action="{% url 'accounts:stop_impersonation' %}">
                 {% csrf_token %}
                 <button class="btn btn-warning btn-sm" type="submit"><i class="bi bi-arrow-return-right"></i> العودة إلى حساب المدير</button>
+            </form>
+        </div>
+        {% endif %}
+        {% if opal_is_transport_driver_impersonating %}
+        <div class="opal-impersonation-banner">
+            <div><i class="bi bi-bus-front-fill"></i> أنت داخل حساب سائق بواسطة الإدارة <strong>{{ opal_transport_driver_impersonator_name|default:"الإدارة" }}</strong>.</div>
+            <form method="post" action="{% url 'transport:driver-impersonate-stop' %}">
+                {% csrf_token %}
+                <button class="btn btn-warning btn-sm" type="submit"><i class="bi bi-arrow-return-right"></i> الرجوع إلى حساب المدير</button>
             </form>
         </div>
         {% endif %}

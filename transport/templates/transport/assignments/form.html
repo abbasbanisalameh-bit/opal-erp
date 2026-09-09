@@ -1,0 +1,150 @@
+{% extends "base/base.html" %}
+
+{% block title %}{{ title }} - المواصلات{% endblock %}
+
+{% block content %}
+<div class="container py-4" dir="rtl">
+
+    <div class="mb-4">
+        <h2>{{ title }}</h2>
+        <p class="text-muted mb-0">
+            التعيين يعتمد على اشتراك الطالب ومساره الرسمي.
+        </p>
+    </div>
+
+    <div class="alert alert-info">
+        <strong>قواعد التعيين:</strong>
+        <ul class="mb-0 mt-2">
+            <li>ذهاب فقط → رحلة صباحية واحدة.</li>
+            <li>عودة فقط → رحلة عودة واحدة.</li>
+            <li>ذهاب وعودة → رحلة صباحية ورحلة عودة.</li>
+            <li>ذهاب وعودة يجب أن تكونا مع نفس السائق.</li>
+            <li>الرحلات مرتبطة بالمسار الرسمي للطالب.</li>
+        </ul>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body">
+
+            <form method="post">
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {{ form.non_field_errors }}
+                    </div>
+                {% endif %}
+
+                <div class="mb-3">
+                    <label class="form-label">
+                        {{ form.registration.label }}
+                    </label>
+
+                    <div class="input-group">
+                        {{ form.registration }}
+
+                        <button
+                            type="button"
+                            class="btn btn-outline-primary"
+                            id="load-student-trips">
+                            عرض الرحلات المتوافقة
+                        </button>
+                    </div>
+
+                    <div class="form-text">
+                        اختر الطالب ثم اضغط «عرض الرحلات المتوافقة».
+                        سيعرض النظام رحلات مساره ونوع اشتراكه فقط.
+                    </div>
+
+                    {% for error in form.registration.errors %}
+                        <div class="text-danger small mt-1">
+                            {{ error }}
+                        </div>
+                    {% endfor %}
+                </div>
+
+                {% if request.GET.registration %}
+                    <div class="alert alert-success py-2">
+                        تم تحديد الطالب. تظهر الآن الرحلات المتوافقة
+                        مع مساره ونوع اشتراكه.
+                    </div>
+                {% endif %}
+
+                <div class="row g-3">
+
+                    <div class="col-md-6">
+                        <label class="form-label">
+                            {{ form.morning_trip.label }}
+                        </label>
+
+                        {{ form.morning_trip }}
+
+                        {% for error in form.morning_trip.errors %}
+                            <div class="text-danger small mt-1">
+                                {{ error }}
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">
+                            {{ form.return_trip.label }}
+                        </label>
+
+                        {{ form.return_trip }}
+
+                        {% for error in form.return_trip.errors %}
+                            <div class="text-danger small mt-1">
+                                {{ error }}
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                </div>
+
+                <div class="d-flex gap-2 mt-4">
+
+                    <button type="submit"
+                            class="btn btn-primary">
+                        حفظ التعيين
+                    </button>
+
+                    <a href="{% url 'transport:assignment-list' %}"
+                       class="btn btn-outline-secondary">
+                        إلغاء
+                    </a>
+
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const student = document.getElementById("id_registration");
+    const button = document.getElementById("load-student-trips");
+
+    if (!student || !button) {
+        return;
+    }
+
+    button.addEventListener("click", function () {
+        const value = student.value;
+
+        if (!value) {
+            alert("يرجى اختيار الطالب أولًا.");
+            return;
+        }
+
+        const url = new URL(window.location.href);
+        url.searchParams.set("registration", value);
+
+        window.location.href = url.toString();
+    });
+});
+</script>
+{% endblock %}

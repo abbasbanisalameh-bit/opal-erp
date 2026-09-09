@@ -2,12 +2,12 @@
   "schema": 2,
   "product": "OPAL ERP",
   "version": "131.7",
-  "version_name": "OPAL Update 131.7 R37.2 - Mobile Index Migration Consistency Fix",
-  "package_revision": 45,
-  "source_type": "verified_update_package",
-  "created_at": "2026-08-10T15:30:00+03:00",
-  "baseline": "OPAL Update 131.7 R37.1 - Native ERP Android Baseline Fix",
-  "notes": "تصحيح اتساق اسم فهرس SystemMobileAPIToken بين core/models.py والهجرة 0015 لمنع Django من اقتراح هجرة 0016 RenameIndex أثناء فحص makemigrations --check، دون أي تغيير في البيانات أو بنية قاعدة البيانات المقصودة.",
+  "version_name": "OPAL Update 131.7 R67 - Unified Stable Baseline",
+  "package_revision": 67,
+  "source_type": "unified_stable_baseline",
+  "created_at": "2026-09-09T03:42:03+03:00",
+  "baseline": "Unified stable system baseline consolidated from the current verified OPAL 131.7 state, including transport operations through R66 and subsequent stabilization work.",
+  "notes": "R67 هو خط الأساس الموحد والنظيف لنظام OPAL ERP 131.7. تم تثبيت الحالة الحالية الفعلية والمستقرة للنظام بعد دمج التطويرات والإصلاحات المتراكمة، بما فيها نظام المواصلات حتى R66 وأعمال الاستقرار اللاحقة. يبدأ أي تطوير جديد من R68.",
   "code_only": true,
   "excluded": [
     "database",
@@ -15,7 +15,6 @@
     "virtual_environment",
     ".env",
     ".git",
-    "collected_static",
-    "android_signing_keys"
+    "collected_static"
   ]
 }

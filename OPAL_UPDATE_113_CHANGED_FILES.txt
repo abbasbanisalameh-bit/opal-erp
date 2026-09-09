@@ -1,8 +1,0 @@
-core/management/commands/verify_core_readiness.py
-core/management/commands/audit_production_readiness.py
-core/test_production_readiness_contract.py
-OPAL_UPDATE_MANIFEST.json
-README.md
-OPAL_UPDATE_113_CANONICAL_READINESS_GATE_RELEASE_NOTES_AR.md
-INSTALL_OPAL_UPDATE_113_CANONICAL_READINESS_GATE_AR.md
-OPAL_UPDATE_113_CHANGED_FILES.txt

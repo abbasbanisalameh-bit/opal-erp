@@ -13,6 +13,7 @@ class Role(models.Model):
         ("parent", "ولي أمر"),
         ("academy_student", "طالب أكاديمية"),
         ("guest", "زائر"),
+            ("driver", "سائق"),
     ]
 
     code = models.CharField(max_length=50, choices=ROLE_CODES, unique=True)

@@ -17,9 +17,11 @@ MANAGEMENT = "management"
 TEACHER = "teacher"
 PARENT = "parent"
 AUTHENTICATED = "authenticated"
+DRIVER = "driver"
 
 
 MODULES = {
+    "transport": {"label": "المواصلات", "icon": "bus-front-fill", "color": "orange", "order": 25},
     "overview": {"label": "القيادة والمتابعة", "icon": "speedometer2", "color": "indigo", "order": 10},
     "students": {"label": "الطلاب وأولياء الأمور", "icon": "people-fill", "color": "blue", "order": 20},
     "academics": {"label": "الشؤون الأكاديمية", "icon": "mortarboard-fill", "color": "violet", "order": 30},
@@ -69,6 +71,7 @@ def _op(
 # No object-specific route appears here. Actions such as edit/delete/issue are launched
 # from their canonical list/detail screen so the user always starts in one predictable place.
 OPERATIONS = [
+    _op("transport-dashboard", "settings", "المواصلات", "transport:transport-dashboard", "مركز المواصلات الموحد للسائقين وأولياء الأمور والإدارة.", roles=(MANAGEMENT, DRIVER, PARENT), icon="bus-front-fill", keywords="مواصلات حافلة سائق رحلة موقع تتبع", order=25),
     _op("operations-center", "overview", "دليل العمليات الموحد", "core:operations_center", "الخريطة الرسمية لجميع إجراءات النظام ومسارات التكامل.", icon="signpost-split-fill", keywords="دليل خريطة بحث عمليات", order=1),
     _op("executive-dashboard", "overview", "لوحة الإدارة", "dashboard:home", "المؤشرات التنفيذية، المخاطر، رضا المستخدمين وآخر المستجدات.", icon="grid-1x2-fill", keywords="لوحة مدير مؤشرات رضا", order=2),
     _op("learning-platform", "overview", "منصة أوبال التعليمية", "learning_platform:manager_dashboard", "دخول مدير OPAL ERP إلى لوحة إدارة المنصة التعليمية دون إنشاء حساب تعليمي موازٍ.", icon="play-btn-fill", keywords="منصة تعلم دورات اشتراكات", order=3),
@@ -116,7 +119,7 @@ OPERATIONS = [
     _op("reports", "documents", "مركز التقارير", "enterprise_ops:report_center", "التقارير الإدارية الموحدة والتصدير حسب الصلاحيات المعتمدة.", icon="file-earmark-bar-graph-fill", keywords="تقرير تصدير", order=63),
     _op("audit-log", "documents", "سجل العمليات", "enterprise_ops:audit_log", "تتبع العمليات الإدارية وسجل التدقيق العام.", icon="shield-check", keywords="سجل تدقيق عمليات", order=64),
 
-    _op("system-settings", "settings", "إعدادات النظام", "core:system_settings", "بيانات المدرسة ومراكز الإدارة الأساسية.", icon="gear-fill", keywords="إعدادات مدرسة شعار", order=70),
+    _op("system-settings",  "settings", "إعدادات النظام", "core:system_settings", "بيانات المدرسة ومراكز الإدارة الأساسية.", icon="gear-fill", keywords="إعدادات مدرسة شعار", order=70),
     _op("branches", "settings", "فروع المدرسة", "core:branch_list", "إدارة الفروع وتحديد الفرع الرئيسي.", icon="building-fill", keywords="فرع مدرسة", order=71),
     _op("integrity", "settings", "سلامة البيانات", "core:integrity_center", "كشف التعارضات وإصلاح الحالات الآمنة فقط.", icon="shield-fill-check", keywords="سلامة بيانات تعارض تكرار", superuser_only=True, order=72),
     _op("system-updates", "settings", "تحديثات النظام", "core:system_updates", "النسخ الاحتياطية ورفع التحديث والاستعادة وإعادة التحميل.", icon="arrow-repeat", keywords="تحديث نسخة احتياطية استعادة", superuser_only=True, order=73),
@@ -162,6 +165,11 @@ def user_role_key(user):
     try:
         if user.family_account:
             return PARENT
+    except Exception:
+        pass
+    try:
+        if user.transport_driver:
+            return DRIVER
     except Exception:
         pass
     return AUTHENTICATED
@@ -254,7 +262,7 @@ SIDEBAR_SECTIONS = {
         {"label": "الرئيسية", "items": ("executive-dashboard",)},
         {"label": "المنصة التعليمية", "items": ("learning-platform",)},
         {"label": "البوابات الرئيسية", "items": (
-            "student-list", "academic-structure", "finance-dashboard", "documents", "system-settings",
+            "student-list", "academic-structure", "finance-dashboard", "documents", "system-settings", "transport-dashboard",
         )},
     ),
     TEACHER: (
@@ -262,7 +270,10 @@ SIDEBAR_SECTIONS = {
         {"label": "التواصل", "items": ("feedback",)},
     ),
     PARENT: (
-        {"label": "بوابة ولي الأمر", "items": ("parent-home",)},
+        {"label": "بوابة ولي الأمر", "items": ("parent-home", "transport-dashboard")},
+    ),
+    DRIVER: (
+        {"label": "المواصلات", "items": ("transport-dashboard",)},
     ),
     AUTHENTICATED: (
         {"label": "الحساب", "items": ("profile",)},
@@ -271,6 +282,7 @@ SIDEBAR_SECTIONS = {
 
 
 MANAGEMENT_SUBNAV_GROUPS = (
+
     {
         "key": "students",
         "label": "إدارة الطلاب",
@@ -323,6 +335,7 @@ MANAGEMENT_SUBNAV_GROUPS = (
         "label": "إعدادات النظام",
         "icon": "gear-fill",
         "items": (
+
             "system-settings", "registration-settings", "branches", "permissions", "role-management",
             "integrity", "system-updates", "openemis", "openemis-logs", "development",
         ),

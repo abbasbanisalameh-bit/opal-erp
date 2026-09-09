@@ -1,0 +1,19 @@
+{% extends "base/base.html" %}
+{% block title %}مواقع عائلات المواصلات{% endblock %}
+{% block page_title %}مواقع عائلات المواصلات{% endblock %}
+{% block page_subtitle %}إدارة موقع الأبناء المستخدم لبناء محطات الجولات{% endblock %}
+{% block content %}
+<div class="container-fluid py-4" dir="rtl">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+    <div><h2 class="mb-1">مواقع العائلات</h2><p class="text-muted mb-0">موقع واحد لكل عائلة، ويُستخدم لجميع أبنائها في الذهاب والعودة.</p></div>
+    <div class="d-flex gap-2 flex-wrap">
+      <form method="post" action="{% url 'transport:request-missing-family-locations' %}">{% csrf_token %}<button class="btn btn-warning" type="submit">إرسال طلب المواقع الناقصة</button></form>
+      <a href="{% url 'transport:transport-dashboard' %}" class="btn btn-outline-secondary">مركز المواصلات</a>
+    </div>
+  </div>
+  <div class="alert alert-info">بعد حفظ الموقع، تُشعَر الإدارة لمراجعة المجموعة الجغرافية. لا يتم نقل الأبناء تلقائيًا، ولا تُعاد كتابة الجولات الجارية أو المكتملة.</div>
+  <div class="card"><div class="table-responsive"><table class="table align-middle mb-0"><thead><tr><th>الأسرة</th><th>الأبناء المشتركون</th><th>المسار</th><th>العنوان</th><th>الإحداثيات</th><th>الحالة</th><th>الإجراء</th></tr></thead><tbody>
+  {% for row in rows %}<tr><td><strong>{{ row.family.guardian_name }}</strong><div class="small text-muted">#{{ row.family.pk }}</div></td><td>{{ row.registration.student }}{% if row.extra_students %}<div class="small text-muted">+ {{ row.extra_students }} أبناء آخرين</div>{% endif %}</td><td>{{ row.registration.transport_route.name }}</td><td>{{ row.location.address|default:"—" }}</td><td dir="ltr">{% if row.location.latitude is not None and row.location.longitude is not None %}{{ row.location.latitude }}, {{ row.location.longitude }}{% else %}—{% endif %}</td><td>{% if row.location.latitude is not None and row.location.longitude is not None %}<span class="badge bg-success">مكتمل</span>{% else %}<span class="badge bg-warning text-dark">ينقصه الموقع</span>{% endif %}</td><td><a class="btn btn-sm btn-outline-primary" href="{% url 'transport:family-location-edit' row.family.pk %}">تعديل الموقع</a></td></tr>{% empty %}<tr><td colspan="7" class="text-center py-5 text-muted">لا توجد أسر مشتركة بالمواصلات.</td></tr>{% endfor %}
+  </tbody></table></div></div>
+</div>
+{% endblock %}

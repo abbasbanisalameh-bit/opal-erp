@@ -1,0 +1,103 @@
+{% extends "base/base.html" %}
+{% block title %}كونسول النظام | OPAL ERP{% endblock %}
+{% block page_title %}كونسول النظام{% endblock %}
+{% block page_subtitle %}جلسة مستقلة مرتبطة بمركز التحديثات{% endblock %}
+
+{% block content %}
+<div class="opal-card">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <div>
+            <h3 class="fw-bold mb-1"><i class="bi bi-terminal"></i> OPAL Web Console</h3>
+            <div class="small text-secondary">المجلد الحالي: <code>{{ working_directory }}</code></div>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-secondary" type="button" id="consoleBackButton"><i class="bi bi-arrow-right"></i> العودة</button>
+            <form method="post" action="{% url 'core:open_system_console' %}" id="newConsoleForm">
+                {% csrf_token %}
+                <button class="btn btn-warning" type="submit"><i class="bi bi-window-plus"></i> فتح كونسول جديد</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="alert alert-warning">
+        <strong>تنبيه أمني:</strong> هذا كونسول بصلاحيات مدير النظام الأعلى. كل أمر يُنفّذ داخل مجلد المشروع الحالي.
+        عند فتح كونسول جديد تصبح هذه الجلسة غير صالحة فورًا. لا تلصق أسرارًا أو مفاتيح في الشاشة.
+    </div>
+
+    <div id="consoleOutput" class="bg-dark text-light rounded p-3" style="min-height:360px; max-height:58vh; overflow:auto; white-space:pre-wrap; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; user-select:text;">OPAL Web Console جاهز.
+اكتب help أو python manage.py check ثم اضغط Enter.
+</div>
+
+    <div class="mt-3">
+        <label class="form-label fw-bold" for="consoleCommand">الأمر</label>
+        <div class="input-group">
+            <span class="input-group-text bg-dark text-light">$</span>
+            <input id="consoleCommand" class="form-control" autocomplete="off" spellcheck="false" placeholder="python manage.py check">
+            <button id="runCommand" class="btn btn-primary" type="button"><i class="bi bi-play-fill"></i> تنفيذ</button>
+        </div>
+        <div class="form-text">Enter للتنفيذ — Shift+Enter لسطر جديد — يمكنك تحديد ونسخ أي جزء من المخرجات بسهولة.</div>
+    </div>
+</div>
+
+<script>
+(function () {
+    const output = document.getElementById('consoleOutput');
+    const input = document.getElementById('consoleCommand');
+    const runButton = document.getElementById('runCommand');
+    const csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    const consoleId = '{{ console_id|escapejs }}';
+    const runUrl = '{% url "core:run_system_console" %}';
+
+    function append(text) {
+        output.textContent += text;
+        output.scrollTop = output.scrollHeight;
+    }
+
+    async function run() {
+        const command = input.value.trim();
+        if (!command) return;
+        append('\n\n$ ' + command + '\n');
+        input.value = '';
+        runButton.disabled = true;
+        try {
+            const body = new URLSearchParams({command: command, console_id: consoleId, csrfmiddlewaretoken: csrf});
+            const response = await fetch(runUrl, {method: 'POST', headers: {'X-Requested-With': 'XMLHttpRequest'}, body});
+            const data = await response.json();
+            if (data.closed) {
+                append('\n[تم إغلاق هذه الجلسة. افتح الكونسول الجديد.]\n');
+                input.disabled = true;
+                runButton.disabled = true;
+                return;
+            }
+            if (data.stdout) append(data.stdout);
+            if (data.stderr) append(data.stderr);
+            append('\n[exit ' + data.returncode + ']');
+        } catch (error) {
+            append('\n[خطأ اتصال] ' + error + '\n');
+        } finally {
+            if (!input.disabled) {
+                runButton.disabled = false;
+                input.focus();
+            }
+        }
+    }
+
+    runButton.addEventListener('click', run);
+    input.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            run();
+        }
+    });
+    const backButton = document.getElementById('consoleBackButton');
+    backButton.addEventListener('click', function () {
+        if (window.history.length > 1) {
+            window.history.back();
+        } else {
+            window.location.href = '/settings/system/';
+        }
+    });
+    input.focus();
+})();
+</script>
+{% endblock %}

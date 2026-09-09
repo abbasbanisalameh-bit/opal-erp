@@ -33,6 +33,20 @@ def system_settings(request):
     route_form = TransportRouteForm(prefix="route")
 
     if request.method == "POST":
+        action = request.POST.get('action')
+        route_id = request.POST.get('route_id')
+
+        if action == 'toggle_route' and route_id:
+            route = get_object_or_404(TransportRoute, id=route_id, school=school)
+            route.is_active = not route.is_active
+            route.save()
+            return redirect('core:system_settings')
+
+        elif action == 'delete_route' and route_id:
+            route = get_object_or_404(TransportRoute, id=route_id, school=school)
+            route.delete()
+            return redirect('core:system_settings')
+
         action = request.POST.get("action", "school_settings")
 
         if action == "reset_all":
@@ -144,26 +158,51 @@ def integrity_center(request):
 
     if request.method == "POST":
         action = request.POST.get("action")
+
         if action in {"scan", "fix_safe"}:
-            run = run_integrity_audit(fix_safe=(action == "fix_safe"), user=request.user)
+            run = run_integrity_audit(
+                fix_safe=(action == "fix_safe"),
+                user=request.user,
+            )
+
             if action == "fix_safe":
-                messages.success(request, f"اكتمل الإصلاح الآمن: عولجت {run.fixed_count} مشكلة، وبقيت {run.critical_count} حرجة للمراجعة.")
+                messages.success(
+                    request,
+                    f"اكتمل الإصلاح الآمن: عولجت {run.fixed_count} مشكلة، "
+                    f"وبقيت {run.critical_count} حرجة للمراجعة."
+                )
             else:
-                messages.success(request, f"اكتمل الفحص: {run.total_issues} مشكلة، منها {run.critical_count} حرجة.")
+                messages.success(
+                    request,
+                    f"اكتمل الفحص: {run.total_issues} مشكلة، "
+                    f"منها {run.critical_count} حرجة."
+                )
+
             return redirect(f"{request.path}?run={run.pk}")
 
     runs = DataIntegrityRun.objects.select_related("created_by")[:20]
     run_id = request.GET.get("run")
-    selected_run = DataIntegrityRun.objects.filter(pk=run_id).first() if run_id else runs.first()
+    selected_run = (
+        DataIntegrityRun.objects.filter(pk=run_id).first()
+        if run_id else runs.first()
+    )
+
     issues = selected_run.issues.all() if selected_run else []
     severity = request.GET.get("severity", "")
+
     if severity and selected_run:
         issues = issues.filter(severity=severity)
-    return render(request, "core/integrity_center.html", {
-        "runs": runs, "selected_run": selected_run, "issues": issues,
-        "selected_severity": severity,
-    })
 
+    return render(
+        request,
+        "core/integrity_center.html",
+        {
+            "runs": runs,
+            "selected_run": selected_run,
+            "issues": issues,
+            "selected_severity": severity,
+        },
+    )
 
 @management_required
 def operations_center(request):

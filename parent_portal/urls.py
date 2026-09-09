@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from transport import views as transport_views
 
 app_name = "parent_portal"
 
@@ -15,6 +16,7 @@ urlpatterns = [
     path("manage/<int:pk>/account/create/", views.family_account_create, name="family_account_create"),
     path("manage/<int:pk>/account/reset/", views.family_account_reset, name="family_account_reset"),
     path("", views.dashboard, name="dashboard"),
+    path("transport/", transport_views.parent_transport_dashboard, name="transport"),
     path("360/", views.parent_360, name="parent_360"),
     path("children/", views.children, name="children"),
     path("fees/", views.fees, name="fees"),

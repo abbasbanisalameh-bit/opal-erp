@@ -1,0 +1,257 @@
+{% extends "base/base.html" %}
+{% block title %}التتبع المباشر للمواصلات{% endblock %}
+{% block page_title %}التتبع المباشر{% endblock %}
+{% block page_subtitle %}جميع الرحلات النشطة في المدرسة في شاشة واحدة{% endblock %}
+{% block content %}
+<style>
+  body.opal-transport-map-open { overflow: hidden !important; }
+  #manager-map-wrap.opal-map-fullscreen {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    max-width: none !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #000;
+    z-index: 2147483647 !important;
+    overflow: hidden !important;
+    border-radius: 0 !important;
+  }
+  #manager-map-wrap.opal-map-fullscreen #transport-map {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 100vh !important;
+    min-height: 100dvh !important;
+    border-radius: 0 !important;
+  }
+
+  .opal-map-viewport-layer {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #000 !important;
+    z-index: 2147483647 !important;
+    overflow: hidden !important;
+    border-radius: 0 !important;
+  }
+  .opal-map-viewport-layer > #transport-map {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 100dvh !important;
+    border-radius: 0 !important;
+  }
+</style>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<div class="container-fluid py-4" dir="rtl">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h3 class="mb-1">التتبع المباشر للمواصلات</h3>
+      <div class="text-muted">يتم تحديث الموقع الحالي والمسار الفعلي تلقائيًا.</div>
+    </div>
+    <a class="btn btn-outline-secondary" href="{% url 'transport:transport-dashboard' %}">العودة للمواصلات</a>
+  </div>
+
+  <div id="manager-map-wrap" class="position-relative mb-4">
+    <div id="transport-map" style="height:520px;border-radius:16px;overflow:hidden;"></div>
+    <div class="position-absolute top-0 start-0 p-2 d-flex gap-1" style="z-index:1000;">
+      <button type="button" class="btn btn-sm btn-light shadow" id="manager-map-plus">＋</button>
+      <button type="button" class="btn btn-sm btn-light shadow" id="manager-map-minus">−</button>
+      <button type="button" class="btn btn-sm btn-light shadow" id="manager-map-fullscreen">⛶ تكبير الخريطة</button>
+      <span class="badge bg-dark align-self-center" id="manager-wake-state">الشاشة عادية</span>
+    </div>
+  </div>
+
+  <div id="trip-cards" class="row g-3">
+    {% for trip in trips %}
+    <div class="col-xl-6" id="trip-{{ trip.pk }}">
+      <div class="card h-100 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <strong>{{ trip.route.name }}</strong>
+            <span class="badge bg-success">{{ trip.get_direction_display }} #{{ trip.sequence }}</span>
+          </div>
+          <div class="small text-muted mt-2">السائق: {{ trip.driver.name }} · {{ trip.driver.phone }}</div>
+          <div class="small mt-2">الانطلاق: {{ trip.started_at|date:"Y-m-d H:i:s" }}</div>
+          <div class="small">الطلاب: <span data-trip-students="{{ trip.pk }}">—</span></div>
+          <div class="mt-3 small text-muted">المحطات الحالية</div>
+          <div data-trip-stops="{{ trip.pk }}"></div>
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="col-12" data-transport-empty="1"><div class="alert alert-info">لا توجد رحلات نشطة حاليًا.</div></div>
+    {% endfor %}
+  </div>
+</div>
+{{ tracking_payload|json_script:"transport-tracking-data" }}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function () {
+  const initial = JSON.parse(document.getElementById("transport-tracking-data").textContent || "[]");
+  const map = L.map("transport-map").setView([32.556, 35.85], 11);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19, attribution: "&copy; OpenStreetMap"
+  }).addTo(map);
+  const layers = new Map();
+  const tripCards = document.getElementById("trip-cards");
+  function ensureTripCard(trip){
+    if (!tripCards) return;
+    let card=document.getElementById("trip-"+trip.id);
+    if(card) return;
+    const col=document.createElement("div");
+    col.className="col-xl-6";
+    col.id="trip-"+trip.id;
+    col.innerHTML='<div class="card h-100 shadow-sm"><div class="card-body"><div class="d-flex justify-content-between"><strong>'+escapeHtml(trip.route)+'</strong><span class="badge bg-success">'+escapeHtml(trip.direction_label)+' #'+trip.sequence+'</span></div><div class="small text-muted mt-2">السائق: '+escapeHtml(trip.driver)+' · '+escapeHtml(trip.driver_phone||'')+'</div><div class="small mt-2">الانطلاق: '+(trip.started_at?escapeHtml(trip.started_at):'—')+'</div><div class="small">الطلاب: <span data-trip-students="'+trip.id+'">0</span></div><div class="mt-3 small text-muted">المحطات الحالية</div><div data-trip-stops="'+trip.id+'"></div></div></div>';
+    tripCards.appendChild(col);
+  }
+  function escapeHtml(value){return String(value==null?'':value).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[ch]||ch));}
+  function syncEmptyState(count){
+    if(!tripCards) return;
+    const empty=tripCards.querySelector('[data-transport-empty]');
+    if(count){if(empty) empty.remove();}
+    else if(!empty){const col=document.createElement("div");col.className="col-12";col.dataset.transportEmpty="1";col.innerHTML='<div class="alert alert-info">لا توجد رحلات نشطة حاليًا.</div>';tripCards.appendChild(col);}
+  }
+  document.getElementById("manager-map-plus").onclick=()=>map.zoomIn();
+  document.getElementById("manager-map-minus").onclick=()=>map.zoomOut();
+  const mapWrap=document.getElementById("manager-map-wrap");
+  const fullBtn=document.getElementById("manager-map-fullscreen");
+  const wakeState=document.getElementById("manager-wake-state");
+  let wakeLock=null;
+  async function keepAwake(enable){
+    if(!enable){if(wakeLock){try{await wakeLock.release();}catch(e){} wakeLock=null;} wakeState.textContent="الشاشة عادية"; return;}
+    if(!("wakeLock" in navigator)){wakeState.textContent="إبقاء الشاشة غير مدعوم"; return;}
+    try{wakeLock=await navigator.wakeLock.request("screen"); wakeState.textContent="الشاشة مضاءة"; wakeLock.addEventListener("release",()=>wakeState.textContent="الشاشة عادية");}catch(e){wakeState.textContent="تعذر إبقاء الشاشة";}
+  }
+  let fullscreenOpen = false;
+  function resizeMapSoon(){ [0,80,250,600].forEach(d=>setTimeout(()=>{try{map.invalidateSize(true);}catch(e){}},d)); }
+  async function setMapFullscreen(open){
+    fullscreenOpen=Boolean(open);
+    if(fullscreenOpen){
+      window.__opalMapRestore = window.__opalMapRestore || { parent: mapWrap.parentNode, next: mapWrap.nextSibling };
+      document.body.appendChild(mapWrap);
+      mapWrap.classList.add("opal-map-viewport-layer");
+      mapWrap.classList.add("opal-map-fullscreen");
+      document.body.classList.add("opal-transport-map-open");
+      try { if(mapWrap.requestFullscreen && !document.fullscreenElement) await mapWrap.requestFullscreen(); } catch(e) {}
+      await keepAwake(true);
+    } else {
+      try { if(document.fullscreenElement && document.exitFullscreen) await document.exitFullscreen(); } catch(e) {}
+      mapWrap.classList.remove("opal-map-fullscreen");
+      mapWrap.classList.remove("opal-map-viewport-layer");
+      document.body.classList.remove("opal-transport-map-open");
+      const restore=window.__opalMapRestore;
+      if(restore && restore.parent){ restore.parent.insertBefore(mapWrap, restore.next); }
+      await keepAwake(false);
+    }
+    if(fullscreenBtn) fullscreenBtn.textContent=fullscreenOpen?"↙ تصغير الخريطة":"⛶ تكبير الخريطة";
+    if(fullBtn) fullBtn.textContent=fullscreenOpen?"↙ تصغير الخريطة":"⛶ تكبير الخريطة";
+    resizeMapSoon();
+  }
+  document.addEventListener("fullscreenchange", function(){
+    if(!document.fullscreenElement && fullscreenOpen) setMapFullscreen(false);
+  });
+  fullBtn.onclick=()=>setMapFullscreen(!fullscreenOpen);
+  window.addEventListener("resize",resizeMapSoon);
+  window.addEventListener("orientationchange",resizeMapSoon);
+
+  function draw(data) {
+    const activeIds = new Set(data.map(t => String(t.id)));
+    syncEmptyState(data.length);
+
+    // Remove cards and layers for trips that are no longer active.
+    if (tripCards) {
+      tripCards.querySelectorAll('[id^="trip-"]').forEach(node => {
+        const id = node.id.slice(5);
+        if (!activeIds.has(id)) node.remove();
+      });
+    }
+    layers.forEach((layer, id) => {
+      if (!activeIds.has(String(id))) {
+        [layer.bus, layer.planned, layer.actual, ...(layer.stops || [])].forEach(item => {
+          if (item) map.removeLayer(item);
+        });
+        layers.delete(id);
+      }
+    });
+
+    let fitPoints = [];
+    data.forEach(trip => {
+      ensureTripCard(trip);
+      let layer = layers.get(trip.id);
+      if (!layer) {
+        layer = {bus: null, planned: null, actual: null, stops: []};
+        layers.set(trip.id, layer);
+      }
+      const planned = trip.stops.map(s => [s.latitude, s.longitude]);
+      const actual = trip.gps.map(p => [p.latitude, p.longitude]);
+
+      if (layer.planned) layer.planned.setLatLngs(planned);
+      else if (planned.length) layer.planned = L.polyline(planned, {dashArray: "6 8"}).addTo(map);
+      planned.forEach(x => fitPoints.push(x));
+
+      if (layer.actual) layer.actual.setLatLngs(actual);
+      else if (actual.length) layer.actual = L.polyline(actual).addTo(map);
+      actual.forEach(x => fitPoints.push(x));
+
+      if (trip.latest) {
+        const point = [trip.latest.latitude, trip.latest.longitude];
+        fitPoints.push(point);
+        if (layer.bus) layer.bus.setLatLng(point);
+        else {
+          layer.bus = L.marker(point).addTo(map).bindPopup(trip.route + " — " + trip.driver);
+        }
+      }
+
+      if (!layer.stops) layer.stops = [];
+      layer.stops.forEach(m => map.removeLayer(m));
+      layer.stops = trip.stops.map(s => {
+        const m=L.circleMarker([s.latitude,s.longitude],{radius:6,weight:2}).addTo(map);
+        m.bindPopup("<strong>محطة "+s.sequence+"</strong><br>"+(s.label||s.address||"موقع الأسرة"));
+        return m;
+      });
+
+      const studentNode = document.querySelector('[data-trip-students="' + trip.id + '"]');
+      if (studentNode) studentNode.textContent = trip.students.length;
+
+      const stopsNode = document.querySelector('[data-trip-stops="' + trip.id + '"]');
+      if (stopsNode) {
+        stopsNode.innerHTML = trip.stops.map(s => {
+          const names = (s.siblings || []).join("، ");
+          const dwell = s.dwell_seconds == null ? "" : " · مدة التوقف " + Math.round(s.dwell_seconds / 60) + " د";
+          return '<div class="border rounded p-2 mt-1">#' + s.sequence + ' ' +
+            (s.label || s.address || "موقع الأسرة") +
+            (names ? ' · الأبناء: ' + names : '') +
+            (s.arrived_at ? ' · وصل' : '') +
+            (s.departed_at ? ' · غادر' : '') + dwell + '</div>';
+        }).join("");
+      }
+    });
+    if (fitPoints.length) {
+      try { map.fitBounds(fitPoints,{padding:[35,35],maxZoom:15}); } catch(e) {}
+    }
+  }
+  draw(initial);
+
+  async function refresh() {
+    try {
+      const response = await fetch("{% url 'transport:tracking-api' %}", {credentials: "same-origin"});
+      if (!response.ok) return;
+      const data = await response.json();
+      draw(data.trips || []);
+    } catch (e) {}
+  }
+  setInterval(refresh, 10000);
+})();
+</script>
+{% endblock %}

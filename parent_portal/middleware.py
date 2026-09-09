@@ -12,6 +12,7 @@ class ParentPortalAccessMiddleware:
 
     ALLOWED_PREFIXES = (
         "/parent/",
+        "/transport/",
         "/accounts/",
         "/logout/",
         "/static/",

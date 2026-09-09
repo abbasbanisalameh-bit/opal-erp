@@ -112,6 +112,23 @@ def reset_all_operational_data(*, keep_user=None):
             app_label, model_name = label.split(".", 1)
             _delete_all(apps.get_model(app_label, model_name))
 
+    # Transport operational chains are removed from leaf to root before StudentRegistration.
+    # TransportAssignment/TransportStudentEvent/TransportGroupMember protect registrations.
+    from transport.models import (
+        TransportGPSPoint, TransportStudentEvent, TransportTripStop,
+        TransportAssignment, TransportGroupMember, TransportTrip,
+        TransportGroup, TransportFamilyLocation, TransportDriver,
+    )
+    _delete_all(TransportGPSPoint)
+    _delete_all(TransportStudentEvent)
+    _delete_all(TransportTripStop)
+    _delete_all(TransportAssignment)
+    _delete_all(TransportTrip)
+    _delete_all(TransportGroupMember)
+    _delete_all(TransportGroup)
+    _delete_all(TransportFamilyLocation)
+    _delete_all(TransportDriver)
+
     # Protected and transactional financial chains are removed from leaf to root.
     _delete_all(MonthlyFinancialStatement)
     _delete_all(CanteenTransaction)
@@ -375,8 +392,13 @@ def _structure(school):
 
     RegistrationSettings.objects.create(school=school, first_payment_percent=20)
     TransportRoute.objects.bulk_create([
-        TransportRoute(school=school, name=name, full_fee=amount, is_active=True)
-        for name, amount in (("مسار إربد المدينة", 300), ("مسار الحصن", 325), ("مسار الرمثا", 350), ("مسار بني عبيد", 300))
+        TransportRoute(school=school, name=name, full_fee=amount, is_active=True, notes="مسار تجريبي مترابط حسب الموقع الجغرافي.")
+        for name, amount in (
+            ("مسار بني عبيد", 300), ("مسار إربد المدينة", 325), ("مسار إيدون", 300),
+            ("مسار الضاحية", 325), ("مسار زبدة فركوح", 350), ("مسار الرابية", 300),
+            ("مسار ناطفة", 325), ("مسار وسط البلد", 300), ("مسار مجمع عمان", 350),
+            ("مسار الصريح", 325), ("مسار شارع البتراء", 350),
+        )
     ])
     DocumentSettings.objects.create(
         school=school, manager_name="مدير مدرسة أوبال", manager_title="المدير العام", stamp_label="ختم المدرسة",
@@ -518,6 +540,261 @@ def _validate_integrated_academic_demo(*, school, year, sections):
         "teacher_daily_target": DEMO_TEACHER_DAILY_TARGET,
         "timetable_entries": len(entries),
         "schedule_verified": True,
+    }
+
+def _seed_transport_demo(*, school, students, families, family_by_index, student_meta, branch, year, user):
+    """Create a fully relational transport acceptance dataset for the 500-student demo."""
+    from accounts.models import Role, UserProfile
+    from admissions.models import StudentRegistration, TransportRoute
+    from parent_portal.models import FamilyStudent
+    from transport.models import (
+        TransportAssignment, TransportDriver, TransportFamilyLocation,
+        TransportGPSPoint, TransportGroup, TransportGroupMember,
+        TransportStudentEvent, TransportTrip, TransportTripStop,
+    )
+    from django.contrib.auth.models import User
+
+    region_defs = [
+        ("بني عبيد", 32.5152, 35.8875),
+        ("إربد المدينة", 32.5556, 35.8500),
+        ("إيدون", 32.5068, 35.8560),
+        ("الضاحية", 32.5705, 35.8650),
+        ("زبدة فركوح", 32.5310, 35.8040),
+        ("الرابية", 32.5650, 35.8245),
+        ("ناطِفة", 32.5880, 35.8420),
+        ("وسط البلد", 32.5530, 35.8490),
+        ("مجمع عمان", 32.5685, 35.8750),
+        ("الصريح", 32.4900, 35.8790),
+        ("شارع البتراء", 32.5655, 35.9050),
+    ]
+    route_defs = [(f"مسار {name}", Decimal("300") + Decimal(str((idx % 4) * 25))) for idx, (name, _, _) in enumerate(region_defs)]
+    routes = list(TransportRoute.objects.filter(school=school).order_by("id"))
+    if len(routes) != len(route_defs):
+        TransportRoute.objects.filter(school=school).delete()
+        TransportRoute.objects.bulk_create([
+            TransportRoute(school=school, name=name, full_fee=fee, is_active=True, notes="مسار تجريبي مرتبط بالموقع الجغرافي.")
+            for name, fee in route_defs
+        ])
+        routes = list(TransportRoute.objects.filter(school=school).order_by("id"))
+
+    driver_role, _ = Role.objects.get_or_create(code="driver", defaults={"name": "سائق", "description": "حساب سائق مواصلات"})
+    driver_rows = []
+    for idx, name in enumerate(("أحمد سائق أوبال", "محمد سائق أوبال", "خالد سائق أوبال"), 1):
+        username = f"driver_demo_{idx:02d}"
+        driver_user, created = User.objects.get_or_create(
+            username=username,
+            defaults={"first_name": name, "is_active": True, "password": make_password(DEFAULT_ACCOUNT_PASSWORD)},
+        )
+        if not created:
+            driver_user.first_name = name
+            driver_user.set_password(DEFAULT_ACCOUNT_PASSWORD)
+            driver_user.is_active = True
+            driver_user.save(update_fields=["first_name", "password", "is_active"])
+        UserProfile.objects.update_or_create(
+            user=driver_user,
+            defaults={"school": school, "branch": branch, "role": driver_role, "full_name": name, "phone": f"07880000{idx:02d}", "is_school_user": True},
+        )
+        driver_rows.append(TransportDriver.objects.create(user=driver_user, name=name, phone=f"07880000{idx:02d}", is_active=True))
+
+    # Every guardian receives a deterministic synthetic location in one Irbid cluster.
+    location_rows = []
+    family_region = {}
+    for family_index, family in enumerate(families, 1):
+        region_index = (family_index - 1) % len(region_defs)
+        label, lat, lon = region_defs[region_index]
+        jitter_lat = ((family_index * 17) % 17 - 8) * 0.00035
+        jitter_lon = ((family_index * 23) % 17 - 8) * 0.00035
+        family_region[family.pk] = region_index
+        location_rows.append(TransportFamilyLocation(
+            family=family,
+            label=f"{label} — نقطة تجريبية {family_index:03d}",
+            address=f"إربد، {label}، موقع تجريبي رقم {family_index:03d}",
+            latitude=Decimal(str(round(lat + jitter_lat, 6))),
+            longitude=Decimal(str(round(lon + jitter_lon, 6))),
+            is_active=True,
+        ))
+    TransportFamilyLocation.objects.bulk_create(location_rows)
+
+    route_by_region = {idx: routes[idx] for idx in range(len(routes))}
+    registrations = list(StudentRegistration.objects.filter(academic_year=year).select_related("student"))
+    registration_by_student = {r.student_id: r for r in registrations}
+    for index, student in enumerate(students, 1):
+        reg = registration_by_student[student.pk]
+        family = student_meta[student.student_number]["family"]
+        region_index = family_region[family.pk]
+        mode = index % 10
+        if mode in (0, 1):
+            transport_type = "none"
+        elif mode in (2, 3, 4, 7, 8):
+            transport_type = "both"
+        elif mode == 5:
+            transport_type = "go"
+        else:
+            transport_type = "return"
+        route = route_by_region[region_index] if transport_type != "none" else None
+        fee = (route.full_fee if route else Decimal("0"))
+        if transport_type in ("go", "return"):
+            fee = (fee * Decimal("0.60")).quantize(Decimal("0.01"))
+        reg.transport_route = route
+        reg.transport_type = transport_type
+        reg.transport_fee = fee
+        reg.net_total = reg.tuition_fee + fee - reg.discount_value
+        reg.remaining_amount = max(reg.net_total - reg.first_payment, Decimal("0"))
+        reg.notes = (reg.notes + " | بيانات مواصلات تجريبية مترابطة" ).strip()
+        reg.save(update_fields=["transport_route", "transport_type", "transport_fee", "net_total", "remaining_amount", "notes"])
+
+    eligible = [r for r in registrations if r.transport_type != "none" and r.transport_route_id]
+    by_region = {}
+    for reg in eligible:
+        family = student_meta[reg.student.student_number]["family"]
+        by_region.setdefault(family_region[family.pk], []).append(reg)
+
+    groups = []
+    group_counter = 0
+    for region_index, region_rows in sorted(by_region.items()):
+        # Keep each geographic group compact: at most 12 families, all from one region.
+        family_order = []
+        seen_families = set()
+        for reg in sorted(region_rows, key=lambda r: r.pk):
+            family = student_meta[reg.student.student_number]["family"]
+            if family.pk not in seen_families:
+                seen_families.add(family.pk); family_order.append(family)
+        for chunk_start in range(0, len(family_order), 12):
+            chunk = family_order[chunk_start:chunk_start + 12]
+            group_counter += 1
+            driver = driver_rows[(group_counter - 1) % len(driver_rows)]
+            group = TransportGroup.objects.create(
+                route=route_by_region[region_index], service_date=timezone.localdate(), direction=None,
+                name=f"مجموعة {region_defs[region_index][0]} {chunk_start // 12 + 1}",
+                max_students=max(10, len(chunk) * 3), source="auto", is_locked=True, is_stable=True,
+                assigned_driver=driver,
+                notes="مجموعة تجريبية جغرافية؛ جميع نقاطها متقاربة داخل المنطقة نفسها.",
+            )
+            member_rows = [
+                TransportGroupMember(group=group, registration=reg)
+                for reg in region_rows
+                if student_meta[reg.student.student_number]["family"].pk in {f.pk for f in chunk}
+            ]
+            TransportGroupMember.objects.bulk_create(member_rows)
+            groups.append(group)
+
+    # Bind subscriptions to the group's driver and to today's morning/return rounds.
+    sequence_by_driver_direction = {}
+    trips = []
+    for group in groups:
+        regs = list(TransportGroupMember.objects.filter(group=group).select_related("registration"))
+        directions = set()
+        if any(m.registration.transport_type in ("go", "both") for m in regs): directions.add(TransportTrip.MORNING)
+        if any(m.registration.transport_type in ("return", "both") for m in regs): directions.add(TransportTrip.RETURN)
+        for direction in (TransportTrip.MORNING, TransportTrip.RETURN):
+            if direction not in directions:
+                continue
+            key = (group.assigned_driver_id, direction)
+            sequence_by_driver_direction[key] = sequence_by_driver_direction.get(key, 0) + 1
+            trip = TransportTrip.objects.create(
+                school=school, route=group.route, driver=group.assigned_driver,
+                service_date=timezone.localdate(), direction=direction,
+                sequence=sequence_by_driver_direction[key], planning_group=group,
+                vehicle_type=TransportTrip.VEHICLE_MINIBUS,
+                vehicle_description=f"باص تجريبي {group.assigned_driver.name}", status=TransportTrip.PLANNED,
+            )
+            trips.append(trip)
+            for m in regs:
+                if (direction == TransportTrip.MORNING and m.registration.transport_type not in ("go", "both")) or (direction == TransportTrip.RETURN and m.registration.transport_type not in ("return", "both")):
+                    continue
+                assignment, _ = TransportAssignment.objects.get_or_create(
+                    registration=m.registration,
+                    defaults={"driver": group.assigned_driver, "is_active": True},
+                )
+                assignment.driver = group.assigned_driver
+                if direction == TransportTrip.MORNING:
+                    assignment.morning_trip = trip
+                else:
+                    assignment.return_trip = trip
+                assignment.is_active = True
+                assignment.save(update_fields=["driver", "morning_trip", "return_trip", "is_active", "updated_at"])
+
+    from transport.services import rebuild_trip_stops
+    for trip in trips:
+        rebuild_trip_stops(trip=trip)
+
+    # Create a mixed acceptance state: completed + active + planned.
+    trips = list(TransportTrip.objects.filter(school=school, service_date=timezone.localdate()).order_by("driver_id", "direction", "sequence", "pk"))
+    active_trips = []
+    for driver in driver_rows:
+        # The acceptance snapshot is generated during the school day, so a
+        # return round is preferred for live tracking; morning rounds can be
+        # completed historical examples.
+        preferred = next((t for t in trips if t.driver_id == driver.pk and t.direction == TransportTrip.RETURN), None)
+        if preferred is None:
+            preferred = next((t for t in trips if t.driver_id == driver.pk and t.direction == TransportTrip.MORNING), None)
+        if preferred:
+            active_trips.append(preferred)
+    completed_trips = [t for t in trips if t not in active_trips][:4]
+    now = timezone.now()
+    active_ids = {t.pk for t in active_trips}
+    completed_ids = {t.pk for t in completed_trips}
+    for trip in trips:
+        if trip.pk in active_ids:
+            trip.status = TransportTrip.ACTIVE
+            trip.started_at = now - timedelta(minutes=28 + trip.sequence * 3)
+            trip.finished_at = None
+            trip.save(update_fields=["status", "started_at", "finished_at", "updated_at"])
+        elif trip.pk in completed_ids:
+            trip.status = TransportTrip.COMPLETED
+            trip.started_at = now - timedelta(minutes=110 + trip.sequence * 5)
+            trip.finished_at = trip.started_at + timedelta(minutes=52 + trip.sequence * 2)
+            trip.save(update_fields=["status", "started_at", "finished_at", "updated_at"])
+
+    # Seed event history and GPS for active/completed trips.
+    for trip in trips:
+        if trip.status not in (TransportTrip.ACTIVE, TransportTrip.COMPLETED):
+            continue
+        stops = list(TransportTripStop.objects.filter(trip=trip).order_by("sequence"))
+        assignments = list(TransportAssignment.objects.filter(
+            is_active=True,
+            **({"morning_trip": trip} if trip.direction == TransportTrip.MORNING else {"return_trip": trip}),
+        ).select_related("registration"))
+        regs_by_family = {}
+        for assignment in assignments:
+            family_id = FamilyStudent.objects.filter(student_id=assignment.registration.student_id, is_active=True).values_list("family_id", flat=True).first()
+            if family_id:
+                regs_by_family.setdefault(family_id, []).append(assignment.registration)
+        completion_limit = len(stops) if trip.status == TransportTrip.COMPLETED else max(1, min(len(stops), 2))
+        for stop in stops[:completion_limit]:
+            arrived_at = trip.started_at + timedelta(minutes=8 + (stop.sequence - 1) * 6)
+            departed_at = arrived_at + timedelta(minutes=3 + (stop.sequence % 3))
+            stop.arrived_at = arrived_at
+            stop.departed_at = departed_at
+            stop.save(update_fields=["arrived_at", "departed_at"])
+            event_type = "boarded" if trip.direction == TransportTrip.MORNING else "dropped_off"
+            for reg in regs_by_family.get(stop.family_id, []):
+                TransportStudentEvent.objects.create(
+                    trip=trip, registration=reg, event_type="arrived", occurred_at=arrived_at,
+                    latitude=stop.latitude, longitude=stop.longitude, notes="بيان تجريبي للاختبار.",
+                )
+                TransportStudentEvent.objects.create(
+                    trip=trip, registration=reg, event_type=event_type, occurred_at=departed_at,
+                    latitude=stop.latitude, longitude=stop.longitude, notes="بيان تجريبي للاختبار.",
+                )
+        gps_points = []
+        for idx, stop in enumerate(stops[:max(3, completion_limit + 2)]):
+            gps_points.append(TransportGPSPoint(
+                trip=trip, latitude=stop.latitude, longitude=stop.longitude,
+                accuracy_m=Decimal("8.00"), speed_kmh=Decimal(str(18 + (idx % 4) * 4)),
+                recorded_at=trip.started_at + timedelta(minutes=6 + idx * 7),
+            ))
+        TransportGPSPoint.objects.bulk_create(gps_points)
+
+    return {
+        "drivers": len(driver_rows),
+        "transport_students": len(eligible),
+        "non_transport_students": len(students) - len(eligible),
+        "families_with_locations": len(families),
+        "groups": len(groups),
+        "trips": len(trips),
+        "active_trips": len(active_trips),
+        "completed_trips": len(completed_trips),
     }
 
 
@@ -872,6 +1149,11 @@ def seed_system_data(*, student_count=DEMO_STUDENT_COUNT, teacher_count=DEMO_TEA
             remaining_before=invoice.amount, remaining_after=invoice.amount - payment.amount,
         ))
     FeePaymentAllocation.objects.bulk_create(allocation_rows, batch_size=1000)
+
+    transport_demo = _seed_transport_demo(
+        school=school, students=students, families=families, family_by_index=family_by_index,
+        student_meta=student_meta, branch=branch, year=year, user=user,
+    )
 
 
     # Ten recent school days using the current exception-only attendance policy.

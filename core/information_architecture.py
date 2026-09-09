@@ -12,7 +12,7 @@ from typing import Iterable
 
 from django.urls import NoReverseMatch, reverse
 
-from .workflow_catalog import MANAGEMENT, PARENT, TEACHER, user_role_key
+from .workflow_catalog import DRIVER, MANAGEMENT, PARENT, TEACHER, user_role_key
 
 
 @dataclass(frozen=True)
@@ -44,6 +44,7 @@ GATEWAYS: tuple[InformationGateway, ...] = (
     InformationGateway("management.teachers", "إدارة المعلمين", MANAGEMENT, "teachers:dashboard", "المرجع الرسمي للمعلمين والتكليفات."),
     InformationGateway("management.payroll", "الرواتب والسلف", MANAGEMENT, "teachers:payroll_center", "المركز الرسمي للرواتب والسلف والخصومات."),
     InformationGateway("management.notifications", "التواصل والمتابعة", MANAGEMENT, "dashboard:home", "ملخص التواصل مدمج في لوحة الإدارة، وتفتح البطاقات صفحات العمل التفصيلية مباشرة."),
+    InformationGateway("management.transport", "المواصلات", MANAGEMENT, "transport:transport-dashboard", "مركز المواصلات الرسمي للرحلات والسائقين والتعيينات والتتبع."),
 
     # Teacher
     InformationGateway("teacher.home", "رئيسية المعلم", TEACHER, "teachers:portal_dashboard", "ملخص خفيف للتكليفات والتنبيهات."),
@@ -64,6 +65,8 @@ GATEWAYS: tuple[InformationGateway, ...] = (
     InformationGateway("parent.timetable", "جداول الأبناء", PARENT, "parent_portal:timetable", "المكان الوحيد للجداول."),
     InformationGateway("parent.documents", "وثائق الأبناء", PARENT, "parent_portal:documents", "المكان الوحيد للوثائق المتاحة للأسرة."),
     InformationGateway("parent.notifications", "الإشعارات", PARENT, "enterprise_ops:notification_list", "سجل الإشعارات مع روابط مباشرة للأحداث."),
+    InformationGateway("parent.transport", "مواصلات الأبناء", PARENT, "transport:transport-dashboard", "تحديد موقع الأسرة ومتابعة الرحلة النشطة للأبناء فقط."),
+    InformationGateway("driver.transport", "مواصلات السائق", DRIVER, "transport:transport-dashboard", "رحلات السائق الحالية والتشغيل والتتبع."),
 )
 
 

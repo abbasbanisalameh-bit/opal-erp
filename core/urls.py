@@ -3,6 +3,7 @@ from . import views
 from . import system_update_views
 from . import webapp_reload
 from . import production_reset_views
+from . import system_console_views
 
 app_name = "core"
 
@@ -15,6 +16,9 @@ urlpatterns = [
     path("branches/", views.branch_list, name="branch_list"),
     path("branches/<int:pk>/edit/", views.branch_update, name="branch_update"),
     path("updates/", system_update_views.system_updates, name="system_updates"),
+    path("updates/console/", system_console_views.system_console, name="system_console"),
+    path("updates/console/open/", system_console_views.open_system_console, name="open_system_console"),
+    path("updates/console/run/", system_console_views.run_system_console, name="run_system_console"),
     path(
         "updates/reload/",
         webapp_reload.reload_webapp,

@@ -20,6 +20,17 @@ def opal_identity(request):
             or "المدير العام"
         )
 
+    transport_driver_impersonator_id = request.session.get("opal_transport_driver_impersonator_user_id") if hasattr(request, "session") else None
+    transport_driver_impersonator_name = ""
+    if transport_driver_impersonator_id:
+        User = get_user_model()
+        transport_driver_impersonator_name = (
+            User.objects.filter(pk=transport_driver_impersonator_id)
+            .values_list("username", flat=True)
+            .first()
+            or "الإدارة"
+        )
+
     academic_context = request_academic_context(request, persist=True)
     return {
         "opal_school": school,
@@ -28,6 +39,8 @@ def opal_identity(request):
         "opal_development_center_enabled": settings.OPAL_ENABLE_DEVELOPMENT_CENTER,
         "opal_is_impersonating": bool(impersonator_id),
         "opal_impersonator_name": impersonator_name,
+        "opal_is_transport_driver_impersonating": bool(transport_driver_impersonator_id),
+        "opal_transport_driver_impersonator_name": transport_driver_impersonator_name,
         "opal_academic_year": academic_context.year if academic_context else None,
         "opal_semester": academic_context.semester if academic_context else None,
         "opal_semester_changed": academic_context.semester_changed if academic_context else False,
@@ -39,7 +52,7 @@ def opal_identity(request):
 
 def opal_operations(request):
     """Expose the role-aware canonical operation catalogue on every authenticated page."""
-    if not request.user.is_authenticated:
+    if not getattr(getattr(request, "user", None), "is_authenticated", False):
         return {
             "opal_operation_catalog": [],
             "opal_operation_groups": [],

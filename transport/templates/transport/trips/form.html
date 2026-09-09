@@ -1,0 +1,107 @@
+{% extends "base/base.html" %}
+
+{% block content %}
+
+<div class="container py-4">
+
+    <div class="mb-4">
+        <h3>{{ title }}</h3>
+        <div class="text-muted">
+            الرحلة ترتبط بالمسار الرسمي والسائق المعتمد في المدرسة.
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {{ form.non_field_errors }}
+                </div>
+            {% endif %}
+
+            <form method="post">
+                {% csrf_token %}
+
+                <div class="row g-3">
+
+                    <div class="col-md-6">
+                        <label class="form-label">
+                            المسار
+                        </label>
+                        {{ form.route }}
+                        {{ form.route.errors }}
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">
+                            السائق
+                        </label>
+                        {{ form.driver }}
+                        {{ form.driver.errors }}
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">
+                            تاريخ الرحلة
+                        </label>
+                        {{ form.service_date }}
+                        {{ form.service_date.errors }}
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">
+                            الاتجاه
+                        </label>
+                        {{ form.direction }}
+                        {{ form.direction.errors }}
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">
+                            رقم الرحلة
+                        </label>
+                        {{ form.sequence }}
+                        {{ form.sequence.errors }}
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">
+                            نوع المركبة
+                        </label>
+                        {{ form.vehicle_type }}
+                        {{ form.vehicle_type.errors }}
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">
+                            وصف المركبة
+                        </label>
+                        {{ form.vehicle_description }}
+                        {{ form.vehicle_description.errors }}
+                    </div>
+
+                </div>
+
+                <div class="d-flex gap-2 mt-4">
+
+                    <button type="submit"
+                            class="btn btn-primary">
+                        حفظ الرحلة
+                    </button>
+
+                    <a href="{% url 'transport:trip-list' %}"
+                       class="btn btn-outline-secondary">
+                        إلغاء
+                    </a>
+
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

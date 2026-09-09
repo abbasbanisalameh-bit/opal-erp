@@ -11,7 +11,7 @@ from pathlib import Path
 import re
 
 from .final_reengineering_audit import AuditIssue, project_root
-from .workflow_catalog import AUTHENTICATED, MANAGEMENT, PARENT, TEACHER, SIDEBAR_SECTIONS
+from .workflow_catalog import AUTHENTICATED, DRIVER, MANAGEMENT, PARENT, TEACHER, SIDEBAR_SECTIONS
 
 
 _EXPECTED_SIDEBAR_KEYS = {
@@ -23,9 +23,11 @@ _EXPECTED_SIDEBAR_KEYS = {
         "finance-dashboard",
         "documents",
         "system-settings",
+        "transport-dashboard",
     ),
     TEACHER: ("teacher-home", "feedback"),
-    PARENT: ("parent-home",),
+    PARENT: ("parent-home", "transport-dashboard"),
+    DRIVER: ("transport-dashboard",),
     AUTHENTICATED: ("profile",),
 }
 

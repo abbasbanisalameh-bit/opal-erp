@@ -139,3 +139,19 @@ body.learning-body{margin:0;min-height:100vh;color:var(--learn-ink);background:#
 .learning-video-browser-screen{position:relative;width:100%;aspect-ratio:16/9;background:#000}.learning-video-browser-screen iframe,.learning-video-browser-screen video{display:block;width:100%;height:100%;border:0;background:#000}.learning-video-browser-screen video{object-fit:contain}
 .learning-video-browser-note{margin:0;padding:10px 14px;color:#bbb2c9;background:#211b2b;font-size:.69rem;line-height:1.7}
 @media(max-width:600px){.learning-video-browser{border-radius:16px}.learning-video-browser-bar{align-items:flex-start;flex-direction:column}.learning-video-browser-provider{max-width:100%}.learning-video-browser-screen{aspect-ratio:16/10}.learning-video-browser-note{font-size:.66rem}}
+
+
+/* OPAL Update 131.7 R36 — approved learning brand and marketing polish */
+.learning-brand-logo{display:block;width:48px;height:48px;flex:0 0 48px;border-radius:50%;object-fit:cover;background:#fff;box-shadow:0 8px 22px rgba(13,92,182,.16)}
+.learning-header{border-bottom-color:#dcecf6}.learning-header::before{content:"";position:absolute;inset-inline:0;bottom:-1px;height:2px;background:linear-gradient(90deg,#0d5cb6,#0eb6b4,#e3a928);opacity:.72}
+.learning-brand strong{color:#0c4f9b}.learning-brand small{color:#087f84}
+.learning-button{background:linear-gradient(135deg,#0d5cb6,#087f84);box-shadow:0 10px 24px rgba(13,92,182,.18)}
+.learning-button:hover{filter:brightness(1.04)}
+.learning-hero{background:radial-gradient(circle at 16% 15%,rgba(227,169,40,.14),transparent 23%),radial-gradient(circle at 78% 10%,rgba(14,182,180,.16),transparent 26%),linear-gradient(135deg,#eef7ff,#f8fcff 54%,#eefaf9)}
+.learning-dashboard-hero{background:linear-gradient(135deg,#073b78 0%,#0d5cb6 56%,#087f84 100%)}
+.learning-dashboard-hero.manager{background:linear-gradient(135deg,#073b78 0%,#0d5cb6 48%,#087f84 100%)}
+.learning-stat-card span.violet{background:#e8f2ff;color:#0d5cb6}.learning-stat-card span.mint{background:#e5f8f6;color:#087f84}.learning-stat-card span.amber{background:#fff6da;color:#b57d00}
+.learning-course-card,.learning-enrollment-list article,.learning-subscription-grid article{border-color:#dceaf4;box-shadow:0 12px 32px rgba(13,59,120,.055)}
+.learning-footer{background:linear-gradient(160deg,#061d38,#082d54 58%,#064f52)}
+.learning-brand-light strong{color:#fff}.learning-brand-light small{color:#b7e6e3}
+@media(max-width:540px){.learning-brand-logo{width:40px;height:40px;flex-basis:40px}.learning-brand strong{font-size:16px}}

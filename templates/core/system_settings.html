@@ -19,6 +19,12 @@
 
 
 
+
+
+
+
+
+
 {# OPAL_SYSTEM_SETTINGS_DEDUPLICATED_V1 #}
 
 <details id="school-settings" class="opal-card mb-4 opal-settings-section opal-settings-accordion" open>
@@ -105,7 +111,7 @@
   <div class="opal-inner-panel mt-4">
     <h4><i class="bi bi-sign-turn-right"></i> جولات المواصلات الحالية</h4>
     <div class="d-flex flex-wrap gap-2">
-      {% for route in routes %}<span class="opal-data-chip"><strong>{{ route.name }}</strong><span>{{ route.full_fee }} د.أ</span>{% if not route.is_active %}<em>متوقفة</em>{% endif %}</span>{% endfor %}
+{% for route in routes %}<span class="opal-data-chip"><strong>{{ route.name }}</strong> <span>({{ route.full_fee }} د.أ)</span>{% if not route.is_active %}<em class="text-muted">(موقفة)</em>{% endif %}<form method="post" class="d-inline ms-2">{% csrf_token %}<input type="hidden" name="route_id" value="{{ route.id }}"><button type="submit" name="action" value="toggle_route" class="btn btn-sm p-0 border-0 bg-transparent" title="تفعيل / إيقاف">🔄</button><button type="submit" name="action" value="delete_route" class="btn btn-sm p-0 border-0 bg-transparent ms-1" title="حذف" onclick="return confirm('هل أنت متأكد من حذف الجولة نهائياً؟');">🗑️</button></form></span>{% endfor %}
     </div>
   </div>
   {% endif %}

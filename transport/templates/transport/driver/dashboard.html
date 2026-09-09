@@ -1,0 +1,275 @@
+{% extends "base/base.html" %}
+{% block title %}مواصلات السائق{% endblock %}
+{% block page_title %}المواصلات{% endblock %}
+{% block page_subtitle %}جولاتك اليومية والتتبع الحالي{% endblock %}
+{% block content %}
+<style>
+  body.opal-transport-map-open { overflow: hidden !important; }
+  #driver-map-wrap.opal-map-fullscreen {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    max-width: none !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #000;
+    z-index: 2147483647 !important;
+    overflow: hidden !important;
+    border-radius: 0 !important;
+  }
+  #driver-map-wrap.opal-map-fullscreen #driver-map {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 100vh !important;
+    min-height: 100dvh !important;
+    border-radius: 0 !important;
+  }
+
+  .opal-map-viewport-layer {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #000 !important;
+    z-index: 2147483647 !important;
+    overflow: hidden !important;
+    border-radius: 0 !important;
+  }
+  .opal-map-viewport-layer > #driver-map {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 100dvh !important;
+    border-radius: 0 !important;
+  }
+</style>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<div class="container-fluid py-4" dir="rtl">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+    <div><h3 class="mb-1">مرحبًا {{ driver.name }}</h3><div class="text-muted">هاتف السائق: {{ driver.phone }}</div></div>
+  </div>
+
+  {% if map_trip %}
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center">
+        <div><strong>{% if active_trip %}الجولة الحالية{% else %}الجولة التالية{% endif %}:</strong> {{ map_trip.route.name }} — {{ map_trip.get_direction_display }} #{{ map_trip.sequence }}</div>
+        {% if active_trip %}
+        <form method="post" action="{% url 'transport:driver-finish-trip' active_trip.pk %}">
+          {% csrf_token %}<button class="btn btn-danger">إنهاء الجولة</button>
+        </form>
+        {% endif %}
+      </div>
+      <div id="driver-map-wrap" class="mt-3 position-relative">
+        <div id="driver-map" style="height:420px;border-radius:14px;overflow:hidden;"></div>
+        <div class="position-absolute top-0 start-0 p-2 d-flex gap-1 flex-wrap" style="z-index:1000;">
+          <button type="button" class="btn btn-sm btn-light shadow" id="driver-map-plus" title="تكبير الخريطة">＋</button>
+          <button type="button" class="btn btn-sm btn-light shadow" id="driver-map-minus" title="تصغير الخريطة">−</button>
+          <button type="button" class="btn btn-sm btn-light shadow" id="driver-map-fullscreen">⛶ تكبير الخريطة</button>
+          <span class="badge bg-dark align-self-center" id="driver-wake-state">الشاشة عادية</span>
+        </div>
+      </div>
+      {% if map_warning %}<div class="alert alert-warning mt-3 mb-0">{{ map_warning }}</div>{% endif %}
+      {% if map_warning %}<div class="alert alert-warning mt-3 mb-0">{{ map_warning }}</div>{% endif %}
+      <div class="mt-3" id="driver-stops"></div>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="card shadow-sm">
+    <div class="card-header"><strong>الجولات الحالية والمجدولة</strong><div class="small text-muted">تظهر الجولة النشطة حتى بعد منتصف الليل، إضافة إلى جولات اليوم المجدولة.</div></div>
+    <div class="table-responsive">
+      <table class="table align-middle mb-0">
+        <thead><tr><th>الجولة</th><th>المسار</th><th>الاتجاه</th><th>المركبة</th><th>الحالة</th><th></th></tr></thead>
+        <tbody>
+        {% for trip in trips %}
+          <tr>
+            <td>#{{ trip.sequence }}</td><td>{{ trip.route.name }}</td><td>{{ trip.get_direction_display }}</td>
+            <td>{{ trip.get_vehicle_type_display }}</td>
+            <td>{{ trip.get_status_display }}</td>
+            <td>
+              {% if trip.status == "planned" %}
+              <form method="post" action="{% url 'transport:driver-start-trip' trip.pk %}">
+                {% csrf_token %}<button class="btn btn-sm btn-primary">بدء الجولة</button>
+              </form>
+              {% elif trip.status == "active" %}
+              <span class="text-success">جارية الآن</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="text-center text-muted py-4">لا توجد جولات مجدولة لليوم.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% if map_trip %}
+{{ map_trip_payload|json_script:"driver-trip-data" }}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function () {
+  const map = L.map("driver-map").setView([32.556,35.85],11);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"&copy; OpenStreetMap"}).addTo(map);
+  let bus, actual, planned, stopMarkers=[];
+  const stopsBox=document.getElementById("driver-stops");
+  const csrf = document.querySelector('input[name="csrfmiddlewaretoken"]');
+  const mapWrap = document.getElementById("driver-map-wrap");
+  const fullscreenBtn = document.getElementById("driver-map-fullscreen");
+  const wakeState = document.getElementById("driver-wake-state");
+  let wakeLock = null;
+
+  async function keepScreenAwake(enable) {
+    if (!enable) {
+      if (wakeLock) { try { await wakeLock.release(); } catch(e) {} wakeLock = null; }
+      if (wakeState) wakeState.textContent = "الشاشة عادية";
+      return;
+    }
+    if (!("wakeLock" in navigator)) {
+      if (wakeState) wakeState.textContent = "إبقاء الشاشة غير مدعوم";
+      return;
+    }
+    try {
+      wakeLock = await navigator.wakeLock.request("screen");
+      if (wakeState) wakeState.textContent = "الشاشة مضاءة";
+      wakeLock.addEventListener("release", function(){ if (wakeState) wakeState.textContent = "الشاشة عادية"; });
+    } catch (e) {
+      if (wakeState) wakeState.textContent = "تعذر إبقاء الشاشة";
+    }
+  }
+
+  document.getElementById("driver-map-plus").onclick=()=>map.zoomIn();
+  document.getElementById("driver-map-minus").onclick=()=>map.zoomOut();
+  let fullscreenOpen = false;
+
+  function resizeMapSoon() {
+    [0, 80, 250, 600].forEach(function(delay){
+      setTimeout(function(){ try { map.invalidateSize(true); } catch(e) {} }, delay);
+    });
+  }
+
+  async function setMapFullscreen(open) {
+    fullscreenOpen = Boolean(open);
+    if (fullscreenOpen) {
+      window.__opalMapRestore = window.__opalMapRestore || { parent: mapWrap.parentNode, next: mapWrap.nextSibling };
+      document.body.appendChild(mapWrap);
+      mapWrap.classList.add("opal-map-viewport-layer");
+      mapWrap.classList.add("opal-map-fullscreen");
+      document.body.classList.add("opal-transport-map-open");
+      try { if (mapWrap.requestFullscreen && !document.fullscreenElement) await mapWrap.requestFullscreen(); } catch(e) {}
+      await keepScreenAwake(true);
+    } else {
+      try { if (document.fullscreenElement && document.exitFullscreen) await document.exitFullscreen(); } catch(e) {}
+      mapWrap.classList.remove("opal-map-fullscreen");
+      mapWrap.classList.remove("opal-map-viewport-layer");
+      document.body.classList.remove("opal-transport-map-open");
+      const restore = window.__opalMapRestore;
+      if (restore && restore.parent) restore.parent.insertBefore(mapWrap, restore.next);
+      await keepScreenAwake(false);
+    }
+    fullscreenBtn.textContent = fullscreenOpen ? "↙ تصغير الخريطة" : "⛶ تكبير الخريطة";
+    resizeMapSoon();
+  }
+
+  document.addEventListener("fullscreenchange", function(){
+    if (!document.fullscreenElement && fullscreenOpen) setMapFullscreen(false);
+  });
+
+  fullscreenBtn.onclick = function(){ setMapFullscreen(!fullscreenOpen); };
+  window.addEventListener("resize", resizeMapSoon);
+  window.addEventListener("orientationchange", resizeMapSoon);
+
+  function draw(trip) {
+    const p=trip.stops.map(s=>[s.latitude,s.longitude]);
+    const a=trip.gps.map(s=>[s.latitude,s.longitude]);
+
+    if (planned) planned.setLatLngs(p);
+    else if(p.length) planned=L.polyline(p,{dashArray:"6 8"}).addTo(map);
+
+    if (actual) actual.setLatLngs(a);
+    else if(a.length) actual=L.polyline(a).addTo(map);
+
+    stopMarkers.forEach(m=>map.removeLayer(m));
+    stopMarkers=[];
+    trip.stops.forEach(function(s){
+      const marker=L.marker([s.latitude,s.longitude]).addTo(map);
+      const state=s.departed_at ? "تمت المغادرة" : (s.arrived_at ? "متوقف الآن" : "قادمة");
+      marker.bindPopup("<strong>محطة "+s.sequence+"</strong><br>"+(s.label||s.address||"بدون وصف")+"<br>"+state);
+      stopMarkers.push(marker);
+    });
+
+    if(trip.latest){
+      if(bus) bus.setLatLng([trip.latest.latitude,trip.latest.longitude]);
+      else bus=L.marker([trip.latest.latitude,trip.latest.longitude]).addTo(map);
+      bus.bindPopup("موقع الحافلة الحالي");
+    }
+
+    const points=[];
+    if(trip.latest) points.push([trip.latest.latitude,trip.latest.longitude]);
+    p.forEach(x=>points.push(x));
+    if(points.length) map.fitBounds(points,{padding:[30,30],maxZoom:15});
+
+    const next=trip.next_stop;
+    const nextText=next
+      ? '<div class="alert alert-primary mb-3"><strong>المحطة التالية:</strong> '+(next.label||next.address||("محطة "+next.sequence))+'</div>'
+      : '<div class="alert alert-success mb-3">تمت معالجة جميع محطات الجولة.</div>';
+
+    stopsBox.innerHTML=nextText+trip.stops.map(s=>{
+      const arrive = s.virtual
+        ? '<span class="badge bg-secondary ms-1">نقطة احتياطية — ثبّت المحطات أولًا</span>'
+        : (s.arrived_at
+          ? '<span class="badge bg-success ms-1">تم الوصول</span>'
+          : '<form method="post" action="/transport/stops/'+s.id+'/arrive/" class="d-inline ms-1"><input type="hidden" name="csrfmiddlewaretoken" value="'+(csrf ? csrf.value : '')+'"><button class="btn btn-sm btn-outline-primary">تسجيل الوصول</button></form>');
+      const depart = s.virtual
+        ? ''
+        : (s.departed_at
+          ? '<span class="badge bg-secondary ms-1">تمت المغادرة</span>'
+          : (s.arrived_at
+            ? '<form method="post" action="/transport/stops/'+s.id+'/depart/" class="d-inline ms-1"><input type="hidden" name="csrfmiddlewaretoken" value="'+(csrf ? csrf.value : '')+'"><button class="btn btn-sm btn-outline-success">تسجيل المغادرة</button></form>'
+            : ''));
+      return '<div class="border rounded p-2 mb-2"><div><strong>محطة '+s.sequence+'</strong> — '+(s.label||s.address||"بدون وصف")+'</div><div class="mt-2">'+arrive+depart+'</div></div>';
+    }).join("");
+  }
+  const initialTrip = JSON.parse(document.getElementById("driver-trip-data").textContent || "null");
+  if (initialTrip) draw(initialTrip);
+  async function refresh(){
+    {% if active_trip %}
+    try{const r=await fetch("{% url 'transport:tracking-api' %}");if(r.ok){const d=await r.json();if(d.trips&&d.trips[0])draw(d.trips[0]);}}catch(e){}
+    {% endif %}
+  }
+  refresh(); {% if active_trip %}setInterval(refresh,10000);{% endif %}
+
+  {% if active_trip %}
+  // GPS is scoped to the driver's active trip only. The server rejects
+  // locations for any other trip or for a non-active trip.
+  if (navigator.geolocation) {
+    navigator.geolocation.watchPosition(function(pos) {
+      const body = new URLSearchParams();
+      body.set("latitude", pos.coords.latitude);
+      body.set("longitude", pos.coords.longitude);
+      body.set("accuracy_m", pos.coords.accuracy || "");
+      body.set("speed_kmh", pos.coords.speed == null ? "" : (pos.coords.speed * 3.6));
+      if (csrf) body.set("csrfmiddlewaretoken", csrf.value);
+      fetch("{% url 'transport:driver-gps-ingest' active_trip.pk %}", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {"Content-Type": "application/x-www-form-urlencoded", "X-CSRFToken": csrf ? csrf.value : ""},
+        body: body.toString()
+      }).catch(function(){});
+    }, function(){}, {enableHighAccuracy:true, maximumAge:5000, timeout:15000});
+  }
+  {% endif %}
+})();
+</script>
+{% endif %}
+{% endblock %}

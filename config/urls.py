@@ -31,6 +31,7 @@ opal_login_view = never_cache(
 
 
 urlpatterns = [
+    path("transport/", include("transport.urls")),
     *PRIMARY_URLPATTERNS,
     path(
         'accounts/login/',

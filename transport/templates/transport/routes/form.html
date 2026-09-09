@@ -1,0 +1,23 @@
+{% extends "base/base.html" %}
+
+{% block content %}
+<div class="container py-4" dir="rtl">
+    <div class="mb-4"><h1 class="h3">{{ title }}</h1><p class="text-muted">المسار الرسمي المستخدم في التسجيل والرحلات.</p></div>
+    <div class="card shadow-sm"><div class="card-body">
+        <form method="post">{% csrf_token %}
+            {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+            {% for field in form %}
+                <div class="mb-3">
+                    {{ field.label_tag }}
+                    {{ field }}
+                    {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                </div>
+            {% endfor %}
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">حفظ المسار</button>
+                <a href="{% url 'transport:route-list' %}" class="btn btn-outline-secondary">إلغاء</a>
+            </div>
+        </form>
+    </div></div>
+</div>
+{% endblock %}

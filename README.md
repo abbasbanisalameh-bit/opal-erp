@@ -12,3 +12,10 @@
 
 راجع `OPAL_UPDATE_130_PRODUCTION_STABILITY_RELEASE_NOTES_AR.md` للتفاصيل،
 و`INSTALL_OPAL_UPDATE_130_PRODUCTION_STABILITY_AR.md` لطريقة التثبيت.
+
+
+## R39 Transport Fixes
+- Driver templates use the canonical base/base.html.
+- Driver credential redirect uses transport:driver-credentials.
+- Transport center owns the route-management UI while persisting the canonical admissions.TransportRoute records.
+- Duplicate trip/driver action blocks and duplicate URL patterns were removed from the transport package.

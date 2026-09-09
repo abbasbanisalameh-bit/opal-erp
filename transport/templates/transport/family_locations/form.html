@@ -1,0 +1,40 @@
+{% extends "base/base.html" %}
+{% block title %}موقع الأسرة{% endblock %}
+{% block page_title %}موقع أسرة المواصلات{% endblock %}
+{% block page_subtitle %}تحديد نقطة الاستلام والنزول على الخريطة{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<div class="container-fluid py-4" dir="rtl">
+  <div class="d-flex justify-content-between align-items-center mb-3"><div><h2>موقع: {{ family.guardian_name }}</h2><div class="text-muted">الموقع واحد لجميع أبناء الأسرة.</div></div><a href="{% url 'transport:family-location-list' %}" class="btn btn-outline-secondary">العودة للقائمة</a></div>
+  <div class="row g-4">
+    <div class="col-xl-5">
+      <div class="card shadow-sm"><div class="card-body">
+        <h5>الأبناء المشمولون</h5>
+        <ul class="small">{% for r in registrations %}<li>{{ r.student }} — {{ r.transport_route.name }} — {{ r.get_transport_type_display }}</li>{% endfor %}</ul>
+        {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+        <form method="post">{% csrf_token %}
+        {% for field in form %}<div class="mb-3"><label class="form-label fw-bold">{{ field.label }}</label>{{ field }}{% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}</div>{% endfor %}
+        <button type="button" id="use-location" class="btn btn-outline-primary mb-2">📍 استخدام موقعي الحالي</button>
+        <button type="submit" class="btn btn-primary w-100">حفظ موقع الأسرة</button>
+        </form>
+      </div></div>
+    </div>
+    <div class="col-xl-7"><div class="card shadow-sm"><div class="card-body"><h5>اختيار الموقع على الخريطة</h5><p class="small text-muted">اضغط على الخريطة لتعيين النقطة، ويمكنك استخدام موقع الجهاز عند الحاجة.</p><div id="family-location-map" style="height:520px;border-radius:14px;overflow:hidden;"></div></div></div></div>
+  </div>
+</div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function(){
+ const latInput=document.getElementById('id_latitude'), lonInput=document.getElementById('id_longitude');
+ const initialLat=parseFloat(latInput.value), initialLon=parseFloat(lonInput.value);
+ const map=L.map('family-location-map').setView([isFinite(initialLat)?initialLat:32.556,isFinite(initialLon)?initialLon:35.85],isFinite(initialLat)&&isFinite(initialLon)?16:11);
+ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
+ let marker=null;
+ function setPoint(lat,lon){latInput.value=Number(lat).toFixed(6);lonInput.value=Number(lon).toFixed(6);if(marker)marker.setLatLng([lat,lon]);else marker=L.marker([lat,lon],{draggable:true}).addTo(map);marker.on('dragend',function(e){const p=e.target.getLatLng();setPoint(p.lat,p.lng)});map.setView([lat,lon],16);}
+ if(isFinite(initialLat)&&isFinite(initialLon))setPoint(initialLat,initialLon);
+ map.on('click',e=>setPoint(e.latlng.lat,e.latlng.lng));
+ document.getElementById('use-location').onclick=function(){if(!navigator.geolocation){alert('المتصفح لا يدعم تحديد الموقع.');return}navigator.geolocation.getCurrentPosition(p=>setPoint(p.coords.latitude,p.coords.longitude),()=>alert('تعذر الحصول على موقع الجهاز.'))};
+ setTimeout(()=>map.invalidateSize(),250);
+})();
+</script>
+{% endblock %}
