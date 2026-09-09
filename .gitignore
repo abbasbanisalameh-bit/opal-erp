@@ -12,3 +12,6 @@ backups/
 db_backup*.sqlite3
 OPAL_UPDATE_*.md
 INSTALL_OPAL_*.md
+
+# Runtime database - never track in Git
+db.sqlite3
