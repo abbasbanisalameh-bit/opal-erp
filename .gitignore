@@ -15,3 +15,4 @@ INSTALL_OPAL_*.md
 
 # Runtime database - never track in Git
 db.sqlite3
+/staticfiles/
