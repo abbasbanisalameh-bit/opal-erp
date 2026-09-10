@@ -29,6 +29,8 @@
     <link href="{% static 'css/opal_identity_cards.css' %}?v=20260725-update103-theme-system" rel="stylesheet">
 
     {% block extra_css %}{% endblock %}
+    <!-- R71 UI layer loads before the canonical theme so the central theme remains the final CSS authority. -->
+    <link href="{% static 'css/opal_ui_revolution.css' %}?v=20260910-update1317-r71-ui-revolution" rel="stylesheet">
     <link href="{% static 'css/opal_theme_system.css' %}?v=20260804-update1317-r10-aesthetic-finishing" rel="stylesheet">
 
 </head>

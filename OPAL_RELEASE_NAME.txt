@@ -1,1 +1,1 @@
-OPAL Update 131.7 R70 - Runtime Media & Git Isolation
+OPAL Update 131.7 R71 - UI Revolution & System Experience
