@@ -460,3 +460,170 @@ html[data-opal-theme="light"] .page-heading,html[data-opal-theme="light"] .card,
 @media(max-width:991.98px){.opal-topbar-shell,.topbar{border-radius:18px!important}.page-heading{padding:1.15rem!important}.opal-sidebar{border-left:0!important}.card-body{padding:1rem!important}}
 @media(max-width:767.98px){.opal-main{padding:.7rem .6rem 1.4rem!important}.page-heading{border-radius:18px!important}.page-heading h1{font-size:1.35rem!important}.opal-page-navigation{border-radius:14px!important}.card,.opal-card{border-radius:18px!important}.card-header,.card-body,.card-footer{padding:.9rem!important}.table thead th,.table tbody td{padding:.72rem .65rem!important}.btn{min-height:40px}.opal-menu a{padding:11px 12px!important}}
 @media(prefers-reduced-motion:reduce){.opal-menu a,.icon-btn,.btn,.table-hover tbody tr{transition:none!important}.opal-menu a:hover,.icon-btn:hover,.btn:hover{transform:none!important}}
+
+
+/* ==========================================================================\n   OPAL Update 131.7 R74 — System Architecture & Quiet Interface\n   الهدف: هندسة الواجهة كاملة، تنظيم التسلسل البصري، وتقليل الشرح الدائم.\n   هذه الطبقة جزء من الثيم المركزي عمدًا للحفاظ على عقد ترتيب الأصول opal.E122.\n   ========================================================================== */
+:root{
+  --opal-r74-space-1:.35rem;--opal-r74-space-2:.6rem;--opal-r74-space-3:.9rem;
+  --opal-r74-space-4:1.25rem;--opal-r74-space-5:1.7rem;--opal-r74-radius:16px;
+  --opal-r74-border:rgba(132,170,200,.18);--opal-r74-soft:rgba(255,255,255,.028);
+}
+.opal-main{max-width:1780px;margin-inline:auto;padding-inline:clamp(.7rem,1.8vw,1.8rem)}
+.opal-main>*{min-width:0}
+
+/* 1) التسلسل العام للصفحات: عنوان ثم أدوات ثم محتوى، دون فراغات مبالغ فيها */
+.opal-page-navigation{margin-top:.7rem!important;margin-bottom:.55rem!important;min-height:44px;padding:.45rem .7rem!important;border-radius:14px!important}
+.opal-breadcrumbs{gap:.42rem!important;font-size:.78rem!important;white-space:nowrap;overflow:auto hidden;scrollbar-width:none}
+.opal-breadcrumbs::-webkit-scrollbar{display:none}
+.page-heading{padding:1rem 1.15rem!important;margin:0 0 .9rem!important;min-height:auto!important;border-radius:18px!important}
+.page-heading h1{margin:0!important;font-size:clamp(1.18rem,2vw,1.72rem)!important;line-height:1.35!important}
+/* إخفاء الوصف الافتراضي المتكرر فقط، مع إبقاء وصف الصفحات المخصص عند الحاجة */
+.page-heading p:empty,.page-heading p[data-opal-quiet="true"]{display:none!important}
+.page-heading p{margin:.28rem 0 0!important;font-size:.78rem!important;opacity:.72;line-height:1.55!important}
+.opal-current-operation{margin-top:.65rem!important;padding:.45rem .7rem!important;font-size:.7rem!important}
+.opal-current-operation em{display:none!important}
+
+/* 2) تقليل التلميحات والشروحات الدائمة */
+.form-text,.helptext,.opal-live-events-hint,.opal-mobile-scroll-hint,[data-opal-quiet-hint]{display:none!important}
+.form-label small,.form-label .text-muted{display:none!important}
+/* لا نلغي التحذيرات الفعلية، لكن نجعلها مختصرة وغير مسيطرة */
+.alert:not(.opal-system-message){padding:.72rem .9rem!important;margin-bottom:.85rem!important;line-height:1.55!important;font-size:.84rem!important}
+.alert h1,.alert h2,.alert h3,.alert h4,.alert h5,.alert h6{font-size:1rem!important;margin-bottom:.25rem!important}
+.opal-system-message{padding:.72rem .9rem!important;margin:.55rem 0!important;font-size:.84rem!important}
+.opal-system-message:not(.alert-danger):not(.alert-warning){animation:opalR74Fade 10s ease 3s forwards}
+@keyframes opalR74Fade{to{opacity:.22;max-height:0;margin:0;padding-top:0;padding-bottom:0;overflow:hidden}}
+
+/* 3) البطاقات تصبح وحدات نظامية موحدة بدل كتل متفرقة */
+.opal-card,.dashboard-panel,.card,.opal-identity-card,.opal-profile-card,
+.opal-settings-section,.opal-form-section,.opal-section-card{
+  border-radius:var(--opal-r74-radius)!important;
+  border:1px solid var(--opal-r74-border)!important;
+  box-shadow:0 8px 24px rgba(0,0,0,.10)!important;
+}
+.opal-card,.dashboard-panel,.opal-settings-section,.opal-form-section,.opal-section-card{padding:clamp(.8rem,1.4vw,1.2rem)!important}
+.opal-card>h1,.opal-card>h2,.opal-card>h3,.dashboard-panel>h2,.dashboard-panel>h3,.card-title{margin-top:0!important;margin-bottom:.75rem!important}
+
+/* 4) تنظيم النماذج: حقول هادئة، عناوين واضحة، ومسافات متقاربة */
+form .row{--bs-gutter-x:.85rem;--bs-gutter-y:.75rem}
+.form-label,label{margin-bottom:.34rem!important;font-size:.78rem!important;letter-spacing:0!important}
+.form-control,.form-select,textarea,input:not([type="checkbox"]):not([type="radio"]){min-height:42px!important}
+textarea{min-height:108px!important}
+input[type="checkbox"],input[type="radio"]{min-height:auto!important}
+form .mb-3{margin-bottom:.85rem!important}
+fieldset{padding:.85rem!important;margin-bottom:.85rem!important;border-radius:14px!important;border:1px solid var(--opal-r74-border)!important}
+legend{float:none;width:auto;padding:0 .4rem;margin:0;font-size:.86rem!important;font-weight:800!important}
+
+/* 5) الأزرار: فعل واضح، أقل ازدحامًا، ومحاذاة ثابتة */
+.btn{border-radius:11px!important;min-height:38px!important;padding:.48rem .82rem!important;font-size:.8rem!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;gap:.35rem}
+.btn-sm{min-height:32px!important;padding:.34rem .62rem!important}
+.btn-group>.btn{min-height:38px!important}
+.opal-actions,.d-flex.gap-2,.d-flex.gap-3{row-gap:.5rem!important}
+
+/* 6) الجداول: قراءة أسرع ورأس ثابت عند التمرير */
+.table-responsive,.opal-table-wrap{border-radius:14px!important;border:1px solid var(--opal-r74-border)!important}
+table{margin-bottom:0!important}
+thead th{position:sticky;top:0;z-index:2;font-size:.76rem!important;white-space:nowrap}
+tbody td{vertical-align:middle!important;font-size:.8rem!important}
+.table>:not(caption)>*>*{padding:.7rem .65rem!important}
+
+/* 7) لوحات التحكم: شبكة منظمة بدل اختلافات كثافة بين الوحدات */
+.opal-dashboard-compact-grid,.dashboard-grid,.opal-dashboard-grid{gap:.85rem!important}
+.opal-dashboard-compact-grid>.dashboard-panel,.dashboard-grid>.dashboard-panel{min-width:0!important}
+.opal-stat-card,.metric-card,.dashboard-stat,.opal-kpi-card{border-radius:15px!important;min-height:0!important;padding:.85rem!important}
+.opal-stat-card .value,.metric-card strong,.dashboard-stat strong{font-size:clamp(1rem,1.8vw,1.45rem)!important}
+
+/* 8) تبويبات وفلاتر: شريط واحد واضح دون طبقات متداخلة */
+.nav-tabs,.nav-pills,.opal-tabs,.opal-filter-tabs{gap:.35rem!important;padding:.35rem!important;border-radius:13px!important}
+.nav-tabs .nav-link,.nav-pills .nav-link,.opal-tabs .nav-link{border-radius:9px!important;padding:.45rem .7rem!important;font-size:.78rem!important}
+
+/* 9) القائمة الجانبية: كثافة عملية وتحديد بصري للعنصر الحالي */
+.opal-sidebar a,.opal-sidebar .nav-link,.sidebar a{min-height:40px!important;padding:.58rem .7rem!important;border-radius:10px!important}
+.opal-sidebar .nav-label,.sidebar .nav-label{font-size:.79rem!important}
+.opal-sidebar .active,.opal-sidebar a[aria-current="page"],.sidebar .active{box-shadow:inset -3px 0 0 var(--opal-accent,#45d8e8)!important}
+
+/* 10) منع النصوص الطويلة من كسر التخطيط */
+.opal-main :where(h1,h2,h3,h4,h5,p,td,th,span,strong,small){overflow-wrap:anywhere}
+.opal-main .badge{white-space:normal!important;line-height:1.35!important}
+
+/* 11) شاشات الهاتف: إظهار المحتوى أولًا وتقليل الزخرفة */
+@media (max-width:768px){
+  .opal-main{padding-inline:.55rem!important}
+  .page-heading{padding:.82rem .9rem!important;margin-bottom:.7rem!important}
+  .page-heading p{font-size:.72rem!important}
+  .opal-page-navigation{padding:.38rem .5rem!important}
+  .opal-card,.dashboard-panel,.opal-settings-section,.opal-form-section,.opal-section-card{padding:.78rem!important}
+  .table>:not(caption)>*>*{padding:.58rem .5rem!important}
+  .btn{min-height:36px!important;font-size:.76rem!important}
+  .alert:not(.opal-system-message){font-size:.78rem!important}
+}
+
+/* 12) وضع هادئ اختياري على مستوى الصفحة */
+.opal-quiet-ui .form-text,.opal-quiet-ui .helptext,.opal-quiet-ui .page-heading p{display:none!important}
+
+/* ============================================================================
+   OPAL Update 131.7 R75 — Interface Runtime Governance & Module Consistency
+   طبقة تنظيمية مركزية: توحيد سلوك الصفحات والنماذج والجداول والأوامر بدون
+   تغيير منطق الأعمال أو قاعدة البيانات.
+   ============================================================================ */
+:root{
+  --opal-r75-gap:.85rem;
+  --opal-r75-gap-lg:1.15rem;
+  --opal-r75-control:42px;
+  --opal-r75-line:rgba(132,170,200,.16);
+}
+
+/* صفحة هادئة: لا تترك عناصر مساعدة دائمة إلا عندما تكون جزءًا من خطأ فعلي */
+.opal-main .text-muted.opal-r75-transient,
+.opal-main [data-opal-r75-quiet="true"]{display:none!important}
+
+/* صفوف الأوامر: ترتيب موحد وقابل للالتفاف على الهاتف */
+.opal-action-row,.opal-r75-action-row{
+  display:flex!important;align-items:center;gap:.6rem;flex-wrap:wrap;
+  margin-block:var(--opal-r75-gap)!important;
+}
+.opal-action-row>.btn,.opal-r75-action-row>.btn{min-height:var(--opal-r75-control)!important}
+.opal-action-row .ms-auto,.opal-r75-action-row .ms-auto{margin-inline-start:auto!important}
+
+/* النماذج: حقل واحد = تسمية واضحة + عنصر إدخال + رسالة خطأ عند الحاجة فقط */
+.opal-main form .mb-3,.opal-main form .mb-4,.opal-main form .form-group{
+  margin-bottom:1rem!important;
+}
+.opal-main form .invalid-feedback,.opal-main form .text-danger:not(.btn){
+  margin-top:.35rem!important;font-size:.78rem!important;line-height:1.45!important;
+}
+.opal-main form .form-label{margin-bottom:.38rem!important}
+.opal-main form .form-check{padding-block:.2rem!important}
+
+/* البطاقات المتجاورة لا تحتاج رؤوسًا ضخمة أو فراغات متراكمة */
+.card+.card,.opal-card+.opal-card{margin-top:var(--opal-r75-gap-lg)}
+.card-header h1,.card-header h2,.card-header h3,.card-header h4,.card-header h5,.card-header h6{margin:0!important;font-size:1rem!important}
+.card-header .small,.card-header .text-muted{font-size:.74rem!important}
+
+/* الجداول: رأس ثابت بصريًا ومسافات موحدة دون تحويل الصفحة إلى لوحة مزدحمة */
+.table-responsive{overflow-x:auto!important;overscroll-behavior-inline:contain}
+.table td,.table th{vertical-align:middle!important}
+.table .btn-sm{min-height:34px!important;border-radius:10px!important}
+
+/* شريط البحث والفلاتر */
+.opal-filter-row,.opal-r75-filter-row{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.7rem;
+  align-items:end;margin-bottom:var(--opal-r75-gap-lg);
+}
+.opal-filter-row .btn,.opal-r75-filter-row .btn{align-self:end}
+
+/* التلميحات العائمة: لا تظل على الشاشة بعد فقدان التركيز */
+.tooltip,.popover{pointer-events:none!important}
+.tooltip.show,.popover.show{transition:opacity .12s ease!important}
+
+/* إشعارات النظام غير الحرجة تصبح مدمجة ولا تشغل مساحة طويلة */
+.opal-messages{display:grid;gap:.55rem;margin-bottom:.85rem}
+.opal-system-message{margin:0!important;min-height:0!important}
+.opal-system-message.opal-message-quiet{display:none!important}
+
+/* الهاتف */
+@media(max-width:767.98px){
+  .opal-action-row,.opal-r75-action-row{gap:.5rem}
+  .opal-action-row>.btn,.opal-r75-action-row>.btn{flex:1 1 auto}
+  .opal-filter-row,.opal-r75-filter-row{grid-template-columns:1fr}
+  .table-responsive{border-radius:14px!important}
+}

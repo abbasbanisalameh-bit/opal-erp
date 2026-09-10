@@ -29,10 +29,10 @@
     <link href="{% static 'css/opal_identity_cards.css' %}?v=20260725-update103-theme-system" rel="stylesheet">
 
     {% block extra_css %}{% endblock %}
-    <!-- R71 global visual layer. -->
+    <!-- Canonical global visual layer through R74. -->
     <link href="{% static 'css/opal_ui_revolution.css' %}?v=20260910-update1317-r71-ui-revolution" rel="stylesheet">
     <link href="{% static 'css/opal_ui_completion_r72.css' %}?v=20260910-update1317-r72-ui-completion" rel="stylesheet">
-    <link href="{% static 'css/opal_theme_system.css' %}?v=20260910-theme-system-final" rel="stylesheet">
+    <link href="{% static 'css/opal_theme_system.css' %}?v=20260910-update1317-r75-interface-runtime-governance" rel="stylesheet">
     
 </head>
 <body>
@@ -68,7 +68,7 @@
 
         <div class="opal-page-navigation">
             <nav class="opal-breadcrumbs" aria-label="مسار الصفحة"><a href="{% url 'dashboard:home' %}"><i class="bi bi-house-door-fill"></i> لوحة التحكم</a>{% if opal_current_operation %}<i class="bi bi-chevron-left"></i><span>{{ opal_current_operation.module_label }}</span><i class="bi bi-chevron-left"></i><strong>{{ opal_current_operation.label }}</strong>{% elif request.resolver_match %}<i class="bi bi-chevron-left"></i><strong>{% block breadcrumb_label %}الصفحة الحالية{% endblock %}</strong>{% endif %}</nav>
-            <button type="button" class="btn btn-outline-warning opal-dynamic-back" data-fallback-url="{% url 'dashboard:home' %}" title="العودة إلى الصفحة السابقة"><i class="bi bi-arrow-right-circle-fill"></i> عودة</button>
+            <button type="button" class="btn btn-outline-warning opal-dynamic-back" data-fallback-url="{% url 'dashboard:home' %}"><i class="bi bi-arrow-right-circle-fill"></i> عودة</button>
         </div>
         <div class="page-heading">
             <h1>{% block page_title %}لوحة التحكم{% endblock %}</h1>
@@ -116,10 +116,12 @@
     </main>
 </div>
 
-<button type="button" id="opal-scroll-top" class="opal-scroll-top" aria-label="العودة إلى أعلى الصفحة" aria-hidden="true" tabindex="-1" title="العودة إلى أعلى الصفحة"><i class="bi bi-arrow-up" aria-hidden="true"></i></button>
+<button type="button" id="opal-scroll-top" class="opal-scroll-top" aria-label="العودة إلى أعلى الصفحة" aria-hidden="true" tabindex="-1"><i class="bi bi-arrow-up" aria-hidden="true"></i></button>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="{% static 'js/opal_erp.js' %}?v=20260804-update1317-r10-aesthetic-finishing"></script>
+<script src="{% static 'js/opal_ui_r74.js' %}?v=20260910-update1317-r74-system-architecture-quiet-ui"></script>
+<script src="{% static 'js/opal_ui_r75.js' %}?v=20260910-update1317-r75-interface-runtime-governance"></script>
 <script>(function(){const el=document.getElementById('opal-event-countdown');if(!el)return;let s=parseInt(el.dataset.seconds||'0',10);function draw(){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),x=s%60;el.textContent=(h?h+':':'')+String(m).padStart(2,'0')+':'+String(x).padStart(2,'0');if(s>0)s--;else window.location.reload();}draw();setInterval(draw,1000);})();</script>
 {% include "enterprise_ops/_monthly_evaluation_prompt.html" %}
 {% block extra_js %}{% endblock %}

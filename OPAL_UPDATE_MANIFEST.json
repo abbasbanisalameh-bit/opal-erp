@@ -2,12 +2,13 @@
   "schema": 2,
   "product": "OPAL ERP",
   "version": "131.7",
-  "version_name": "OPAL Update 131.7 R73 - Visible UI Authority & Interface Revolution",
-  "package_revision": 73,
+  "version_name": "OPAL Update 131.7 R75 - Interface Runtime Governance & Module Consistency",
+  "package_revision": 75,
   "source_type": "verified_update_package",
-  "created_at": "2026-09-10T10:15:00+03:00",
-  "baseline": "OPAL Update 131.7 R72 - UI Completion & Interface Consistency",
-  "notes": "R73 يصحح سبب عدم ظهور التغيير بصريًا: طبقة R73 تُحمّل بعد الثيم المركزي وR72 وتفرض تصميمًا موحدًا ومرئيًا على الغلاف والقائمة والشريط العلوي وعناوين الصفحات والبطاقات ولوحات التحكم والنماذج والجداول والأزرار. لا تغيير في قاعدة البيانات أو الصلاحيات أو منطق الأعمال.",
+  "created_at": "2026-09-10T14:36:00+03:00",
+  "baseline": "OPAL Update 131.7 R74 - System Architecture & Quiet Interface",
+  "notes": "R75 يستكمل هندسة الواجهة عبر طبقة تشغيل مركزية توحد صفوف الأوامر والنماذج والفلاتر والجداول وتمنع التلميحات غير الضرورية حتى للمحتوى الديناميكي. لا تغيير في قاعدة البيانات أو الصلاحيات أو منطق الأعمال.",
   "code_only": true,
-  "excluded": ["database", "media", "virtual_environment", ".env", ".git", "collected_static"]
+  "excluded": ["database","media","virtual_environment",".env",".git","collected_static"],
+  "validation": "canonical theme remains final CSS asset; R75 runtime is loaded after R74; dynamic DOM normalization enabled; no database/media/env changes."
 }
