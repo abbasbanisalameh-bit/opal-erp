@@ -2,19 +2,12 @@
   "schema": 2,
   "product": "OPAL ERP",
   "version": "131.7",
-  "version_name": "OPAL Update 131.7 R71 - UI Revolution & System Experience",
-  "package_revision": 71,
+  "version_name": "OPAL Update 131.7 R73 - Visible UI Authority & Interface Revolution",
+  "package_revision": 73,
   "source_type": "verified_update_package",
-  "created_at": "2026-09-10T05:00:00+03:00",
-  "baseline": "OPAL Update 131.7 R70 - Runtime Media & Git Isolation",
-  "notes": "R71 تحديث شامل للواجهة وتجربة المستخدم: طبقة تصميم موحدة للنظام، تحسين التسلسل البصري، البطاقات والجداول والنماذج والأزرار والتنقل والاستجابة للموبايل، مع تطبيق الهوية الجديدة على ERP ومنصة التعلم وصفحات الحساب دون تغيير البيانات أو الصلاحيات أو منطق الأعمال.",
+  "created_at": "2026-09-10T10:15:00+03:00",
+  "baseline": "OPAL Update 131.7 R72 - UI Completion & Interface Consistency",
+  "notes": "R73 يصحح سبب عدم ظهور التغيير بصريًا: طبقة R73 تُحمّل بعد الثيم المركزي وR72 وتفرض تصميمًا موحدًا ومرئيًا على الغلاف والقائمة والشريط العلوي وعناوين الصفحات والبطاقات ولوحات التحكم والنماذج والجداول والأزرار. لا تغيير في قاعدة البيانات أو الصلاحيات أو منطق الأعمال.",
   "code_only": true,
-  "excluded": [
-    "database",
-    "media",
-    "virtual_environment",
-    ".env",
-    ".git",
-    "collected_static"
-  ]
+  "excluded": ["database", "media", "virtual_environment", ".env", ".git", "collected_static"]
 }

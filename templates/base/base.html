@@ -29,10 +29,11 @@
     <link href="{% static 'css/opal_identity_cards.css' %}?v=20260725-update103-theme-system" rel="stylesheet">
 
     {% block extra_css %}{% endblock %}
-    <!-- R71 UI layer loads before the canonical theme so the central theme remains the final CSS authority. -->
+    <!-- R71 global visual layer. -->
     <link href="{% static 'css/opal_ui_revolution.css' %}?v=20260910-update1317-r71-ui-revolution" rel="stylesheet">
-    <link href="{% static 'css/opal_theme_system.css' %}?v=20260804-update1317-r10-aesthetic-finishing" rel="stylesheet">
-
+    <link href="{% static 'css/opal_ui_completion_r72.css' %}?v=20260910-update1317-r72-ui-completion" rel="stylesheet">
+    <link href="{% static 'css/opal_theme_system.css' %}?v=20260910-theme-system-final" rel="stylesheet">
+    
 </head>
 <body>
 <a class="opal-skip-link" href="#opal-main-content">تجاوز إلى المحتوى الرئيسي</a>
