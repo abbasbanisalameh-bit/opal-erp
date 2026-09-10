@@ -122,6 +122,7 @@
 <script src="{% static 'js/opal_erp.js' %}?v=20260804-update1317-r10-aesthetic-finishing"></script>
 <script src="{% static 'js/opal_ui_r74.js' %}?v=20260910-update1317-r74-system-architecture-quiet-ui"></script>
 <script src="{% static 'js/opal_ui_r75.js' %}?v=20260910-update1317-r75-interface-runtime-governance"></script>
+<script src="{% static 'js/opal_ui_r76.js' %}?v=20260910-update1317-r76-system-reengineering"></script>
 <script>(function(){const el=document.getElementById('opal-event-countdown');if(!el)return;let s=parseInt(el.dataset.seconds||'0',10);function draw(){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),x=s%60;el.textContent=(h?h+':':'')+String(m).padStart(2,'0')+':'+String(x).padStart(2,'0');if(s>0)s--;else window.location.reload();}draw();setInterval(draw,1000);})();</script>
 {% include "enterprise_ops/_monthly_evaluation_prompt.html" %}
 {% block extra_js %}{% endblock %}

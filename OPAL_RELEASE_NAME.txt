@@ -1,1 +1,1 @@
-OPAL Update 131.7 R75 - Interface Runtime Governance & Module Consistency
+OPAL Update 131.7 R76 - Unified System Reengineering & Interface Consolidation

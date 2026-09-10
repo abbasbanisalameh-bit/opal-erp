@@ -627,3 +627,23 @@ tbody td{vertical-align:middle!important;font-size:.8rem!important}
   .opal-filter-row,.opal-r75-filter-row{grid-template-columns:1fr}
   .table-responsive{border-radius:14px!important}
 }
+
+
+/* OPAL Update 131.7 R76 — unified system architecture + visible interface finish */
+:root{--opal-r76-radius:18px;--opal-r76-gap:.9rem;--opal-r76-accent:#49d4e6;--opal-r76-line:rgba(132,170,200,.16)}
+.opal-main{min-width:0}
+.opal-page-navigation{gap:var(--opal-r76-gap)!important}
+.page-heading{padding:1.25rem 1.35rem!important;border-radius:22px!important}
+.page-heading h1{font-weight:900!important}
+.opal-main>.card,.opal-main>.opal-card,.opal-main .dashboard-panel{border-radius:var(--opal-r76-radius)!important;overflow:hidden}
+.opal-main .row{--bs-gutter-x:1rem;--bs-gutter-y:1rem}
+.opal-main .card-header,.opal-main .card-footer{background:rgba(255,255,255,.025)!important}
+.opal-main .btn{gap:.38rem;white-space:normal}
+.opal-main .form-label{font-weight:800}
+.opal-main .table-responsive{border-radius:15px!important;overflow:auto}
+.opal-main .table>thead>tr>th{white-space:nowrap}
+.opal-menu-section{padding-inline:.85rem!important}
+.opal-menu a{margin-inline:.45rem!important}
+.opal-sidebar [data-opal-module]{position:relative}
+.opal-sidebar [data-opal-module].active::after{content:"";position:absolute;inset:9px auto 9px 5px;width:3px;border-radius:9px;background:var(--opal-r76-accent)}
+@media(max-width:767.98px){.page-heading{padding:1rem!important}.opal-main .row{--bs-gutter-x:.7rem;--bs-gutter-y:.7rem}.opal-main .card-header{padding:.78rem .85rem}.opal-main .card-body{padding:.85rem}}

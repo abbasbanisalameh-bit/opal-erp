@@ -60,6 +60,7 @@ def opal_operations(request):
             "opal_is_management": False,
             "opal_navigation_sections": [],
             "opal_module_subnav": None,
+            "opal_module_registry": (),
             "opal_profile_url": "",
         }
 
@@ -76,6 +77,7 @@ def opal_operations(request):
         user_role_key,
     )
     from .information_architecture import gateway_for_route, gateways_for_user
+    from .module_registry import enabled_module_registry
 
     operations = get_operations_for_user(request.user)
     entry_operations = get_entry_operations_for_user(request.user)
@@ -100,5 +102,6 @@ def opal_operations(request):
         "opal_module_subnav": management_subnavigation_for_user(
             request.user, route_name=route_name, query_params=request.GET,
         ),
+        "opal_module_registry": enabled_module_registry(),
         "opal_profile_url": profile_url,
     }

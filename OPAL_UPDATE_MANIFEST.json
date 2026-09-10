@@ -2,13 +2,20 @@
   "schema": 2,
   "product": "OPAL ERP",
   "version": "131.7",
-  "version_name": "OPAL Update 131.7 R75 - Interface Runtime Governance & Module Consistency",
-  "package_revision": 75,
+  "version_name": "OPAL Update 131.7 R76 - Unified System Reengineering & Interface Consolidation",
+  "package_revision": 76,
   "source_type": "verified_update_package",
   "created_at": "2026-09-10T14:36:00+03:00",
-  "baseline": "OPAL Update 131.7 R74 - System Architecture & Quiet Interface",
-  "notes": "R75 يستكمل هندسة الواجهة عبر طبقة تشغيل مركزية توحد صفوف الأوامر والنماذج والفلاتر والجداول وتمنع التلميحات غير الضرورية حتى للمحتوى الديناميكي. لا تغيير في قاعدة البيانات أو الصلاحيات أو منطق الأعمال.",
+  "baseline": "OPAL Update 131.7 R75 - Interface Runtime Governance & Module Consistency",
+  "notes": "R76 تجميعي مصحح: يوحّد ويثبت نتائج R70-R75 المطلوبة في طبقة واجهة وهندسة نظام واحدة، مع سجل وحدات مركزي مبني على workflow_catalog، تنظيم الواجهة ولوحات التحكم، إزالة التلميحات غير الضرورية الثابتة والديناميكية، والحفاظ على مسار وظيفي واحد دون تغيير قاعدة البيانات أو الصلاحيات أو منطق الأعمال.",
   "code_only": true,
-  "excluded": ["database","media","virtual_environment",".env",".git","collected_static"],
-  "validation": "canonical theme remains final CSS asset; R75 runtime is loaded after R74; dynamic DOM normalization enabled; no database/media/env changes."
+  "excluded": [
+    "database",
+    "media",
+    "virtual_environment",
+    ".env",
+    ".git",
+    "collected_static"
+  ],
+  "validation": "R76 consolidated package; core/urls.py present; canonical theme remains final CSS asset; R76 JS loaded once; module registry derives from canonical workflow catalogue; no database/media/env changes."
 }
