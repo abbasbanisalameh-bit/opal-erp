@@ -167,6 +167,7 @@ class GitStatus:
     commit: str = ""
     remote: str = ""
     has_changes: bool = False
+    runtime_changes: int = 0
     error: str = ""
 
 
@@ -758,6 +759,40 @@ def _sanitize_remote(remote: str) -> str:
     return value
 
 
+def _git_status_path(line: str) -> str:
+    """Extract the primary path from porcelain output.
+
+    OPAL uses normal repository paths without embedded newlines.  Keeping this
+    parser intentionally small makes status filtering predictable on the
+    PythonAnywhere runtime.
+    """
+    if len(line) < 4:
+        return ""
+    payload = line[3:].strip()
+    if " -> " in payload:
+        payload = payload.rsplit(" -> ", 1)[-1].strip()
+    return payload.strip('"')
+
+
+def _is_runtime_git_path(path: str) -> bool:
+    return _path_forbidden(path)
+
+
+def _split_git_changes(status_output: str) -> tuple[list[str], list[str]]:
+    """Separate deployable source changes from runtime/data artifacts."""
+    source_changes: list[str] = []
+    runtime_changes: list[str] = []
+    for line in status_output.splitlines():
+        path = _git_status_path(line)
+        if not path:
+            continue
+        if _is_runtime_git_path(path):
+            runtime_changes.append(path)
+        else:
+            source_changes.append(path)
+    return source_changes, runtime_changes
+
+
 def get_git_status() -> GitStatus:
     root = project_root()
     if not (root / ".git").exists() or shutil.which("git") is None:
@@ -767,13 +802,15 @@ def get_git_status() -> GitStatus:
         commit = _run(["git", "rev-parse", "--short=12", "HEAD"], timeout=20).stdout.strip()
         remote_result = _run(["git", "remote", "get-url", "origin"], timeout=20, check=False)
         remote = _sanitize_remote(remote_result.stdout) if remote_result.returncode == 0 else ""
-        status = _run(["git", "status", "--porcelain"], timeout=30).stdout
+        status = _run(["git", "status", "--porcelain", "--untracked-files=all"], timeout=30).stdout
+        source_changes, runtime_changes = _split_git_changes(status)
         return GitStatus(
             available=True,
             branch=branch or "detached HEAD",
             commit=commit,
             remote=remote,
-            has_changes=bool(status.strip()),
+            has_changes=bool(source_changes),
+            runtime_changes=len(runtime_changes),
         )
     except SystemUpdateError as exc:
         return GitStatus(available=False, error=str(exc))
@@ -1341,6 +1378,23 @@ def _path_forbidden(path: str) -> bool:
     return False
 
 
+def _isolate_forbidden_git_files() -> list[str]:
+    """Stop tracking runtime artifacts without deleting them from disk.
+
+    ``git rm --cached`` changes only the Git index.  Student photos, logos and
+    other live media therefore remain available to Django and are merely
+    removed from future commits.
+    """
+    result = _run(["git", "ls-files", "-z"], timeout=30)
+    paths = [item for item in result.stdout.split("\0") if item]
+    forbidden = [path for path in paths if _path_forbidden(path)]
+    if not forbidden:
+        return []
+
+    _run(["git", "rm", "-r", "--cached", "--ignore-unmatch", "--", *forbidden], timeout=120)
+    return forbidden
+
+
 def _ensure_no_forbidden_tracked_files() -> None:
     result = _run(["git", "ls-files", "-z"], timeout=30)
     paths = [item for item in result.stdout.split("\0") if item]
@@ -1367,7 +1421,11 @@ def push_current_system_to_github(*, username: str) -> GitPushResult:
             raise SystemUpdateError("توجد عملية رفع أخرى قيد التنفيذ.") from exc
         _run([python_executable(), "manage.py", "check"], timeout=180)
         _run([python_executable(), "manage.py", "makemigrations", "--check", "--dry-run"], timeout=180)
-        _ensure_no_forbidden_tracked_files()
+
+        # R70: isolate live media/runtime artifacts before staging source code.
+        # This keeps the production files on disk while permanently removing
+        # them from Git tracking.
+        isolated_runtime_files = _isolate_forbidden_git_files()
         _run(["git", "add", "-A"], timeout=60)
         _ensure_no_forbidden_tracked_files()
         staged = _run(["git", "diff", "--cached", "--quiet"], timeout=30, check=False)
@@ -1381,10 +1439,15 @@ def push_current_system_to_github(*, username: str) -> GitPushResult:
             _run(["git", "commit", "-m", message], timeout=180)
         _run(["git", "push", "origin", status.branch], timeout=240)
         commit = _run(["git", "rev-parse", "--short=12", "HEAD"], timeout=20).stdout.strip()
+        isolation_note = (
+            f" تم عزل {len(isolated_runtime_files)} ملف تشغيل/بيانات من Git دون حذفها من النظام."
+            if isolated_runtime_files
+            else ""
+        )
         message = (
-            "تم إنشاء Commit ورفع النظام إلى GitHub."
+            "تم إنشاء Commit ورفع النظام إلى GitHub." + isolation_note
             if created_commit
-            else "لا توجد تغييرات جديدة؛ تم التأكد من مزامنة الفرع مع GitHub."
+            else "لا توجد تغييرات جديدة؛ تم التأكد من مزامنة الفرع مع GitHub." + isolation_note
         )
         _append_audit("github_push", username, f"branch={status.branch} commit={commit}")
         return GitPushResult(status.branch, commit, created_commit, message)

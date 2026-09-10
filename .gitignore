@@ -1,18 +1,56 @@
+# Python runtime
 __pycache__/
 *.py[cod]
 .pytest_cache/
 
-# حماية المساحة
+# Live runtime and private environment (must never enter Git)
+media/
+uploads/
+staticfiles/
+collected_static/
+db.sqlite3
+*.sqlite
+*.sqlite3
+*.db
+.env
+.env.*
+!.env.example
+venv/
+.venv/
+env/
+
+# Local backups, logs and temporary artifacts
+backups/
+backup/
+logs/
+log/
+tmp/
+temp/
+*.sqlite3.bak
+db_backup*.sqlite3
+*.bak
+*.backup
+*.log
+*.zip
+*.tar
+*.gz
+*.tgz
+
+# Generated/mobile dependencies
 mobile/opal_erp_app/lib/
 mobile/opal_erp_app/node_modules/
 **/node_modules/
 **/__pycache__/
-backups/
-*.sqlite3.bak
-db_backup*.sqlite3
+
+# Local tooling
+.idea/
+.vscode/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# Historical OPAL release notes are deployment-local documentation
 OPAL_UPDATE_*.md
 INSTALL_OPAL_*.md
-
-# Runtime database - never track in Git
-db.sqlite3
-/staticfiles/

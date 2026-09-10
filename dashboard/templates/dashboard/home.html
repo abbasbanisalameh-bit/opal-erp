@@ -39,13 +39,14 @@
     </a>
   </nav>
 
-  <a class="opal-previous-debt-dashboard-bar" href="{% url 'accounting:previous_debt_list' %}">
-    <span><i class="bi bi-exclamation-diamond-fill"></i> إجمالي متبقيات الرسوم السابقة على الطلبة</span>
+  <a class="opal-previous-debt-dashboard-bar {% if previous_debt_total %}has-debt{% else %}is-clear{% endif %}" href="{% url 'accounting:previous_debt_list' %}">
+    <span>{% if previous_debt_total %}<i class="bi bi-exclamation-diamond-fill"></i> إجمالي متبقيات الرسوم السابقة على الطلبة{% else %}<i class="bi bi-check-circle-fill"></i> لا توجد متبقيات رسوم سابقة مسجلة على الطلبة{% endif %}</span>
     <strong>{{ previous_debt_total|floatformat:2 }} د.أ</strong>
     <small>{{ previous_debt_guardians_count }} ولي أمر · {{ previous_debt_students_count }} طالب</small>
     <i class="bi bi-arrow-left-circle"></i>
   </a>
 
+  {% if teacher_evaluation_total %}
   <section class="opal-fixed-pair opal-teacher-performance-row" aria-label="أفضل المعلمين ومخطط تقييمهم">
     <article class="opal-fixed-panel opal-panel-gold">
       <div class="opal-fixed-panel-head">
@@ -69,6 +70,17 @@
       {% if teacher_evaluation_chart_values %}<div class="chart-box opal-teacher-rating-fixed"><canvas id="teacherEvaluationChart"></canvas></div>{% else %}<p class="opal-empty-compact">لا توجد تقييمات حقيقية لرسم المخطط.</p>{% endif %}
     </article>
   </section>
+  {% else %}
+  <section class="opal-dashboard-data-empty opal-teacher-evaluations-empty" aria-label="حالة تقييم المعلمين">
+    <div class="opal-dashboard-data-empty-icon"><i class="bi bi-bar-chart-line"></i></div>
+    <div>
+      <span class="opal-section-eyebrow">تقييمات أولياء الأمور</span>
+      <h2>لا توجد تقييمات معتمدة لهذا الشهر</h2>
+      <p>لذلك لم يعرض النظام ترتيبًا أو مخططًا فارغًا. ستظهر النتائج تلقائيًا عند توفر تقييمات حقيقية.</p>
+    </div>
+    <span class="opal-data-chip">{{ teacher_evaluation_period|date:'Y-m' }}</span>
+  </section>
+  {% endif %}
 
   <section class="opal-fixed-panel opal-panel-gold opal-top-students-panel" aria-labelledby="opal-top-students-title">
     <div class="opal-fixed-panel-head"><div><span class="opal-section-eyebrow"><i class="bi bi-trophy-fill"></i> النتائج الرسمية</span><h2 id="opal-top-students-title">أوائل الطلبة من الصف الأول حتى الثاني عشر</h2></div><span class="opal-data-chip">{{ top_students_year|default:"العام الحالي" }}</span></div>

@@ -1,1 +1,1 @@
-OPAL Update 131.7 R67 - Unified Stable Baseline
+OPAL Update 131.7 R70 - Runtime Media & Git Isolation

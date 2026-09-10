@@ -695,3 +695,31 @@ html[data-opal-theme="light"] body .opal-main .opal-fixed-note{color:#52667d}
   .opal-main .opal-previous-debt-dashboard-bar>strong{font-size:.82rem}
   .opal-main .opal-previous-debt-dashboard-bar>small{grid-column:1 / -1;font-size:.55rem}
 }
+
+
+/* OPAL Update 131.7 R69 — executive dashboard adaptive density */
+.opal-main .opal-previous-debt-dashboard-bar.is-clear{
+  border-color:color-mix(in srgb,#22c55e 36%,var(--opal-border))!important;
+  background:linear-gradient(135deg,color-mix(in srgb,#22c55e 10%,var(--opal-surface)),var(--opal-surface))!important;
+}
+.opal-main .opal-previous-debt-dashboard-bar.is-clear span,
+.opal-main .opal-previous-debt-dashboard-bar.is-clear strong{color:color-mix(in srgb,#bbf7d0 72%,var(--opal-text))!important}
+.opal-main .opal-previous-debt-dashboard-bar.has-debt{border-color:color-mix(in srgb,#fb7185 34%,var(--opal-border))!important}
+.opal-main .opal-dashboard-data-empty{
+  display:flex;align-items:center;gap:1rem;min-height:126px;padding:1.05rem 1.2rem;
+  border:1px dashed color-mix(in srgb,var(--opal-primary) 34%,var(--opal-border));
+  border-radius:18px;background:linear-gradient(135deg,color-mix(in srgb,var(--opal-primary) 8%,var(--opal-surface)),var(--opal-surface));
+  box-shadow:0 10px 28px rgba(2,8,23,.10);
+}
+.opal-main .opal-dashboard-data-empty-icon{width:48px;height:48px;flex:0 0 48px;display:grid;place-items:center;border-radius:15px;background:color-mix(in srgb,var(--opal-primary) 16%,transparent);color:var(--opal-primary);font-size:1.35rem}
+.opal-main .opal-dashboard-data-empty>div:nth-child(2){min-width:0;flex:1}
+.opal-main .opal-dashboard-data-empty h2{margin:.18rem 0 .35rem;font-size:1.08rem;color:var(--opal-text)}
+.opal-main .opal-dashboard-data-empty p{margin:0;color:var(--opal-muted);font-size:.82rem;line-height:1.65}
+.opal-main .opal-dashboard-data-empty .opal-data-chip{align-self:flex-start}
+@media(max-width:767.98px){
+  .opal-main .opal-dashboard-data-empty{align-items:flex-start;gap:.75rem;min-height:auto;padding:.9rem}
+  .opal-main .opal-dashboard-data-empty-icon{width:40px;height:40px;flex-basis:40px;border-radius:13px}
+  .opal-main .opal-dashboard-data-empty h2{font-size:1rem}
+  .opal-main .opal-dashboard-data-empty p{font-size:.76rem}
+  .opal-main .opal-dashboard-data-empty .opal-data-chip{display:none}
+}

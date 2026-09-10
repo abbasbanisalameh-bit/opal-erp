@@ -25,9 +25,11 @@
         </div>
         <div class="col-lg-4 text-lg-end">
             {% if current_version.has_changes %}
-                <span class="badge text-bg-warning">توجد تغييرات محلية غير مرفوعة</span>
+                <span class="badge text-bg-warning">توجد تغييرات برمجية محلية غير مرفوعة</span>
+            {% elif git_status.runtime_changes %}
+                <span class="badge text-bg-info">ملفات تشغيل معزولة عن حالة الكود</span>
             {% else %}
-                <span class="badge text-bg-success">الوضع المحلي مستقر</span>
+                <span class="badge text-bg-success">الوضع البرمجي مستقر</span>
             {% endif %}
         </div>
     </div>
@@ -210,13 +212,20 @@
                 <div class="mb-2"><strong>Commit المحلي:</strong> <code>{{ git_status.commit }}</code></div>
                 <div class="mb-2 text-break"><strong>المستودع:</strong> {{ git_status.remote|default:"غير محدد" }}</div>
                 <div>
-                    <strong>الحالة:</strong>
+                    <strong>حالة الكود:</strong>
                     {% if git_status.has_changes %}
-                        <span class="badge text-bg-warning">توجد تغييرات لم تُرفع</span>
+                        <span class="badge text-bg-warning">توجد تغييرات برمجية لم تُرفع</span>
                     {% else %}
-                        <span class="badge text-bg-success">متزامن محليًا</span>
+                        <span class="badge text-bg-success">متزامن برمجيًا</span>
                     {% endif %}
                 </div>
+                {% if git_status.runtime_changes %}
+                <div class="mt-2 small text-info">
+                    <i class="bi bi-shield-check"></i>
+                    تم اكتشاف {{ git_status.runtime_changes }} تغييرًا في ملفات تشغيل/بيانات؛
+                    هذه الملفات لا تُعامل كتغييرات برمجية، وسيتم عزل الملفات المتتبعة منها تلقائيًا عند الرفع القادم إلى GitHub دون حذفها من النظام.
+                </div>
+                {% endif %}
             {% else %}
                 <div class="alert alert-danger mb-0">{{ git_status.error }}</div>
             {% endif %}
