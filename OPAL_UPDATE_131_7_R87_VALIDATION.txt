@@ -1,0 +1,9 @@
+OPAL R87 package validation targets:
+- Full project root retained
+- manage.py retained
+- requirements.txt retained
+- R87 manifest retained
+- Code-only exclusions retained
+- Database not included
+- Single CSS authority verified
+- Exact duplicate CSS rules found: 0

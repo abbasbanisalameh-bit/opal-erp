@@ -1,0 +1,226 @@
+/* OPAL UI/UX Consolidation — Update 69
+   Unified visual language for statistic, KPI, summary and module cards.
+   Presentation only: no template behaviour, data or permission changes. */
+:root {
+  --opal-card-radius: 20px;
+  --opal-card-pad: 1rem;
+  --opal-card-gap: .85rem;
+  --opal-card-min-h: 132px;
+  --opal-card-border: rgba(255,255,255,.28);
+  --opal-card-bg: linear-gradient(145deg, rgba(255,255,255,.84), rgba(255,255,255,.62));
+  --opal-card-shadow: 0 14px 34px rgba(20,45,76,.10);
+  --opal-card-shadow-hover: 0 18px 42px rgba(20,45,76,.15);
+}
+
+.stats-grid,
+.opal-stats-grid,
+.kpi-grid,
+.metrics-grid,
+.summary-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
+  gap:var(--opal-card-gap);
+  align-items:stretch;
+}
+
+.stat-card,
+.opal-kpi-compact,
+.opal-enterprise-kpi,
+.opal-mini-status-card,
+.opal-satisfaction-mini-card,
+.opal-assessment-card,
+.opal-assignment-summary,
+.receipt-summary,
+.opal-receipt-summary-card,
+.overall-progress-card,
+.opal-report-card,
+.opal-module-card,
+.opal-check-card,
+.dev-card,
+.gantt-card,
+.opal-card {
+  border:1px solid var(--opal-card-border);
+  border-radius:var(--opal-card-radius);
+  background:var(--opal-card-bg);
+  box-shadow:var(--opal-card-shadow);
+  backdrop-filter:blur(14px) saturate(125%);
+  -webkit-backdrop-filter:blur(14px) saturate(125%);
+}
+
+.stat-card,
+.opal-kpi-compact,
+.opal-enterprise-kpi,
+.opal-mini-status-card,
+.opal-satisfaction-mini-card {
+  min-height:var(--opal-card-min-h);
+  padding:var(--opal-card-pad);
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  gap:.7rem;
+  overflow:hidden;
+  position:relative;
+}
+
+.stat-card::before,
+.opal-kpi-compact::before,
+.opal-enterprise-kpi::before,
+.opal-mini-status-card::before {
+  content:"";
+  position:absolute;
+  inset-inline-start:0;
+  top:0;
+  bottom:0;
+  width:4px;
+  border-radius:var(--opal-card-radius) 0 0 var(--opal-card-radius);
+  background:linear-gradient(180deg, rgba(27,76,125,.86), rgba(199,151,47,.72));
+  opacity:.85;
+}
+
+.stat-card:hover,
+.opal-kpi-compact:hover,
+.opal-enterprise-kpi:hover,
+.opal-module-card:hover,
+.opal-report-card:hover {
+  transform:translateY(-2px);
+  box-shadow:var(--opal-card-shadow-hover);
+  transition:transform .18s ease, box-shadow .18s ease;
+}
+
+.kpi-icon,
+.stat-card .icon,
+.stat-card [class*="icon"],
+.opal-kpi-compact .icon,
+.opal-mini-status-card .icon {
+  width:42px;
+  height:42px;
+  border-radius:14px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  flex:0 0 42px;
+  background:rgba(22,66,111,.09);
+  border:1px solid rgba(22,66,111,.10);
+  font-size:1.15rem;
+}
+
+.kpi-label,
+.stat-card .label,
+.stat-card .title,
+.opal-kpi-compact .label,
+.opal-mini-status-card .label {
+  color:var(--bs-secondary-color);
+  font-size:.82rem;
+  font-weight:700;
+  line-height:1.35;
+  margin:0;
+}
+
+.kpi-value,
+.stat-card .value,
+.stat-card .number,
+.opal-kpi-compact .value,
+.opal-mini-status-card .value {
+  color:var(--opal-navy, #173b63);
+  font-size:clamp(1.45rem,2vw,2rem);
+  font-weight:800;
+  line-height:1;
+  letter-spacing:-.025em;
+  margin:0;
+  font-variant-numeric:tabular-nums;
+}
+
+.stat-card small,
+.opal-kpi-compact small,
+.opal-enterprise-kpi small,
+.opal-mini-status-card small,
+.card-meta,
+.kpi-meta {
+  color:var(--bs-secondary-color);
+  font-size:.76rem;
+  line-height:1.4;
+}
+
+.opal-card > .card-header,
+.card.opal-card > .card-header,
+.opal-module-card > .card-header,
+.opal-report-card > .card-header {
+  padding:.9rem 1rem;
+  border-bottom:1px solid rgba(22,66,111,.08);
+  background:rgba(255,255,255,.34);
+  border-radius:var(--opal-card-radius) var(--opal-card-radius) 0 0;
+  font-weight:800;
+}
+
+.opal-card > .card-body,
+.card.opal-card > .card-body,
+.opal-module-card > .card-body,
+.opal-report-card > .card-body {
+  padding:1rem;
+}
+
+.opal-card > .card-footer,
+.card.opal-card > .card-footer {
+  padding:.75rem 1rem;
+  border-top:1px solid rgba(22,66,111,.08);
+  background:rgba(255,255,255,.24);
+  border-radius:0 0 var(--opal-card-radius) var(--opal-card-radius);
+}
+
+.opal-card .progress,
+.stat-card .progress,
+.opal-kpi-compact .progress {
+  height:7px;
+  border-radius:999px;
+  background:rgba(22,66,111,.09);
+  overflow:hidden;
+}
+
+.opal-card .badge,
+.stat-card .badge,
+.opal-kpi-compact .badge {
+  border-radius:999px;
+  padding:.38rem .62rem;
+  font-weight:700;
+}
+
+@media (max-width: 767.98px) {
+  :root { --opal-card-min-h: 112px; --opal-card-pad: .85rem; }
+  .stats-grid,
+  .opal-stats-grid,
+  .kpi-grid,
+  .metrics-grid,
+  .summary-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:.65rem; }
+  .stat-card,
+  .opal-kpi-compact,
+  .opal-enterprise-kpi,
+  .opal-mini-status-card { border-radius:16px; }
+  .kpi-value,
+  .stat-card .value,
+  .stat-card .number,
+  .opal-kpi-compact .value { font-size:1.4rem; }
+}
+
+@media (max-width: 420px) {
+  .stats-grid,
+  .opal-stats-grid,
+  .kpi-grid,
+  .metrics-grid,
+  .summary-grid { grid-template-columns:1fr; }
+}
+
+@media print {
+  .stat-card,
+  .opal-kpi-compact,
+  .opal-enterprise-kpi,
+  .opal-mini-status-card,
+  .opal-card,
+  .opal-module-card,
+  .opal-report-card {
+    box-shadow:none !important;
+    backdrop-filter:none !important;
+    background:#fff !important;
+    border:1px solid #cfd6df !important;
+    break-inside:avoid;
+  }
+}

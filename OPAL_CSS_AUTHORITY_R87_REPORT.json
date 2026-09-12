@@ -1,0 +1,17 @@
+{
+  "release": "OPAL Update 131.7 R87 - CSS Authority Final Cleanup",
+  "baseline_revision": 86,
+  "new_revision": 87,
+  "active_authority": "static/css/opal_theme_system.css",
+  "active_authority_references_in_base": 1,
+  "legacy_shared_css_references_in_base": [],
+  "exact_duplicate_rules_found_and_removed": 0,
+  "conclusion": "No exact duplicate CSS rules remained to remove; the prior consolidation already eliminated them. R87 seals and documents the single-authority state without unsafe cascade rewrites.",
+  "css_sha256_before": "0399d99f4be1a17775af264fbce0eedae846db1e2ece41d9a8d638a4bead98fb",
+  "css_sha256_after": "0399d99f4be1a17775af264fbce0eedae846db1e2ece41d9a8d638a4bead98fb",
+  "base_sha256_before": "ed11fa7ed0a1b7a4e5abcbb6f19c9229f988c71b24bb2868c14a1756177a518e",
+  "base_sha256_after": "383e960854d19515b9d8d8e8eff344a582f8fa06e210dd87c535042a739bf0c4",
+  "database_touched": false,
+  "code_only": true,
+  "cache_identity": "20260912-r87-css-authority-final"
+}

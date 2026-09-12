@@ -1,1 +1,1 @@
-OPAL Update 131.7 R86 - Code-Only Update Database Safety Scope Correction
+OPAL Update 131.7 R87 - CSS Authority Final Cleanup

@@ -1,0 +1,39 @@
+/* OPAL Update 131.7 R77 — Visible Unified Interface Authority
+   This layer is intentionally loaded LAST so the redesign is actually visible. */
+:root{
+  --opal77-bg:#07121f;--opal77-surface:#0d1d2e;--opal77-surface-2:#132a40;
+  --opal77-line:rgba(126,180,220,.20);--opal77-text:#edf6ff;--opal77-muted:#91a9bd;
+  --opal77-accent:#36c7dc;--opal77-accent-soft:rgba(54,199,220,.12);--opal77-gold:#efc45f;
+  --opal77-radius:18px;--opal77-shadow:0 14px 34px rgba(0,0,0,.20);
+}
+html[data-opal-theme="dark"] body{background:radial-gradient(900px 520px at 100% -5%,rgba(54,199,220,.11),transparent 60%),linear-gradient(180deg,#07121f,#091725 52%,#07121d)!important;color:var(--opal77-text)!important}
+html[data-opal-theme="dark"] .opal-main{background:transparent!important}
+/* Quiet interface: helper text is hidden unless it is a validation/error element. */
+.form-text:not(.invalid-feedback):not(.text-danger),.helptext,.opal-live-events-hint,.opal-mobile-scroll-hint,[data-opal-quiet-hint],[data-opal-r75-quiet="true"],.page-heading>p[data-opal-quiet="true"]{display:none!important}
+/* Application shell */
+.opal-sidebar{background:linear-gradient(180deg,#0d2134,#081724)!important;border-left:1px solid var(--opal77-line)!important;box-shadow:-14px 0 38px rgba(0,0,0,.22)!important}
+.opal-brand{margin:10px!important;padding:14px!important;border:1px solid rgba(54,199,220,.20)!important;border-radius:18px!important;background:linear-gradient(135deg,rgba(54,199,220,.10),rgba(255,255,255,.025))!important}
+.opal-menu{padding:8px 10px 18px!important}.opal-menu-section{margin:15px 8px 7px!important;color:var(--opal77-muted)!important;font-size:.72rem!important;letter-spacing:.06em!important}
+.opal-menu a{margin:3px 0!important;padding:11px 12px!important;border-radius:13px!important;border:1px solid transparent!important}.opal-menu a:hover{background:rgba(255,255,255,.045)!important;border-color:var(--opal77-line)!important}.opal-menu a.active{background:linear-gradient(90deg,rgba(54,199,220,.18),rgba(54,199,220,.05))!important;border-color:rgba(54,199,220,.30)!important;box-shadow:inset -3px 0 0 var(--opal77-accent)!important}
+.topbar,.opal-topbar-shell{border:1px solid var(--opal77-line)!important;border-radius:18px!important;background:rgba(10,27,43,.90)!important;backdrop-filter:blur(16px)!important;box-shadow:var(--opal77-shadow)!important}
+.opal-topbar-main{gap:12px!important}.opal-global-search-box{border:1px solid var(--opal77-line)!important;border-radius:14px!important;background:rgba(255,255,255,.035)!important}.icon-btn{border:1px solid var(--opal77-line)!important;border-radius:13px!important;background:rgba(255,255,255,.035)!important}.icon-btn:hover{background:var(--opal77-accent-soft)!important}
+/* Navigation and page hierarchy */
+.opal-page-navigation{margin:10px 0!important;padding:9px 13px!important;border:1px solid var(--opal77-line)!important;border-radius:14px!important;background:rgba(13,31,48,.76)!important;box-shadow:none!important}
+.page-heading{padding:1.25rem 1.4rem!important;border:1px solid var(--opal77-line)!important;border-radius:20px!important;background:linear-gradient(135deg,#14314a,#0c2033)!important;box-shadow:var(--opal77-shadow)!important}.page-heading h1{font-weight:900!important;letter-spacing:-.025em!important;margin:0!important}.page-heading p{margin:.45rem 0 0!important;color:var(--opal77-muted)!important}.opal-current-operation{margin-top:.7rem!important;padding:.45rem .7rem!important;background:rgba(54,199,220,.07)!important;border-color:rgba(54,199,220,.20)!important}
+/* Cards and modules */
+.card,.opal-card,.accordion-item,.modal-content,.dropdown-menu,.offcanvas{border:1px solid var(--opal77-line)!important;border-radius:var(--opal77-radius)!important;background:linear-gradient(180deg,#10263a,#0c1d2e)!important;box-shadow:var(--opal77-shadow)!important}.card-header{padding:1rem 1.15rem!important;border-bottom:1px solid var(--opal77-line)!important;background:linear-gradient(90deg,rgba(54,199,220,.075),transparent)!important;font-weight:850!important}.card-body{padding:1.15rem!important}.card-footer{padding:.9rem 1.15rem!important;background:rgba(255,255,255,.018)!important}
+.opal-dashboard-kpi,.opal-stat-card,.stat-card,.metric-card,[class*="kpi"]{border:1px solid var(--opal77-line)!important;border-radius:18px!important;background:linear-gradient(145deg,#173149,#0e2234)!important;box-shadow:0 12px 28px rgba(0,0,0,.16)!important}
+/* Controls */
+.btn{min-height:40px!important;border-radius:12px!important;font-weight:800!important}.btn-primary,.btn-info{background:linear-gradient(135deg,#168fa7,#3ec9dc)!important;border-color:rgba(54,199,220,.40)!important}.btn-success{background:linear-gradient(135deg,#158b68,#39c58e)!important}.btn-warning{background:linear-gradient(135deg,#c4932a,#efc45f)!important}.btn:hover{transform:translateY(-1px)}
+.form-label{font-weight:800!important}.form-control,.form-select,textarea,input:not([type="checkbox"]):not([type="radio"]){border:1px solid rgba(145,185,216,.24)!important;border-radius:13px!important;background:rgba(4,15,25,.34)!important;color:var(--opal77-text)!important}.form-control:focus,.form-select:focus,textarea:focus{border-color:rgba(54,199,220,.72)!important;box-shadow:0 0 0 4px rgba(54,199,220,.10)!important}
+/* Tables and action rows */
+.table-responsive{border:1px solid var(--opal77-line)!important;border-radius:16px!important;background:rgba(4,15,25,.18)!important}.table{margin-bottom:0!important}.table thead th{padding:.85rem .9rem!important;background:rgba(54,199,220,.08)!important;border-bottom-color:rgba(54,199,220,.18)!important;font-weight:850!important}.table tbody td{padding:.78rem .9rem!important;border-color:rgba(145,185,216,.10)!important}.table-hover tbody tr:hover{background:rgba(54,199,220,.045)!important}.opal-r75-action-row{padding:.75rem!important;border:1px solid var(--opal77-line)!important;border-radius:14px!important;background:rgba(255,255,255,.02)!important}
+/* Alerts are compact and do not dominate the page. */
+.alert{border-radius:14px!important;padding:.8rem 1rem!important;box-shadow:0 8px 22px rgba(0,0,0,.10)!important}.opal-message-quiet{display:none!important}
+.badge,.opal-data-chip{border-radius:999px!important;font-weight:800!important}
+/* Floating explanations must not remain stuck on screen. */
+.tooltip:not([data-opal-keep-floating]),.popover:not([data-opal-keep-floating]){display:none!important}
+/* Light mode keeps the new hierarchy. */
+html[data-opal-theme="light"] .page-heading,html[data-opal-theme="light"] .card,html[data-opal-theme="light"] .opal-card,html[data-opal-theme="light"] .topbar,html[data-opal-theme="light"] .opal-topbar-shell{background:linear-gradient(180deg,#fff,#f4f8fc)!important;border-color:rgba(52,95,125,.16)!important;box-shadow:0 12px 28px rgba(33,61,86,.09)!important}html[data-opal-theme="light"] .opal-sidebar{background:linear-gradient(180deg,#eef6fa,#e7f0f6)!important}html[data-opal-theme="light"] .form-control,html[data-opal-theme="light"] .form-select,html[data-opal-theme="light"] textarea{background:#fff!important;color:#173247!important}
+@media(max-width:991.98px){.opal-main{padding:.8rem .65rem 1.4rem!important}.topbar,.opal-topbar-shell{border-radius:16px!important}.page-heading{padding:1.05rem!important}.card-body{padding:1rem!important}}
+@media(max-width:767.98px){.page-heading{border-radius:17px!important}.page-heading h1{font-size:1.32rem!important}.opal-page-navigation{padding:8px 10px!important}.card,.opal-card{border-radius:16px!important}.card-header,.card-body,.card-footer{padding:.85rem!important}.table thead th,.table tbody td{padding:.68rem .6rem!important}.btn{min-height:38px!important}}
