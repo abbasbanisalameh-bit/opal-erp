@@ -674,6 +674,30 @@ def inspect_package(path: Path) -> PackageInspection:
         return PackageInspection(False, "", path.stem, str(exc))
 
 
+def _archive_requires_database_safety(archive_path: Path) -> bool:
+    """Return whether a package is allowed to affect database state.
+
+    The package manifest is authoritative for deployment scope. Packages that
+    explicitly declare ``code_only=true`` skip the SQLite safety snapshot and
+    migrations; every other package is handled conservatively as potentially
+    database-affecting.
+    """
+    try:
+        with zipfile.ZipFile(archive_path, "r") as archive:
+            names = [name.replace("\\", "/").rstrip("/") for name in archive.namelist()]
+            for name in names:
+                if PurePosixPath(name).name != MANIFEST_NAME:
+                    continue
+                try:
+                    data = json.loads(archive.read(name).decode("utf-8"))
+                except (UnicodeDecodeError, json.JSONDecodeError):
+                    return True
+                return data.get("code_only") is not True
+    except (OSError, zipfile.BadZipFile):
+        return True
+    return True
+
+
 def _sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as file_obj:
@@ -1245,18 +1269,22 @@ def _apply_archive(
     inspection = inspect_package(archive_path)
     if not inspection.compatible:
         raise SystemUpdateError(f"الحزمة غير متوافقة: {inspection.notes}")
+    requires_database_safety = _archive_requires_database_safety(archive_path)
     safety = _create_snapshot_impl(
         username=username,
         requested_name=f"SAFETY_BEFORE_{timezone.localtime().strftime('%Y%m%d_%H%M%S')}",
         source_type="safety_snapshot",
         notes=f"نسخة أمان تلقائية قبل استعادة {requested_version_name or inspection.version_name}.",
     )
-    database_safety = _create_database_safety_snapshot()
+    database_safety_path = (
+        _create_database_safety_snapshot() if requires_database_safety else None
+    )
+    database_safety = database_safety_path.name if database_safety_path else ""
     with tempfile.TemporaryDirectory(prefix="opal_restore_", dir=private_storage_root()) as temporary_directory:
         extracted_root, inspection = _extract_project_root(archive_path, Path(temporary_directory))
         try:
             _replace_project_code(extracted_root)
-            _run_post_restore_checks(run_migrations=True)
+            _run_post_restore_checks(run_migrations=requires_database_safety)
         except Exception as original_exc:
             # Restore both the previous code and the exact SQLite state from
             # before migrations.  No --fake migration is used here.
@@ -1266,7 +1294,8 @@ def _apply_archive(
                         _find_local_version_path(safety.filename), Path(rollback_temp)
                     )
                     _replace_project_code(rollback_root)
-                    _restore_database_safety_snapshot(database_safety)
+                    if database_safety_path is not None:
+                        _restore_database_safety_snapshot(database_safety_path)
                     _run_post_restore_checks(run_migrations=False)
             except Exception as rollback_exc:
                 raise SystemUpdateError(
@@ -1284,19 +1313,23 @@ def _apply_archive(
         source=source_label,
         username=username,
         safety_snapshot=safety.filename,
-        database_safety_snapshot=database_safety.name,
+        database_safety_snapshot=database_safety,
     )
     _append_audit(
         "version_restored",
         username,
-        f"version={final_name} source={source_label} safety={safety.filename} database={database_safety.name}",
+        f"version={final_name} source={source_label} safety={safety.filename} database={database_safety or 'skipped-code-only'}",
     )
     return RestoreResult(
         version_name=final_name,
         source=source_label,
         safety_snapshot=safety.filename,
-        message="تمت استعادة الكود وتشغيل الفحص والترحيلات وتجميع الملفات الثابتة.",
-        database_safety_snapshot=database_safety.name,
+        message=(
+            "تمت استعادة الكود وتشغيل الفحص والترحيلات وتجميع الملفات الثابتة."
+            if requires_database_safety
+            else "تمت استعادة الكود وتشغيل الفحص وتجميع الملفات الثابتة دون ترحيلات."
+        ),
+        database_safety_snapshot=database_safety,
     )
 
 
