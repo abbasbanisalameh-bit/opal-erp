@@ -12,3 +12,8 @@ backups/
 db_backup*.sqlite3
 OPAL_UPDATE_*.md
 INSTALL_OPAL_*.md
+
+# OPAL runtime data - never commit
+/db.sqlite3
+/media/
+/staticfiles/
