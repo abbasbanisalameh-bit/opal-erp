@@ -1,0 +1,18 @@
+#!/bin/sh
+
+BLOCKED=$(git diff --cached --name-only | grep -E '^(db\.sqlite3|.*\.sqlite3$|media/|staticfiles/|\.env($|\.))')
+
+if [ -n "$BLOCKED" ]; then
+    echo ""
+    echo "================================================="
+    echo "OPAL ERP SECURITY STOP"
+    echo "Sensitive or generated files cannot be committed:"
+    echo "================================================="
+    echo "$BLOCKED"
+    echo ""
+    echo "Remove these files from Git staging and try again."
+    echo ""
+    exit 1
+fi
+
+exit 0

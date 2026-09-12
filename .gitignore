@@ -12,3 +12,49 @@ backups/
 db_backup*.sqlite3
 OPAL_UPDATE_*.md
 INSTALL_OPAL_*.md
+
+# OPAL Update 131.7 R88 - Repository Hygiene
+staticfiles/
+media/
+venv/
+.env
+*.sqlite3
+*.sqlite3-journal
+*.sqlite3-wal
+*.sqlite3-shm
+
+# =========================================================
+# OPAL ERP - Runtime and sensitive files
+# NEVER commit these files to GitHub
+# =========================================================
+
+# Database
+db.sqlite3
+*.sqlite3
+
+# User uploaded files
+media/
+
+# Django generated static files
+staticfiles/
+
+# Environment and secrets
+.env
+.env.*
+*.env
+
+# Python environments
+venv/
+.venv/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
