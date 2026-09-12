@@ -4,7 +4,7 @@
     <div class="opal-topbar-ribbon" aria-live="polite">
         <div class="opal-ribbon-stream">
             {% if active_announcement %}
-            <div class="opal-topbar-announcement">
+            <div class="opal-topbar-announcement" title="{{ active_announcement.title }}: {{ active_announcement.message }}">
                 <i class="bi bi-megaphone-fill" aria-hidden="true"></i>
                 <div class="opal-topbar-ticker">
                     <span style="animation-duration: {{ active_announcement.speed_seconds }}s;"><strong>{{ active_announcement.title }}</strong> — {{ active_announcement.message }}</span>
@@ -13,7 +13,7 @@
             {% endif %}
         </div>
         {% if opal_live_schedule %}
-        <div class="opal-topbar-event" id="opal-live-event">
+        <div class="opal-topbar-event" id="opal-live-event" title="التنبيه بالحدث التالي">
             <i class="bi bi-calendar-event-fill" aria-hidden="true"></i>
             <strong>
                 {% if opal_live_schedule.next %}التالي: {{ opal_live_schedule.next.name }} الساعة {{ opal_live_schedule.next.start }}
@@ -37,7 +37,7 @@
         </div>
 
         <div class="top-right opal-topbar-actions">
-            <div class="opal-gold-clock" id="opal-gold-clock">
+            <div class="opal-gold-clock" id="opal-gold-clock" title="الوقت والتاريخ الحاليان">
                 <i class="bi bi-clock-fill" aria-hidden="true"></i>
                 <div><strong id="opal-clock-time">--:--</strong><small id="opal-clock-date">--</small></div>
             </div>
@@ -56,10 +56,10 @@
                     <div class="opal-notification-menu-foot"><a href="{% url 'enterprise_ops:notification_list' %}"><i class="bi bi-inboxes-fill"></i> فتح مركز الإشعارات الكامل</a></div>
                 </div>
             </div>
-            <button id="opal-theme-toggle" class="icon-btn opal-theme-toggle" type="button" aria-label="تفعيل الوضع النهاري" aria-pressed="false">
+            <button id="opal-theme-toggle" class="icon-btn opal-theme-toggle" type="button" title="تفعيل الوضع النهاري" aria-label="تفعيل الوضع النهاري" aria-pressed="false">
                 <i class="bi bi-moon-stars-fill" aria-hidden="true"></i>
             </button>
-            <a class="profile opal-profile-link text-decoration-none" href="{% if opal_profile_url %}{{ opal_profile_url }}{% else %}{% url 'accounts:my_profile' %}{% endif %}">
+            <a class="profile opal-profile-link text-decoration-none" href="{% if opal_profile_url %}{{ opal_profile_url }}{% else %}{% url 'accounts:my_profile' %}{% endif %}" title="الملف الشخصي">
                 <div class="opal-user-photo-frame">{% if request.user.is_authenticated and request.user.profile.photo %}<img src="{{ request.user.profile.photo.url }}" alt="{{ request.user.profile.full_name|default:request.user.username }}">{% else %}<i class="bi bi-person-fill"></i>{% endif %}</div>
                 <div class="opal-profile-copy"><strong>{% if request.user.is_authenticated and request.user.profile.full_name %}{{ request.user.profile.full_name }}{% else %}{{ request.user.username }}{% endif %}</strong><small>{% if request.user.is_authenticated and request.user.profile.role %}{{ request.user.profile.role.name }}{% else %}الملف الشخصي{% endif %}</small></div>
             </a>

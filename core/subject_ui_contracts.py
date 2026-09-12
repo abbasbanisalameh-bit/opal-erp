@@ -22,10 +22,7 @@ def run_subject_ui_audit() -> dict[str, object]:
             "subject_style",
             "subject_colour",
         ),
-        # Shared subject-colour and compact-portal primitives belong to opal_erp.css.
-        # Manager-dashboard-only rules live in opal_dashboard_executive.css; keeping
-        # the ownership explicit prevents false deployment failures when a selector
-        # is correctly defined in its dedicated stylesheet.
+        # R78: shared and executive UI primitives are governed by the central CSS authority.
         "static/css/opal_erp.css": (
             ".opal-subject-chip",
             ".opal-subject-card",
@@ -33,13 +30,13 @@ def run_subject_ui_audit() -> dict[str, object]:
             ".opal-compact-action-row",
             "grid-template-columns:repeat(3,minmax(0,1fr))!important",
         ),
-        "static/css/opal_dashboard_executive.css": (
+        "static/css/opal_theme_system.css": (
             ".opal-fixed-manager-dashboard",
             ".opal-manager-quick-row",
             ".opal-fixed-manager-dashboard .opal-dashboard-subject-chip",
         ),
         "templates/base/base.html": (
-            "css/opal_dashboard_executive.css",
+            "css/opal_theme_system.css",
         ),
         "timetable/live_services.py": (
             'subject_color = entry.subject.color or "#64748B"',

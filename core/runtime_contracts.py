@@ -83,7 +83,7 @@ def audit_base_template_contract(root: Path | None = None) -> list[AuditIssue]:
     for asset in duplicates:
         issues.append(AuditIssue("duplicate_static_asset", f"الملف الثابت محمّل أكثر من مرة: {asset}", str(relative)))
 
-    required_assets = ("css/opal_erp.css", "css/opal_theme_system.css", "js/opal_erp.js")
+    required_assets = ("css/opal_theme_system.css", "js/opal_erp.js")
     for asset in required_assets:
         if assets.count(asset) != 1:
             issues.append(
@@ -95,6 +95,15 @@ def audit_base_template_contract(root: Path | None = None) -> list[AuditIssue]:
             )
 
     css_assets = [asset for asset in assets if asset.endswith(".css")]
+    legacy_shared = {
+        "css/opal_erp.css", "css/opal_dashboard_polish.css", "css/opal_ui_consolidation.css",
+        "css/opal_tables_consolidation.css", "css/opal_cards_consolidation.css", "css/opal_dashboard_executive.css",
+        "css/opal_entity_360_consolidation.css", "css/opal_settings_consolidation.css",
+        "css/opal_feedback_consolidation.css", "css/opal_responsive_audit.css", "css/opal_identity_cards.css",
+    }
+    leaked = sorted(set(css_assets) & legacy_shared)
+    if leaked:
+        issues.append(AuditIssue("legacy_shared_css_loaded", "يجب ألا يحمّل base.html طبقات CSS المشتركة القديمة بعد توحيد السلطة: " + ", ".join(leaked), str(relative)))
     if css_assets and css_assets[-1] != "css/opal_theme_system.css":
         issues.append(
             AuditIssue(

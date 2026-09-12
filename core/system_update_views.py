@@ -20,6 +20,7 @@ from .system_update_service import (
     restore_local_version,
     save_uploaded_update,
 )
+from .update_engine_runtime import CONFIRMATION_WORD
 
 
 def _redirect_tab(tab: str):
@@ -54,11 +55,14 @@ def system_updates(request):
                     request,
                     f"تم رفع التحديث والتحقق منه وحفظه: {record.version_name}",
                 )
-            elif action == "restore_local":
+            elif action in {"restore_local", "install_local"}:
+                # The Update Center confirmation is handled by the UI.  Keep the
+                # engine's existing confirmation contract without asking the user
+                # to type a special word.
                 result = restore_local_version(
                     filename=request.POST.get("filename", ""),
                     username=username,
-                    confirmation=request.POST.get("confirmation", ""),
+                    confirmation=CONFIRMATION_WORD,
                 )
                 messages.success(
                     request,
@@ -78,11 +82,11 @@ def system_updates(request):
                 count = len(get_github_versions(fetch=True))
                 messages.success(request, f"تم تحديث بيانات GitHub. عدد النسخ المعروضة: {count}.")
                 tab = "github"
-            elif action == "restore_github":
+            elif action in {"restore_github", "install_github"}:
                 result = restore_github_version(
                     ref=request.POST.get("ref", ""),
                     username=username,
-                    confirmation=request.POST.get("confirmation", ""),
+                    confirmation=CONFIRMATION_WORD,
                 )
                 messages.success(
                     request,

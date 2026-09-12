@@ -16,7 +16,7 @@ def run_fixed_dashboard_audit() -> dict[str, object]:
     template = _read(root, "dashboard/templates/dashboard/home.html")
     views = _read(root, "dashboard/views.py")
     workflow = _read(root, "dashboard/workflow.py")
-    css = _read(root, "static/css/opal_dashboard_executive.css")
+    css = _read(root, "static/css/opal_theme_system.css")
 
     required = {
         "dashboard/templates/dashboard/home.html": (
@@ -39,7 +39,7 @@ def run_fixed_dashboard_audit() -> dict[str, object]:
             "top_students_matrix",
             'row.get("rank") == 1',
         ),
-        "static/css/opal_dashboard_executive.css": (
+        "static/css/opal_theme_system.css": (
             "OPAL Update 131.7 — fixed crystal manager dashboard",
             ".opal-manager-quick-row",
             "grid-template-columns:repeat(6,minmax(0,1fr))",

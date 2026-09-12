@@ -50,7 +50,7 @@ class Update1317FixedManagerDashboardContractTests(SimpleTestCase):
         self.assertIn('row.get("rank") == 1', workflow)
 
     def test_crystal_visual_contract(self):
-        css = self.source("static/css/opal_dashboard_executive.css")
+        css = self.source("static/css/opal_theme_system.css")
         self.assertIn("fixed crystal manager dashboard", css)
         self.assertIn("border:1px dashed rgba(216,173,79", css)
         self.assertIn("grid-template-columns:repeat(6,minmax(0,1fr))", css)

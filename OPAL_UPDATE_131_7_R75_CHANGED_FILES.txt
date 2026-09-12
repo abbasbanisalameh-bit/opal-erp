@@ -1,8 +1,0 @@
-static/css/opal_theme_system.css
-templates/base/base.html
-static/js/opal_ui_r75.js
-OPAL_UPDATE_131_7_R75_RELEASE_NOTES_AR.md
-INSTALL_OPAL_UPDATE_131_7_R75_AR.md
-OPAL_UPDATE_131_7_R75_CHANGED_FILES.txt
-OPAL_UPDATE_MANIFEST.json
-OPAL_RELEASE_NAME.txt

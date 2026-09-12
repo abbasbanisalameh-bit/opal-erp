@@ -6,9 +6,9 @@
   </div>
   <nav class="opal-menu" aria-label="القائمة الرئيسية">
     {% for section in opal_navigation_sections %}
-      <div class="opal-menu-section" data-opal-section="{{ section.label|slugify }}">{{ section.label }}</div>
+      <div class="opal-menu-section">{{ section.label }}</div>
       {% for item in section.items %}
-        <a href="{{ item.url }}" data-opal-module="{{ item.module|default:'' }}"{% if item.active %} class="active"{% endif %}>
+        <a href="{{ item.url }}"{% if item.active %} class="active"{% endif %}>
           <i class="bi bi-{{ item.icon }}"></i><span>{{ item.label }}</span>
         </a>
       {% endfor %}

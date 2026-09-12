@@ -1190,3 +1190,17 @@ document.addEventListener("DOMContentLoaded", function () {
         syncVisibility();
     });
 })();
+
+
+// OPAL R78: informational messages are transient; warnings/errors remain visible.
+document.addEventListener("DOMContentLoaded", function () {
+  document.querySelectorAll(".opal-system-message").forEach(function (message) {
+    var cls = message.className || "";
+    if (/alert-(danger|warning)/.test(cls) || /(error|danger|warning)/.test(cls)) return;
+    window.setTimeout(function () {
+      if (!message.isConnected) return;
+      if (window.bootstrap && bootstrap.Alert) bootstrap.Alert.getOrCreateInstance(message).close();
+      else message.remove();
+    }, 5000);
+  });
+});

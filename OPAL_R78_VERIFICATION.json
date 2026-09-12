@@ -1,0 +1,13 @@
+{
+  "release_name": "OPAL Update 131.7 R78 - Unified CSS, Templates & Runtime Repair",
+  "package_revision": 78,
+  "version": "131.7",
+  "checks": {
+    "root_manifest_matches_inner": true,
+    "release_identity_files_coherent": true,
+    "base_has_exactly_one_central_opal_css": true,
+    "base_has_no_legacy_shared_css": true,
+    "executive_css_consolidated_into_central_authority": true
+  },
+  "runtime_note": "Django runtime check must be executed by the target PythonAnywhere virtualenv during deployment; this build environment had no network access to install Django dependencies."
+}

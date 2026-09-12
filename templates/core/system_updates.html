@@ -1,7 +1,7 @@
 {% extends "base/base.html" %}
 {% block title %}مركز تحديثات النظام | OPAL ERP{% endblock %}
 {% block page_title %}مركز تحديثات النظام{% endblock %}
-{% block page_subtitle %}حفظ النسخ، رفع التحديثات، الاستعادة، وإدارة نسخ GitHub{% endblock %}
+{% block page_subtitle %}حفظ النسخ، رفع التحديثات، تثبيت الحزم، وإدارة نسخ GitHub{% endblock %}
 
 {% block content %}
 <div class="opal-card mb-4">
@@ -18,18 +18,16 @@
                         {% if current_version.commit %} — Commit: <code>{{ current_version.commit }}</code>{% endif %}
                     </div>
                     {% if current_version.deployed_at %}
-                        <div class="small text-secondary mt-1">آخر استعادة: {{ current_version.deployed_at|slice:":19" }}</div>
+                        <div class="small text-secondary mt-1">آخر تثبيت: {{ current_version.deployed_at|slice:":19" }}</div>
                     {% endif %}
                 </div>
             </div>
         </div>
         <div class="col-lg-4 text-lg-end">
             {% if current_version.has_changes %}
-                <span class="badge text-bg-warning">توجد تغييرات برمجية محلية غير مرفوعة</span>
-            {% elif git_status.runtime_changes %}
-                <span class="badge text-bg-info">ملفات تشغيل معزولة عن حالة الكود</span>
+                <span class="badge text-bg-warning">توجد تغييرات محلية غير مرفوعة</span>
             {% else %}
-                <span class="badge text-bg-success">الوضع البرمجي مستقر</span>
+                <span class="badge text-bg-success">الوضع المحلي مستقر</span>
             {% endif %}
         </div>
     </div>
@@ -98,7 +96,7 @@
                 <div class="fs-2"><i class="bi bi-cloud-arrow-up-fill"></i></div>
                 <div>
                     <h3 class="fw-bold mb-1">رفع نسخة أو تحديث</h3>
-                    <p class="text-secondary mb-0">يرفع الحزمة إلى النظام ويفحص بنيتها قبل السماح باستعادتها.</p>
+                    <p class="text-secondary mb-0">يرفع الحزمة إلى النظام ويفحص بنيتها قبل السماح بتثبيتها.</p>
                 </div>
             </div>
             <form method="post" enctype="multipart/form-data">
@@ -135,7 +133,7 @@
                         <th>الحجم</th>
                         <th>Commit</th>
                         <th>الحالة</th>
-                        <th>الاستعادة</th>
+                        <th>التثبيت</th>
                         <th>ملف النسخة</th>
                     </tr>
                 </thead>
@@ -159,14 +157,13 @@
                         </td>
                         <td>
                             {% if version.compatible %}
-                            <form method="post" class="restore-form" data-name="{{ version.version_name|escapejs }}">
+                            <form method="post" class="install-form" data-name="{{ version.version_name|escapejs }}">
                                 {% csrf_token %}
-                                <input type="hidden" name="action" value="restore_local">
+                                <input type="hidden" name="action" value="install_local">
                                 <input type="hidden" name="tab" value="local">
                                 <input type="hidden" name="filename" value="{{ version.filename }}">
-                                <input type="hidden" name="confirmation" value="">
                                 <button class="btn btn-sm btn-outline-danger" type="submit">
-                                    <i class="bi bi-arrow-counterclockwise"></i> استعادة
+                                    <i class="bi bi-download"></i> تثبيت
                                 </button>
                             </form>
                             {% else %}
@@ -212,20 +209,13 @@
                 <div class="mb-2"><strong>Commit المحلي:</strong> <code>{{ git_status.commit }}</code></div>
                 <div class="mb-2 text-break"><strong>المستودع:</strong> {{ git_status.remote|default:"غير محدد" }}</div>
                 <div>
-                    <strong>حالة الكود:</strong>
+                    <strong>الحالة:</strong>
                     {% if git_status.has_changes %}
-                        <span class="badge text-bg-warning">توجد تغييرات برمجية لم تُرفع</span>
+                        <span class="badge text-bg-warning">توجد تغييرات لم تُرفع</span>
                     {% else %}
-                        <span class="badge text-bg-success">متزامن برمجيًا</span>
+                        <span class="badge text-bg-success">متزامن محليًا</span>
                     {% endif %}
                 </div>
-                {% if git_status.runtime_changes %}
-                <div class="mt-2 small text-info">
-                    <i class="bi bi-shield-check"></i>
-                    تم اكتشاف {{ git_status.runtime_changes }} تغييرًا في ملفات تشغيل/بيانات؛
-                    هذه الملفات لا تُعامل كتغييرات برمجية، وسيتم عزل الملفات المتتبعة منها تلقائيًا عند الرفع القادم إلى GitHub دون حذفها من النظام.
-                </div>
-                {% endif %}
             {% else %}
                 <div class="alert alert-danger mb-0">{{ git_status.error }}</div>
             {% endif %}
@@ -263,7 +253,7 @@
                         <th>التاريخ</th>
                         <th>المنفذ</th>
                         <th>الوصف</th>
-                        <th>الاستعادة</th>
+                        <th>التثبيت</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -279,14 +269,13 @@
                         <td>{{ version.author }}</td>
                         <td>{{ version.subject }}</td>
                         <td>
-                            <form method="post" class="restore-form" data-name="{{ version.short_name|escapejs }}">
+                            <form method="post" class="install-form" data-name="{{ version.short_name|escapejs }}">
                                 {% csrf_token %}
-                                <input type="hidden" name="action" value="restore_github">
+                                <input type="hidden" name="action" value="install_github">
                                 <input type="hidden" name="tab" value="github">
                                 <input type="hidden" name="ref" value="{{ version.ref }}">
-                                <input type="hidden" name="confirmation" value="">
                                 <button class="btn btn-sm btn-outline-danger" type="submit">
-                                    <i class="bi bi-download"></i> استعادة إلى بايثون
+                                    <i class="bi bi-download"></i> تثبيت من GitHub
                                 </button>
                             </form>
                         </td>
@@ -304,19 +293,17 @@
 
 {% block extra_js %}
 <script>
-document.querySelectorAll('.restore-form').forEach(function (form) {
+document.querySelectorAll('.install-form').forEach(function (form) {
     form.addEventListener('submit', function (event) {
         var name = form.dataset.name || 'النسخة المختارة';
-        var answer = window.prompt(
-            'سيتم إنشاء نسخة أمان تلقائية ثم استعادة «' + name + '».\n' +
-            'قاعدة البيانات وmedia والبيئة الافتراضية لن تُستبدل.\n' +
-            'اكتب كلمة: استعادة'
+        var confirmed = window.confirm(
+            'هل أنت متأكد من تثبيت «' + name + '»؟\n\n' +
+            'سيتم إنشاء نسخة أمان تلقائية قبل بدء التثبيت.'
         );
-        if (answer !== 'استعادة') {
+        if (!confirmed) {
             event.preventDefault();
             return false;
         }
-        form.querySelector('input[name="confirmation"]').value = answer;
         return true;
     });
 });

@@ -41,13 +41,13 @@ class Update1316SubjectUiContractTests(SimpleTestCase):
 
     def test_manager_dashboard_compact_coverage_is_deployed(self):
         template = self.source("dashboard/templates/dashboard/home.html")
-        css = self.source("static/css/opal_dashboard_executive.css")
+        css = self.source("static/css/opal_theme_system.css")
         base = self.source("templates/base/base.html")
         self.assertIn("opal-fixed-manager-dashboard", template)
         self.assertIn("opal-dashboard-subject-chip", template)
         self.assertIn("OPAL Update 131.7 — fixed crystal manager dashboard", css)
         self.assertIn("grid-template-columns:repeat(6,minmax(0,1fr))", css)
-        self.assertIn("css/opal_dashboard_executive.css", base)
+        self.assertIn("css/opal_theme_system.css", base)
 
     def test_system_audit_passes(self):
         self.assertEqual(run_subject_ui_audit()["issues"], [])
