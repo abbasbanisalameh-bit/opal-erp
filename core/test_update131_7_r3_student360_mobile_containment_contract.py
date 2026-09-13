@@ -25,7 +25,7 @@ class Student360MobileContainmentContractTests(unittest.TestCase):
 
     def test_entity_stylesheet_cache_token_is_bumped(self):
         base = source("templates/base/base.html")
-        self.assertRegex(base, r"opal_entity_360_consolidation\.css' %\}\?v=[^\"\s]+")
+        self.assertRegex(base, r"opal_theme_system\.css' %\}\?v=[^\"\s]+")
 
     def test_release_identity(self):
         release_name = source("OPAL_RELEASE_NAME.txt").strip()

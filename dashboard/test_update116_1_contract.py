@@ -34,4 +34,4 @@ class Update1161KpiThemePersistenceContractTests(SimpleTestCase):
 
     def test_cache_key_points_to_update_116_1(self):
         source = BASE_TEMPLATE.read_text(encoding="utf-8")
-        self.assertRegex(source, r"opal_dashboard_executive\.css' %\}\?v=[^\"\s]+")
+        self.assertRegex(source, r"opal_theme_system\.css' %\}\?v=[^\"\s]+")

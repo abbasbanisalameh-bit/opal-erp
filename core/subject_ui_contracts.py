@@ -18,56 +18,37 @@ def run_subject_ui_audit() -> dict[str, object]:
 
     required = {
         "core/templatetags/opal_subjects.py": (
-            "strict hexadecimal whitelist",
-            "subject_style",
-            "subject_colour",
+            "strict hexadecimal whitelist", "subject_style", "subject_colour",
         ),
-        # R78: shared and executive UI primitives are governed by the central CSS authority.
-        "static/css/opal_erp.css": (
-            ".opal-subject-chip",
-            ".opal-subject-card",
-            ".opal-compact-module-grid",
-            ".opal-compact-action-row",
-            "grid-template-columns:repeat(3,minmax(0,1fr))!important",
-        ),
+        # One active shared CSS authority after R87/R89 consolidation.
         "static/css/opal_theme_system.css": (
-            ".opal-fixed-manager-dashboard",
-            ".opal-manager-quick-row",
+            ".opal-subject-chip", ".opal-subject-card",
+            ".opal-compact-module-grid", ".opal-compact-action-row",
+            "grid-template-columns:repeat(3,minmax(0,1fr))!important",
+            ".opal-fixed-manager-dashboard", ".opal-manager-quick-row",
             ".opal-fixed-manager-dashboard .opal-dashboard-subject-chip",
         ),
-        "templates/base/base.html": (
-            "css/opal_theme_system.css",
-        ),
+        "templates/base/base.html": ("css/opal_theme_system.css",),
         "timetable/live_services.py": (
-            'subject_color = entry.subject.color or "#64748B"',
-            '"subject_color": subject_color',
+            'subject_color = entry.subject.color or "#64748B"', '"subject_color": subject_color',
         ),
         "dashboard/templates/dashboard/home.html": (
-            "opal-actions-fixed-row",
-            "subject_style item.subject_color",
-            "subject_style row.entry.subject",
-            "opal-fixed-manager-dashboard",
+            "opal-actions-fixed-row", "subject_style item.subject_color",
+            "subject_style row.entry.subject", "opal-fixed-manager-dashboard",
             "opal-dashboard-subject-chip",
         ),
         "templates/teachers/portal_dashboard.html": (
-            "opal-compact-module-grid",
-            "opal-compact-subject-grid",
-            "subject_style a.subject",
+            "opal-compact-module-grid", "opal-compact-subject-grid", "subject_style a.subject",
         ),
         "templates/parent_portal/dashboard.html": (
-            "opal-parent-metric-grid",
-            "opal-compact-module-grid",
+            "opal-parent-metric-grid", "opal-compact-module-grid",
         ),
         "templates/students/student_360.html": (
-            "opal-compact-action-row",
-            "opal-compact-metric-grid",
-            "opal-compact-tabs",
-            "subject_style row.exam.subject",
+            "opal-compact-action-row", "opal-compact-metric-grid",
+            "opal-compact-tabs", "subject_style row.exam.subject",
         ),
         "templates/exams/gradebook.html": (
-            "opal-subject-card",
-            "exam__subject__color",
-            "subject_style mark.exam.subject",
+            "opal-subject-card", "exam__subject__color", "subject_style mark.exam.subject",
         ),
     }
 

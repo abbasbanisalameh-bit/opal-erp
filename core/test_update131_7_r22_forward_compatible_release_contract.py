@@ -28,7 +28,7 @@ class ForwardCompatibleReleaseContractTests(SimpleTestCase):
 
     def test_shared_identity_contract_is_forward_compatible(self):
         helper = source("core/release_contract_assertions.py")
-        self.assertIn(r'r"OPAL Update 131\.7 R\d+ - .+"', helper)
+        self.assertIn("re.escape(version)", helper)
         self.assertIn('manifest["version_name"]', helper)
         self.assertNotIn('manifest["baseline"]', helper)
 

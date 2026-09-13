@@ -23,7 +23,7 @@ class Update131SafeConsolidationContractTests(unittest.TestCase):
         self.assertEqual(manifest["version_name"], release_name)
         self.assertTrue(manifest["code_only"])
         primary_tokens = re.findall(
-            r"(?:opal_erp\.css|opal_dashboard_executive\.css|opal_entity_360_consolidation\.css|opal_erp\.js)' %\}\?v=([^\"\s]+)",
+            r"(?:opal_theme_system\.css|opal_theme_system\.css|opal_theme_system\.css|opal_erp\.js)' %\}\?v=([^\"\s]+)",
             source("templates/base/base.html"),
         )
         self.assertEqual(len(primary_tokens), 4)

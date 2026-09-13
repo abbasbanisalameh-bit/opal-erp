@@ -65,5 +65,5 @@ class Update116ExecutiveDashboardContractTests(SimpleTestCase):
 
     def test_static_cache_keys_point_to_update_116(self):
         source = BASE_TEMPLATE.read_text(encoding="utf-8")
-        self.assertRegex(source, r"opal_dashboard_polish\.css' %\}\?v=[^\"\s]+")
-        self.assertRegex(source, r"opal_dashboard_executive\.css' %\}\?v=[^\"\s]+")
+        self.assertRegex(source, r"opal_theme_system\.css' %\}\?v=[^\"\s]+")
+        self.assertRegex(source, r"opal_theme_system\.css' %\}\?v=[^\"\s]+")

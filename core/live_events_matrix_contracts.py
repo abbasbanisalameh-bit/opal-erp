@@ -19,7 +19,7 @@ def audit_live_events_matrix(root: Path | None = None) -> list[AuditIssue]:
     template = _read(root, template_path)
     live_path = "timetable/live_services.py"
     live = _read(root, live_path)
-    css_path = "static/css/opal_erp.css"
+    css_path = "static/css/opal_theme_system.css"
     css = _read(root, css_path)
 
     for token, message in (

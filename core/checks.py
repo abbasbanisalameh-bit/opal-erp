@@ -74,7 +74,7 @@ def _horizontal_timetable_matrix_issues():
                 "path": relative,
             })
 
-    css_path = root / "static/css/opal_erp.css"
+    css_path = root / "static/css/opal_theme_system.css"
     css_source = css_path.read_text(encoding="utf-8") if css_path.is_file() else ""
     for marker in (
         "OPAL Update 130: production timetable state and mobile containment",
@@ -86,16 +86,27 @@ def _horizontal_timetable_matrix_issues():
             issues.append({
                 "code": "MOBILE_CONTAINMENT_NOT_DEPLOYED",
                 "message": "إصلاح احتواء الصفحة والقائمة الجانبية على الهاتف غير مكتمل.",
-                "path": "static/css/opal_erp.css",
+                "path": "static/css/opal_theme_system.css",
             })
             break
 
     version_file = root / "OPAL_VERSION.txt"
+    manifest_file = root / "OPAL_UPDATE_MANIFEST.json"
     version = version_file.read_text(encoding="utf-8").strip() if version_file.is_file() else ""
-    if version != "131.7":
+    manifest_version = ""
+    if manifest_file.is_file():
+        try:
+            import json
+            manifest_version = str(json.loads(manifest_file.read_text(encoding="utf-8")).get("version") or "").strip()
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+            manifest_version = ""
+    if not version or not manifest_version or version != manifest_version:
         issues.append({
             "code": "TIMETABLE_RELEASE_IDENTITY_MISMATCH",
-            "message": f"هوية الكود الفعلية يجب أن تكون 131.7 وليست {version or 'غير محددة'}.",
+            "message": (
+                "هوية الإصدار غير متسقة بين OPAL_VERSION.txt وOPAL_UPDATE_MANIFEST.json: "
+                f"version={version or 'غير محددة'} manifest={manifest_version or 'غير محددة'}."
+            ),
             "path": "OPAL_VERSION.txt",
         })
     return issues

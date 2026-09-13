@@ -129,7 +129,7 @@ def audit_required_identity_files(root: Path | None = None) -> list[AuditIssue]:
     required = (
         "templates/includes/sidebar.html",
         "templates/includes/topbar.html",
-        "static/css/opal_erp.css",
+        "static/css/opal_theme_system.css",
     )
     return [
         AuditIssue("opal_identity_file_missing", "ملف أساسي من هوية OPAL غير موجود.", relative)

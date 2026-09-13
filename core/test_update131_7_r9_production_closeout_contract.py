@@ -24,7 +24,7 @@ class ProductionCloseoutContractTests(SimpleTestCase):
 
     def test_primary_assets_share_the_final_nonempty_cache_token(self):
         tokens = re.findall(
-            r"(?:opal_erp\.css|opal_dashboard_executive\.css|opal_entity_360_consolidation\.css|opal_erp\.js)' %\}\?v=([^\"\s]+)",
+            r"(?:opal_theme_system\.css|opal_theme_system\.css|opal_theme_system\.css|opal_erp\.js)' %\}\?v=([^\"\s]+)",
             source("templates/base/base.html"),
         )
         self.assertEqual(len(tokens), 4)

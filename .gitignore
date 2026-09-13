@@ -58,3 +58,6 @@ __pycache__/
 # OS files
 .DS_Store
 Thumbs.db
+
+# OPAL verified runtime/sensitive exclusions
+.opal_repair_backups/

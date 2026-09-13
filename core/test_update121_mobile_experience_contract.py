@@ -12,7 +12,7 @@ GLOBAL_CSS = ROOT / "static" / "css" / "opal_erp.css"
 class Update121MobileExperienceContractTests(SimpleTestCase):
     def test_base_cache_identity_uses_the_current_release(self):
         source = BASE_TEMPLATE.read_text(encoding="utf-8")
-        self.assertRegex(source, r"opal_erp\.css' %\}\?v=[^\"\s]+")
+        self.assertRegex(source, r"opal_theme_system\.css' %\}\?v=[^\"\s]+")
         self.assertRegex(source, r"opal_erp\.js' %\}\?v=[^\"\s]+")
 
     def test_simple_tables_are_decorated_with_real_header_labels(self):

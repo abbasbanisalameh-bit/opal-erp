@@ -35,7 +35,7 @@ class Update129HorizontalTimetableContractTests(unittest.TestCase):
         checks = (ROOT / "core/checks.py").read_text(encoding="utf-8")
         self.assertIn("def _horizontal_timetable_matrix_issues", checks)
         self.assertIn('id="opal.E130"', checks)
-        self.assertIn('version != "131.7"', checks)
+        self.assertIn("manifest_version", checks)
 
     def test_changed_python_files_parse(self):
         for relative in (

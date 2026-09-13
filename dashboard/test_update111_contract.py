@@ -35,4 +35,4 @@ class Update111NotificationLayerContractTests(SimpleTestCase):
 
     def test_base_template_busts_the_global_topbar_css_cache(self):
         base = (self.root / "templates" / "base" / "base.html").read_text(encoding="utf-8")
-        self.assertRegex(base, r"opal_dashboard_polish\.css' %\}\?v=[^\"\s]+")
+        self.assertRegex(base, r"opal_theme_system\.css' %\}\?v=[^\"\s]+")

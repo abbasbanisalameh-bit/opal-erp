@@ -45,9 +45,9 @@ class Update130ProductionStabilityContractTests(SimpleTestCase):
         release_name = (ROOT / "OPAL_RELEASE_NAME.txt").read_text(encoding="utf-8").strip()
         manifest = (ROOT / "OPAL_UPDATE_MANIFEST.json").read_text(encoding="utf-8")
         base = (ROOT / "templates/base/base.html").read_text(encoding="utf-8")
-        self.assertEqual(version, "131.7")
+        self.assertEqual(manifest["version"], version)
         self.assertIn(f'"version_name": "{release_name}"', manifest)
-        self.assertRegex(base, r"opal_erp\.css' %\}\?v=[^\"\s]+")
+        self.assertRegex(base, r"opal_theme_system\.css' %\}\?v=[^\"\s]+")
         self.assertRegex(base, r"opal_erp\.js' %\}\?v=[^\"\s]+")
 
     def test_update_engine_keeps_verified_database_safety(self):
